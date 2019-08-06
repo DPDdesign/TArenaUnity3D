@@ -5,16 +5,15 @@ using UnityEngine;
 
 public class Dps_Toster : MonoBehaviour
 {
-    public static int hp = 50;
-    public static int dmg = 5;
-    public static int def = 2;
-    string name = "Dps Toster";
+
+    public int hp = 70;
+    Toster dps = new Toster("dps", 50, 10, 2);
 
     void OnMouseDown()
     {
-        hp--;
-        Debug.Log(name + " HP: " + hp);
+        dps.WriteStats();
     }
+
 
     void Update()
     {

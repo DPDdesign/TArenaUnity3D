@@ -225,6 +225,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e69c86af10b84d428f60d4317114ef1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hp: 70
 --- !u!1 &534845938
 GameObject:
   m_ObjectHideFlags: 0
@@ -234,6 +235,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 534845939}
+  - component: {fileID: 534845941}
   - component: {fileID: 534845940}
   m_Layer: 0
   m_Name: Tostery
@@ -271,9 +273,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1cf4b02e1b898e74282b8b60c21a1cbe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Name: 
   BaseHealthPoints: 0
   BaseDamage: 0
   BaseDefence: 0
+--- !u!114 &534845941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 534845938}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e82ad1401476c64eab334b863ec84b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 0}
 --- !u!1 &859417281
 GameObject:
   m_ObjectHideFlags: 0
@@ -856,3 +872,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b3591f43be402340a180916afdf13d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hp: 70

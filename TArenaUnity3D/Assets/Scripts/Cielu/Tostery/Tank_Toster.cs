@@ -5,20 +5,17 @@ using UnityEngine;
 
 public class Tank_Toster : MonoBehaviour
 {
-    public static int hp = 100;
-    public static int dmg = 1;
-    public static int def = 10;
-    string name = "Tank Toster";
+
+    Toster tank = new Toster("tank", 100, 1, 10);
 
     void OnMouseDown()
     {
-        hp--;
-        Debug.Log(name + " HP: " + hp);
+        tank.WriteStats();
     }
 
-    // Update is called once per frame
+
     void Update()
     {
-        
+
     }
 }

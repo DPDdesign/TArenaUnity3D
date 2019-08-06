@@ -5,22 +5,20 @@ using UnityEngine;
 
 public class Heal_Toster : MonoBehaviour
 {
-    public static int hp = 50;
-    public static int dmg = 1;
-    public static int def = 3;
+   public int hp = 70;
+    Toster healer = new Toster("healer", 70, 1, 3);
 
-    string name = "Heal Toster";
+
+
 
     void OnMouseDown()
     {
-        hp--;
-        Debug.Log(name + " HP: " + hp);
+        healer.WriteStats();
     }
 
 
-    // Update is called once per frame
     void Update()
     {
-        
+
     }
 }
