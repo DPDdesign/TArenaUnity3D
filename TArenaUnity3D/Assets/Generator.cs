@@ -4,32 +4,35 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
 
 public class Generator : MonoBehaviour
 {
-    [System.Serializable]
-    public class BuildG{
-        public int hero;
-        }
-    public void whichbuttonisselected()
+    public bool ButtonOn = false;
+    public Button MyButton;
+
+    public void BeenClicked()
     {
-        BuildG Build = new BuildG();
-        Build.hero = 1;
-        if ("Button_bialytoster" == EventSystem.current.currentSelectedGameObject.name)
-            Build.hero = 1;
-        if ("Button_czerwonytoster" == EventSystem.current.currentSelectedGameObject.name)
-            Build.hero = 2;
-        if ("Button_niebieskitoster" == EventSystem.current.currentSelectedGameObject.name)
-            Build.hero = 3;
-        BinaryFormatter formatter = new BinaryFormatter();
-        string path = Application.persistentDataPath + "/build.d";
-        System.IO.FileStream stream = new System.IO.FileStream(path, System.IO.FileMode.OpenOrCreate);
-
-        formatter.Serialize(stream, Build);
-        stream.Close();
-
-        Debug.Log(Build.hero);
+        ButtonOn = !ButtonOn;
+        if (ButtonOn)
+        {
+            MyButton.image.color = Color.red;
+        }
+        else
+        {
+            MyButton.image.color = Color.white;
+        }
     }
-
-    
+    public void selectW()
+    {
+        PlayerPrefs.SetInt("which", 1);
+    }
+    public void selectR()
+    {
+        PlayerPrefs.SetInt("which", 2);
+    }
+    public void selectN()
+    {
+        PlayerPrefs.SetInt("which", 3);
+    }
 }
