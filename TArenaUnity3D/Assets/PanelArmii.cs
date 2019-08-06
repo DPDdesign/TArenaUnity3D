@@ -33,8 +33,7 @@ public class PanelArmii : MonoBehaviour
         for (int i = 0; i < 10; i++)
         {
             path = Application.persistentDataPath + "/build" + i.ToString() + ".d";
-            Debug.Log(path);
-            Debug.Log(i);
+
             if (File.Exists(path))
             {
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -45,9 +44,6 @@ public class PanelArmii : MonoBehaviour
 
                 for (int j=0; j < ListOfHeroes.Count; j++)
                 {
-                    Debug.Log(ListOfHeroes[j]);
- 
-                             Debug.Log(buildG.NazwaBohatera);
                     if (ListOfHeroes[j] == buildG.NazwaBohatera)
                     {
                         Debug.Log("tutaj");
@@ -99,13 +95,17 @@ public class PanelArmii : MonoBehaviour
     }
     public void WczytajPlik(string i)
     {
-        string path = Application.persistentDataPath + "/build"+i+".d";
-        BinaryFormatter formatter = new BinaryFormatter();
-        FileStream file = File.OpenRead(path);
-        BuildG buildG = (BuildG)formatter.Deserialize(file);
-        file.Close();
-        PlayerPrefs.SetString("NazwaBohatera", buildG.NazwaBohatera);
+        string path = Application.persistentDataPath + "/build" + i + ".d";
+        if (File.Exists(path))
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            FileStream file = File.OpenRead(path);
+            BuildG buildG = (BuildG)formatter.Deserialize(file);
+            file.Close();
+            PlayerPrefs.SetString("NazwaBohatera", buildG.NazwaBohatera);
+        }
     }
+
 
     public void SaveBuild()
     { 
