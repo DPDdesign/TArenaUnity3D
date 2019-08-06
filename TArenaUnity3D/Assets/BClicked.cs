@@ -7,13 +7,14 @@ public class BClicked : MonoBehaviour
 {
     public bool ButtonOn = false;
     public Button MyButton;
+    public Sprite Clicked;
 
     public void BeenClicked()
     {
         ButtonOn = !ButtonOn;
         if (ButtonOn)
         {
-            MyButton.image.color = Color.HSVToRGB(0, 255, 255);
+            MyButton.image.color = new Color(0, 153, 153);
         }
         else
         {

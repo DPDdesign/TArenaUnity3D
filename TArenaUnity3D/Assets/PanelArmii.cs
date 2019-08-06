@@ -8,53 +8,104 @@ using UnityEngine.UI;
 public class PanelArmii : MonoBehaviour
 {
     // Start is called before the first frame update
-    public List<Button> buttons;
-
+    public List<Button> AdditionalButtons;
+    public List<Text> texts;
+    public List<Image> Imagess;
+    List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
+    List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2" });
     [System.Serializable]
     public class BuildG
     {
         public int hero;
+        public string NazwaBohatera;
     }
     void Start()
     {
-        
+ 
 
 
 
     }
     public void sprawdz()
     {
+        string path = Application.persistentDataPath + "/build1.d";
+    
+        for (int i = 0; i < 10; i++)
+        {
+            path = Application.persistentDataPath + "/build" + i.ToString() + ".d";
+            Debug.Log(path);
+            Debug.Log(i);
+            if (File.Exists(path))
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+                FileStream file = File.OpenRead(path);
+                BuildG buildG = (BuildG)formatter.Deserialize(file);
 
-     
-        // Iterate through the array of 'btn' and add them to the 'buttons' list
+                file.Close();
 
+                for (int j=0; j < ListOfHeroes.Count; j++)
+                {
+                    Debug.Log(ListOfHeroes[j]);
+ 
+                             Debug.Log(buildG.NazwaBohatera);
+                    if (ListOfHeroes[j] == buildG.NazwaBohatera)
+                    {
+                        Debug.Log("tutaj");
+                        Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
+                        Imagess[i].sprite = hero;
+                        Debug.Log(Application.persistentDataPath + ListOfImages[j]);
 
-        string path = Application.persistentDataPath + "/build.d";
+                        j = 100;
+                    }
+                }
+               
+                AdditionalButtons[i*3].gameObject.SetActive(false);
+                    AdditionalButtons[i*3+1].gameObject.SetActive(true);
+                    AdditionalButtons[i*3+2].gameObject.SetActive(true);
+               
+                    Imagess[i].gameObject.SetActive(true);
+              
+                
+
+            }
+            else
+            {
+                AdditionalButtons[i * 3].gameObject.SetActive(true);
+                AdditionalButtons[i * 3 + 1].gameObject.SetActive(false);
+                AdditionalButtons[i * 3 + 2].gameObject.SetActive(false);
+                Imagess[i].gameObject.SetActive(false);
+            }
+        }
+    
+    }
+
+    public void RemoveBuild(string i)
+    {
+        string path = Application.persistentDataPath + "/build"+i+".d";
         if (File.Exists(path))
         {
-            BinaryFormatter formatter = new BinaryFormatter();
-            FileStream file = File.OpenRead(path);
-            BuildG buildG = (BuildG)formatter.Deserialize(file);
-
-            file.Close();
-            Debug.Log(buildG.hero);
-            if (buildG.hero == 1)
-            {
-                buttons[0].image.color = Color.red;
-        
-            }
-            
+            File.Delete(path);
         }
-        else
-        {
-            Debug.Log("nie ma pliku");
-        }
+        sprawdz();
     }
     private void OnEnable()
     {
         sprawdz();
     }
-
+    public void BuildNumber(string i)
+    {
+        PlayerPrefs.SetString("BuildNumber", i);
+        WczytajPlik(i);
+    }
+    public void WczytajPlik(string i)
+    {
+        string path = Application.persistentDataPath + "/build"+i+".d";
+        BinaryFormatter formatter = new BinaryFormatter();
+        FileStream file = File.OpenRead(path);
+        BuildG buildG = (BuildG)formatter.Deserialize(file);
+        file.Close();
+        PlayerPrefs.SetString("NazwaBohatera", buildG.NazwaBohatera);
+    }
 
     public void SaveBuild()
     { 
@@ -64,13 +115,14 @@ public class PanelArmii : MonoBehaviour
         if (PlayerPrefs.HasKey("which"))
         {
             Build.hero = PlayerPrefs.GetInt("which");
+            Build.NazwaBohatera = PlayerPrefs.GetString("NazwaBohatera");
             BinaryFormatter formatter = new BinaryFormatter();
-            string path = Application.persistentDataPath + "/build.d";
+            string path = Application.persistentDataPath + "/build"+PlayerPrefs.GetString("BuildNumber")+".d";
             FileStream file = File.Create(path);
             formatter.Serialize(file, Build);
             file.Close();
-
-            Debug.Log(Build.hero);
+            Debug.Log(path);
+            sprawdz();
         }
     }
     // Update is called once per frame
