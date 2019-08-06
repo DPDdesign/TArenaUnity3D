@@ -6,8 +6,8 @@ using UnityEngine;
 public class Dps_Toster : MonoBehaviour
 {
 
-    public int hp = 70;
-    Toster dps = new Toster("dps", 50, 10, 2);
+    public int hp = 50;
+   public Toster dps = new Toster("dps", 50, 10, 2);
 
     void OnMouseDown()
     {
