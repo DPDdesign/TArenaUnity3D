@@ -43,10 +43,12 @@ public class Toster : MonoBehaviour
     {
         this.hp += x; 
     }
+    
+  
     // Update is called once per frame
     void Update()
     {
-        
+       
     }
 
 }

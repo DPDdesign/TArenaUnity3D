@@ -25,11 +25,22 @@ public class Tank_Toster : MonoBehaviour
 
         tank.DealHp(y);
         Debug.Log("Mowi: zostalem uleczony o: " + y + " Moje nowe hp to: " + tank.hp);
+        CheckHP();
+    }
+
+
+
+    void CheckHP()
+    {
+        if (tank.hp <= 20)
+        {
+            Destroy(gameObject);
+        }
     }
 
 
     void Update()
     {
-
+        
     }
 }
