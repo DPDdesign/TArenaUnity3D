@@ -20,8 +20,7 @@ public class HexMap : MonoBehaviour
                 HexClass h = new HexClass(col, row);
                 Instantiate(
                     HexPrefab,
-                    h.Position(),
-                    //new Vector3(col, 0, row),
+                    h.Position(),            
                     Quaternion.identity,
                     this.transform
                     ) ;
