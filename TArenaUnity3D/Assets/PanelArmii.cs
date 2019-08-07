@@ -11,8 +11,8 @@ public class PanelArmii : MonoBehaviour
     public List<Button> AdditionalButtons;
     public List<Text> texts;
     public List<Image> Imagess;
-    List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
-    List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2" });
+    public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
+    public List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2" });
     [System.Serializable]
     public class BuildG
     {
