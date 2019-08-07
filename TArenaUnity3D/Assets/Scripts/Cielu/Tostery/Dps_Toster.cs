@@ -6,17 +6,17 @@ using UnityEngine;
 public class Dps_Toster : MonoBehaviour
 {
 
-    public int hp = 50;
-   public Toster dps = new Toster("dps", 50, 10, 2);
+    Toster dps = new Toster("dps", 50, 10, 1);
 
     void OnMouseDown()
     {
-        dps.WriteStats();
+        dps.AddHp(1);
+        Debug.Log(dps.hp);
     }
 
 
     void Update()
     {
-        
+
     }
 }

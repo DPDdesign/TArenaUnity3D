@@ -7,8 +7,7 @@ using System.Collections;
 
 public class RayCast : MonoBehaviour
 {
-    Dps_Toster targett;
-    public GameObject target;
+  
     void Update()
     {
         float turnSpeed = 45.0f;

@@ -8,10 +8,8 @@ public class Toster : MonoBehaviour
     public  int BaseHealthPoints;
     public int BaseDamage;
     public int BaseDefence;
+    public int hp;
 
-
-   public GameObject targetObject;
-   public Dps_Toster targetToster;
 
     public Toster(string nm, int bhp, int bdmg, int bdef)
     {
@@ -19,8 +17,10 @@ public class Toster : MonoBehaviour
         BaseHealthPoints = bhp;
         BaseDamage = bdmg;
         BaseDefence = bdef;
+        hp = bhp;
     }
-     
+    
+
     // Start is called before the first frame update
     void Start()
     {
@@ -33,11 +33,14 @@ public class Toster : MonoBehaviour
 
     }
 
-    public void HealAll()
+    public void DealHp(int x)
     {
-        targetToster = GameObject.Find("Dps_Toster").GetComponent<Dps_Toster>();
-        targetToster.hp++;
-        Debug.Log("Nowe hp dps tostera to: " + targetToster.hp);
+        this.hp -= x;
+    }
+
+    public void AddHp(int x)
+    {
+        this.hp += x; 
     }
     // Update is called once per frame
     void Update()
