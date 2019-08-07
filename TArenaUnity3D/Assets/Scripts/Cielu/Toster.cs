@@ -4,23 +4,24 @@ using UnityEngine;
 
 public class Toster : MonoBehaviour
 {
-    public string Name;
-    public  int BaseHealthPoints;
-    public int BaseDamage;
-    public int BaseDefence;
-    public int hp;
 
 
-    public Toster(string nm, int bhp, int bdmg, int bdef)
-    {
-        Name = nm;
-        BaseHealthPoints = bhp;
-        BaseDamage = bdmg;
-        BaseDefence = bdef;
-        hp = bhp;
-    }
+        public string Name;
+        public int BaseHealthPoints;
+        public int BaseDamage;
+        public int BaseDefence;
+        public int hp;
+
+
+        public Toster(string nm, int bhp, int bdmg, int bdef)
+        {
+            Name = nm;
+            BaseHealthPoints = bhp;
+            BaseDamage = bdmg;
+            BaseDefence = bdef;
+            hp = bhp;
+        }
     
-
     // Start is called before the first frame update
     void Start()
     {
@@ -29,7 +30,7 @@ public class Toster : MonoBehaviour
     }
    public void WriteStats()
     {
-        Debug.Log("Toster " + this.Name + " Stats (Hp/Dmg/Def): " + this.BaseHealthPoints + " / " + this.BaseDamage + " / " + this.BaseDefence);
+        Debug.Log("Toster " + this.Name + " Stats (Hp/Dmg/Def): " + this.hp + " / " + this.BaseDamage + " / " + this.BaseDefence);
 
     }
 
@@ -47,4 +48,5 @@ public class Toster : MonoBehaviour
     {
         
     }
+
 }
