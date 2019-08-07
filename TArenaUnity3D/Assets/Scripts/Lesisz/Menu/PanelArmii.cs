@@ -10,6 +10,7 @@ public class PanelArmii : MonoBehaviour
     // Start is called before the first frame update
     public List<Button> AdditionalButtons;
     public List<Text> texts;
+    public Button back;
     public List<Image> Imagess;
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
     public List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2" });
@@ -25,6 +26,11 @@ public class PanelArmii : MonoBehaviour
 
 
 
+    }
+
+    public List<string> GetList()
+    {
+        return ListOfHeroes;
     }
     public void sprawdz()
     {
@@ -128,6 +134,9 @@ public class PanelArmii : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            back.onClick.Invoke();
+        }
     }
 }
