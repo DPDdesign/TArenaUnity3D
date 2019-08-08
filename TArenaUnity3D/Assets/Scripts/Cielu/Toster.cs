@@ -6,11 +6,11 @@ public class Toster : MonoBehaviour
 {
 
 
-        public string Name;
-        public int BaseHealthPoints;
-        public int BaseDamage;
-        public int BaseDefence;
-        public int hp;
+        public string Name="Zwkly Toster";
+        public int BaseHealthPoints=1;
+        public int BaseDamage=1;
+        public int BaseDefence=1;
+        public int hp=1;
 
 
         public Toster(string nm, int bhp, int bdmg, int bdef)
@@ -22,8 +22,6 @@ public class Toster : MonoBehaviour
             hp = bhp;
         }
 
-    
-    // Start is called before the first frame update
     void Start()
     {
       
@@ -51,7 +49,6 @@ public class Toster : MonoBehaviour
     }
     
   
-    // Update is called once per frame
     void Update()
     {
        
