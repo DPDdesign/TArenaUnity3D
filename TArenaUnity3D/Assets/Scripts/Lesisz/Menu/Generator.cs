@@ -58,4 +58,7 @@ public class Generator : MonoBehaviour
 
         NazwaBohatera.text = "Zielony Toster";
     }
+    
+
+   
 }

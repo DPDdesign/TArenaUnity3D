@@ -9,11 +9,24 @@ using static PanelArmii;
 public class HexMap : MonoBehaviour
 {
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
+    public GameObject HexPrefab;
+    public List<GameObject> TostersPrefabs;
+    public GameObject TosterUnit;
+    public Material[] HexMaterials;
+    // Update is called once per frame
+
+    private HexClass[,] hexes;
+    private Dictionary<HexClass, GameObject> hextoGameObjectMap;
     // Start is called before the first frame update
+
+    private HashSet<TosterHex> tosters;
+    private Dictionary<TosterHex, GameObject> tostertoGameObjectMap;
+
     void Start()
     {
         LoadArmy();
         GenerateMap();
+        
         GenerateToster(2,5, PlayerPrefs.GetInt("LewyToster"));
         GenerateToster(16, 5,PlayerPrefs.GetInt("PrawyToster"));
     }
@@ -24,14 +37,19 @@ public class HexMap : MonoBehaviour
         {
             SceneManager.LoadScene(0);
         }
-    }
-    public GameObject HexPrefab;
-    public List<GameObject> Tosters;
-    public Material[] HexMaterials;
-    // Update is called once per frame
 
-    private HexClass[,] hexes;
-    private Dictionary<HexClass, GameObject> hextoGameObjectMap;
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if(tosters!=null)
+            {
+                foreach(TosterHex u in tosters)
+                {
+                    u.DoTurn();
+                }
+            }
+        }
+    }
+
 
     public HexClass GetHexAt(int x, int y)
     {
@@ -40,6 +58,13 @@ public class HexMap : MonoBehaviour
             Debug.LogError("Hexes not found");
         }
         return hexes[x %20, y%20];
+    }
+
+    public Vector3 GetHexPos(int q, int r)
+    {
+        HexClass h = GetHexAt(q, r);
+        return h.Position();
+
     }
 
 
@@ -53,7 +78,7 @@ public class HexMap : MonoBehaviour
             for (int row = 11-((col + 1) * 2); row < 11; row++)
             {
 
-                HexClass h = new HexClass(col, row);
+                HexClass h = new HexClass(this ,col, row);
               
                 GameObject HexGo = (GameObject)Instantiate(
                     HexPrefab,
@@ -79,7 +104,7 @@ public class HexMap : MonoBehaviour
         {
             for (int row = 0; row < 11; row++)
             {
-                HexClass h = new HexClass(col, row);
+                HexClass h = new HexClass(this,col, row);
                 hexes[col, row] = h;
                 GameObject HexGo = (GameObject) Instantiate(
                     HexPrefab,
@@ -100,7 +125,7 @@ public class HexMap : MonoBehaviour
         {
             for (int row = 0 ; row < ((19-col) * 2+1); row++) 
             {
-                HexClass h = new HexClass(col, row);
+                HexClass h = new HexClass(this, col, row);
                 hexes[col, row] = h;
                 GameObject HexGo = (GameObject)Instantiate(
                     HexPrefab,
@@ -119,21 +144,39 @@ public class HexMap : MonoBehaviour
         StaticBatchingUtility.Combine(this.gameObject);
     }
 
-    
+
 
 
     void GenerateToster(int i , int j, int k)
     {
         HexClass TosterSpawn = GetHexAt(i, j);
-        TosterClass Toster = new TosterClass(i, j, TosterSpawn.Position());
+       
+        if (tosters == null)
+        {
+            tosters = new HashSet<TosterHex>();
+            tostertoGameObjectMap = new Dictionary<TosterHex, GameObject>();
+        }
 
-        GameObject HexGo = (GameObject)Instantiate(
-            Tosters[k],
-            Toster.Position(Tosters[0]),
+
+
+        GameObject HexGo = hextoGameObjectMap[TosterSpawn];
+        TosterHex Toster = new TosterHex(i, j, TosterSpawn.Position(), HexGo);
+        Toster.SetHex(TosterSpawn);
+        GameObject TosterGo = (GameObject)Instantiate(
+            TostersPrefabs[k],
+           // TosterSpawn.Position(),
+            Toster.Position(TostersPrefabs[0]),
             Quaternion.identity,
-            this.transform
+            HexGo.transform
             );
 
+        TosterGo.AddComponent<TosterView>();
+        Toster.OnTosterMoved += TosterGo.GetComponent<TosterView>().OnTosterMoved;
+
+
+        tosters.Add(Toster);
+        tostertoGameObjectMap[Toster] = TosterGo;
+      
     }
 
 
