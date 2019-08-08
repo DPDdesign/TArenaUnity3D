@@ -21,6 +21,7 @@ public class Toster : MonoBehaviour
             BaseDefence = bdef;
             hp = bhp;
         }
+
     
     // Start is called before the first frame update
     void Start()
@@ -30,18 +31,23 @@ public class Toster : MonoBehaviour
     }
    public void WriteStats()
     {
-        Debug.Log("Toster " + this.Name + " Stats (Hp/Dmg/Def): " + this.hp + " / " + this.BaseDamage + " / " + this.BaseDefence);
+        Debug.Log("Toster " + Name + " Stats (Hp/Dmg/Def): " + hp + " / " + BaseDamage + " / " + BaseDefence);
 
     }
 
-    public void DealHp(int x)
+    public virtual void Hello()
     {
-        this.hp -= x;
+        Debug.Log("Jestem Toster bez klasy");
     }
 
-    public void AddHp(int x)
+    public virtual void DealHp(int x)
     {
-        this.hp += x; 
+        hp -= x;
+    }
+
+    public virtual void AddHp(int x)
+    {
+        hp += x; 
     }
     
   

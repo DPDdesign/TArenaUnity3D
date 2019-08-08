@@ -3,39 +3,25 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class Tank_Toster : MonoBehaviour
+public class Tank_Toster : Toster
 {
 
-     Toster tank = new Toster("tank", 100, 1, 10);
+    public Tank_Toster(string nm, int bhp, int bdmg, int bdef) : base(nm, bhp, bdmg, bdef)
+    {
+        Debug.Log("DPS TOSTER!!!");
+    }
+
+
+    Toster tank = new Toster("tank", 100, 1, 10);
 
     void OnMouseDown()
     {
-        tank.WriteStats();
+       WriteStats();
     }
 
-    public void Heal(int x)
+    public override void Hello()
     {
-
-        tank.AddHp(x);
-        Debug.Log("Mowi: zostalem uleczony o: " + x + " Moje nowe hp to: " + tank.hp);
-    }
-
-    public void Deal(int y)
-    {
-
-        tank.DealHp(y);
-        Debug.Log("Mowi: zostalem uleczony o: " + y + " Moje nowe hp to: " + tank.hp);
-        CheckHP();
-    }
-
-
-
-    void CheckHP()
-    {
-        if (tank.hp <= 20)
-        {
-            Destroy(gameObject);
-        }
+        Debug.Log("Jestem Toster Tank!");
     }
 
 
