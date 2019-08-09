@@ -25,6 +25,7 @@ public class Heal_Toster : Toster
         else
         {
             targetToster.Hello();
+            WriteStats();
         }
 
     }
