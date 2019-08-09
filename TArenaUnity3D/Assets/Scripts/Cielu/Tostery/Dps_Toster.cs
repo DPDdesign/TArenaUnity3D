@@ -10,10 +10,18 @@ using Tostery;
         public GameObject targetObject;
         public Toster targetToster;
 
-
-    void Setup()
+    public override void Start()
     {
-        this.id = 2;
+        id = 2;
+        SetValues(id);
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown("space"))
+            {
+          
+        }
     }
 
     void Wpierdol()
@@ -37,14 +45,4 @@ using Tostery;
             }
         }
 
-        public override void Hello()
-        {
-            Debug.Log("Jestem Toster DPS!");
-        }
-
-
-        void Update()
-        {
-
-        }
     }

@@ -7,15 +7,15 @@ using Tostery;
 public class Heal_Toster : Toster
 {
 
-    void Setup()
-    {
-        this.id = 1;
-    }
 
     public GameObject targetObject;
     public Toster targetToster;
-
-
+    
+    public override void Start()
+    {
+        id = 1;
+        SetValues(id);
+    }
 
     void Update()
     {
