@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -21,22 +22,20 @@ public class HexMap : MonoBehaviour
 
     private HashSet<TosterHex> tosters;
     private Dictionary<TosterHex, GameObject> tostertoGameObjectMap;
-
+    private Dictionary<GameObject, HexClass> gameObjectToHexMap;
     void Start()
     {
         LoadArmy();
         GenerateMap();
-        
+        Highlight(2,5,5);
         GenerateToster(2,5, PlayerPrefs.GetInt("LewyToster"));
         GenerateToster(16, 5,PlayerPrefs.GetInt("PrawyToster"));
     }
 
+
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            SceneManager.LoadScene(0);
-        }
+   
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -67,12 +66,17 @@ public class HexMap : MonoBehaviour
 
     }
 
+    int mapHeight = 20;
+    int mapWidth = 20;
+
+
 
 
     void GenerateMap()     
     {
-        hexes = new HexClass[20, 20];
+        hexes = new HexClass[mapHeight, mapWidth];
         hextoGameObjectMap = new Dictionary<HexClass, GameObject>();
+        gameObjectToHexMap = new Dictionary<GameObject, HexClass>();
         for (int col = 0; col < 5; col++)
         {
             for (int row = 11-((col + 1) * 2); row < 11; row++)
@@ -87,10 +91,10 @@ public class HexMap : MonoBehaviour
                     this.transform
                     );
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
-                mr.material = HexMaterials[Random.Range(0, HexMaterials.Length)];
+                mr.material = HexMaterials[Random.Range(0, HexMaterials.Length-1)];
 
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
-
+                gameObjectToHexMap[HexGo] = h;
                 HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row);
                 hexes[col, row] = h;
                 hextoGameObjectMap.Add(h, HexGo);
@@ -114,10 +118,11 @@ public class HexMap : MonoBehaviour
                     ) ;
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
-                mr.material = HexMaterials[Random.Range(0, HexMaterials.Length)];
+                mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
                 HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row);
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
+                gameObjectToHexMap[HexGo] = h;
             }
         }
 
@@ -135,15 +140,27 @@ public class HexMap : MonoBehaviour
                     );
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
-                mr.material = HexMaterials[Random.Range(0, HexMaterials.Length)];
+                mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
                 HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row);
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
+                gameObjectToHexMap[HexGo] = h;
             }
         }
-        StaticBatchingUtility.Combine(this.gameObject);
+        //StaticBatchingUtility.Combine(this.gameObject.GetComponentInChildren<MeshFilter>().gameObject);
+
+
     }
 
+    public HexClass GetHexFromGameObject(GameObject hexGO)
+    {
+        if (gameObjectToHexMap.ContainsKey(hexGO))
+        {
+            return gameObjectToHexMap[hexGO];
+        }
+
+        return null;
+    }
 
 
 
@@ -160,10 +177,10 @@ public class HexMap : MonoBehaviour
 
 
         GameObject HexGo = hextoGameObjectMap[TosterSpawn];
-        TosterHex Toster = new TosterHex(i, j, TosterSpawn.Position(), HexGo);
+        TosterHex Toster = new TosterHex(i, j, TosterSpawn.Position(), HexGo, TostersPrefabs[k]);
         Toster.SetHex(TosterSpawn);
         GameObject TosterGo = (GameObject)Instantiate(
-            TostersPrefabs[k],
+            Toster.TosterPrefab,
            // TosterSpawn.Position(),
             Toster.Position(TostersPrefabs[0]),
             Quaternion.identity,
@@ -179,6 +196,8 @@ public class HexMap : MonoBehaviour
       
     }
 
+
+ 
 
     public void LoadArmy()
     {
@@ -219,6 +238,95 @@ public class HexMap : MonoBehaviour
                 }
             }
 
+        }
+    }
+
+
+
+
+    public HexClass[] GetHexesWithinRadiusOf(HexClass centerhex, int radius)
+    {
+        List<HexClass> results = new List<HexClass>(); 
+        for (int dx = - radius; dx<radius+1; dx++)
+        {
+            for (int dy = Mathf.Max(-radius,-dx-radius); dy<Mathf.Min(radius, -dx+radius)+1; dy++)
+            {
+                if (0<=centerhex.C + dx && 0<=centerhex.R + dy)
+                results.Add(hexes[centerhex.C + dx, centerhex.R + dy]);
+            }
+        }
+        return results.ToArray();
+    }
+
+
+    void Highlight(int q, int r, int range, float centerHeight = .8f)
+    {
+        HexClass centerHex = GetHexAt(q, r);
+
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, range);
+        
+        foreach (HexClass h in areaHexes)
+        {
+            //if(h.Elevation < 0)
+            //h.Elevation = 0;
+            if (h != null)
+            {
+                if (hextoGameObjectMap.ContainsKey(h) == true)
+                {
+                    h.Highlight = true;
+                }
+            }
+        }
+        UpdateHexVisuals();
+    }
+
+    void unHighlight(int q, int r, int range, float centerHeight = .8f)
+    {
+        HexClass centerHex = GetHexAt(q, r);
+
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, range);
+
+        foreach (HexClass h in areaHexes)
+        {
+            //if(h.Elevation < 0)
+            //h.Elevation = 0;
+
+            h.Highlight = false;
+        }
+        UpdateHexVisuals();
+    }
+
+
+
+    public void UpdateHexVisuals()
+    {
+        for (int column = 0; column < 20; column++)
+        {
+            for (int row = 0; row < 20; row++)
+            {
+                HexClass h = hexes[column, row];
+                if (h != null)
+                {
+                    GameObject hexGO = hextoGameObjectMap[h];
+
+                    //  HexComponent hexComp = hexGO.GetComponentInChildren<HexComponent>();
+                    MeshRenderer mr = hexGO.GetComponentInChildren<MeshRenderer>();
+                    MeshFilter mf = hexGO.GetComponentInChildren<MeshFilter>();
+
+
+                    if (h.Highlight == true)
+                    {
+                        mr.material = HexMaterials[1];
+                    }
+                    else
+                    {
+                        mr.material = HexMaterials[0];
+
+                    }
+                }
+
+
+            }
         }
     }
 }

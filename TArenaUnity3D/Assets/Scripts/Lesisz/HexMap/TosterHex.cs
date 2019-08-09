@@ -14,22 +14,23 @@ public class TosterHex
     public int HP = 100;
     public int Att = 1;
     public int Def = 1;
-    public int MovmentSpeed = 5;
+    public int MovmentSpeed = 2;
 
     ///
 
    public GameObject ThisToster;
-
+    public GameObject TosterPrefab;
 
 
     
-    public TosterHex(int c, int r, Vector3 vect, GameObject G)
+    public TosterHex(int c, int r, Vector3 vect, GameObject G, GameObject Toster)
     {
         this.C = c;
         this.R = r;
         this.S = -(c + r);
         vec = vect;
         ThisToster = G;
+        TosterPrefab = Toster;
     }
     public Vector3 Position(GameObject G)
     {
@@ -50,7 +51,7 @@ public class TosterHex
     public delegate void TosterMovedDelegate(HexClass oldH, HexClass newH);
     public event TosterMovedDelegate OnTosterMoved;
 
-
+   
 
     public void SetHex(HexClass hex)
     {
@@ -67,7 +68,16 @@ public class TosterHex
         }
     }
 
+    public List<HexClass> HexPathList;
 
+    public void FindTosterPath()
+    {
+        List<int[]> m = new List<int[]>();
+        
+        m = Hex.FindN(C,R);
+        
+
+    }
 
 
     public void DoTurn()

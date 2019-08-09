@@ -10,7 +10,9 @@ public class TosterView : MonoBehaviour
     Vector3 currentV;
     float smoothTime = 0.5f;
     float speed = 1f;
-    
+
+    HexMap_Highlight map;
+
     private void Start()
     {
         oldPos = newPos = this.transform.position;
@@ -37,6 +39,11 @@ public class TosterView : MonoBehaviour
       
 
     }
+
+    private void OnMouseUp()
+    {
+       ///this.transform.position = Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
+    }
     private void OnMouseExit()
     {
         newPos.y = beforeJumpPos.y;
@@ -44,6 +51,6 @@ public class TosterView : MonoBehaviour
     private void Update()
     {
       
-        this.transform.position =Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
+        
     }
 }
