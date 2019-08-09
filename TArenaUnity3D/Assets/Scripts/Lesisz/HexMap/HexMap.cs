@@ -6,8 +6,8 @@ using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static PanelArmii;
-
-public class HexMap : MonoBehaviour
+using HPath;
+public class HexMap : MonoBehaviour,    IQPathWorld
 {
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
     public GameObject HexPrefab;
@@ -43,7 +43,17 @@ public class HexMap : MonoBehaviour
             {
                 foreach(TosterHexUnit u in tosters)
                 {
-                    u.DoTurn();
+                    u.DoAllMoves();
+                }
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            if (tosters != null)
+            {
+                foreach (TosterHexUnit u in tosters)
+                {
+                    u.DUMMY_PATHING_FUNCTION();
                 }
             }
         }

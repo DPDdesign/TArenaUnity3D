@@ -1,8 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-public class HexClass {
+using HPath;
+public class HexClass : IPathTile {
     public readonly int C; public readonly int R; public readonly int S; // column.row
     static readonly float WIDTH_MULTIPLIER = Mathf.Sqrt(3) / 2;
     public bool Highlight=false;
@@ -155,5 +155,55 @@ public class HexClass {
     public int BaseMovementCost()
     {
         return 1;
+    }
+    HexClass[] neighbours;
+    public IPathTile[] GetNeighbours()
+    {
+        if (this.neighbours != null)
+            return this.neighbours;
+
+        List<HexClass> neighbours = new List<HexClass>();
+        neighbours.Add(hexMap.GetHexAt(C+1, R));
+        neighbours.Add(hexMap.GetHexAt(C-1, R));
+        neighbours.Add(hexMap.GetHexAt(C, R+1));
+        neighbours.Add(hexMap.GetHexAt(C, R-1));
+        neighbours.Add(hexMap.GetHexAt(C+1, R-1));
+        neighbours.Add(hexMap.GetHexAt(C-1, R+1));
+
+        List<HexClass> neighbours2 = new List<HexClass>();
+        foreach(HexClass h in neighbours)
+        {
+            if(h!=null)
+            {
+                neighbours2.Add(h);
+            }
+        }
+        this.neighbours = neighbours2.ToArray();
+        return this.neighbours;
+    }
+
+    public float CostToMoveToTile(float costsofar, IPathTile sourceTile, IQPathUnit Unit)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public static float CostEstimate(IPathTile aa, IPathTile bb)
+    {
+        return Distance((HexClass)aa, (HexClass)bb);
+    }
+
+
+    public static float Distance(HexClass a, HexClass b)
+    {
+        int dQ = Mathf.Abs(a.C - b.C);
+        int dR = Mathf.Abs(a.R - b.R);
+        return Mathf.Max(dQ, dR, Mathf.Abs(a.S - b.S));
+    }
+
+    public float AggregateCostToEnter(float costSoFar, IPathTile sourceTile, IQPathUnit theUnit)
+    {
+        // TODO: We are ignoring source tile right now, this will have to change when
+        // we have rivers.
+        return ((TosterHexUnit)theUnit).TurnsToGetToHex(this, costSoFar);
     }
 }
