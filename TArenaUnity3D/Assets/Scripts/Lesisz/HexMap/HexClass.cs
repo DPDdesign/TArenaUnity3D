@@ -6,7 +6,7 @@ public class HexClass {
     public readonly int C; public readonly int R; public readonly int S; // column.row
     static readonly float WIDTH_MULTIPLIER = Mathf.Sqrt(3) / 2;
     public bool Highlight=false;
-    List<TosterHex> Tosters;
+    List<TosterHexUnit> Tosters;
 
     public readonly HexMap hexMap;
 
@@ -88,15 +88,15 @@ public class HexClass {
          vert * this.R
          );
     }
-    public void AddToster(TosterHex Toster)
+    public void AddToster(TosterHexUnit Toster)
     {
         if (Tosters == null)
         {
-            Tosters = new List<TosterHex>();
+            Tosters = new List<TosterHexUnit>();
         }
         Tosters.Add(Toster);
     }
-    public void RemoveToster(TosterHex Toster)
+    public void RemoveToster(TosterHexUnit Toster)
     {
         if (Tosters != null)
         {
@@ -104,7 +104,7 @@ public class HexClass {
         }
     }
 
-    public TosterHex[] tosters()
+    public TosterHexUnit[] tosters()
     {
         return Tosters.ToArray();
     }

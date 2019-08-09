@@ -20,8 +20,8 @@ public class HexMap : MonoBehaviour
     private Dictionary<HexClass, GameObject> hextoGameObjectMap;
     // Start is called before the first frame update
 
-    private HashSet<TosterHex> tosters;
-    private Dictionary<TosterHex, GameObject> tostertoGameObjectMap;
+    private HashSet<TosterHexUnit> tosters;
+    private Dictionary<TosterHexUnit, GameObject> tostertoGameObjectMap;
     private Dictionary<GameObject, HexClass> gameObjectToHexMap;
     void Start()
     {
@@ -41,7 +41,7 @@ public class HexMap : MonoBehaviour
         {
             if(tosters!=null)
             {
-                foreach(TosterHex u in tosters)
+                foreach(TosterHexUnit u in tosters)
                 {
                     u.DoTurn();
                 }
@@ -170,14 +170,14 @@ public class HexMap : MonoBehaviour
        
         if (tosters == null)
         {
-            tosters = new HashSet<TosterHex>();
-            tostertoGameObjectMap = new Dictionary<TosterHex, GameObject>();
+            tosters = new HashSet<TosterHexUnit>();
+            tostertoGameObjectMap = new Dictionary<TosterHexUnit, GameObject>();
         }
 
 
 
         GameObject HexGo = hextoGameObjectMap[TosterSpawn];
-        TosterHex Toster = new TosterHex(i, j, TosterSpawn.Position(), HexGo, TostersPrefabs[k]);
+        TosterHexUnit Toster = new TosterHexUnit(i, j, TosterSpawn.Position(), HexGo, TostersPrefabs[k]);
         Toster.SetHex(TosterSpawn);
         GameObject TosterGo = (GameObject)Instantiate(
             Toster.TosterPrefab,

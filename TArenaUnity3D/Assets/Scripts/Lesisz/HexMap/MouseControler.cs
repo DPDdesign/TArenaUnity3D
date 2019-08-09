@@ -18,12 +18,14 @@ public class MouseControler : MonoBehaviour
     Vector3 LastMousePosition;
 
 
-
+    int MouseDragTreshold = 1;
 
     bool isDragginCamera = false;
     Vector3 LastMouseGroundPlanePosition;
     Vector3 cameraTargetOffset;
 
+
+    TosterClass SelectedToster = null;
     // Start is called before the first frame update
     void Start()
     {
@@ -52,16 +54,33 @@ public class MouseControler : MonoBehaviour
         {
             // Left Button went down - do nothing
         }
-       else if (Input.GetMouseButton(1) && Input.mousePosition!=LastMousePosition) 
+        else if (Input.GetMouseButtonUp(1) )
+        {
+            Debug.LogError(MouseToHex());
+        }
+       else if (Input.GetMouseButton(1) &&
+            Vector3.Distance(Input.mousePosition, LastMousePosition) > MouseDragTreshold) 
         {
             //when mouse is hold down and mouse moved = camera drag
             Update_CurrentFunc = Update_CameraDrag;
             LastMouseGroundPlanePosition = MouseToGroundPlane(Input.mousePosition);
+            Update_CameraDrag();
+        }
+        else if (Input.GetMouseButton(1) && SelectedToster != null)
+        {
+
         }
     }
 
 
-
+    void UpdateTosterMovement()
+    {
+        if (Input.GetMouseButtonUp(1))
+        {
+            CancelUpdateFunc();
+            return;
+        }
+    }
 
 
 
