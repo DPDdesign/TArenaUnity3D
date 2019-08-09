@@ -9,20 +9,23 @@ public class Tank_Toster : Toster
 
     public Tank_Toster(string nm, int bhp, int bdmg, int bdef) : base(nm, bhp, bdmg, bdef)
     {
-        Debug.Log("DPS TOSTER!!!");
         Name = nm;
         BaseHealthPoints = bhp;
         BaseDamage = bdmg;
         BaseDefence = bdef;
         hp = bhp;
     }
-
-    Toster tank = new Toster("tank", 100, 1, 10);
+    public Tank_Toster tank;
+    void Start()
+    {
+         tank = new Tank_Toster("tank", 100, 1, 10);
+    }
 
     void OnMouseDown()
     {
        Hello();
-       WriteStats();
+        tank.WriteStats();
+        tank.DealHp(10);
     }
 
     public override void Hello()

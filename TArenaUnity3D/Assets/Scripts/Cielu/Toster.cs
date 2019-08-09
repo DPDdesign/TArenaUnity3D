@@ -24,14 +24,13 @@ public class Toster : MonoBehaviour
 
     void Start()
     {
-      
-
     }
    public void WriteStats()
     {
         Debug.Log("Toster " + Name + " Stats (Hp/Dmg/Def): " + hp + " / " + BaseDamage + " / " + BaseDefence);
 
     }
+
 
     public virtual void Hello()
     {
@@ -41,6 +40,7 @@ public class Toster : MonoBehaviour
     public virtual void DealHp(int x)
     {
         hp -= x;
+        Debug.Log(hp);
     }
 
     public virtual void AddHp(int x)
