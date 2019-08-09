@@ -152,7 +152,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &292156760
 BoxCollider:
@@ -225,6 +225,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e69c86af10b84d428f60d4317114ef1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Name: 
+  BaseHealthPoints: 0
+  BaseDamage: 0
+  BaseDefence: 0
+  hp: 0
+  id: 0
   targetObject: {fileID: 0}
   targetToster: {fileID: 0}
 --- !u!1 &534845938
@@ -236,11 +242,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 534845939}
-  - component: {fileID: 534845941}
   - component: {fileID: 534845940}
-  - component: {fileID: 534845942}
   m_Layer: 0
-  m_Name: Tostery
+  m_Name: "__Tostery_Klasa_G\u0142owna"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -254,7 +258,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 534845938}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.61695385, y: 3.8308523, z: -2.0909257}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -277,30 +281,7 @@ MonoBehaviour:
   BaseDamage: 0
   BaseDefence: 0
   hp: 0
---- !u!114 &534845941
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 534845938}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8e82ad1401476c64eab334b863ec84b1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &534845942
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 534845938}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8e82ad1401476c64eab334b863ec84b1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  id: 0
 --- !u!1 &859417281
 GameObject:
   m_ObjectHideFlags: 0
@@ -392,7 +373,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &859417286
 MonoBehaviour:
@@ -403,9 +384,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 859417281}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9acd58acb95310d4d921dfefd0f6b78b, type: 3}
+  m_Script: {fileID: 11500000, guid: a8402192fc12b4a45b8195b89bcf23cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Name: 
+  BaseHealthPoints: 1000
+  BaseDamage: 1
+  BaseDefence: 10
+  hp: 1000
+  id: 1
 --- !u!1 &939761107
 GameObject:
   m_ObjectHideFlags: 0
@@ -673,6 +660,49 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1635136516
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1635136517}
+  - component: {fileID: 1635136518}
+  m_Layer: 0
+  m_Name: '*Tostery_Staty*'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1635136517
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1635136516}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.5, z: 2.177}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 7
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1635136518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1635136516}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa67985d0a1343e4783a2f19222af7ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1667540180
 GameObject:
   m_ObjectHideFlags: 0
@@ -687,7 +717,7 @@ GameObject:
   - component: {fileID: 1667540181}
   - component: {fileID: 1667540185}
   m_Layer: 0
-  m_Name: NPCy
+  m_Name: "__Enemy_Klasa_G\u0142owna"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -764,7 +794,7 @@ Transform:
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1667540185
 MonoBehaviour:
@@ -810,7 +840,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 30, z: 0}
 --- !u!65 &1858695575
 BoxCollider:
@@ -883,5 +913,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b3591f43be402340a180916afdf13d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Name: 
+  BaseHealthPoints: 0
+  BaseDamage: 0
+  BaseDefence: 0
+  hp: 0
+  id: 1
   targetObject: {fileID: 0}
   targetToster: {fileID: 0}

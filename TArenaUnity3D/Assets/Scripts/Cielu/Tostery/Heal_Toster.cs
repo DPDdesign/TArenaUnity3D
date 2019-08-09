@@ -1,42 +1,35 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-//using Tostery;
+using Tostery;
 
 
 public class Heal_Toster : Toster
 {
- 
-    Toster healer = new Toster("healer", 70, 1, 3);
+
+    void Setup()
+    {
+        this.id = 1;
+    }
+
     public GameObject targetObject;
     public Toster targetToster;
 
 
-    public Heal_Toster(string nm, int bhp, int bdmg, int bdef) : base(nm, bhp, bdmg, bdef)
-    {
-        Debug.Log("DPS TOSTER!!!");
-    }
-
-
-    void OnMouseDown()
-    {
-        targetToster = GameObject.Find("Tank_Toster").GetComponent<Toster>();
-        if (targetToster == null) { Debug.Log("Nie Ma Tostera", targetToster); }
-        else
-        {
-            targetToster.Hello();
-            WriteStats();
-        }
-
-    }
-
-    public override void Hello()
-    {
-        Debug.Log("Jestem Toster Healer!");
-    }
 
     void Update()
     {
 
     } 
+
+    void GetTarget()
+    {
+        targetObject = GameObject.Find("Tank_Toster");
+        targetToster = GameObject.Find("Tank_Toster").GetComponent<Toster>();
+        if (targetToster == null) { Debug.Log("Nie Ma Tostera", targetToster); }
+        else
+        {
+
+        }
+    }
 }

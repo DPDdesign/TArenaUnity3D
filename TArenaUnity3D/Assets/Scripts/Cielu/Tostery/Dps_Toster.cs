@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-//using Tostery;
+using Tostery;
 
 
 
@@ -11,13 +11,12 @@ using UnityEngine;
         public Toster targetToster;
 
 
-        public Dps_Toster(string nm, int bhp, int bdmg, int bdef) : base(nm, bhp, bdmg, bdef)
-        {
-            Debug.Log("DPS TOSTER!!!");
-        }
+    void Setup()
+    {
+        this.id = 2;
+    }
 
-
-        void OnMouseDown()
+    void Wpierdol()
         {
 
             WriteStats();
