@@ -42,7 +42,7 @@ public class TosterView : MonoBehaviour
 
     private void OnMouseUp()
     {
-       ///this.transform.position = Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
+         
     }
     private void OnMouseExit()
     {
@@ -50,7 +50,7 @@ public class TosterView : MonoBehaviour
     }
     private void Update()
     {
-      
-        
+
+        this.transform.position = Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
     }
 }

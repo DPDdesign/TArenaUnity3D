@@ -56,7 +56,7 @@ public class MouseControler : MonoBehaviour
         {
             //when mouse is hold down and mouse moved = camera drag
             Update_CurrentFunc = Update_CameraDrag;
-           
+            LastMouseGroundPlanePosition = MouseToGroundPlane(Input.mousePosition);
         }
     }
 
