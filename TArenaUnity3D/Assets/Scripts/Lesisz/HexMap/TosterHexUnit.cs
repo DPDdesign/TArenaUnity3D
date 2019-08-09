@@ -99,6 +99,11 @@ public class TosterHexUnit
         HexClass newHex = hexPath.Dequeue();
 
         SetHex(newHex);
-        Debug.LogError("działa");
+       
+    }
+
+    public int MovementCostToEnterHex(HexClass hex)
+    {
+        return hex.BaseMovementCost();
     }
 }

@@ -150,4 +150,10 @@ public class HexClass {
 
         return position;
     }
+
+
+    public int BaseMovementCost()
+    {
+        return 1;
+    }
 }
