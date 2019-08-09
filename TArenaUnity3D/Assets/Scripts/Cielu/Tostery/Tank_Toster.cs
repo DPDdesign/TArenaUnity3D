@@ -6,11 +6,13 @@ using Tostery;
 
 public class Tank_Toster : Toster
 {
-    void Setup()
-    {
-        this.id = 0;
-    }
+   
 
+    public override void Start()
+    {
+        id = 0;
+        SetValues(id);
+    }
 
 
 }

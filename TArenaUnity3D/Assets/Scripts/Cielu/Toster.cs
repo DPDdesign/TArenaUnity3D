@@ -14,11 +14,6 @@ namespace Tostery
         public int hp = 1;
         public int id;
 
-        public void WriteStats()
-        {
-            Debug.Log("Toster " + Name + " Stats (Hp/Dmg/Def): " + hp + " / " + BaseDamage + " / " + BaseDefence);
-
-        }
 
         public virtual void Start()
         {
@@ -27,16 +22,23 @@ namespace Tostery
 
         void OnMouseDown()
         {
-
-            Hello();
-        
-
+            WriteStats();
         }
 
         public virtual void Hello()
         {
-            Debug.Log("Jestem Toster "+ this.Name);
+            Debug.Log("Nazywam się: " + Name);
         }
+
+        public void WriteStats()
+        {
+            Debug.Log("Nazywam się: " + Name);
+            Debug.Log("Moje Maks HP: " + BaseHealthPoints);
+            Debug.Log("Moj Atak to: " + BaseDamage);
+            Debug.Log("Moja Obrona to: " + BaseDefence);
+
+        }
+
 
         public virtual void DealHp(int x)
         {
