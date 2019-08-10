@@ -15,21 +15,23 @@ public class HexMap : MonoBehaviour,    IQPathWorld
     public GameObject TosterUnit;
     public Material[] HexMaterials;
     // Update is called once per frame
-
     private HexClass[,] hexes;
     private Dictionary<HexClass, GameObject> hextoGameObjectMap;
     // Start is called before the first frame update
-
+    public bool AnimationIsPlaying=false;
     private HashSet<TosterHexUnit> tosters;
+    private List<TosterHexUnit> tostersList;
     private Dictionary<TosterHexUnit, GameObject> tostertoGameObjectMap;
     private Dictionary<GameObject, HexClass> gameObjectToHexMap;
     void Start()
     {
         LoadArmy();
         GenerateMap();
-        Highlight(2,5,5);
+    
         GenerateToster(2,5, PlayerPrefs.GetInt("LewyToster"));
-        GenerateToster(16, 5,PlayerPrefs.GetInt("PrawyToster"));
+        
+        GenerateToster(5, 5,PlayerPrefs.GetInt("PrawyToster"));
+        
     }
 
 
@@ -43,7 +45,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
             {
                 foreach(TosterHexUnit u in tosters)
                 {
-                    u.DoAllMoves();
+                    u.DoMove();
                 }
             }
         }
@@ -57,6 +59,17 @@ public class HexMap : MonoBehaviour,    IQPathWorld
                 }
             }
         }
+        if (Input.GetKeyDown(KeyCode.O))
+        {
+            if (tostersList != null)
+            {
+                tostersList[0].move = true;
+    
+                
+            }
+        }
+
+
     }
 
 
@@ -66,7 +79,8 @@ public class HexMap : MonoBehaviour,    IQPathWorld
         {
             Debug.LogError("Hexes not found");
         }
-        return hexes[x %20, y%20];
+       
+        return hexes[x %19 , y%11];
     }
 
     public Vector3 GetHexPos(int q, int r)
@@ -79,9 +93,24 @@ public class HexMap : MonoBehaviour,    IQPathWorld
     int mapHeight = 20;
     int mapWidth = 20;
 
+    
+    public IEnumerator DoUnitMoves(TosterHexUnit u)
+    {
+        // Is there any reason we should check HERE if a unit should be moving?
+        // I think the answer is no -- DoMove should just check to see if it needs
+        // to do anything, or just return immediately.
 
+      
+            while (u.DoMove())
+            {
+         
+                while (u.tosterView.AnimationIsPlaying) {  yield return null; }
+            }
 
+        
 
+    }
+    
     void GenerateMap()     
     {
         hexes = new HexClass[mapHeight, mapWidth];
@@ -105,9 +134,10 @@ public class HexMap : MonoBehaviour,    IQPathWorld
 
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 gameObjectToHexMap[HexGo] = h;
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row);
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}\n {2}", col, row, h.Tosters.Count);
                 hexes[col, row] = h;
                 hextoGameObjectMap.Add(h, HexGo);
+                h.MyHex = HexGo;
 
             }
 
@@ -129,10 +159,11 @@ public class HexMap : MonoBehaviour,    IQPathWorld
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row);
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}\n {2}", col, row, h.Tosters.Count);
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
+                h.MyHex = HexGo;
             }
         }
 
@@ -151,10 +182,11 @@ public class HexMap : MonoBehaviour,    IQPathWorld
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row);
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}\n {2}", col, row, h.Tosters.Count);
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
+                h.MyHex = HexGo;
             }
         }
         //StaticBatchingUtility.Combine(this.gameObject.GetComponentInChildren<MeshFilter>().gameObject);
@@ -172,6 +204,16 @@ public class HexMap : MonoBehaviour,    IQPathWorld
         return null;
     }
 
+    public GameObject GetObjectFromHex(HexClass h)
+    {
+        if (hextoGameObjectMap.ContainsKey(h))
+        {
+            return hextoGameObjectMap[h];
+        }
+
+        return null;
+    }
+
 
 
     void GenerateToster(int i , int j, int k)
@@ -183,7 +225,11 @@ public class HexMap : MonoBehaviour,    IQPathWorld
             tosters = new HashSet<TosterHexUnit>();
             tostertoGameObjectMap = new Dictionary<TosterHexUnit, GameObject>();
         }
-
+        if (tostersList == null)
+        {
+            tostersList = new List<TosterHexUnit>();
+           
+        }
 
 
         GameObject HexGo = hextoGameObjectMap[TosterSpawn];
@@ -199,7 +245,9 @@ public class HexMap : MonoBehaviour,    IQPathWorld
 
         TosterGo.AddComponent<TosterView>();
         Toster.OnTosterMoved += TosterGo.GetComponent<TosterView>().OnTosterMoved;
-
+        Toster.tosterView = TosterGo.GetComponent<TosterView>();
+        HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}\n {2}", i, j, TosterSpawn.Tosters.Count);
+        tostersList.Add(Toster);
 
         tosters.Add(Toster);
         tostertoGameObjectMap[Toster] = TosterGo;
@@ -259,17 +307,20 @@ public class HexMap : MonoBehaviour,    IQPathWorld
         List<HexClass> results = new List<HexClass>(); 
         for (int dx = - radius; dx<radius+1; dx++)
         {
-            for (int dy = Mathf.Max(-radius,-dx-radius); dy<Mathf.Min(radius, -dx+radius)+1; dy++)
+            for (int dy = Mathf.Max(-radius, -dx - radius); dy < Mathf.Min(radius, -dx + radius) + 1; dy++)
             {
-                if (0<=centerhex.C + dx && 0<=centerhex.R + dy)
-                results.Add(hexes[centerhex.C + dx, centerhex.R + dy]);
+                if (0 <= centerhex.C + dx && 0 <= centerhex.R + dy && 19 >= centerhex.C + dx && 19 >= centerhex.R + dy)
+                {
+                  
+                    results.Add(hexes[centerhex.C + dx, centerhex.R + dy]);
+                }
             }
         }
         return results.ToArray();
     }
 
 
-    void Highlight(int q, int r, int range, float centerHeight = .8f)
+   public void Highlight(int q, int r, int range, float centerHeight = .8f)
     {
         HexClass centerHex = GetHexAt(q, r);
 
@@ -290,7 +341,28 @@ public class HexMap : MonoBehaviour,    IQPathWorld
         UpdateHexVisuals();
     }
 
-    void unHighlight(int q, int r, int range, float centerHeight = .8f)
+    public void HighlightWithPath(TosterHexUnit hh)
+    {
+        HexClass centerHex = hh.Hex;
+
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, hh.MovmentSpeed);
+       
+        foreach (HexClass h in areaHexes)
+        {
+            //if(h.Elevation < 0)
+            //h.Elevation = 0;
+            if (h != null && hh.IsPathAvaible(h))
+            {
+                if (hextoGameObjectMap.ContainsKey(h) == true)
+                {
+                    h.Highlight = true;
+                }
+            }
+        }
+        UpdateHexVisuals();
+    }
+
+    public void unHighlight(int q, int r, int range, float centerHeight = .8f)
     {
         HexClass centerHex = GetHexAt(q, r);
 
@@ -300,8 +372,14 @@ public class HexMap : MonoBehaviour,    IQPathWorld
         {
             //if(h.Elevation < 0)
             //h.Elevation = 0;
-
-            h.Highlight = false;
+            if (h != null)
+            {
+                if (hextoGameObjectMap.ContainsKey(h) == true)
+                {
+                    h.Highlight = false;
+                }
+            }
+          
         }
         UpdateHexVisuals();
     }

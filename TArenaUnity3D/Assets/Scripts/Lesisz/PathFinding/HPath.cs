@@ -6,7 +6,7 @@ namespace HPath
 {
     public static class HPath
     {
-        public static IPathTile[] FindPath(IQPathWorld world, IQPathUnit Unit, IPathTile startTile, IPathTile endT, CostEstimateDelegate costEstimateFunc)
+        public static T[] FindPath<T>(IQPathWorld world, IQPathUnit Unit, T startTile, T endT, CostEstimateDelegate costEstimateFunc ) where T : IPathTile
         {
             if (world == null || Unit == null || startTile == null || endT == null)
             {
@@ -17,12 +17,12 @@ namespace HPath
                 Debug.LogError(endT);
 
                 return null;
-            }
+            } 
 
-            IQPath_AStar resolver = new IQPath_AStar(world, Unit, startTile, endT, costEstimateFunc);
+            IQPath_AStar<T> resolver = new IQPath_AStar<T>(world, Unit, startTile, endT, costEstimateFunc);
             resolver.DoWork();
 
-            return resolver.GetList();
+            return  resolver.GetList();
         }
     }
     public delegate float CostEstimateDelegate(IPathTile a, IPathTile b);

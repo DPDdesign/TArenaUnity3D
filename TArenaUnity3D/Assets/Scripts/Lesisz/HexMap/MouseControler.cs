@@ -8,6 +8,8 @@ public class MouseControler : MonoBehaviour
 
     HexMap hexMap;
     HexClass hexUnderMouse;
+    HexClass hexLastUnderMouse;
+    HexClass[] hexPath;
     public LayerMask LayerIDForHexTiles;
 
 
@@ -17,48 +19,79 @@ public class MouseControler : MonoBehaviour
 
     Vector3 LastMousePosition;
 
-
+    LineRenderer lineRenderer;
     int MouseDragTreshold = 1;
-
+    Vector3 TestGoUp;
     bool isDragginCamera = false;
     Vector3 LastMouseGroundPlanePosition;
     Vector3 cameraTargetOffset;
 
 
-    TosterClass SelectedToster = null;
+    TosterHexUnit SelectedToster = null;
     // Start is called before the first frame update
     void Start()
     {
         Update_CurrentFunc = Update_DetectModeStart;
            hexMap = GameObject.FindObjectOfType<HexMap>();
+        hexPath = null;
+        lineRenderer = transform.GetComponentInChildren<LineRenderer>();
+
     }
 
     void Update()
     {
-    
+      
         Update_CurrentFunc();
         LastMousePosition = Input.mousePosition;
         hexUnderMouse = MouseToHex();
 
         // Always do camera zooms (check for being over a scroll UI later)
-        Update_ScrollZoom();
+        //Update_ScrollZoom();
 
-
+        hexLastUnderMouse = hexUnderMouse;
     }
 
 
 
     void Update_DetectModeStart()
     {
-        if (Input.GetMouseButtonDown(1))
+
+        if (Input.GetMouseButtonDown(2))
         {
             // Left Button went down - do nothing
         }
-        else if (Input.GetMouseButtonUp(1) )
+        else if (Input.GetMouseButtonDown(1) )
         {
-            Debug.LogError(MouseToHex());
+           TosterHexUnit[] tosters =   hexUnderMouse.tosters();
+
+            if (tosters.Length>0)
+            {
+
+                SelectedToster = tosters[0];
+                SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
+                Update_CurrentFunc = CheckTosterMovement;
+            }
+
         }
-       else if (Input.GetMouseButton(1) &&
+        else if (Input.GetMouseButton(0) && Vector3.Distance(Input.mousePosition, LastMousePosition) > MouseDragTreshold)
+        {
+
+        }
+        else if (Input.GetMouseButtonDown(0))
+        {
+            TosterHexUnit[] tosters = hexUnderMouse.tosters();
+
+            if (tosters.Length > 0)
+            {
+
+                SelectedToster = tosters[0];
+                SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
+                Update_CurrentFunc = SelectTosterMovement;
+            }
+
+        }
+
+        else if (Input.GetMouseButton(2) &&
             Vector3.Distance(Input.mousePosition, LastMousePosition) > MouseDragTreshold) 
         {
             //when mouse is hold down and mouse moved = camera drag
@@ -66,24 +99,107 @@ public class MouseControler : MonoBehaviour
             LastMouseGroundPlanePosition = MouseToGroundPlane(Input.mousePosition);
             Update_CameraDrag();
         }
-        else if (Input.GetMouseButton(1) && SelectedToster != null)
+        else if (Input.GetKey("z"))
         {
-
+            Debug.LogError(MouseToHex().Tosters.Count);
         }
     }
 
 
-    void UpdateTosterMovement()
+    void CheckTosterMovement()
     {
-        if (Input.GetMouseButtonUp(1))
+        if (Input.GetMouseButtonUp(1) || SelectedToster==null)
         {
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
             CancelUpdateFunc();
             return;
         }
+
+     
     }
 
 
+    void SelectTosterMovement()
+    {
+       
 
+        
+        if (hexPath != null)
+        {
+            foreach (HexClass h in hexPath)
+            {
+
+
+                TestGoUp = h.MyHex.transform.position;
+                TestGoUp.y = 0.0f;
+                h.MyHex.transform.position = TestGoUp;
+            }
+
+
+        }
+        /*
+        if (Input.GetMouseButton(1) || SelectedToster == null)
+        {
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+            CancelUpdateFunc();
+            return;
+        }
+      */
+        if (hexUnderMouse!=SelectedToster.Hex&&hexUnderMouse.Highlight&&hexUnderMouse.Tosters.Count==0)
+        {
+     
+
+            hexPath = SelectedToster.Pathing(hexUnderMouse);
+            if( hexPath != null)
+            {
+                foreach(HexClass h in hexPath)
+                {
+                
+
+                       TestGoUp = h.MyHex.transform.position;
+                       TestGoUp.y = -0.1f;
+                    h.MyHex.transform.position = TestGoUp;
+                }
+
+
+            }
+
+        }
+
+
+        if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse!=SelectedToster.Hex)
+        {
+            //Debug.LogError(MouseToHex());
+            SelectedToster.move = true;
+       
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+            SelectedToster.Pathing_func(hexUnderMouse);
+
+            StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+  
+            //Debug.LogError(hexMap.DoUnitMoves(SelectedToster));
+
+            CancelUpdateFunc();
+            return;
+        }
+
+    }
+
+
+    void DrawPath(HexClass[] hexPath)
+    {
+        if (hexPath.Length==0)
+        {
+            
+            return;
+        }
+        Vector3[] ps = new Vector3[hexPath.Length];
+        for( int i=0;i<hexPath.Length;i++)
+        {
+            GameObject GO= hexMap.GetObjectFromHex(hexPath[i]);
+
+        }
+    }
 
 
     HexClass MouseToHex()
@@ -96,16 +212,18 @@ public class MouseControler : MonoBehaviour
         if (Physics.Raycast(mouseRay, out hitInfo, Mathf.Infinity, layerMask))
         {
             // Something got hit
-            Debug.Log( hitInfo.collider.name );
-
-            // The collider is a child of the "correct" game object that we want.
-            GameObject hexGO = hitInfo.rigidbody.gameObject;
-
+            //   Debug.Log( hitInfo.collider.name );
+         
+               // The collider is a child of the "correct" game object that we want.
+               GameObject hexGO = hitInfo.rigidbody.gameObject;
+          //  TestGoUp = hexGO.transform.position;
+         //   TestGoUp.y = 0.1f;
+         //   hexGO.transform.position = TestGoUp;
             return hexMap.GetHexFromGameObject(hexGO);
         }
 
         //Debug.Log("Found nothing.");
-        return null;
+        return hexUnderMouse;
     }
     Vector3 MouseToGroundPlane(Vector3 mousePos)
     {
@@ -140,7 +258,7 @@ public class MouseControler : MonoBehaviour
         Vector3 lastCameraPosition = Camera.main.transform.position;
         Vector3 Cam = Camera.main.transform.position;
         Cam.y += cameraTargetOffset.y;
-        Camera.main.transform.position = Vector3.Lerp(Camera.main.transform.position, Camera.main.transform.position+ cameraTargetOffset, Time.deltaTime * 2f);
+        Camera.main.transform.position = Vector3.Lerp(Camera.main.transform.position, Camera.main.transform.position+ cameraTargetOffset, Time.deltaTime);
         cameraTargetOffset -= Camera.main.transform.position - lastCameraPosition;
 
 
@@ -152,15 +270,19 @@ public class MouseControler : MonoBehaviour
             p.y = maxHeight;
         }
         Camera.main.transform.position = p;
-
+        /*
         // Change camera angle
         Camera.main.transform.rotation = Quaternion.Euler (
             Mathf.Lerp (45, 65, Camera.main.transform.position.y / maxHeight),
             Camera.main.transform.rotation.eulerAngles.y,
             Camera.main.transform.rotation.eulerAngles.z
         );
-
-
+        */
+        Camera.main.transform.rotation = Quaternion.Euler(
+    Mathf.Lerp(45, 65, Camera.main.transform.position.x / maxHeight),
+    Camera.main.transform.rotation.eulerAngles.y,
+    Camera.main.transform.rotation.eulerAngles.z
+);
     }
 
     public void CancelUpdateFunc()
@@ -172,7 +294,7 @@ public class MouseControler : MonoBehaviour
     }
     void Update_CameraDrag()
     {
-        if (Input.GetMouseButtonUp(1))
+        if (Input.GetMouseButtonUp(2))
         {
             Debug.Log("Cancelling camera drag.");
             CancelUpdateFunc();
@@ -184,8 +306,9 @@ public class MouseControler : MonoBehaviour
         Vector3 hitPos = MouseToGroundPlane(Input.mousePosition);
 
         Vector3 diff = LastMouseGroundPlanePosition - hitPos;
-        Camera.main.transform.Translate(diff, Space.World);
-
+        //Camera.main.transform.Translate(diff, Space.World);
+        
+        FindObjectOfType<CameraRotator>().transform.Translate(diff, Space.World);
         LastMouseGroundPlanePosition = hitPos = MouseToGroundPlane(Input.mousePosition);
 
 

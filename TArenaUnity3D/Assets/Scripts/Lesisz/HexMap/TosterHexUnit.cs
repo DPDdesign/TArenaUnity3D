@@ -14,40 +14,87 @@ public class TosterHexUnit : IQPathUnit
     public int HP = 100;
     public int Att = 1;
     public int Def = 1;
-    public int MovmentSpeed = 2;
+    public int MovmentSpeed = 5;
     public int Initiative = 2;
-
+    public TosterView tosterView;
     ///
-
+    public bool move = false;
    public GameObject ThisToster;
     public GameObject TosterPrefab;
     public HexClass Hex { get; protected set; }
-
+    public bool RobieRuch = false;
     public delegate void TosterMovedDelegate(HexClass oldH, HexClass newH);
     public event TosterMovedDelegate OnTosterMoved;
 
 
-    Queue<HexClass> hexPath;
+    List<HexClass> hexPath;
 
 
     public void SetHexPath(HexClass[] hexPath)
     {
-        this.hexPath = new Queue<HexClass>(hexPath);
-
-        this.hexPath.Dequeue(); //first is one we are standing on
+        this.hexPath = new List<HexClass>(hexPath);
+       
+    }
+    public void ClearHexPath()
+    {
+        this.hexPath = new List<HexClass>();
     }
 
 
 
     public void DUMMY_PATHING_FUNCTION()
     {
+        if (move == true)
+        {
+            HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, Hex.hexMap.GetHexAt(Hex.C + 4, Hex.R), HexClass.CostEstimate);
 
-        IPathTile[] p = HPath.HPath.FindPath(Hex.hexMap, this, Hex, Hex.hexMap.GetHexAt(Hex.C+2,Hex.R+2), HexClass.CostEstimate);
+          //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
+
+            Debug.LogError(p.Length);
+            SetHexPath(p);
+        }
+    }
+
+    public void Pathing_func(HexClass celhex)
+
+    {
+       
+    
+        if (move == true)
+        {
+           
+            HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate);
+
+            //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
+
+     
+            SetHexPath(p);
+            
+        }
+    }
+    public HexClass[] Pathing(HexClass celhex)
+
+    {
+       
         
-        HexClass[] hs = System.Array.ConvertAll ( p, a=>(HexClass)a);
+            HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate);
 
-        Debug.LogError(hs.Length);
-        SetHexPath(hs);
+            //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
+            return p;
+      
+    }
+
+
+    public bool IsPathAvaible(HexClass celhex)
+
+    {
+
+
+        HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate);
+
+        //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
+        return p.Length<MovmentSpeed+1;
+
     }
 
     public TosterHexUnit(int c, int r, Vector3 vect, GameObject G, GameObject Toster)
@@ -79,16 +126,17 @@ public class TosterHexUnit : IQPathUnit
     public void SetHex(HexClass hex)
     {
         HexClass oldHex = Hex;
-        if (hex != null)
-        {
-            hex.RemoveToster(this);
-        }
+
+      if (this.Hex!=null)
+            this.Hex.RemoveToster(this);
+       
         Hex = hex;
         Hex.AddToster(this);
         if (OnTosterMoved != null)
         {
             OnTosterMoved(oldHex, hex);
         }
+
     }
 
     public List<HexClass> HexPathList;
@@ -105,31 +153,65 @@ public class TosterHexUnit : IQPathUnit
 
     public void DoTurn()
     {
-        if(hexPath==null|| hexPath.Count==0)
+        if (hexPath == null || hexPath.Count == 0)
         {
             return;
         }
-
-        HexClass oldHex = Hex;
-        HexClass newHex = hexPath.Dequeue();
-
-        SetHex(newHex);
-       
-    }
-    public void DoAllMoves()
-    {
-        while (hexPath.Count != 0)
+        RobieRuch = true;
+        while (RobieRuch == true)
         {
             if (hexPath == null || hexPath.Count == 0)
             {
-                return;
+                RobieRuch = false;
             }
-
             HexClass oldHex = Hex;
-            HexClass newHex = hexPath.Dequeue();
+            HexClass newHex = hexPath[0];
 
             SetHex(newHex);
+            while (Hex.hexMap.AnimationIsPlaying)
+            {
+                //w8
+            }
+        }
+
+    }
+
+    public bool DoMove()
+    {
+        if (hexPath == null || hexPath.Count == 0)
+        {
+            return false;
+        }
+        HexClass HexWeAreLeaving =hexPath[0];
+        HexClass newhex = hexPath[1];
+        hexPath.RemoveAt(0);
+        if(hexPath.Count==1)
+        {
+            hexPath = null;
+        }
+
         
+        SetHex(newhex);
+        
+
+        return hexPath != null;
+    }
+    public void DoAllMoves()
+
+    {
+        if (hexPath == null || hexPath.Count == 0)
+        {
+            return;
+                }
+        while (hexPath.Count != 0)
+        {
+          
+
+            HexClass oldHex = Hex;
+            HexClass newHex = hexPath[0];
+
+            SetHex(newHex);
+     
         }
     }
 
@@ -152,7 +234,11 @@ public float TurnsToGetToHex(HexClass hex, float MovesToDate)
         {
 
         }
+        if (!hex.IsListOFunitsEmpty())
+        {
 
+            return -99;
+        }
         return 1;
     }
 

@@ -5,32 +5,34 @@ using HPath;
 public class HexClass : IPathTile {
     public readonly int C; public readonly int R; public readonly int S; // column.row
     static readonly float WIDTH_MULTIPLIER = Mathf.Sqrt(3) / 2;
-    public bool Highlight=false;
-    List<TosterHexUnit> Tosters;
-
+    public bool Highlight = false;
+    public List<TosterHexUnit> Tosters;
+    public GameObject MyHex;
     public readonly HexMap hexMap;
 
-    public HexClass(HexMap hexMap,int c, int r)
+    public HexClass(HexMap hexMap, int c, int r)
     {
         this.hexMap = hexMap;
         this.C = c;
         this.R = r;
         this.S = -(c + r);
         Highlight = false;
+        Tosters = new List<TosterHexUnit>();
+      
     }
 
     List<HexClass> Neighbours;
-    public  List<HexClass> FindN()
+    public List<HexClass> FindN()
     {
-  
+
         Neighbours.Add(hexMap.GetHexAt(C, R - 1));
-        Neighbours.Add(hexMap.GetHexAt(C +1, R - 1));
+        Neighbours.Add(hexMap.GetHexAt(C + 1, R - 1));
 
         Neighbours.Add(hexMap.GetHexAt(C, R + 1));
 
-        Neighbours.Add(hexMap.GetHexAt(C - 1, R ));
+        Neighbours.Add(hexMap.GetHexAt(C - 1, R));
 
-        Neighbours.Add(hexMap.GetHexAt(C - 1, R +1));
+        Neighbours.Add(hexMap.GetHexAt(C - 1, R + 1));
         return Neighbours;
 
     }
@@ -39,10 +41,16 @@ public class HexClass : IPathTile {
     public List<int[,]> FindNPath(List<int[,]> d)
     {
         List<int[,]> P = new List<int[,]>();
-   
 
 
-            return P;
+
+        return P;
+    }
+
+    public bool IsListOFunitsEmpty()
+    {
+
+        return 0 == Tosters.Count;
     }
   
     float radius = 1f;
@@ -101,6 +109,7 @@ public class HexClass : IPathTile {
         if (Tosters != null)
         {
             Tosters.Remove(Toster);
+
         }
     }
 
@@ -164,10 +173,14 @@ public class HexClass : IPathTile {
 
         List<HexClass> neighbours = new List<HexClass>();
         neighbours.Add(hexMap.GetHexAt(C+1, R));
-        neighbours.Add(hexMap.GetHexAt(C-1, R));
+        if (C - 1 >= 0)
+            neighbours.Add(hexMap.GetHexAt(C-1, R));
         neighbours.Add(hexMap.GetHexAt(C, R+1));
-        neighbours.Add(hexMap.GetHexAt(C, R-1));
-        neighbours.Add(hexMap.GetHexAt(C+1, R-1));
+        if (R - 1 >= 0)
+            neighbours.Add(hexMap.GetHexAt(C, R-1));
+        if (R - 1 >= 0)
+            neighbours.Add(hexMap.GetHexAt(C+1, R-1));
+        if (C-1>=0)
         neighbours.Add(hexMap.GetHexAt(C-1, R+1));
 
         List<HexClass> neighbours2 = new List<HexClass>();

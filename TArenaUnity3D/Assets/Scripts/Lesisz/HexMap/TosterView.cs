@@ -8,11 +8,11 @@ public class TosterView : MonoBehaviour
     Vector3 newPos;
     Vector3 beforeJumpPos;
     Vector3 currentV;
-    float smoothTime = 0.5f;
-    float speed = 1f;
+    float smoothTime = 0.1f;
+    float speed = 5f;
 
     HexMap_Highlight map;
-
+    public bool AnimationIsPlaying = false;
     private void Start()
     {
         oldPos = newPos = this.transform.position;
@@ -25,9 +25,13 @@ public class TosterView : MonoBehaviour
         
         oldPos = oldHex.Position();
         newPos = newHex.Position();
+
+
         newPos.y = this.transform.position.y;
         currentV = Vector3.zero;
-   
+
+        AnimationIsPlaying = true;
+           // GameObject.FindObjectOfType<HexMap>().AnimationIsPlaying = true;
 
     }
 
@@ -48,9 +52,18 @@ public class TosterView : MonoBehaviour
     {
         newPos.y = beforeJumpPos.y;
     }
+
+    
+
     private void Update()
     {
-
-        this.transform.position = Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
+         this.transform.position = Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
+        //this.transform.position = Vector3.Lerp(this.transform.position, newPos,smoothTime);
+        if (Vector3.Distance(this.transform.position, newPos) < 0.1f)
+        {
+            AnimationIsPlaying = false;
+           // GameObject.FindObjectOfType<HexMap>().AnimationIsPlaying = false;
+        }
+        // this.transform.position = Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
     }
 }

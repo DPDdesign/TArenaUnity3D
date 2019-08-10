@@ -6,15 +6,15 @@ using UnityEngine;
 
 namespace HPath
 {
-    public class IQPath_AStar
+    public class IQPath_AStar<T> where T:IPathTile
     {
-        Queue<IPathTile> path;
+        Queue<T> path;
         IQPathWorld world;
         IQPathUnit Unit;
-        IPathTile startTile;
-        IPathTile endT;
+        T startTile;
+        T endT;
         CostEstimateDelegate costEstimateFunc;
-        public IQPath_AStar(IQPathWorld world, IQPathUnit Unit, IPathTile startTile, IPathTile endT, CostEstimateDelegate costEstimateFunc)
+        public IQPath_AStar(IQPathWorld world, IQPathUnit Unit, T startTile, T endT, CostEstimateDelegate costEstimateFunc)
         {
             this.world = world;
             this.Unit = Unit;
@@ -24,22 +24,22 @@ namespace HPath
         }
         public void DoWork()
         {
-            path = new Queue<IPathTile>();
-            HashSet<IPathTile> closedSet = new HashSet<IPathTile>();
-            PathfindingPriorityQueue<IPathTile> openSet = new PathfindingPriorityQueue<IPathTile>();
+            path = new Queue<T>();
+            HashSet<T> closedSet = new HashSet<T>();
+            PathfindingPriorityQueue<T> openSet = new PathfindingPriorityQueue<T>();
             openSet.Enqueue(startTile, 0);
 
 
-            Dictionary<IPathTile, IPathTile> came_from = new Dictionary<IPathTile, IPathTile>();
+            Dictionary<T, T> came_from = new Dictionary<T, T>();
 
 
-            Dictionary<IPathTile, float> g_Score = new Dictionary<IPathTile, float>();
+            Dictionary<T, float> g_Score = new Dictionary<T, float>();
             g_Score[startTile] = 0;
-            Dictionary<IPathTile, float> f_Score = new Dictionary<IPathTile, float>();
+            Dictionary<T, float> f_Score = new Dictionary<T, float>();
             f_Score[startTile] = costEstimateFunc(startTile,endT);
             while (openSet.Count > 0)
             {
-                 IPathTile current = openSet.Dequeue();
+                 T current = openSet.Dequeue();
 
                 // Check to see if we are there.
                 if (System.Object.ReferenceEquals(current, endT))
@@ -50,9 +50,9 @@ namespace HPath
 
                 closedSet.Add(current);
 
-                foreach (IPathTile edge_neighbour in current.GetNeighbours())
+                foreach (T edge_neighbour in current.GetNeighbours())
                 {
-                    IPathTile neighbour = edge_neighbour;
+                    T neighbour = edge_neighbour;
 
                     if (closedSet.Contains(neighbour))
                     {
@@ -92,14 +92,14 @@ namespace HPath
         }
 
         private void Reconstruct_path(
-            Dictionary<IPathTile, IPathTile> came_From,
-            IPathTile current)
+            Dictionary<T, T> came_From,
+            T current)
         {
             // So at this point, current IS the goal.
             // So what we want to do is walk backwards through the Came_From
             // map, until we reach the "end" of that map...which will be
             // our starting node!
-            Queue<IPathTile> total_path = new Queue<IPathTile>();
+            Queue<T> total_path = new Queue<T>();
             total_path.Enqueue(current); // This "final" step is the path is the goal!
 
             while (came_From.ContainsKey(current))
@@ -115,10 +115,10 @@ namespace HPath
 
             // At this point, total_path is a queue that is running
             // backwards from the END tile to the START tile, so let's reverse it.
-            path = new Queue<IPathTile>(total_path.Reverse());
+            path = new Queue<T>(total_path.Reverse());
         }
 
-        public IPathTile[] GetList()
+        public T[] GetList()
         {
             return path.ToArray();
         }

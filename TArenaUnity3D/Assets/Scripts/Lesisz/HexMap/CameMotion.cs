@@ -7,6 +7,7 @@ public class CameMotion : MonoBehaviour
     Vector3 PosCam;
     Quaternion Q;
     Vector3 currentV;
+    
 
     private void Start()
     {
@@ -16,11 +17,10 @@ public class CameMotion : MonoBehaviour
     }
 
 
-
     void CheckIfCameraMoved()
     {
         if (PosCam != this.transform.position)
-        {
+        {/*
             // SOMETHING moved the camera.
 
             Vector3 test = this.transform.position;
@@ -44,7 +44,8 @@ public class CameMotion : MonoBehaviour
                 test = PosCam;
             if (this.transform.position.z == PosCam.z)
                 test = PosCam;
-            this.transform.position = Vector3.SmoothDamp(this.transform.position, test, ref currentV, 0.5f) ;
+                */
+           // this.transform.position = Vector3.SmoothDamp(this.transform.position, test, ref currentV, 0.5f) ;
 
         }
     }
