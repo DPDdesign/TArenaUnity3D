@@ -81,7 +81,7 @@ public class CameraRotator : MonoBehaviour
         }
         if (Input.GetKey(KeyCode.S))
         {
-            if (this.GetComponentInChildren<Camera>().fieldOfView < 55)
+            if (this.GetComponentInChildren<Camera>().fieldOfView < 45)
             {
                 this.GetComponentInChildren<Camera>().fieldOfView += (20 * Time.deltaTime);
                 newAngle +=15 * Time.deltaTime;
@@ -90,7 +90,7 @@ public class CameraRotator : MonoBehaviour
         }
         if (Input.GetAxis("Mouse ScrollWheel") < 0)
         {
-            if (this.GetComponentInChildren<Camera>().fieldOfView < 55)
+            if (this.GetComponentInChildren<Camera>().fieldOfView < 45)
             {
                 this.GetComponentInChildren<Camera>().fieldOfView += (120 * Time.deltaTime);
             }
@@ -108,7 +108,7 @@ public class CameraRotator : MonoBehaviour
 
 
 
-        Camera.main.transform.position = Camera.main.transform.position + GetBaseInput();
+        this.transform.position = this.transform.position + GetBaseInput();
 
         newAngle -= Input.GetAxis("Mouse ScrollWheel") * zoomSpeed;
         newAngle = Mathf.Clamp(newAngle, minAngle, maxAngle);
@@ -127,25 +127,25 @@ public class CameraRotator : MonoBehaviour
             v.x = 30;
             this.transform.position = v;
         }
-        if (this.transform.position.x < 6.2900009f)
+        if (this.transform.position.x < 9.2900009f)
         {
             Vector3 v = this.transform.position;
-            v.x = 6.2900009f;
+            v.x = 9.2900009f;
             this.transform.position = v;
         }
-        if (this.transform.position.z > 12.15f)
+        if (this.transform.position.z > 9f)
         {
             Vector3 v = this.transform.position;
-            v.z = 12.15f;
+            v.z = 9f;
             this.transform.position = v;
         }
 
 
 
-        if (this.transform.position.z < -0.22f)
+        if (this.transform.position.z < -2.22f)
         {
             Vector3 v = this.transform.position;
-            v.z = -0.22f;
+            v.z = -2.22f;
             this.transform.position = v;
         }
     }
