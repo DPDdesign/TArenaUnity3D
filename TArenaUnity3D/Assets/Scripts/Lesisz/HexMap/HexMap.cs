@@ -30,7 +30,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
     
         GenerateToster(2,5, PlayerPrefs.GetInt("LewyToster"));
         
-        GenerateToster(5, 5,PlayerPrefs.GetInt("PrawyToster"));
+        GenerateToster(16, 5,PlayerPrefs.GetInt("PrawyToster"));
         
     }
 
@@ -80,7 +80,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
             Debug.LogError("Hexes not found");
         }
        
-        return hexes[x %19 , y%11];
+        return hexes[x %20 , y%11];
     }
 
     public Vector3 GetHexPos(int q, int r)
@@ -134,7 +134,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
 
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 gameObjectToHexMap[HexGo] = h;
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}\n {2}", col, row, h.Tosters.Count);
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count); //{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap.Add(h, HexGo);
                 h.MyHex = HexGo;
@@ -159,7 +159,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}\n {2}", col, row, h.Tosters.Count);
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
@@ -182,7 +182,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}\n {2}", col, row, h.Tosters.Count);
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
@@ -246,7 +246,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
         TosterGo.AddComponent<TosterView>();
         Toster.OnTosterMoved += TosterGo.GetComponent<TosterView>().OnTosterMoved;
         Toster.tosterView = TosterGo.GetComponent<TosterView>();
-        HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}\n {2}", i, j, TosterSpawn.Tosters.Count);
+        HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", i, j, TosterSpawn.Tosters.Count);//{0}, {1}\n {2}
         tostersList.Add(Toster);
 
         tosters.Add(Toster);

@@ -44,6 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2a775bbe44f37e4b99f3b58b0284bbc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AnimationIsPlaying: 0
 --- !u!1001 &7130368077314451194
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -110,6 +111,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3474864460376232103, guid: bcf76ced9613f23409611035e50c5b05,
+        type: 3}
+      propertyPath: m_DynamicOccludee
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3474864460376232103, guid: bcf76ced9613f23409611035e50c5b05,
+        type: 3}
+      propertyPath: m_CastShadows
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: -6061319194233130832, guid: bcf76ced9613f23409611035e50c5b05, type: 3}
