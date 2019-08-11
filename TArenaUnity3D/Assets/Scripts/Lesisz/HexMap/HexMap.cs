@@ -36,10 +36,13 @@ public class HexMap : MonoBehaviour,    IQPathWorld
 
         Teams.Add(team1);
         Teams.Add(team2);
-        
-        GenerateToster(2,5, PlayerPrefs.GetInt("LewyToster"));
-        
-        GenerateToster(16, 5,PlayerPrefs.GetInt("PrawyToster"));
+
+
+        team1.GenerateTeam(this, PlayerPrefs.GetInt("YourArmy"), true);
+        team2.GenerateTeam(this, PlayerPrefs.GetInt("EnemyArmy"), false);
+        // GenerateToster(2,5, PlayerPrefs.GetInt("LewyToster"));
+
+
 
         
         
@@ -91,7 +94,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
             Debug.LogError("Hexes not found");
         }
        
-        return hexes[x %20 , y%11];
+        return hexes[x %20 , y%12];
     }
 
     public Vector3 GetHexPos(int q, int r)
@@ -149,6 +152,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
                 hexes[col, row] = h;
                 hextoGameObjectMap.Add(h, HexGo);
                 h.MyHex = HexGo;
+                
 
             }
 
@@ -226,7 +230,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
     }
 
 
-
+    // OLD - UNUSED //
     public void GenerateToster(int i , int j, int k)
     {
         HexClass TosterSpawn = GetHexAt(i, j);
@@ -266,7 +270,49 @@ public class HexMap : MonoBehaviour,    IQPathWorld
     }
 
 
- 
+    // NEW - USED //
+    public void GenerateToster(int i, int j,  TosterHexUnit toster)
+    {
+        HexClass TosterSpawn = GetHexAt(i, j);
+      
+        if (tosters == null)
+        {
+            tosters = new HashSet<TosterHexUnit>();
+            tostertoGameObjectMap = new Dictionary<TosterHexUnit, GameObject>();
+        }
+        if (tostersList == null)
+        {
+            tostersList = new List<TosterHexUnit>();
+
+        }
+
+
+        GameObject HexGo = hextoGameObjectMap[TosterSpawn];
+
+        toster.TosterHexUnitAddHex( TosterSpawn.Position(), HexGo);
+
+        toster.SetHex(TosterSpawn);
+        GameObject TosterGo = (GameObject)Instantiate(
+            toster.TosterPrefab,
+            // TosterSpawn.Position(),
+            toster.Position(toster.TosterPrefab),
+            Quaternion.identity,
+            HexGo.transform
+            );
+        
+        TosterGo.AddComponent<TosterView>();
+        toster.OnTosterMoved += TosterGo.GetComponent<TosterView>().OnTosterMoved;
+        toster.tosterView = TosterGo.GetComponent<TosterView>();
+        HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", i, j, TosterSpawn.Tosters.Count);//{0}, {1}\n {2}
+        tostersList.Add(toster);
+
+        tosters.Add(toster);
+        tostertoGameObjectMap[toster] = TosterGo;
+        //toster.InitateType("TosterDPS");
+    }
+
+
+
 
     public void LoadArmy()
     {
@@ -366,6 +412,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
             {
                 if (hextoGameObjectMap.ContainsKey(h) == true)
                 {
+                    
                     h.Highlight = true;
                 }
             }

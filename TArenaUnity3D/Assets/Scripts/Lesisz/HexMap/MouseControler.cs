@@ -25,7 +25,7 @@ public class MouseControler : MonoBehaviour
     bool isDragginCamera = false;
     Vector3 LastMouseGroundPlanePosition;
     Vector3 cameraTargetOffset;
-
+    TurnManager TM;
 
     TosterHexUnit SelectedToster = null;
     // Start is called before the first frame update
@@ -34,7 +34,9 @@ public class MouseControler : MonoBehaviour
         Update_CurrentFunc = Update_DetectModeStart;
            hexMap = GameObject.FindObjectOfType<HexMap>();
         hexPath = null;
-        lineRenderer = transform.GetComponentInChildren<LineRenderer>();
+   //     lineRenderer = transform.GetComponentInChildren<LineRenderer>();
+    
+       
 
     }
 
@@ -55,6 +57,11 @@ public class MouseControler : MonoBehaviour
 
     void Update_DetectModeStart()
     {
+        TM = FindObjectOfType<TurnManager>();
+        SelectedToster = TM.AskWhosTurn();
+        hexUnderMouse = SelectedToster.Hex;
+        SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
+        Update_CurrentFunc = SelectTosterMovement;
 
         if (Input.GetMouseButtonDown(2))
         {
@@ -83,7 +90,7 @@ public class MouseControler : MonoBehaviour
 
             if (tosters.Length > 0)
             {
-
+                Debug.LogError( tosters[0].MovmentSpeed);
                 SelectedToster = tosters[0];
                 SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
                 Update_CurrentFunc = SelectTosterMovement;
@@ -145,6 +152,10 @@ public class MouseControler : MonoBehaviour
             return;
         }
       */
+        Debug.LogError(hexUnderMouse);
+        Debug.LogError(SelectedToster.Hex);
+        Debug.LogError(hexUnderMouse.Highlight);
+        Debug.LogError(hexUnderMouse.Tosters.Count);
         if (hexUnderMouse!=SelectedToster.Hex&&hexUnderMouse.Highlight&&hexUnderMouse.Tosters.Count==0)
         {
      
@@ -167,20 +178,38 @@ public class MouseControler : MonoBehaviour
         }
 
 
-        if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse!=SelectedToster.Hex)
+        if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse != SelectedToster.Hex &&  !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse)) 
         {
             //Debug.LogError(MouseToHex());
             SelectedToster.move = true;
-       
+
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
             SelectedToster.Pathing_func(hexUnderMouse);
 
             StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-  
-            //Debug.LogError(hexMap.DoUnitMoves(SelectedToster));
 
+            //Debug.LogError(hexMap.DoUnitMoves(SelectedToster));
+            SelectedToster.Moved = true;
             CancelUpdateFunc();
             return;
+        }
+        else if (Input.GetMouseButton(2) &&
+            Vector3.Distance(Input.mousePosition, LastMousePosition) > MouseDragTreshold)
+        {
+            //when mouse is hold down and mouse moved = camera drag
+            Update_CurrentFunc = Update_CameraDrag;
+            LastMouseGroundPlanePosition = MouseToGroundPlane(Input.mousePosition);
+            Update_CameraDrag();
+        }
+        else if (Input.GetKeyUp(KeyCode.N))
+        {
+            if (SelectedToster.Waited == false)
+            {
+                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+                SelectedToster.Waited = true;
+                CancelUpdateFunc();
+            }
+           
         }
 
     }
@@ -318,5 +347,11 @@ public class MouseControler : MonoBehaviour
 
 
 
+
+
+
+
+
+    
 
 }

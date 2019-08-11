@@ -6,12 +6,14 @@ using UnityEngine;
 
 public class TeamClass
 {
-    List<TosterHexUnit> Tosters;
+    public List<TosterHexUnit> Tosters;
+    public List<HexClass> HexesUnderTeam;
     int ThisTeamNO;
-
+    PanelArmii.BuildG buildG;
    public  TeamClass()
     {
         Tosters = new List<TosterHexUnit>();
+        HexesUnderTeam = new List<HexClass>();
     }
 
     public void WczytajPlik()
@@ -19,9 +21,10 @@ public class TeamClass
         string path = Application.persistentDataPath + "/build" + ThisTeamNO + ".d";
         if (File.Exists(path))
         {
+            //Debug.LogError("tutaj jestem");
             BinaryFormatter formatter = new BinaryFormatter();
             FileStream file = File.OpenRead(path);
-            PanelArmii.BuildG buildG = (PanelArmii.BuildG)formatter.Deserialize(file);
+            buildG = (PanelArmii.BuildG)formatter.Deserialize(file);
             file.Close();
       //      Tosters.Add(buildG.NazwaBohatera); 
         }
@@ -33,11 +36,29 @@ public class TeamClass
     public void CreateTeamFromFile()
     {
         WczytajPlik();
+
+
+        foreach (string toster in buildG.Units)
+        {
+            if (toster != "" || toster != null)
+            {
+              
+                TosterHexUnit nowytoster = new TosterHexUnit();
+                nowytoster.InitateType(toster);
+                nowytoster.SetMyTeam(this);
+               
+                AddNewUnit(nowytoster);
+                
+            }
+        }
+
+
     }
 
     public void AddNewUnit(TosterHexUnit t)
     {
         Tosters.Add(t);
+      
     }
 
     public TosterHexUnit AskForUnit()
@@ -49,11 +70,23 @@ public class TeamClass
 
             if (t.Moved==false&&t.Initiative>Initiative)
             {
+
+                if (t.Waited == false)
+                {
+                    T = t;
+                    Initiative = t.Initiative;
+                }
+            }
+        }
+        if (T == null)
+            foreach (TosterHexUnit t in Tosters)
+            {
+            if (t.Moved == false && t.Initiative > Initiative)
+            {
                 T = t;
                 Initiative = t.Initiative;
             }
         }
-
         return T;
     }
 
@@ -83,25 +116,98 @@ public class TeamClass
             foreach (TosterHexUnit t in Tosters)
             {
 
-                if (t.Moved == false)
+                if (t.Moved == true)
                 {
-                    t.Moved = true;
-
+                    t.Moved = false;
+                    t.Waited = false;
 
                 }
             }
         }
 
     }
-    public void GenerateTeam(HexMap h, int TeamNO)
+    public void GenerateTeam(HexMap h, int TeamNO, bool You)
     {
       
         ThisTeamNO = TeamNO;
         CreateTeamFromFile();
-        foreach (TosterHexUnit t in Tosters)
+        int i = 0;
+        ///Plik wczytany do buildG
+        ///
+        foreach (TosterHexUnit Tost in Tosters)
         {
+            Tost.SetTosterPrefab(h);
+        }
+        if (You == true)
+        {
+          
+            if (Tosters.Count <6)
+            {
+                foreach (TosterHexUnit t in Tosters)
+                {
+                    if (t != null)
+                    {
+                        h.GenerateToster(0 + i, 10 - 2 * i, t);
+                    
+                    }
+                    i++;
+                }
+            }
+            else
+            {
+                int ktory = 1;
+                foreach (TosterHexUnit t in Tosters)
+                {
+                    if (ktory == 4 && t != null)
+                    {
+                        h.GenerateToster(2, 5, t);
+                        i--;
+                    }
+                    else
+                    if (t != null)
+                    {
+                        h.GenerateToster(0 + i, 10 - 2 * i, t);
 
-            h.GenerateToster(2, 5, PlayerPrefs.GetInt("LewyToster"));
+                    }
+                    ktory++;
+                    i++;
+                }
+            }
+        }
+        if (You ==false)
+        {
+            if (Tosters.Count < 6)
+            {
+                foreach (TosterHexUnit t in Tosters)
+                {
+                    if (t != null)
+                    {
+                        h.GenerateToster(14 + i, 10 - 2 * i, t);
+
+                    }
+                    i++;
+                }
+            }
+            else
+            {
+                int ktory = 1;
+                foreach (TosterHexUnit t in Tosters)
+                {
+                    if (ktory == 4)
+                    {
+                        h.GenerateToster(16, 5, t);
+                        i--;
+                    }
+                    else
+                    if (t != null)
+                    {
+                        h.GenerateToster(14 + i, 10 - 2 * i, t);
+
+                    }
+                    ktory++;
+                    i++;
+                }
+            }
         }
     }
 

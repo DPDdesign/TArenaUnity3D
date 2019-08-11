@@ -7,7 +7,7 @@ using System.Xml.Serialization;
 public class TosterHexUnit : IQPathUnit
 {
     public readonly int C; public readonly int R; public readonly int S; // column.row
-     public  Vector3 vec;
+    public Vector3 vec;
 
 
     ///stats
@@ -23,20 +23,21 @@ public class TosterHexUnit : IQPathUnit
     public int MovmentSpeed = 5;
     [XmlAttribute("Initiative")]
     public int Initiative = 2;
+    public int Amount = 1;
     public List<SkillsDefault> skills;
-
+    public bool Waited = false;
 
     public TosterView tosterView;
     ///
     public bool move = false;
-   public GameObject ThisToster;
+    public GameObject ThisToster;
     public GameObject TosterPrefab;
     public HexClass Hex { get; protected set; }
     public bool RobieRuch = false;
     public delegate void TosterMovedDelegate(HexClass oldH, HexClass newH);
     public event TosterMovedDelegate OnTosterMoved;
     public bool Moved = false;
-
+    public TeamClass Team;
 
     List<HexClass> hexPath;
 
@@ -44,14 +45,17 @@ public class TosterHexUnit : IQPathUnit
     public void SetHexPath(HexClass[] hexPath)
     {
         this.hexPath = new List<HexClass>(hexPath);
-       
+
     }
     public void ClearHexPath()
     {
         this.hexPath = new List<HexClass>();
     }
 
-
+    public void SetMyTeam(TeamClass t)
+    {
+        Team = t;
+    }
 
     public void DUMMY_PATHING_FUNCTION()
     {
@@ -61,7 +65,7 @@ public class TosterHexUnit : IQPathUnit
 
           //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
 
-            Debug.LogError(p.Length);
+           
             SetHexPath(p);
         }
     }
@@ -126,6 +130,15 @@ public class TosterHexUnit : IQPathUnit
         ThisToster = G;
         TosterPrefab = Toster;
     }
+
+
+
+    public void TosterHexUnitAddHex(Vector3 vect, GameObject G)
+    {
+        vec = vect;
+        ThisToster = G;
+
+    }
     public Vector3 Position(GameObject G)
     {
         return new Vector3(
@@ -140,15 +153,19 @@ public class TosterHexUnit : IQPathUnit
     }
 
 
-
+    
    
 
     public void SetHex(HexClass hex)
     {
         HexClass oldHex = Hex;
 
-      if (this.Hex!=null)
+      if (this.Hex != null)
+        {
+            this.Team.HexesUnderTeam.Remove(oldHex);
             this.Hex.RemoveToster(this);
+        }
+            
        
         Hex = hex;
         Hex.AddToster(this);
@@ -156,7 +173,8 @@ public class TosterHexUnit : IQPathUnit
         {
             OnTosterMoved(oldHex, hex);
         }
-
+     
+        this.Team.HexesUnderTeam.Add(Hex);
     }
 
     public List<HexClass> HexPathList;
@@ -298,19 +316,38 @@ public float TurnsToGetToHex(HexClass hex, float MovesToDate)
             }
             i++;
         }
-        Debug.LogError(NumberOfNode);
+
+        nodes = xmldoc.SelectNodes("Units/Unit");
+
         if (found == true)
         {
             XmlNodeList UnitNodes = nodes[NumberOfNode].ChildNodes;
+
+          
+          
+          
+            //   Debug.LogError(UnitNodes[1].InnerText);
             SetStats(
-                UnitNodes[0].ToString(),
-                int.Parse(UnitNodes[1].ToString()),
-                int.Parse(UnitNodes[2].ToString()),
-                int.Parse(UnitNodes[3].ToString()),
-                int.Parse(UnitNodes[4].ToString()),
-                int.Parse(UnitNodes[5].ToString()));
+                UnitNodes[0].InnerText,
+                int.Parse(UnitNodes[1].InnerText),
+                int.Parse(UnitNodes[2].InnerText),
+                int.Parse(UnitNodes[3].InnerText),
+                int.Parse(UnitNodes[4].InnerText),
+                int.Parse(UnitNodes[5].InnerText));
+          
 
+        }
+            
+    }
 
+       public void SetTosterPrefab(HexMap h)
+    {
+        foreach ( GameObject GO in h.TostersPrefabs)
+        {
+            if (GO.name==this.Name)
+            {
+                this.TosterPrefab = GO;
+            }
         }
        
     }
