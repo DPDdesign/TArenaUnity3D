@@ -152,10 +152,6 @@ public class MouseControler : MonoBehaviour
             return;
         }
       */
-        Debug.LogError(hexUnderMouse);
-        Debug.LogError(SelectedToster.Hex);
-        Debug.LogError(hexUnderMouse.Highlight);
-        Debug.LogError(hexUnderMouse.Tosters.Count);
         if (hexUnderMouse!=SelectedToster.Hex&&hexUnderMouse.Highlight&&hexUnderMouse.Tosters.Count==0)
         {
      

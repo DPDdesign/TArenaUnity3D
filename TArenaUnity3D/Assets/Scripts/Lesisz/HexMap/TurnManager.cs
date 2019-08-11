@@ -31,15 +31,16 @@ public class TurnManager : MonoBehaviour
         if (TeamBlue == null) return TeamRed;
         if (TeamRed.Initiative == TeamBlue.Initiative)
         {
-            if ((TeamBlue.Waited==false && TeamBlue.Waited==false)&&(TeamBlue.Waited == true && TeamBlue.Waited == true))
+            if ((TeamBlue.Waited==false && TeamBlue.Waited==false)||(TeamBlue.Waited == true && TeamBlue.Waited == true))
             {
                 // sprawdzamy kto ma  pierwszy kolejnosc - zaczyna ten kto wyzej sie zrespil, pierwszenstwo od lewo gora do prawo dol //
                 int t = 0;
                 int o = 0;
                 for (int i = 0; i < 7; i++) { if (Teams[0].Tosters[i] == TeamRed) t = i; }
-                for (int i = 0; i < 7; i++) { if (Teams[0].Tosters[i] == TeamRed) o = i; }
-                if (o > t || o == t)
+                for (int i = 0; i < 7; i++) { if (Teams[1].Tosters[i] == TeamBlue) o = i; }
+                if (o == t)
                 {
+                 
                     return TeamRed;
                 }
                 else return TeamBlue;

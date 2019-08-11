@@ -10,6 +10,13 @@ public class TosterHexUnit : IQPathUnit
     public Vector3 vec;
 
 
+
+    public int SpecialHP = 0;
+    public int SpecialAtt = 0;
+    public int SpecialDef = 0;
+    public int SpecialMS = 0;
+    public int SpecialI = 0;
+    public int SpecialAm = 0;
     ///stats
     [XmlAttribute("Name")]
     public string Name = "NoName";
