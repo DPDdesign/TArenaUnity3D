@@ -8,17 +8,22 @@ using UnityEngine.UI;
 public class PanelArmii : MonoBehaviour
 {
     // Start is called before the first frame update
+    public Generator generator;
     public List<Button> AdditionalButtons;
     public List<Text> texts;
     public Button back;
     public List<Image> Imagess;
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
     public List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2" });
+    public List<string> ListOfUnits = new List<string>(new string[] { "TosterDPS", "TosterTANK", "TosterHEAL" ,"zodyn"});
+    public BuildG LoadedBuild;
     [System.Serializable]
     public class BuildG
     {
         public int hero;
         public string NazwaBohatera;
+        public List<string> Units;
+        public List<int> NoUnits;
     }
     void Start()
     {
@@ -52,10 +57,10 @@ public class PanelArmii : MonoBehaviour
                 {
                     if (ListOfHeroes[j] == buildG.NazwaBohatera)
                     {
-                        Debug.Log("tutaj");
+                
                         Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
                         Imagess[i].sprite = hero;
-                        Debug.Log(Application.persistentDataPath + ListOfImages[j]);
+             
 
                         j = 100;
                     }
@@ -98,6 +103,7 @@ public class PanelArmii : MonoBehaviour
     {
         PlayerPrefs.SetString("BuildNumber", i);
         WczytajPlik(i);
+        
     }
     public void WczytajPlik(string i)
     {
@@ -109,6 +115,7 @@ public class PanelArmii : MonoBehaviour
             BuildG buildG = (BuildG)formatter.Deserialize(file);
             file.Close();
             PlayerPrefs.SetString("NazwaBohatera", buildG.NazwaBohatera);
+            LoadedBuild = buildG;
         }
     }
 
@@ -122,12 +129,14 @@ public class PanelArmii : MonoBehaviour
         {
             Build.hero = PlayerPrefs.GetInt("which");
             Build.NazwaBohatera = PlayerPrefs.GetString("NazwaBohatera");
+            Build.Units = generator.Units;
+            Build.NoUnits = generator.UnitsAmount;
             BinaryFormatter formatter = new BinaryFormatter();
             string path = Application.persistentDataPath + "/build"+PlayerPrefs.GetString("BuildNumber")+".d";
             FileStream file = File.Create(path);
             formatter.Serialize(file, Build);
             file.Close();
-            Debug.Log(path);
+           // Debug.Log(path);
             sprawdz();
         }
     }

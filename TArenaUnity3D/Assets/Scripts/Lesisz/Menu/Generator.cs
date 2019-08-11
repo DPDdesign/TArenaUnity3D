@@ -9,33 +9,94 @@ using System.IO;
 public class Generator : MonoBehaviour
 {
     public bool ButtonOn = false;
-    public Button MyButton;
+    public GameObject PanelA;
     public Text NazwaBohatera;
-    public void BeenClicked()
+    public Button ButtonPanelA;
+    public List<string> Units;
+    public int NumberOfUnit;
+    public List<InputField> inputFields;
+    public List<int> UnitsAmount;
+    public List<Button> buttons;
+    public List<Button> defaultButtons;
+    public Sprite defaultS;
+    public PanelArmii PanelArmii;
+    public void Start()
     {
-        ButtonOn = !ButtonOn;
-        if (ButtonOn)
-        {
-            MyButton.image.color = new Color(0, 153, 153);
-        }
-        else
-        {
-            MyButton.image.color = Color.white;
-        }
-    }
-    public void OnEnable()
-    {
+
+
        
+    }
+
+    public void CallMe()
+    {
+        Units = new List<string>();
+        UnitsAmount = new List<int>();
+        for (int i = 0; i < 7; i++)
+        {
+            Units.Add(null);
+            UnitsAmount.Add(0);
+        }
+        
     }
     public void Nowy()
     {
+
         NazwaBohatera.text = "";
+        foreach ( InputField inputField in inputFields)
+        {
+            inputField.text = "";
+        }
+
+        int i = 0;
+        Debug.LogError(buttons);
+        foreach (Button button in buttons)
+        {
+            Debug.LogError(i);
+            SetButtonNew(button);
+            i++;
+           
+        }
+
     }
     public void Wczytaj()
     {
+        
         NazwaBohatera.text = PlayerPrefs.GetString("NazwaBohatera");
+        int i = 0;
+        foreach (int t in PanelArmii.LoadedBuild.NoUnits)
+        {
 
+            inputFields[i].text = t.ToString();
+            UnitsAmount[i] = t;
+            i++;
+        }
+        i = 0;
+        foreach (string t in PanelArmii.LoadedBuild.Units)
+        {
+           
+            if (PanelArmii.ListOfUnits.Contains(t))
+            {
+        
+                ColorBlock cb = defaultButtons[1].colors;
+                buttons[i].colors = cb;
+                for (int d = 0; d < PanelArmii.ListOfUnits.Count; d++)
+                {
+                    if (PanelArmii.ListOfUnits[d] == t)
+                        buttons[i].gameObject.GetComponent<Image>().sprite = Resources.Load<Sprite>(PanelArmii.ListOfImages[d]);
+
+                    Units[i] = t;
+                }
+            }
+            else
+            {
+                SetButtonNew(buttons[i]);
+            }
+            i++;
+        }
     }
+
+
+
     public void selectW()
     {
         PlayerPrefs.SetInt("which", 1);
@@ -43,6 +104,7 @@ public class Generator : MonoBehaviour
 
   
         NazwaBohatera.text = "Biały Toster";
+        
     }
     public void selectR()
     {
@@ -60,5 +122,56 @@ public class Generator : MonoBehaviour
     }
     
 
-   
+    public void ReadAllNumbers()
+    {
+        for(int i=0; i < 7; i++)
+        {
+           // Debug.LogError(i);
+            if (Units[i] != null)
+                UnitsAmount[i] = int.Parse("0"+inputFields[i].text);
+        }
+       
+    }
+
+    public void EnablePanel(Button bt)
+    {
+    
+        PanelA.SetActive(true);
+        ButtonPanelA = bt;
+    }
+    public void SaveNumber(int no)
+    {
+
+        NumberOfUnit = no;
+    }
+
+    public void SetButtonNew(Button b)
+    {
+       
+        b.gameObject.GetComponent<Image>().sprite = defaultButtons[0].gameObject.GetComponent<Image>().sprite;
+        b.GetComponentInChildren<Text>().text = "+";
+        ColorBlock cb = defaultButtons[0].colors;
+        b.colors = cb;
+    }
+    public void ChooseUnit(Button bt)
+    {
+        ButtonPanelA.gameObject.GetComponent<Image>().sprite = bt.gameObject.GetComponent<Image>().sprite;
+        ColorBlock cb = bt.colors;
+        ButtonPanelA.colors = cb;
+        ButtonPanelA.GetComponentInChildren<Text>().text = "";
+        PanelA.SetActive(false);
+
+    }
+    public void SaveUnit(string t)
+    {
+
+        Units[NumberOfUnit] = t;
+
+
+        Debug.LogError(Units[NumberOfUnit]);
+    }
+
+
+
+
 }

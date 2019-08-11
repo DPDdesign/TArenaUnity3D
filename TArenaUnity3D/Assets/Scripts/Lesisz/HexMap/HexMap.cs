@@ -12,6 +12,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
     public GameObject HexPrefab;
     public List<GameObject> TostersPrefabs;
+    public List<TeamClass> Teams;
     public GameObject TosterUnit;
     public Material[] HexMaterials;
     // Update is called once per frame
@@ -23,14 +24,24 @@ public class HexMap : MonoBehaviour,    IQPathWorld
     private List<TosterHexUnit> tostersList;
     private Dictionary<TosterHexUnit, GameObject> tostertoGameObjectMap;
     private Dictionary<GameObject, HexClass> gameObjectToHexMap;
+
     void Start()
     {
         LoadArmy();
         GenerateMap();
-    
+        TeamClass team1 = new TeamClass();
+        TeamClass team2 = new TeamClass();
+        if (Teams == null)
+            Teams = new List<TeamClass>();
+
+        Teams.Add(team1);
+        Teams.Add(team2);
+        
         GenerateToster(2,5, PlayerPrefs.GetInt("LewyToster"));
         
         GenerateToster(16, 5,PlayerPrefs.GetInt("PrawyToster"));
+
+        
         
     }
 
@@ -216,7 +227,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
 
 
 
-    void GenerateToster(int i , int j, int k)
+    public void GenerateToster(int i , int j, int k)
     {
         HexClass TosterSpawn = GetHexAt(i, j);
        
@@ -251,7 +262,7 @@ public class HexMap : MonoBehaviour,    IQPathWorld
 
         tosters.Add(Toster);
         tostertoGameObjectMap[Toster] = TosterGo;
-      
+        Toster.InitateType("TosterDPS");
     }
 
 

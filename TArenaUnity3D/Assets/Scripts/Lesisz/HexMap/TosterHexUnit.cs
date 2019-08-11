@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using HPath;
+using System.Xml;
+using System.Xml.Serialization;
 public class TosterHexUnit : IQPathUnit
 {
     public readonly int C; public readonly int R; public readonly int S; // column.row
@@ -9,13 +11,21 @@ public class TosterHexUnit : IQPathUnit
 
 
     ///stats
-
+    [XmlAttribute("Name")]
     public string Name = "NoName";
+    [XmlAttribute("HP")]
     public int HP = 100;
+    [XmlAttribute("Attack")]
     public int Att = 1;
+    [XmlAttribute("Defense")]
     public int Def = 1;
+    [XmlAttribute("Speed")]
     public int MovmentSpeed = 5;
+    [XmlAttribute("Initiative")]
     public int Initiative = 2;
+    public List<SkillsDefault> skills;
+
+
     public TosterView tosterView;
     ///
     public bool move = false;
@@ -25,6 +35,7 @@ public class TosterHexUnit : IQPathUnit
     public bool RobieRuch = false;
     public delegate void TosterMovedDelegate(HexClass oldH, HexClass newH);
     public event TosterMovedDelegate OnTosterMoved;
+    public bool Moved = false;
 
 
     List<HexClass> hexPath;
@@ -96,7 +107,16 @@ public class TosterHexUnit : IQPathUnit
         return p.Length<MovmentSpeed+1;
 
     }
+    public TosterHexUnit()
+    {
+        Name = "NoName";
+        HP = 100;
+        Att = 1;
+        Def = 1;
+        MovmentSpeed = 5;
+        Initiative = 2;
 
+    }
     public TosterHexUnit(int c, int r, Vector3 vect, GameObject G, GameObject Toster)
     {
         this.C = c;
@@ -245,5 +265,53 @@ public float TurnsToGetToHex(HexClass hex, float MovesToDate)
     public float CostToEnterHex(IPathTile sourceTile, IPathTile destinationTile)
     {
         return 1;
+    }
+
+    public void SetStats(string newname, int newhp, int newattack, int newdefense, int newinitiative, int newspeed)
+    {
+        Name = newname;
+        HP = newhp;
+        Att = newattack;
+        Def = newdefense;
+        Initiative = newinitiative;
+        MovmentSpeed = newspeed;
+        
+    }
+
+    public void InitateType(string name)
+    {
+       //TODO: VALIDATE SCHEMA/XML
+        TextAsset textAsset = (TextAsset)  Resources.Load("data/Units");
+        XmlDocument xmldoc = new XmlDocument();
+        xmldoc.LoadXml(textAsset.text);
+        XmlNodeList nodes = xmldoc.SelectNodes("Units/Unit/Name");
+        int NumberOfNode = 0;
+        bool found = false;
+        int i = 0;
+        foreach ( XmlNode node in nodes)
+        {
+
+            if(node.InnerText == name && found==false)
+            {
+                found = true;
+                NumberOfNode = i;
+            }
+            i++;
+        }
+        Debug.LogError(NumberOfNode);
+        if (found == true)
+        {
+            XmlNodeList UnitNodes = nodes[NumberOfNode].ChildNodes;
+            SetStats(
+                UnitNodes[0].ToString(),
+                int.Parse(UnitNodes[1].ToString()),
+                int.Parse(UnitNodes[2].ToString()),
+                int.Parse(UnitNodes[3].ToString()),
+                int.Parse(UnitNodes[4].ToString()),
+                int.Parse(UnitNodes[5].ToString()));
+
+
+        }
+       
     }
 }
