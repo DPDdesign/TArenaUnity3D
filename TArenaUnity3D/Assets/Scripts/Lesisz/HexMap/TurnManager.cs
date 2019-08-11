@@ -36,8 +36,8 @@ public class TurnManager : MonoBehaviour
                 // sprawdzamy kto ma  pierwszy kolejnosc - zaczyna ten kto wyzej sie zrespil, pierwszenstwo od lewo gora do prawo dol //
                 int t = 0;
                 int o = 0;
-                for (int i = 0; i < 7; i++) { if (Teams[0].Tosters[i] == TeamRed) t = i; }
-                for (int i = 0; i < 7; i++) { if (Teams[1].Tosters[i] == TeamBlue) o = i; }
+                for (int i = 0; i < Teams[0].Tosters.Count; i++) { if (Teams[0].Tosters[i] == TeamRed) t = i; }
+                for (int i = 0; i < Teams[1].Tosters.Count; i++) { if (Teams[1].Tosters[i] == TeamBlue) o = i; }
                 if (o == t)
                 {
                  

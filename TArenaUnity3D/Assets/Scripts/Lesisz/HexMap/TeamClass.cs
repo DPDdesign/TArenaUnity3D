@@ -37,19 +37,21 @@ public class TeamClass
     {
         WczytajPlik();
 
-
+        int i = 0;
         foreach (string toster in buildG.Units)
         {
-            if (toster != "" || toster != null)
+            
+            if (toster != "" && toster != null && toster != "Null")
             {
-              
+                Debug.LogError(toster);
                 TosterHexUnit nowytoster = new TosterHexUnit();
                 nowytoster.InitateType(toster);
                 nowytoster.SetMyTeam(this);
-               
+                nowytoster.SetAmount(buildG.NoUnits[i]);
                 AddNewUnit(nowytoster);
                 
             }
+            i++;
         }
 
 
@@ -136,7 +138,11 @@ public class TeamClass
         ///
         foreach (TosterHexUnit Tost in Tosters)
         {
-            Tost.SetTosterPrefab(h);
+            if (Tost != null)
+            {
+                Tost.SetTosterPrefab(h);
+                Tost.SetAmount();
+            }
         }
         if (You == true)
         {

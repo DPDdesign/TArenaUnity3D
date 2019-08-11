@@ -22,6 +22,8 @@ public class TosterHexUnit : IQPathUnit
     public string Name = "NoName";
     [XmlAttribute("HP")]
     public int HP = 100;
+    public int TempHP = 100;
+
     [XmlAttribute("Attack")]
     public int Att = 1;
     [XmlAttribute("Defense")]
@@ -180,7 +182,7 @@ public class TosterHexUnit : IQPathUnit
         {
             OnTosterMoved(oldHex, hex);
         }
-     
+       this.SetAmount();
         this.Team.HexesUnderTeam.Add(Hex);
     }
 
@@ -357,5 +359,18 @@ public float TurnsToGetToHex(HexClass hex, float MovesToDate)
             }
         }
        
+    }
+
+    public void SetAmount()
+    {
+        if (TosterPrefab != null)
+        {
+            TosterPrefab.GetComponentInChildren<TextMesh>().text = Amount.ToString();
+        }
+    }
+
+    public void SetAmount( int Amount)
+    {
+        this.Amount = Amount;
     }
 }

@@ -12,7 +12,7 @@ public class MouseControler : MonoBehaviour
     HexClass[] hexPath;
     public LayerMask LayerIDForHexTiles;
 
-
+    public Canvas canvas;
 
     delegate void UpdateFunc();
     UpdateFunc Update_CurrentFunc;
@@ -28,15 +28,17 @@ public class MouseControler : MonoBehaviour
     TurnManager TM;
 
     TosterHexUnit SelectedToster = null;
+    TosterHexUnit TempSelectedToster = null;
     // Start is called before the first frame update
     void Start()
     {
         Update_CurrentFunc = Update_DetectModeStart;
            hexMap = GameObject.FindObjectOfType<HexMap>();
         hexPath = null;
+
    //     lineRenderer = transform.GetComponentInChildren<LineRenderer>();
-    
-       
+
+
 
     }
 
@@ -67,6 +69,7 @@ public class MouseControler : MonoBehaviour
         {
             // Left Button went down - do nothing
         }
+      
         else if (Input.GetMouseButtonDown(1) )
         {
            TosterHexUnit[] tosters =   hexUnderMouse.tosters();
@@ -115,14 +118,30 @@ public class MouseControler : MonoBehaviour
 
     void CheckTosterMovement()
     {
-        if (Input.GetMouseButtonUp(1) || SelectedToster==null)
+        TempSelectedToster.Hex.hexMap.CheckWithPath(TempSelectedToster);
+        if (Input.GetMouseButtonUp(1) || TempSelectedToster==null)
         {
-            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+
+           TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.MovmentSpeed, SelectedToster);
             CancelUpdateFunc();
-            return;
+            
         }
 
      
+    }
+
+
+    void CheckThisTosterMovement(TosterHexUnit t)
+    {
+  
+        if (Input.GetMouseButtonUp(1) || t == null)
+        {
+            t.Hex.hexMap.unHighlight(t.Hex.C, t.Hex.R, t.MovmentSpeed);
+            SelectTosterMovement();
+            return;
+        }
+
+
     }
 
 
@@ -152,29 +171,58 @@ public class MouseControler : MonoBehaviour
             return;
         }
       */
-        if (hexUnderMouse!=SelectedToster.Hex&&hexUnderMouse.Highlight&&hexUnderMouse.Tosters.Count==0)
+        if (hexUnderMouse != SelectedToster.Hex && hexUnderMouse.Highlight)
         {
-     
 
-            hexPath = SelectedToster.Pathing(hexUnderMouse);
-            if( hexPath != null)
+            if (hexUnderMouse.Tosters.Count == 0)
             {
-                foreach(HexClass h in hexPath)
+                hexPath = SelectedToster.Pathing(hexUnderMouse);
+                if (hexPath != null)
                 {
-                
+                    foreach (HexClass h in hexPath)
+                    {
 
-                       TestGoUp = h.MyHex.transform.position;
-                       TestGoUp.y = -0.1f;
-                    h.MyHex.transform.position = TestGoUp;
+
+                        TestGoUp = h.MyHex.transform.position;
+                        TestGoUp.y = -0.1f;
+                        h.MyHex.transform.position = TestGoUp;
+                    }
+
+
                 }
+            }
+        }
+        float lastClickTime;
+        float catchTime = 1.25f;
+        if (Input.GetMouseButtonDown(1))
+        {
 
+            {
+
+                TosterHexUnit[] tosters = hexUnderMouse.tosters();
+
+                if (tosters.Length > 0)
+                {
+                    Debug.LogError("haloo");
+                    TempSelectedToster = tosters[0];
+                    Update_CurrentFunc = CheckTosterMovement;
+                    CheckTosterMovement();
+                }
 
             }
 
+            /*else
+            {
+                canvas.gameObject.SetActive(true);
+
+            }*/
         }
 
+        
 
-        if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse != SelectedToster.Hex &&  !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse)) 
+
+
+   if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse != SelectedToster.Hex &&  !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse)) 
         {
             //Debug.LogError(MouseToHex());
             SelectedToster.move = true;
@@ -207,6 +255,9 @@ public class MouseControler : MonoBehaviour
             }
            
         }
+     
+       
+          
 
     }
 

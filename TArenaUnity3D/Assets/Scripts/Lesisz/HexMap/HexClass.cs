@@ -6,9 +6,11 @@ public class HexClass : IPathTile {
     public readonly int C; public readonly int R; public readonly int S; // column.row
     static readonly float WIDTH_MULTIPLIER = Mathf.Sqrt(3) / 2;
     public bool Highlight = false;
+    public bool Check = false;
     public List<TosterHexUnit> Tosters;
     public GameObject MyHex;
     public readonly HexMap hexMap;
+
 
     public HexClass(HexMap hexMap, int c, int r)
     {
