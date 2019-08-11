@@ -128,6 +128,19 @@ public class TeamClass
         }
 
     }
+
+
+    /// <summary>
+    /// TODO:
+    /// 
+    /// Poprawić Spawn point - tak aby każdy toster pojawiał się zawsze w wyznaczonym punkcie z menu/pliku
+    /// 
+    /// 
+    /// 
+    /// 
+    /// 
+    /// 
+    /// </summary>
     public void GenerateTeam(HexMap h, int TeamNO, bool You)
     {
       
