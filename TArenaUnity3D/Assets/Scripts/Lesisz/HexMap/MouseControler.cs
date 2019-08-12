@@ -119,7 +119,8 @@ public class MouseControler : MonoBehaviour
     void CheckTosterMovement()
     {
         TempSelectedToster.Hex.hexMap.CheckWithPath(TempSelectedToster);
-        if (Input.GetMouseButtonUp(1) || TempSelectedToster==null)
+        if (hexUnderMouse!=TempSelectedToster.Hex||Input.GetKeyUp(KeyCode.LeftShift)|| Input.GetKeyUp(KeyCode.LeftControl))
+        //if (/*Input.GetMouseButtonUp(1) ||*/ TempSelectedToster!=hexUnderMouse.Tosters[0])
         {
 
            TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.MovmentSpeed, SelectedToster);
@@ -192,22 +193,26 @@ public class MouseControler : MonoBehaviour
                 }
             }
         }
-        float lastClickTime;
-        float catchTime = 1.25f;
-        if (Input.GetMouseButtonDown(1))
-        {
-
+            if ((Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.LeftControl)))
             {
-
                 TosterHexUnit[] tosters = hexUnderMouse.tosters();
-
-                if (tosters.Length > 0)
+            Debug.LogError("1");
+            if (tosters.Length > 0)
                 {
                     Debug.LogError("haloo");
                     TempSelectedToster = tosters[0];
                     Update_CurrentFunc = CheckTosterMovement;
                     CheckTosterMovement();
                 }
+            }
+        
+        
+        if (Input.GetMouseButtonDown(1))
+        {
+
+            {
+
+               
 
             }
 
