@@ -2549,15 +2549,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4483830403358642, guid: 74442f407a24ac84f95f08a83b1bb617, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 59.450836
+      value: 43.77
       objectReference: {fileID: 0}
     - target: {fileID: 4483830403358642, guid: 74442f407a24ac84f95f08a83b1bb617, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3.926341
+      value: 7.91
       objectReference: {fileID: 0}
     - target: {fileID: 4483830403358642, guid: 74442f407a24ac84f95f08a83b1bb617, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -18.05946
+      value: -12.96
       objectReference: {fileID: 0}
     - target: {fileID: 4483830403358642, guid: 74442f407a24ac84f95f08a83b1bb617, type: 3}
       propertyPath: m_LocalRotation.x
@@ -3724,6 +3724,12 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4844902911259396, guid: 01bdef6597b249b44a9530ab656246fc,
     type: 3}
   m_PrefabInstance: {fileID: 2081756142}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &340592699 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 23672204903577092, guid: 74442f407a24ac84f95f08a83b1bb617,
+    type: 3}
+  m_PrefabInstance: {fileID: 209161794}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &342970839
 PrefabInstance:
@@ -5727,7 +5733,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &539635289 stripped
 Transform:
@@ -7460,6 +7466,12 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 863102155}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &734856552 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 23527068386015058, guid: c53e680fdc8fae04d91b4ce9e548d2df,
+    type: 3}
+  m_PrefabInstance: {fileID: 1158603702}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &734878810 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4844902911259396, guid: 01bdef6597b249b44a9530ab656246fc,
@@ -9186,6 +9198,12 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4844902911259396, guid: 01bdef6597b249b44a9530ab656246fc,
     type: 3}
   m_PrefabInstance: {fileID: 32196788}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &934174143 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 23120510417258372, guid: dc00aab85b301f242896a77c4b442ec0,
+    type: 3}
+  m_PrefabInstance: {fileID: 226654440}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &934201718
 PrefabInstance:
@@ -12115,6 +12133,55 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 635009492}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1274245142
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1274245144}
+  - component: {fileID: 1274245143}
+  m_Layer: 0
+  m_Name: OutlineManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1274245143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1274245142}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 671ee5fce3367a94e81e6afdd9954ed5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  outlinePostEffect: {fileID: 1353304686}
+  outliners:
+  - renderer: {fileID: 934174143}
+  Renderers:
+  - {fileID: 340592699}
+  - {fileID: 734856552}
+--- !u!4 &1274245144
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1274245142}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.037, y: 0.11, z: -7.102}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 7
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1284881693 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4844902911259396, guid: 01bdef6597b249b44a9530ab656246fc,
@@ -12719,6 +12786,7 @@ GameObject:
   - component: {fileID: 1353304681}
   - component: {fileID: 1353304684}
   - component: {fileID: 1353304685}
+  - component: {fileID: 1353304686}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -12743,8 +12811,8 @@ Camera:
   m_GameObject: {fileID: 1353304680}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 1}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -12766,15 +12834,15 @@ Camera:
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_RenderingPath: -1
+  m_RenderingPath: 3
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
-  m_AllowMSAA: 1
+  m_AllowMSAA: 0
   m_AllowDynamicResolution: 0
   m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
+  m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
 --- !u!4 &1353304683
@@ -12815,6 +12883,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78a1bddd851b26f45a4ef072aab82a3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1353304686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1353304680}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d494edea4bdf1f746a3a4047cbf1c00f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  OutlineColor: {r: 1, g: 1, b: 1, a: 0.14509805}
+  BufferDrawEvent: 20
+  Downsample: 1
+  BlurSize: 0.23
 --- !u!1001 &1356942914
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14108,6 +14192,7 @@ MonoBehaviour:
   LayerIDForHexTiles:
     serializedVersion: 2
     m_Bits: 1024
+  outlineManager: {fileID: 1274245143}
   canvas: {fileID: 1541569964}
 --- !u!4 &1506819736
 Transform:

@@ -37,7 +37,11 @@ public class TosterHexUnit : IQPathUnit
     public bool Waited = false;
 
     public TosterView tosterView;
-    ///
+    /// <summary>
+    /// 
+    /// </summary>
+    /// 
+    public bool isSelected = false;
     public bool move = false;
     public GameObject ThisToster;
     public GameObject TosterPrefab;
@@ -49,6 +53,12 @@ public class TosterHexUnit : IQPathUnit
     public TeamClass Team;
 
     List<HexClass> hexPath;
+
+
+    public void test()
+    {
+      //  Halo halo = (Behaviour)tosterView.GetComponent<"Halo">();
+    }
 
 
     public void SetHexPath(HexClass[] hexPath)

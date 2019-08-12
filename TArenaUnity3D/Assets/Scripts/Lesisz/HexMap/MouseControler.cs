@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Xenu.Game;
 public class MouseControler : MonoBehaviour
 {
    
@@ -13,7 +14,7 @@ public class MouseControler : MonoBehaviour
     GameObject GOLastUnderMouse=null;
     HexClass[] hexPath;
     public LayerMask LayerIDForHexTiles;
-
+    public UnityOutlineManager outlineManager;
    // public Canvas canvas;
     public UICanvas canvas;
     delegate void UpdateFunc();
@@ -37,6 +38,7 @@ public class MouseControler : MonoBehaviour
         Update_CurrentFunc = Update_DetectModeStart;
            hexMap = GameObject.FindObjectOfType<HexMap>();
         hexPath = null;
+
     }
 
 
@@ -62,6 +64,13 @@ public class MouseControler : MonoBehaviour
     {
         TM = FindObjectOfType<TurnManager>();
         SelectedToster = TM.AskWhosTurn();
+        SelectedToster.isSelected = true;
+     //   outlineManager.ChangeObj(SelectedToster.TosterPrefab.GetComponentInChildren<Renderer>());
+  
+      //  outlineManager.AddRenderer();
+        //Behaviour halo = (Behaviour)SelectedToster.TosterPrefab.GetComponent<"Halo">();
+      //  Behaviour halo = (Behaviour)SelectedToster.TosterPrefab.GetComponentInParent < "Halo" > ();
+    //    SelectedToster.TosterPrefab.GetComponent<Halo>
         hexUnderMouse = SelectedToster.Hex;
         SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
         if (!shiftmode)

@@ -10,7 +10,7 @@ public class TosterView : MonoBehaviour
     Vector3 currentV;
     float smoothTime = 0.1f;
     float speed = 5f;
-
+    public bool isSelected = false;
     HexMap_Highlight map;
     public bool AnimationIsPlaying = false;
     private void Start()
@@ -65,5 +65,6 @@ public class TosterView : MonoBehaviour
            // GameObject.FindObjectOfType<HexMap>().AnimationIsPlaying = false;
         }
         // this.transform.position = Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
+
     }
 }
