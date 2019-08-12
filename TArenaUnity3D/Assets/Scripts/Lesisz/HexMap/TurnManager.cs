@@ -14,7 +14,10 @@ public class TurnManager : MonoBehaviour
         MController = FindObjectOfType<MouseControler>();
       
     }
-
+    /// <summary>
+    /// // TODO : CZEKAC NA NASTEPNA TURE DO KONCA ANIMACJI!!!
+    /// </summary>
+    /// <returns></returns>
     public TosterHexUnit AskWhosTurn()
     {
         Teams = hexMap.Teams;

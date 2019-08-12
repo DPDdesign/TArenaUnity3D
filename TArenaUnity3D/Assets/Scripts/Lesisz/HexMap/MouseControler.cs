@@ -9,6 +9,8 @@ public class MouseControler : MonoBehaviour
     HexMap hexMap;
     HexClass hexUnderMouse;
     HexClass hexLastUnderMouse;
+    GameObject GOUnderMouse;
+    GameObject GOLastUnderMouse=null;
     HexClass[] hexPath;
     public LayerMask LayerIDForHexTiles;
 
@@ -18,7 +20,7 @@ public class MouseControler : MonoBehaviour
     UpdateFunc Update_CurrentFunc;
 
     Vector3 LastMousePosition;
-
+    bool shiftmode = false;
     LineRenderer lineRenderer;
     int MouseDragTreshold = 1;
     Vector3 TestGoUp;
@@ -29,30 +31,29 @@ public class MouseControler : MonoBehaviour
 
     TosterHexUnit SelectedToster = null;
     TosterHexUnit TempSelectedToster = null;
-    // Start is called before the first frame update
+    
     void Start()
     {
         Update_CurrentFunc = Update_DetectModeStart;
            hexMap = GameObject.FindObjectOfType<HexMap>();
         hexPath = null;
-
-   //     lineRenderer = transform.GetComponentInChildren<LineRenderer>();
-
-
-
     }
 
+
+    /// <summary>
+    /// // TODO : CZEKAC NA NASTEPNA TURE DO KONCA ANIMACJI!!!  - > ZOBACZ NA:     StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+    /// </summary>
+    /// <returns></returns>
     void Update()
-    {
-      
+    {   
         Update_CurrentFunc();
+        
         LastMousePosition = Input.mousePosition;
+
         hexUnderMouse = MouseToHex();
 
-        // Always do camera zooms (check for being over a scroll UI later)
-        //Update_ScrollZoom();
-
         hexLastUnderMouse = hexUnderMouse;
+        GOLastUnderMouse = GOUnderMouse;
     }
 
 
@@ -63,13 +64,14 @@ public class MouseControler : MonoBehaviour
         SelectedToster = TM.AskWhosTurn();
         hexUnderMouse = SelectedToster.Hex;
         SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
-        Update_CurrentFunc = SelectTosterMovement;
-
+        if (!shiftmode)
+            Update_CurrentFunc = SelectTosterMovement;
+        else Update_CurrentFunc = CheckTosterMovement;
+         /// OLD - NOT USED - FUNKCJA NIGDY NIE SCHODZI PONIŻEJ TEJ LINII///     
         if (Input.GetMouseButtonDown(2))
         {
-            // Left Button went down - do nothing
-        }
-      
+          
+        }  
         else if (Input.GetMouseButtonDown(1) )
         {
            TosterHexUnit[] tosters =   hexUnderMouse.tosters();
@@ -100,7 +102,6 @@ public class MouseControler : MonoBehaviour
             }
 
         }
-
         else if (Input.GetMouseButton(2) &&
             Vector3.Distance(Input.mousePosition, LastMousePosition) > MouseDragTreshold) 
         {
@@ -109,72 +110,26 @@ public class MouseControler : MonoBehaviour
             LastMouseGroundPlanePosition = MouseToGroundPlane(Input.mousePosition);
             Update_CameraDrag();
         }
-        else if (Input.GetKey("z"))
-        {
+        else if (Input.GetKey("z"))     {
             Debug.LogError(MouseToHex().Tosters.Count);
         }
+        /// ^ ^ ^ ^ ^ ^ ^ ^ ///    
     }
 
-
+    // SHIFT/CTRL MODE ON -> TRYB SPRAWDZANIA RUCHU INNYCH JEDNOSTEK
     void CheckTosterMovement()
     {
-        TempSelectedToster.Hex.hexMap.CheckWithPath(TempSelectedToster);
-        if (hexUnderMouse!=TempSelectedToster.Hex||Input.GetKeyUp(KeyCode.LeftShift)|| Input.GetKeyUp(KeyCode.LeftControl))
-        //if (/*Input.GetMouseButtonUp(1) ||*/ TempSelectedToster!=hexUnderMouse.Tosters[0])
-        {
-
-           TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.MovmentSpeed, SelectedToster);
-            CancelUpdateFunc();
-            
-        }
-
-     
-    }
-
-
-    void CheckThisTosterMovement(TosterHexUnit t)
-    {
-  
-        if (Input.GetMouseButtonUp(1) || t == null)
-        {
-            t.Hex.hexMap.unHighlight(t.Hex.C, t.Hex.R, t.MovmentSpeed);
-            SelectTosterMovement();
-            return;
-        }
-
-
-    }
-
-
-    void SelectTosterMovement()
-    {
-       
-
-        
         if (hexPath != null)
         {
             foreach (HexClass h in hexPath)
             {
-
-
                 TestGoUp = h.MyHex.transform.position;
                 TestGoUp.y = 0.0f;
                 h.MyHex.transform.position = TestGoUp;
             }
-
-
         }
-        /*
-        if (Input.GetMouseButton(1) || SelectedToster == null)
-        {
-            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
-            CancelUpdateFunc();
-            return;
-        }
-      */
         if (hexUnderMouse != SelectedToster.Hex && hexUnderMouse.Highlight)
         {
-
             if (hexUnderMouse.Tosters.Count == 0)
             {
                 hexPath = SelectedToster.Pathing(hexUnderMouse);
@@ -182,62 +137,85 @@ public class MouseControler : MonoBehaviour
                 {
                     foreach (HexClass h in hexPath)
                     {
-
-
                         TestGoUp = h.MyHex.transform.position;
                         TestGoUp.y = -0.1f;
                         h.MyHex.transform.position = TestGoUp;
                     }
-
-
                 }
             }
         }
-            if ((Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.LeftControl)))
-            {
-                TosterHexUnit[] tosters = hexUnderMouse.tosters();
-            Debug.LogError("1");
-            if (tosters.Length > 0)
-                {
-                    Debug.LogError("haloo");
-                    TempSelectedToster = tosters[0];
-                    Update_CurrentFunc = CheckTosterMovement;
-                    CheckTosterMovement();
-                }
-            }
-        
-        
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse != SelectedToster.Hex && !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse))
         {
-
-            {
-
-               
-
-            }
-
-            /*else
-            {
-                canvas.gameObject.SetActive(true);
-
-            }*/
-        }
-
-        
-
-
-
-   if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse != SelectedToster.Hex &&  !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse)) 
-        {
-            //Debug.LogError(MouseToHex());
             SelectedToster.move = true;
-
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
             SelectedToster.Pathing_func(hexUnderMouse);
-
             StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+            SelectedToster.Moved = true;
+            CancelUpdateFunc();
+            return;
+        }
+        if (Input.GetKeyUp(KeyCode.LeftShift) || Input.GetKeyUp(KeyCode.LeftControl))
+        {
+            shiftmode = false;
+            if (TempSelectedToster!=null) TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.MovmentSpeed, SelectedToster);
+            CancelUpdateFunc();
+        } else
+        if (hexUnderMouse.Tosters.Count > 0)
+        {
+            if (TempSelectedToster != null)
+                if (hexUnderMouse.Tosters[0]!= TempSelectedToster )
+            {
+                TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.MovmentSpeed, SelectedToster);
+            }
+            hexUnderMouse.Tosters[0].Hex.hexMap.CheckWithPath(hexUnderMouse.Tosters[0]);
+            TempSelectedToster = hexUnderMouse.Tosters[0];
+        }
+        else
+        {
+            if (TempSelectedToster!=null)
+            TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.MovmentSpeed, SelectedToster);
+        }    
+    }
 
-            //Debug.LogError(hexMap.DoUnitMoves(SelectedToster));
+    // TRYB RUCHU JEDNOSTKI
+    void SelectTosterMovement()
+    {    
+        if (hexPath != null)
+        {
+            foreach (HexClass h in hexPath)
+            {
+                TestGoUp = h.MyHex.transform.position;
+                TestGoUp.y = 0.0f;
+                h.MyHex.transform.position = TestGoUp;
+            }
+        }
+        if (hexUnderMouse != SelectedToster.Hex && hexUnderMouse.Highlight)
+        {
+            if (hexUnderMouse.Tosters.Count == 0)
+            {
+                hexPath = SelectedToster.Pathing(hexUnderMouse);
+                if (hexPath != null)
+                {
+                    foreach (HexClass h in hexPath)
+                    {
+                        TestGoUp = h.MyHex.transform.position;
+                        TestGoUp.y = -0.1f;
+                        h.MyHex.transform.position = TestGoUp;
+                    }
+                }
+            }
+        }     
+        if ((Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.LeftControl)))
+        {
+            shiftmode = true;
+            Update_CurrentFunc = CheckTosterMovement;
+        }        
+   if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse != SelectedToster.Hex &&  !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse)) 
+        {
+            SelectedToster.move = true;
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+            SelectedToster.Pathing_func(hexUnderMouse);
+            StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
             SelectedToster.Moved = true;
             CancelUpdateFunc();
             return;
@@ -257,21 +235,15 @@ public class MouseControler : MonoBehaviour
                 SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
                 SelectedToster.Waited = true;
                 CancelUpdateFunc();
-            }
-           
-        }
-     
-       
-          
-
+            }         
+        }        
     }
 
-
+    // SZUKAJ DROGI OD ZAZNACZONEGO HEXA - NOT USED
     void DrawPath(HexClass[] hexPath)
     {
         if (hexPath.Length==0)
-        {
-            
+        {           
             return;
         }
         Vector3[] ps = new Vector3[hexPath.Length];
@@ -282,25 +254,31 @@ public class MouseControler : MonoBehaviour
         }
     }
 
-
+    // SPRAWDZ NA JAKI HEX CELUJE MYSZ (JEZELI W OGOLE) - ZWRACA TEN HEX ///////// TODO: ZAWSZE PODWYZSZAJ (ZAZNACZAJ) HEXA NA KTOREGO CELUJE MYSZ
     HexClass MouseToHex()
     {
         Ray mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit hitInfo;
-
         int layerMask = LayerIDForHexTiles.value;
-
         if (Physics.Raycast(mouseRay, out hitInfo, Mathf.Infinity, layerMask))
         {
-            // Something got hit
-            //   Debug.Log( hitInfo.collider.name );
-         
-               // The collider is a child of the "correct" game object that we want.
-               GameObject hexGO = hitInfo.rigidbody.gameObject;
-          //  TestGoUp = hexGO.transform.position;
-         //   TestGoUp.y = 0.1f;
-         //   hexGO.transform.position = TestGoUp;
-            return hexMap.GetHexFromGameObject(hexGO);
+            //   Debug.Log( hitInfo.collider.name ); -> WYSWIETL NA CO WSKAZUJE MYSZ
+           GameObject hexGO = hitInfo.rigidbody.gameObject;
+           HexClass hexUnderMouse1 = hexMap.GetHexFromGameObject(hexGO);
+
+            GOUnderMouse = hexGO;
+            return hexUnderMouse1;
+            /*
+            if (hexUnderMouse != hexLastUnderMouse)
+            {
+
+                TestGoUp = GOUnderMouse.transform.position;
+                TestGoUp.y = 0.1f;
+                GOUnderMouse.transform.position = TestGoUp;
+                TestGoUp.y = 0.0f;
+                if (GOLastUnderMouse != null) GOLastUnderMouse.transform.position = TestGoUp;
+            }
+            */
         }
 
         //Debug.Log("Found nothing.");
@@ -312,13 +290,16 @@ public class MouseControler : MonoBehaviour
         // What is the point at which the mouse ray intersects Y=0
         if (mouseRay.direction.y >= 0)
         {
+       
             //Debug.LogError("Why is mouse pointing up?");
             return Vector3.zero;
         }
         float rayLength = (mouseRay.origin.y / mouseRay.direction.y);
         return mouseRay.origin - (mouseRay.direction * rayLength);
     }
+    
 
+    // NOT USED - > AKTUALNE W CAMERA ROTATOR
     void Update_ScrollZoom()
     {
         // Zoom to scrollwheel
@@ -366,6 +347,8 @@ public class MouseControler : MonoBehaviour
 );
     }
 
+
+
     public void CancelUpdateFunc()
     {
         Update_CurrentFunc = Update_DetectModeStart;
@@ -381,29 +364,9 @@ public class MouseControler : MonoBehaviour
             CancelUpdateFunc();
             return;
         }
-
-        // Right now, all we need are camera controls
-
         Vector3 hitPos = MouseToGroundPlane(Input.mousePosition);
-
-        Vector3 diff = LastMouseGroundPlanePosition - hitPos;
-        //Camera.main.transform.Translate(diff, Space.World);
-        
+        Vector3 diff = LastMouseGroundPlanePosition - hitPos;             
         FindObjectOfType<CameraRotator>().transform.Translate(diff, Space.World);
         LastMouseGroundPlanePosition = hitPos = MouseToGroundPlane(Input.mousePosition);
-
-
-
     }
-    // Update is called once per frame
-
-
-
-
-
-
-
-
-    
-
 }

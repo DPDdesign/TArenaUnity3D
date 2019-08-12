@@ -16,17 +16,15 @@ public class TeamClass
         HexesUnderTeam = new List<HexClass>();
     }
 
-    public void WczytajPlik()
+    public void WczytajPlik() // wczytaj plik zgodnie z reprezentacją buildu w PanelArmii - TODO: przenieść strukture/classe buildu do osobnego skryptu
     {
         string path = Application.persistentDataPath + "/build" + ThisTeamNO + ".d";
         if (File.Exists(path))
         {
-            //Debug.LogError("tutaj jestem");
             BinaryFormatter formatter = new BinaryFormatter();
             FileStream file = File.OpenRead(path);
             buildG = (PanelArmii.BuildG)formatter.Deserialize(file);
             file.Close();
-      //      Tosters.Add(buildG.NazwaBohatera); 
         }
     }
 
@@ -36,19 +34,19 @@ public class TeamClass
     public void CreateTeamFromFile()
     {
         WczytajPlik();
-
+        // plik wczytany do buildG //
         int i = 0;
-        foreach (string toster in buildG.Units)
+        foreach (string toster in buildG.Units) //Tosty są określone po ich nazwie // Ta funkcja ZAWSZE powinna wykonać się 7 razy
         {
             
             if (toster != "" && toster != null && toster != "Null")
             {
-                Debug.LogError(toster);
-                TosterHexUnit nowytoster = new TosterHexUnit();
-                nowytoster.InitateType(toster);
-                nowytoster.SetMyTeam(this);
-                nowytoster.SetAmount(buildG.NoUnits[i]);
-                AddNewUnit(nowytoster);
+             //   Debug.LogError(toster);
+                TosterHexUnit nowytoster = new TosterHexUnit(); // + toster do teamu
+                nowytoster.InitateType(toster);                 // Znajdz tostera w xmlu -> wczytaj jego staty
+                nowytoster.SetMyTeam(this);                     // Ustaw tosterowi do którego teamu należy
+                nowytoster.SetAmount(buildG.NoUnits[i]);        // Wczytaj ilość jednostki z buildG
+                AddNewUnit(nowytoster);                         // Zapisz naszego tosta do TEGO teamu
                 
             }
             i++;
@@ -141,13 +139,13 @@ public class TeamClass
     /// 
     /// 
     /// </summary>
-    public void GenerateTeam(HexMap h, int TeamNO, bool You)
+    public void GenerateTeam(HexMap h, int TeamNO, bool You) /// h -> MAPA /// TeamNO -> numer pliku /// You: True = lewy gracz | False = prawy gracz ///
     {
-      
+       
         ThisTeamNO = TeamNO;
         CreateTeamFromFile();
         int i = 0;
-        ///Plik wczytany do buildG
+        ///Tutaj tosty są już wczytane do swojej drużyny
         ///
         foreach (TosterHexUnit Tost in Tosters)
         {
