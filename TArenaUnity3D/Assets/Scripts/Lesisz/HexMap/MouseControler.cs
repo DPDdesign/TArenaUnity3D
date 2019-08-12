@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.UI;
 public class MouseControler : MonoBehaviour
 {
    
@@ -14,8 +14,8 @@ public class MouseControler : MonoBehaviour
     HexClass[] hexPath;
     public LayerMask LayerIDForHexTiles;
 
-    public Canvas canvas;
-
+   // public Canvas canvas;
+    public UICanvas canvas;
     delegate void UpdateFunc();
     UpdateFunc Update_CurrentFunc;
 
@@ -174,7 +174,12 @@ public class MouseControler : MonoBehaviour
         {
             if (TempSelectedToster!=null)
             TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.MovmentSpeed, SelectedToster);
-        }    
+        }
+         if (Input.GetMouseButtonDown(1) && hexUnderMouse.Tosters.Count > 0)
+        {
+            Update_CurrentFunc = ShowInfo;
+            ShowInfo();
+        }
     }
 
     // TRYB RUCHU JEDNOSTKI
@@ -236,8 +241,34 @@ public class MouseControler : MonoBehaviour
                 SelectedToster.Waited = true;
                 CancelUpdateFunc();
             }         
-        }        
+        }
+   else if (Input.GetMouseButtonDown(1) && hexUnderMouse.Tosters.Count>0)
+        {
+            Update_CurrentFunc = ShowInfo;
+            ShowInfo();
+        }
     }
+    
+
+
+    void ShowInfo()
+    {
+        if (hexUnderMouse.Tosters.Count > 0)
+        {
+            TosterHexUnit t = hexUnderMouse.Tosters[0];
+            canvas.UpdateAllStats(t.HP, t.TempHP, t.Att, t.Def, 1, t.MovmentSpeed, t.Initiative, t.Name);
+            canvas.StatsPanel.SetActive(true);
+           
+        }
+        if (Input.GetMouseButtonUp(1))
+        {
+            canvas.StatsPanel.SetActive(false);
+            CancelUpdateFunc();
+        }
+
+
+    }
+
 
     // SZUKAJ DROGI OD ZAZNACZONEGO HEXA - NOT USED
     void DrawPath(HexClass[] hexPath)

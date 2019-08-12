@@ -298,6 +298,7 @@ public float TurnsToGetToHex(HexClass hex, float MovesToDate)
     {
         Name = newname;
         HP = newhp;
+        TempHP = newhp;
         Att = newattack;
         Def = newdefense;
         Initiative = newinitiative;
