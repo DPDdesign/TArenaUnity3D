@@ -22,7 +22,7 @@ namespace HPath
             this.endT = endT;
             this.costEstimateFunc = costEstimateFunc;
         }
-        public void DoWork()
+        public void DoWork(bool ignore)
         {
             path = new Queue<T>();
             HashSet<T> closedSet = new HashSet<T>();
@@ -62,10 +62,10 @@ namespace HPath
                     float total_pathfinding_cost_to_neighbor =
                         neighbour.AggregateCostToEnter(g_Score[current], current, Unit);
 
-                    if (total_pathfinding_cost_to_neighbor < 0)
+                    if (total_pathfinding_cost_to_neighbor < 0 && ignore==false)
                     {
                         // Values less than zero represent an invalid/impassable tile
-                        continue;
+                        continue; 
                     }
                     //Debug.Log(total_pathfinding_cost_to_neighbor);
 

@@ -6,7 +6,7 @@ namespace HPath
 {
     public static class HPath
     {
-        public static T[] FindPath<T>(IQPathWorld world, IQPathUnit Unit, T startTile, T endT, CostEstimateDelegate costEstimateFunc ) where T : IPathTile
+        public static T[] FindPath<T>(IQPathWorld world, IQPathUnit Unit, T startTile, T endT, CostEstimateDelegate costEstimateFunc, bool ignore ) where T : IPathTile
         {
             if (world == null || Unit == null || startTile == null || endT == null)
             {
@@ -20,7 +20,7 @@ namespace HPath
             } 
 
             IQPath_AStar<T> resolver = new IQPath_AStar<T>(world, Unit, startTile, endT, costEstimateFunc);
-            resolver.DoWork();
+            resolver.DoWork(ignore);
 
             return  resolver.GetList();
         }

@@ -219,6 +219,6 @@ public class HexClass : IPathTile {
     {
         // TODO: We are ignoring source tile right now, this will have to change when
         // we have rivers.
-        return ((TosterHexUnit)theUnit).TurnsToGetToHex(this, costSoFar);
+        return ((TosterHexUnit)theUnit).TurnsToGetToHex(this,(TosterHexUnit)theUnit, costSoFar);
     }
 }

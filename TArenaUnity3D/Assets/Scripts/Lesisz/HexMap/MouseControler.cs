@@ -98,6 +98,7 @@ public class MouseControler : MonoBehaviour
         } //ShowStats 
         if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse != SelectedToster.Hex && !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse))
         {
+            Debug.LogError("test");
             StartCoroutine(DoMoves());
            // CancelUpdateFunc();
             return;
@@ -145,30 +146,35 @@ public class MouseControler : MonoBehaviour
     {
         SelectedToster.move = true;
         SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
-        SelectedToster.Pathing_func(hexUnderMouse);       
+        SelectedToster.Pathing_func(hexUnderMouse, false);
+  
+       // Debug.LogError(SelectedToster.HexPathList.Count);
         SelectedToster.Moved = true;
         Update_CurrentFunc = BeforeNextTurn;
         StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
         yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
-       // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
+        // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
         CancelUpdateFunc();
         shiftmode = false;
         // CancelUpdateFunc();
 
     }
 
-    /*
-    void DoMoves()
+    IEnumerator DoMoveAndAttack(HexClass hex, TosterHexUnit toster)
     {
         SelectedToster.move = true;
         SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
-        SelectedToster.Pathing_func(hexUnderMouse);
-        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-
+        SelectedToster.Pathing_func(hex,false);
         SelectedToster.Moved = true;
+      
+        Update_CurrentFunc = BeforeNextTurn;
+        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        toster.AttackMe(SelectedToster);
         CancelUpdateFunc();
-        return;
-    }*/
+        shiftmode = false;
+        // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
+    }
 
     void WaitForMove()
     {

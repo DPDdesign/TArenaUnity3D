@@ -23,7 +23,8 @@ public class TosterHexUnit : IQPathUnit
     [XmlAttribute("HP")]
     public int HP = 100;
     public int TempHP = 100;
-
+    public int maxdmg = 1;
+    public int mindmg = 1; 
     [XmlAttribute("Attack")]
     public int Att = 1;
     [XmlAttribute("Defense")]
@@ -63,18 +64,8 @@ public class TosterHexUnit : IQPathUnit
     {
         this.hexPath = new List<HexClass>();
     }
-    public void DUMMY_PATHING_FUNCTION()
-    {
-        if (move == true)
-        {
-            HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, Hex.hexMap.GetHexAt(Hex.C + 4, Hex.R), HexClass.CostEstimate);
-
-            //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
-
-
-            SetHexPath(p);
-        }
-    }
+   
+    /*
     public void Pathing_func(HexClass celhex)
     {
         if (move == true)
@@ -82,22 +73,34 @@ public class TosterHexUnit : IQPathUnit
             HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate);
             SetHexPath(p);
         }
+    }*/
+    public void Pathing_func(HexClass celhex, bool ignoreObstacles)
+    {
+        if (move == true)
+        {
+           
+                HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate, ignoreObstacles);
+                SetHexPath(p);
+            
+
+           
+        }
     }
     public HexClass[] Pathing(HexClass celhex)
     {
-        HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate);
+        HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate, false);
         return p;
     }
     public bool IsPathAvaible(HexClass celhex)
     {
-        HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate);
+        HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate, false);
         return p.Length < MovmentSpeed + 1;
     }
     public int MovementCostToEnterHex(HexClass hex)
     {
         return hex.BaseMovementCost();
     }
-    public float TurnsToGetToHex(HexClass hex, float MovesToDate)
+    public float TurnsToGetToHex(HexClass hex, TosterHexUnit tosterWhoAsk, float MovesToDate)
     {
         float baseMovesToEnterHex = MovementCostToEnterHex(hex) / MovmentSpeed;
         float MoveRemaining = MovmentSpeed;
@@ -109,6 +112,7 @@ public class TosterHexUnit : IQPathUnit
         }
         if (!hex.IsListOFunitsEmpty())
         {
+           // if (tosterWhoAsk.Team==hex.Tosters[0].Team)
             return -99; // Jeżeli na danym hexie znajduje się jednostka, blokujemy wejście - patrz dalej w wywołaniach
         }
         return 1;
@@ -316,6 +320,12 @@ public class TosterHexUnit : IQPathUnit
         }
     }
 
+    public void AttackMe(TosterHexUnit t)
+    {
+        int newhp = (HP * (Amount - 1) + TempHP) - Mathf.Max(t.Att / Def * Random.Range(t.mindmg, t.maxdmg),1);
+        Amount = Mathf.FloorToInt(newhp / HP);
+        TempHP = (newhp - Amount * HP);
+    }
 
     #endregion
 
