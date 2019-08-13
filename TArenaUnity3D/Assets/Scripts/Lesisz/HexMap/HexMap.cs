@@ -51,39 +51,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
 
     private void Update()
     {
-        
-
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            if (tosters != null)
-            {
-                foreach (TosterHexUnit u in tosters)
-                {
-                    u.DoMove();
-                }
-            }
-        }
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            if (tosters != null)
-            {
-                foreach (TosterHexUnit u in tosters)
-                {
-                    u.DUMMY_PATHING_FUNCTION();
-                }
-            }
-        }
-        if (Input.GetKeyDown(KeyCode.O))
-        {
-            if (tostersList != null)
-            {
-                tostersList[0].move = true;
-
-
-            }
-        }
-
-
+    
     }
 
 
@@ -117,7 +85,6 @@ public class HexMap : MonoBehaviour, IQPathWorld
 
         while (u.DoMove())
         {
-
             while (u.tosterView.AnimationIsPlaying) { yield return null; }
         }
 

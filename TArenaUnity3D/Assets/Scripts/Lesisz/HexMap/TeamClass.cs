@@ -120,7 +120,8 @@ public class TeamClass
                 {
                     t.Moved = false;
                     t.Waited = false;
-
+                    t.DefenceStance = false;
+                    
                 }
             }
         }
@@ -152,7 +153,7 @@ public class TeamClass
             if (Tost != null)
             {
                 Tost.SetTosterPrefab(h);
-                Tost.SetAmount();
+                Tost.SetTextAmount();
             }
         }
         if (You == true)

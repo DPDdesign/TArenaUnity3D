@@ -35,7 +35,7 @@ public class TosterHexUnit : IQPathUnit
     public int Amount = 1;
     public List<SkillsDefault> skills;
     public bool Waited = false;
-
+    public bool DefenceStance = false;
     public TosterView tosterView;
     /// <summary>
     /// 
@@ -51,84 +51,114 @@ public class TosterHexUnit : IQPathUnit
     public event TosterMovedDelegate OnTosterMoved;
     public bool Moved = false;
     public TeamClass Team;
+    public List<HexClass> HexPathList;
 
     List<HexClass> hexPath;
-
-
-    public void test()
-    {
-      //  Halo halo = (Behaviour)tosterView.GetComponent<"Halo">();
-    }
-
-
+    #region Pathing
     public void SetHexPath(HexClass[] hexPath)
     {
         this.hexPath = new List<HexClass>(hexPath);
-
     }
     public void ClearHexPath()
     {
         this.hexPath = new List<HexClass>();
     }
-
-    public void SetMyTeam(TeamClass t)
-    {
-        Team = t;
-    }
-
     public void DUMMY_PATHING_FUNCTION()
     {
         if (move == true)
         {
             HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, Hex.hexMap.GetHexAt(Hex.C + 4, Hex.R), HexClass.CostEstimate);
 
-          //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
+            //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
 
-           
+
             SetHexPath(p);
         }
     }
-
     public void Pathing_func(HexClass celhex)
-
     {
-       
-    
         if (move == true)
         {
-           
             HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate);
-
-            //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
-
-     
             SetHexPath(p);
-            
         }
     }
     public HexClass[] Pathing(HexClass celhex)
-
     {
-       
-        
-            HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate);
-
-            //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
-            return p;
-      
-    }
-
-
-    public bool IsPathAvaible(HexClass celhex)
-
-    {
-
-
         HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate);
-
-        //  HexClass[] hs = System.Array.ConvertAll(p, a => (HexClass)a);
-        return p.Length<MovmentSpeed+1;
-
+        return p;
+    }
+    public bool IsPathAvaible(HexClass celhex)
+    {
+        HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate);
+        return p.Length < MovmentSpeed + 1;
+    }
+    public int MovementCostToEnterHex(HexClass hex)
+    {
+        return hex.BaseMovementCost();
+    }
+    public float TurnsToGetToHex(HexClass hex, float MovesToDate)
+    {
+        float baseMovesToEnterHex = MovementCostToEnterHex(hex) / MovmentSpeed;
+        float MoveRemaining = MovmentSpeed;
+        float MovestoDateWhole = Mathf.Floor(MovesToDate);
+        float MovesToDateFraction = MovesToDate - MovestoDateWhole;
+        if (MovesToDateFraction < 0.01 || MovesToDateFraction > 0.99)
+        {
+            // czy powinniśmy zaokrąglać ruch w skrajnych przypadkach? NARAZIE NIC
+        }
+        if (!hex.IsListOFunitsEmpty())
+        {
+            return -99; // Jeżeli na danym hexie znajduje się jednostka, blokujemy wejście - patrz dalej w wywołaniach
+        }
+        return 1;
+    }
+    public float CostToEnterHex(IPathTile sourceTile, IPathTile destinationTile)
+    {
+        return 1;
+    }
+    public void SetHex(HexClass hex)
+    {
+        HexClass oldHex = Hex;
+        if (this.Hex != null)
+        {
+            this.Team.HexesUnderTeam.Remove(oldHex);
+            this.Hex.RemoveToster(this);
+        }
+        Hex = hex;
+        Hex.AddToster(this);
+        if (OnTosterMoved != null)
+        {
+            OnTosterMoved(oldHex, hex);
+        }
+        this.SetTextAmount();
+        this.Team.HexesUnderTeam.Add(Hex);
+    }
+    public void FindTosterPath()
+    {
+        List<int[]> m = new List<int[]>();
+        m = Hex.FindN(C, R);
+    }
+    #endregion
+    #region Hex-related
+    public void TosterHexUnitAddHex(Vector3 vect, GameObject G)
+    {
+        vec = vect;
+        ThisToster = G;
+    }
+    public Vector3 Position(GameObject G)
+    {
+        return new Vector3(
+            vec.x,
+            vec.y + G.transform.lossyScale.y / 2,
+            vec.z
+            );
+    }
+    #endregion
+    #region Wywołania/przypisywanie nowych parametrów
+    public void SetMyTeam(TeamClass t)
+    {
+        Team = t;
     }
     public TosterHexUnit()
     {
@@ -138,7 +168,6 @@ public class TosterHexUnit : IQPathUnit
         Def = 1;
         MovmentSpeed = 5;
         Initiative = 2;
-
     }
     public TosterHexUnit(int c, int r, Vector3 vect, GameObject G, GameObject Toster)
     {
@@ -149,65 +178,89 @@ public class TosterHexUnit : IQPathUnit
         ThisToster = G;
         TosterPrefab = Toster;
     }
-
-
-
-    public void TosterHexUnitAddHex(Vector3 vect, GameObject G)
+    public void SetStats(string newname, int newhp, int newattack, int newdefense, int newinitiative, int newspeed)
     {
-        vec = vect;
-        ThisToster = G;
-
+        Name = newname;
+        HP = newhp;
+        TempHP = newhp;
+        Att = newattack;
+        Def = newdefense;
+        Initiative = newinitiative;
+        MovmentSpeed = newspeed;
     }
-    public Vector3 Position(GameObject G)
+    #region Układ danych w xmlu
+    /*
+		<Units>
+             <Unit>
+                 <Name>TosterDPS</Name>
+                 <HP>20</HP>
+                 <Attack>20</Attack>
+                 <Defense>1</Defense>
+                 <Initiative>9</Initiative>
+                 <Speed>10</Speed>
+                 <Skills>
+                      <Skill1>Skill</Skill1>
+                 </Skills>
+            </Unit> 
+        </Units>
+   */
+    #endregion
+    public void InitateType(string name) //XML DATA LOAD
     {
-        return new Vector3(
-            vec.x,
-            vec.y+G.transform.lossyScale.y/2,
-            vec.z
-            );
-    }
-    private void OnMouseOver()
-    {
-        Debug.Log("Jestem Tosterem");
-    }
-
-
-    
-   
-
-    public void SetHex(HexClass hex)
-    {
-        HexClass oldHex = Hex;
-
-      if (this.Hex != null)
+        //TODO: VALIDATE SCHEMA/XML
+        TextAsset textAsset = (TextAsset)Resources.Load("data/Units");
+        XmlDocument xmldoc = new XmlDocument();
+        xmldoc.LoadXml(textAsset.text);
+        XmlNodeList nodes = xmldoc.SelectNodes("Units/Unit/Name");
+        int NumberOfNode = 0;
+        bool found = false;
+        int i = 0;
+        foreach (XmlNode node in nodes)
         {
-            this.Team.HexesUnderTeam.Remove(oldHex);
-            this.Hex.RemoveToster(this);
+            if (node.InnerText == name && found == false)
+            {
+                found = true;
+                NumberOfNode = i;
+            }
+            i++;
         }
-            
-       
-        Hex = hex;
-        Hex.AddToster(this);
-        if (OnTosterMoved != null)
+        nodes = xmldoc.SelectNodes("Units/Unit");
+        if (found == true)
         {
-            OnTosterMoved(oldHex, hex);
+            XmlNodeList UnitNodes = nodes[NumberOfNode].ChildNodes;
+            SetStats(
+                UnitNodes[0].InnerText,
+                int.Parse(UnitNodes[1].InnerText),
+                int.Parse(UnitNodes[2].InnerText),
+                int.Parse(UnitNodes[3].InnerText),
+                int.Parse(UnitNodes[4].InnerText),
+                int.Parse(UnitNodes[5].InnerText));
         }
-       this.SetAmount();
-        this.Team.HexesUnderTeam.Add(Hex);
-    }
-
-    public List<HexClass> HexPathList;
-
-    public void FindTosterPath()
+    } 
+    public void SetTosterPrefab(HexMap h)
     {
-        List<int[]> m = new List<int[]>();
-        
-        m = Hex.FindN(C,R);
-        
+        foreach (GameObject GO in h.TostersPrefabs)
+        {
+            if (GO.name == this.Name)
+            {
+                this.TosterPrefab = GO;
+            }
+        }
 
     }
-
-
+    public void SetTextAmount()
+    {
+        if (TosterPrefab != null)
+        {
+            TosterPrefab.GetComponentInChildren<TextMesh>().text = Amount.ToString();
+        }
+    }
+    public void SetAmount(int Amount)
+    {
+        this.Amount = Amount;
+    }
+    #endregion
+    #region Tury/ruchy
     public void DoTurn()
     {
         if (hexPath == null || hexPath.Count == 0)
@@ -223,16 +276,13 @@ public class TosterHexUnit : IQPathUnit
             }
             HexClass oldHex = Hex;
             HexClass newHex = hexPath[0];
-
             SetHex(newHex);
             while (Hex.hexMap.AnimationIsPlaying)
             {
                 //w8
             }
         }
-
     }
-
     public bool DoMove()
     {
         if (hexPath == null || hexPath.Count == 0)
@@ -245,16 +295,11 @@ public class TosterHexUnit : IQPathUnit
         if(hexPath.Count==1)
         {
             hexPath = null;
-        }
-
-        
-        SetHex(newhex);
-        
-
+        }       
+        SetHex(newhex);       
         return hexPath != null;
     }
-    public void DoAllMoves()
-
+    public void DoAllMoves() // OLD
     {
         if (hexPath == null || hexPath.Count == 0)
         {
@@ -263,7 +308,6 @@ public class TosterHexUnit : IQPathUnit
         while (hexPath.Count != 0)
         {
           
-
             HexClass oldHex = Hex;
             HexClass newHex = hexPath[0];
 
@@ -273,115 +317,8 @@ public class TosterHexUnit : IQPathUnit
     }
 
 
-    public int MovementCostToEnterHex(HexClass hex)
-    {
-        return hex.BaseMovementCost();
-    }
+    #endregion
 
-public float TurnsToGetToHex(HexClass hex, float MovesToDate)
-    {
 
-        float baseMovesToEnterHex = MovementCostToEnterHex(hex) / MovmentSpeed;
-        float MoveRemaining = MovmentSpeed;
 
-        float MovestoDateWhole = Mathf.Floor(MovesToDate);
-        float MovesToDateFraction = MovesToDate - MovestoDateWhole;
-
-        if (MovesToDateFraction < 0.01 || MovesToDateFraction > 0.99)
-        {
-
-        }
-        if (!hex.IsListOFunitsEmpty())
-        {
-
-            return -99;
-        }
-        return 1;
-    }
-
-    public float CostToEnterHex(IPathTile sourceTile, IPathTile destinationTile)
-    {
-        return 1;
-    }
-
-    public void SetStats(string newname, int newhp, int newattack, int newdefense, int newinitiative, int newspeed)
-    {
-        Name = newname;
-        HP = newhp;
-        TempHP = newhp;
-        Att = newattack;
-        Def = newdefense;
-        Initiative = newinitiative;
-        MovmentSpeed = newspeed;
-        
-    }
-
-    public void InitateType(string name)
-    {
-       //TODO: VALIDATE SCHEMA/XML
-        TextAsset textAsset = (TextAsset)  Resources.Load("data/Units");
-        XmlDocument xmldoc = new XmlDocument();
-        xmldoc.LoadXml(textAsset.text);
-        XmlNodeList nodes = xmldoc.SelectNodes("Units/Unit/Name");
-        int NumberOfNode = 0;
-        bool found = false;
-        int i = 0;
-        foreach ( XmlNode node in nodes)
-        {
-
-            if(node.InnerText == name && found==false)
-            {
-                found = true;
-                NumberOfNode = i;
-            }
-            i++;
-        }
-
-        nodes = xmldoc.SelectNodes("Units/Unit");
-
-        if (found == true)
-        {
-            XmlNodeList UnitNodes = nodes[NumberOfNode].ChildNodes;
-
-          
-          
-          
-            //   Debug.LogError(UnitNodes[1].InnerText);
-            SetStats(
-                UnitNodes[0].InnerText,
-                int.Parse(UnitNodes[1].InnerText),
-                int.Parse(UnitNodes[2].InnerText),
-                int.Parse(UnitNodes[3].InnerText),
-                int.Parse(UnitNodes[4].InnerText),
-                int.Parse(UnitNodes[5].InnerText));
-          
-
-        }
-            
-    }
-
-       public void SetTosterPrefab(HexMap h)
-    {
-        foreach ( GameObject GO in h.TostersPrefabs)
-        {
-            if (GO.name==this.Name)
-            {
-                this.TosterPrefab = GO;
-            }
-        }
-       
-    }
-
-    public void SetAmount()
-    {
-        if (TosterPrefab != null)
-        {
-            TosterPrefab.GetComponentInChildren<TextMesh>().text = Amount.ToString();
-        }
-    }
-
-    public void SetAmount( int Amount)
-    {
-        this.Amount = Amount;
-    }
 }

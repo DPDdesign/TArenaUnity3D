@@ -3725,12 +3725,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 2081756142}
   m_PrefabAsset: {fileID: 0}
---- !u!23 &340592699 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 23672204903577092, guid: 74442f407a24ac84f95f08a83b1bb617,
-    type: 3}
-  m_PrefabInstance: {fileID: 209161794}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &342970839
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7466,12 +7460,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 863102155}
   m_PrefabAsset: {fileID: 0}
---- !u!23 &734856552 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 23527068386015058, guid: c53e680fdc8fae04d91b4ce9e548d2df,
-    type: 3}
-  m_PrefabInstance: {fileID: 1158603702}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &734878810 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4844902911259396, guid: 01bdef6597b249b44a9530ab656246fc,
@@ -9198,12 +9186,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4844902911259396, guid: 01bdef6597b249b44a9530ab656246fc,
     type: 3}
   m_PrefabInstance: {fileID: 32196788}
-  m_PrefabAsset: {fileID: 0}
---- !u!23 &934174143 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 23120510417258372, guid: dc00aab85b301f242896a77c4b442ec0,
-    type: 3}
-  m_PrefabInstance: {fileID: 226654440}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &934201718
 PrefabInstance:
@@ -12143,6 +12125,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1274245144}
   - component: {fileID: 1274245143}
+  - component: {fileID: 1274245146}
+  - component: {fileID: 1274245145}
   m_Layer: 0
   m_Name: OutlineManager
   m_TagString: Untagged
@@ -12164,10 +12148,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   outlinePostEffect: {fileID: 1353304686}
   outliners:
-  - renderer: {fileID: 934174143}
-  Renderers:
-  - {fileID: 340592699}
-  - {fileID: 734856552}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  Renderers: []
 --- !u!4 &1274245144
 Transform:
   m_ObjectHideFlags: 0
@@ -12182,6 +12173,38 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1274245145
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1274245142}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bdcc2abedc93dc4fa7cc5bb434edd51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  outlinePostEffect: {fileID: 1353304687}
+  outliners:
+  - renderer: {fileID: 0}
+  Renderers: []
+--- !u!114 &1274245146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1274245142}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 671ee5fce3367a94e81e6afdd9954ed5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  outlinePostEffect: {fileID: 1353304686}
+  outliners:
+  - renderer: {fileID: 0}
+  Renderers: []
 --- !u!4 &1284881693 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4844902911259396, guid: 01bdef6597b249b44a9530ab656246fc,
@@ -12787,6 +12810,7 @@ GameObject:
   - component: {fileID: 1353304684}
   - component: {fileID: 1353304685}
   - component: {fileID: 1353304686}
+  - component: {fileID: 1353304687}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -12897,6 +12921,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   OutlineColor: {r: 1, g: 1, b: 1, a: 0.14509805}
   BufferDrawEvent: 20
+  Downsample: 1
+  BlurSize: 0.23
+--- !u!114 &1353304687
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1353304680}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 186d150c34a91e546ae079fb64d31003, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  OutlineColor: {r: 1, g: 0.8588345, b: 0.2028302, a: 0.14509805}
+  BufferDrawEvent: 18
   Downsample: 1
   BlurSize: 0.23
 --- !u!1001 &1356942914
@@ -14193,6 +14233,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   outlineManager: {fileID: 1274245143}
+  outlineManagerMainToster: {fileID: 1274245145}
   canvas: {fileID: 1541569964}
 --- !u!4 &1506819736
 Transform:

@@ -1,16 +1,17 @@
-﻿using UnityEngine;
+﻿
+using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 
 [RequireComponent(typeof(Camera))]
-public class UnityOutlineFX : MonoBehaviour 
+public class UnityOutlineFXMainToster : MonoBehaviour
 {
 
     #region public vars
 
     [Header("Outline Settings")]
-	[SerializeField]
-	public Color OutlineColor =  new Color(1,0,0,.05f); // alpha = fill alpha; does not effect outline alpha;
+    [SerializeField]
+    public Color OutlineColor = new Color(1, 0, 0, .05f); // alpha = fill alpha; does not effect outline alpha;
 
     public CameraEvent BufferDrawEvent = CameraEvent.BeforeImageEffects;
 
@@ -37,20 +38,20 @@ public class UnityOutlineFX : MonoBehaviour
     private List<List<Renderer>> _objectRenderers;
 
 
-    private Material _outlineMaterial;		
+    private Material _outlineMaterial;
     private Camera _camera;
 
-	private int _RTWidth = 512;
-	private int _RTHeight = 512;
+    private int _RTWidth = 512;
+    private int _RTHeight = 512;
 
     #endregion
-   
+
     public void AddRenderers(List<Renderer> renderers)
     {
-       // Debug.LogError("AddRenderers");
+      //  Debug.LogError("AddRenderers");
         AwakeAgain();
         _objectRenderers.Add(renderers);
-       
+
         RecreateCommandBuffer();
     }
 
@@ -62,16 +63,15 @@ public class UnityOutlineFX : MonoBehaviour
     {
 
 
-       //Debug.LogError(renderers);
+      //  Debug.LogError(renderers);
         foreach (var collection in _objectRenderers)
-
         {
-            collection.Remove(renderers[0]);
-        }
-          
+          //  Debug.LogError(collection.Remove(renderers[0]));
 
-     
-  //      _objectRenderers.Remove(renderers);
+        }
+
+
+        //      _objectRenderers.Remove(renderers);
         RecreateCommandBuffer();
     }
 
@@ -83,25 +83,25 @@ public class UnityOutlineFX : MonoBehaviour
     }
     public void RecreateCommandBuff()
     {
-       
+
         RecreateCommandBuffer();
 
     }
 
     private void Awake()
-	{
-      
+    {
+
         _objectRenderers = new List<List<Renderer>>();
-       
+
         _commandBuffer = new CommandBuffer();
         _commandBuffer.name = "UnityOutlineFX Command Buffer";
 
-		_depthRTID = Shader.PropertyToID("_DepthRT");
+        _depthRTID = Shader.PropertyToID("_DepthRT");
         _outlineRTID = Shader.PropertyToID("_OutlineRT");
         _blurredRTID = Shader.PropertyToID("_BlurredRT");
         _temporaryRTID = Shader.PropertyToID("_TemporaryRT");
         _idRTID = Shader.PropertyToID("_idRT");
-        
+
         _RTWidth = Screen.width;
         _RTHeight = Screen.height;
 
@@ -110,7 +110,7 @@ public class UnityOutlineFX : MonoBehaviour
         _camera = GetComponent<Camera>();
         _camera.depthTextureMode = DepthTextureMode.Depth;
         _camera.AddCommandBuffer(BufferDrawEvent, _commandBuffer);
-	}
+    }
 
     private void AwakeAgain()
     {
@@ -149,7 +149,7 @@ public class UnityOutlineFX : MonoBehaviour
 
         // render selected objects into a mask buffer, with different colors for visible vs occluded ones 
         float id = 0f;
-		foreach (var collection in _objectRenderers)
+        foreach (var collection in _objectRenderers)
         {
             id += 0.25f;
             _commandBuffer.SetGlobalFloat("_ObjectId", id);
@@ -163,7 +163,7 @@ public class UnityOutlineFX : MonoBehaviour
                 }
             }
         }
-        
+
         // object ID edge dectection pass
         _commandBuffer.GetTemporaryRT(_idRTID, _RTWidth, _RTHeight, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
         _commandBuffer.Blit(_depthRTID, _idRTID, _outlineMaterial, 3);
@@ -175,23 +175,23 @@ public class UnityOutlineFX : MonoBehaviour
         _commandBuffer.GetTemporaryRT(_temporaryRTID, rtW, rtH, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
         _commandBuffer.GetTemporaryRT(_blurredRTID, rtW, rtH, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
 
-        _commandBuffer.Blit(_idRTID,_blurredRTID);
+        _commandBuffer.Blit(_idRTID, _blurredRTID);
 
-        _commandBuffer.SetGlobalVector("_BlurDirection", new Vector2(BlurSize,0));
-        _commandBuffer.Blit(_blurredRTID, _temporaryRTID, _outlineMaterial,2);
-        _commandBuffer.SetGlobalVector("_BlurDirection", new Vector2(0,BlurSize));
+        _commandBuffer.SetGlobalVector("_BlurDirection", new Vector2(BlurSize, 0));
+        _commandBuffer.Blit(_blurredRTID, _temporaryRTID, _outlineMaterial, 2);
+        _commandBuffer.SetGlobalVector("_BlurDirection", new Vector2(0, BlurSize));
         _commandBuffer.Blit(_temporaryRTID, _blurredRTID, _outlineMaterial, 2);
 
 
         // final overlay
         _commandBuffer.SetGlobalColor("_OutlineColor", OutlineColor);
-        _commandBuffer.Blit(_blurredRTID,BuiltinRenderTextureType.CameraTarget, _outlineMaterial, 4);
+        _commandBuffer.Blit(_blurredRTID, BuiltinRenderTextureType.CameraTarget, _outlineMaterial, 4);
 
         // release tempRTs
         _commandBuffer.ReleaseTemporaryRT(_blurredRTID);
-		_commandBuffer.ReleaseTemporaryRT(_outlineRTID);
-		_commandBuffer.ReleaseTemporaryRT(_temporaryRTID);
-		_commandBuffer.ReleaseTemporaryRT(_depthRTID);
+        _commandBuffer.ReleaseTemporaryRT(_outlineRTID);
+        _commandBuffer.ReleaseTemporaryRT(_temporaryRTID);
+        _commandBuffer.ReleaseTemporaryRT(_depthRTID);
 
     }
 }

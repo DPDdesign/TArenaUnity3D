@@ -57,7 +57,10 @@ public class TosterView : MonoBehaviour
 
     private void Update()
     {
-         this.transform.position = Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
+        if (newPos != this.transform.position)
+        {
+            this.transform.position = Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
+        }
         //this.transform.position = Vector3.Lerp(this.transform.position, newPos,smoothTime);
         if (Vector3.Distance(this.transform.position, newPos) < 0.1f)
         {

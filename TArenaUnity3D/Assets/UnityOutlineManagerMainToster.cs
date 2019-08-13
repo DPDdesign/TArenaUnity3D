@@ -1,23 +1,26 @@
-﻿using System.Collections;
+﻿
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Xenu.Game {
+namespace Xenu.Game
+{
 
-	public class UnityOutlineManager : MonoBehaviour {
-		[System.Serializable]
-		public class OutlineData
-		{
-			public Renderer renderer;
-		}
+    public class UnityOutlineManagerMainToster : MonoBehaviour
+    {
+        [System.Serializable]
+        public class OutlineData
+        {
+            public Renderer renderer;
+        }
 
-		public UnityOutlineFX outlinePostEffect;
-		public OutlineData[] outliners;
+        public UnityOutlineFXMainToster outlinePostEffect;
+        public OutlineData[] outliners;
         public List<Renderer> Renderers;
-		private void Start()
-		{
-             Renderers = new List<Renderer>();
-         
+        private void Start()
+        {
+            Renderers = new List<Renderer>();
+
         }
 
 
@@ -51,7 +54,7 @@ namespace Xenu.Game {
         }
         public void AddMainOutlineWithReset()
         {
-           
+
             outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[0].renderer });
         }
 
@@ -59,21 +62,21 @@ namespace Xenu.Game {
 
         public void ChangeObj(Renderer obje)
         {
-            RemoveAllOnlyMain();
-            outliners[0].renderer = obje;       
+            RemoveOutline();
+            outliners[0].renderer = obje;
         }
 
-        public void ChangeObjects(List<Renderer>  objects)
+        public void ChangeObjects(List<Renderer> objects)
         {
             int i = 1;
             foreach (Renderer r in objects)
             {
-               
+
                 outliners[i].renderer = r;
                 outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[i].renderer });
                 i++;
             }
-           
+
         }
         public void RemoveObjects(List<Renderer> objects)
         {
@@ -89,7 +92,7 @@ namespace Xenu.Game {
 
         public void RemoveAllOnlyMain()
         {
-
+           
             outlinePostEffect.RemoveRenderers(new List<Renderer>() { outliners[0].renderer });
             outliners[0].renderer = null;
 
