@@ -7,6 +7,8 @@ public class UICanvas : MonoBehaviour
 {
     public List<Text> InfoTextsList;
     public GameObject StatsPanel;
+    public GameObject EndPanel;
+    public Text EndText;
     // Start is called before the first frame update
     void Start()
     {

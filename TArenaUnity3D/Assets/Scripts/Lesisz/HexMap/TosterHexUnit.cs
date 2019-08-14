@@ -4,6 +4,8 @@ using UnityEngine;
 using HPath;
 using System.Xml;
 using System.Xml.Serialization;
+using UnityEngine.UI;
+
 public class TosterHexUnit : IQPathUnit
 {
     public readonly int C; public readonly int R; public readonly int S; // column.row
@@ -37,6 +39,8 @@ public class TosterHexUnit : IQPathUnit
     public List<SkillsDefault> skills;
     public bool Waited = false;
     public bool DefenceStance = false;
+    public bool isDead = false;
+    public bool CounterAttackAvaible = true;
     public TosterView tosterView;
     /// <summary>
     /// 
@@ -254,9 +258,19 @@ public class TosterHexUnit : IQPathUnit
     }
     public void SetTextAmount()
     {
-        if (TosterPrefab != null)
+        //Amount--;
+
+        if (tosterView != null)
         {
-            TosterPrefab.GetComponentInChildren<TextMesh>().text = Amount.ToString();
+     
+            tosterView.gameObject.GetComponentInChildren<TextMesh>().text = Amount.ToString();
+          
+     
+            //TosterPrefab
+        }
+        else
+        {
+            TosterPrefab.gameObject.GetComponentInChildren<TextMesh>().text = Amount.ToString();
         }
     }
     public void SetAmount(int Amount)
@@ -289,11 +303,13 @@ public class TosterHexUnit : IQPathUnit
     }
     public bool DoMove()
     {
-        if (hexPath == null || hexPath.Count == 0)
+        if (hexPath == null || hexPath.Count <= 1)
         {
             return false;
         }
+
         HexClass HexWeAreLeaving =hexPath[0];
+
         HexClass newhex = hexPath[1];
         hexPath.RemoveAt(0);
         if(hexPath.Count==1)
@@ -322,13 +338,66 @@ public class TosterHexUnit : IQPathUnit
 
     public void AttackMe(TosterHexUnit t)
     {
-        int newhp = (HP * (Amount - 1) + TempHP) - Mathf.Max(t.Att / Def * Random.Range(t.mindmg, t.maxdmg),1);
+        int newhp = (HP * (Amount - 1) + TempHP) - Mathf.Max(t.Att / Def * Random.Range(t.mindmg, t.maxdmg),1)*t.Amount;
+
         Amount = Mathf.FloorToInt(newhp / HP);
+
         TempHP = (newhp - Amount * HP);
+
+        if (TempHP>=1 )
+        {
+         
+            Amount++;
+
+        }
+        else TempHP = HP;
+
+        if (Amount < 1)
+        {
+            Died();
+        }
+        else
+        {
+            SetTextAmount();
+            if (CounterAttackAvaible==true)
+            {
+                CounterAttackAvaible = false;
+                 newhp = (t.HP * (t.Amount - 1) + t.TempHP) - Mathf.Max(Att / t.Def * Random.Range(mindmg, maxdmg), 1) * Amount;
+
+               t.Amount = Mathf.FloorToInt(newhp / t.HP);
+
+                t.TempHP = (newhp - t.Amount *t.HP);
+
+                if (t.TempHP >= 1)
+                {
+
+                    t.Amount++;
+
+                }
+                else t.TempHP = t.HP;
+
+                if (t.Amount < 1)
+                {
+                    t.Died();
+                    
+                }
+                else
+                    t.SetTextAmount();
+            }
+        }
+
     }
 
     #endregion
 
 
-
+    public void Died()
+    {
+        tosterView.gameObject.GetComponentInChildren<TextMesh>().text = "DEAD";
+        isDead = true;
+        Moved = true;
+        Team.HexesUnderTeam.Remove(this.Hex);
+        Hex.RemoveToster(this);
+        tosterView.gameObject.transform.localScale = new Vector3(1f, 0.1f, 1f);
+    }
 }

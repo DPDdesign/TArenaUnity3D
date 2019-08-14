@@ -18,13 +18,33 @@ public class TurnManager : MonoBehaviour
     /// // TODO : CZEKAC NA NASTEPNA TURE DO KONCA ANIMACJI!!!
     /// </summary>
     /// <returns></returns>
-    public TosterHexUnit AskWhosTurn()
+    /// 
+
+
+  public int isAnyoneAlive()
     {
         Teams = hexMap.Teams;
+        if (Teams[0].IsMyTeamDEAD())
+        {
+            return 1;
+        }
+
+        if (Teams[1].IsMyTeamDEAD())
+        {
+            return 2;
+        }
+        return 0;
+    }
+
+    public TosterHexUnit AskWhosTurn()
+    {
+
+        Teams = hexMap.Teams;
+     
         TosterHexUnit TeamRed = Teams[0].AskForUnit();
         TosterHexUnit TeamBlue = Teams[1].AskForUnit();
 
-        if (TeamRed == TeamBlue )
+        if (TeamRed == TeamBlue)
         {
             Teams[0].NewTurn();
             Teams[1].NewTurn();
@@ -34,7 +54,7 @@ public class TurnManager : MonoBehaviour
         if (TeamBlue == null) return TeamRed;
         if (TeamRed.Initiative == TeamBlue.Initiative)
         {
-            if ((TeamBlue.Waited==false && TeamBlue.Waited==false)||(TeamBlue.Waited == true && TeamBlue.Waited == true))
+            if ((TeamBlue.Waited == false && TeamBlue.Waited == false) || (TeamBlue.Waited == true && TeamBlue.Waited == true))
             {
                 // sprawdzamy kto ma  pierwszy kolejnosc - zaczyna ten kto wyzej sie zrespil, pierwszenstwo od lewo gora do prawo dol //
                 int t = 0;
@@ -43,7 +63,7 @@ public class TurnManager : MonoBehaviour
                 for (int i = 0; i < Teams[1].Tosters.Count; i++) { if (Teams[1].Tosters[i] == TeamBlue) o = i; }
                 if (o == t)
                 {
-                 
+
                     return TeamRed;
                 }
                 else return TeamBlue;
@@ -55,14 +75,15 @@ public class TurnManager : MonoBehaviour
             if (TeamBlue.Waited == true)
             {
                 return TeamRed;
-            }else
+            }
+            else
             if (TeamRed.Waited == true)
             {
                 return TeamBlue;
             }
 
         }
-         if (TeamRed.Initiative > TeamBlue.Initiative && TeamRed.Waited==false)
+        if (TeamRed.Initiative > TeamBlue.Initiative && TeamRed.Waited == false)
         {
             return TeamRed;
         }

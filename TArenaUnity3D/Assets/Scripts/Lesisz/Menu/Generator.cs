@@ -60,12 +60,12 @@ public class Generator : MonoBehaviour
     }
     public void Wczytaj()
     {
-        
-        NazwaBohatera.text = PlayerPrefs.GetString("NazwaBohatera");
+
+        NazwaBohatera.text = PanelArmii.LoadedBuild.NazwaBohatera;// PlayerPrefs.GetString("NazwaBohatera");
         int i = 0;
         foreach (int t in PanelArmii.LoadedBuild.NoUnits)
         {
-
+     
             inputFields[i].text = t.ToString();
             UnitsAmount[i] = t;
             i++;
@@ -73,10 +73,10 @@ public class Generator : MonoBehaviour
         i = 0;
         foreach (string t in PanelArmii.LoadedBuild.Units)
         {
-           
+      
             if (PanelArmii.ListOfUnits.Contains(t))
             {
-        
+               
                 ColorBlock cb = defaultButtons[1].colors;
                 buttons[i].colors = cb;
                 for (int d = 0; d < PanelArmii.ListOfUnits.Count; d++)
@@ -168,7 +168,6 @@ public class Generator : MonoBehaviour
         Units[NumberOfUnit] = t;
 
 
-        Debug.LogError(Units[NumberOfUnit]);
     }
 
 

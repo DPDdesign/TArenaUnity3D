@@ -116,16 +116,32 @@ public class TeamClass
             foreach (TosterHexUnit t in Tosters)
             {
 
-                if (t.Moved == true)
+                if (t.Moved == true && t.isDead==false)
                 {
                     t.Moved = false;
                     t.Waited = false;
                     t.DefenceStance = false;
-                    
+                    t.CounterAttackAvaible = true;
                 }
             }
         }
 
+    }
+
+    public bool IsMyTeamDEAD()
+    {
+        foreach (TosterHexUnit t in Tosters)
+        {
+
+            if (t.isDead == false)
+            {
+                return false;
+
+
+            }
+        }
+
+        return true;
     }
 
 

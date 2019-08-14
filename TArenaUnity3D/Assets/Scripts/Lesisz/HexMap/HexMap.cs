@@ -119,7 +119,9 @@ public class HexMap : MonoBehaviour, IQPathWorld
                 hexes[col, row] = h;
                 hextoGameObjectMap.Add(h, HexGo);
                 h.MyHex = HexGo;
-
+                List<GameObject> list = new List<GameObject>();
+                list = h.MyHex.GetComponentInChildren<HexInfo>().GiveMe();
+                h.crealistofparts(list);
 
             }
 
@@ -146,6 +148,9 @@ public class HexMap : MonoBehaviour, IQPathWorld
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
                 h.MyHex = HexGo;
+                List<GameObject> list = new List<GameObject>();
+                list = h.MyHex.GetComponentInChildren<HexInfo>().GiveMe();
+                h.crealistofparts(list);
             }
         }
 
@@ -169,6 +174,9 @@ public class HexMap : MonoBehaviour, IQPathWorld
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
                 h.MyHex = HexGo;
+                List<GameObject> list = new List<GameObject>();
+                list = h.MyHex.GetComponentInChildren<HexInfo>().GiveMe();
+                h.crealistofparts(list);
             }
         }
         //StaticBatchingUtility.Combine(this.gameObject.GetComponentInChildren<MeshFilter>().gameObject);

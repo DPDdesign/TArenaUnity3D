@@ -10,7 +10,13 @@ public class HexClass : IPathTile {
     public List<TosterHexUnit> Tosters;
     public GameObject MyHex;
     public readonly HexMap hexMap;
+    public List<GameObject> ListOfParts;
 
+    public void crealistofparts(List<GameObject> l)
+    {
+        ListOfParts = new List<GameObject>();
+        ListOfParts = l;
+    }
 
     public HexClass(HexMap hexMap, int c, int r)
     {
