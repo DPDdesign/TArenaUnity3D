@@ -35,13 +35,13 @@ public class Skill1 : SkillsDefault
             if (kochamizabelke < 2 && hexUnderMouse != SelectedToster.Hex && !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse) && hexUnderMouse.Tosters.Count > 0 && hexUnderMouse.Tosters.Count > 0)
             {
                         TosterHexUnit trgt = hexUnderMouse.Tosters[0];
-                        trgt.AttackMe(trgt);
+                        trgt.AttackMe(SelectedToster);
                         Debug.Log("Zaatakowalem: " + trgt.Name);
             kochamizabelke++;
             }
 
             else if (kochamizabelke == 2)
-        { MouseControler.SkillState = false; }
+        { kochamizabelke = 0;  MouseControler.SkillState = false; }
 
             else { Debug.Log("Nie ma tosta na tym polu");
             //yield return null;
