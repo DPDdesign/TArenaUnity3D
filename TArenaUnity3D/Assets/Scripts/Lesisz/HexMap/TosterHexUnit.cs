@@ -5,7 +5,8 @@ using HPath;
 using System.Xml;
 using System.Xml.Serialization;
 using UnityEngine.UI;
-
+using System;
+using Random = UnityEngine.Random;
 
 public class TosterHexUnit : IQPathUnit
 {
@@ -37,7 +38,8 @@ public class TosterHexUnit : IQPathUnit
     [XmlAttribute("Initiative")]
     public int Initiative = 2;
     public int Amount = 1;
-    public List<SkillsDefault> skills;
+  
+    public List<string> skillstrings;
     public bool Waited = false;
     public bool DefenceStance = false;
     public bool isDead = false;
@@ -180,10 +182,15 @@ public class TosterHexUnit : IQPathUnit
         MovmentSpeed = 5;
         Initiative = 2;
 
-        skills = new List<SkillsDefault>();
-        string p = "Skill1";
+    
+        skillstrings = new List<string>();
+   
+        /*
+        Type type = Type.GetType(p, true);  
         Skill1 s1 = new Skill1();
+        Debug.Log(type.FullName);
         skills.Add(s1); 
+        */
     }
     public TosterHexUnit(int c, int r, Vector3 vect, GameObject G, GameObject Toster)
     {
@@ -194,7 +201,7 @@ public class TosterHexUnit : IQPathUnit
         ThisToster = G;
         TosterPrefab = Toster;
     }
-    public void SetStats(string newname, int newhp, int newattack, int newdefense, int newinitiative, int newspeed)
+    public void SetStats(string newname, int newhp, int newattack, int newdefense, int newinitiative, int newspeed, List<string> spells)
     {
         Name = newname;
         HP = newhp;
@@ -203,6 +210,7 @@ public class TosterHexUnit : IQPathUnit
         Def = newdefense;
         Initiative = newinitiative;
         MovmentSpeed = newspeed;
+        skillstrings = spells;
     }
     #region Układ danych w xmlu
     /*
@@ -241,16 +249,27 @@ public class TosterHexUnit : IQPathUnit
             i++;
         }
         nodes = xmldoc.SelectNodes("Units/Unit");
+      //  
         if (found == true)
         {
             XmlNodeList UnitNodes = nodes[NumberOfNode].ChildNodes;
+            XmlNodeList spells = UnitNodes[6].ChildNodes;
+        
+            List<string> sp = new List<string>();
+            foreach (XmlNode s in spells)
+            {
+                
+                sp.Add(s.InnerText);
+                
+            }
             SetStats(
                 UnitNodes[0].InnerText,
                 int.Parse(UnitNodes[1].InnerText),
                 int.Parse(UnitNodes[2].InnerText),
                 int.Parse(UnitNodes[3].InnerText),
                 int.Parse(UnitNodes[4].InnerText),
-                int.Parse(UnitNodes[5].InnerText));
+                int.Parse(UnitNodes[5].InnerText),
+                sp);
         }
     } 
     public void SetTosterPrefab(HexMap h)
@@ -404,7 +423,34 @@ public class TosterHexUnit : IQPathUnit
         }
 
     }
+    
 
+    public void DealMeDMG()
+    {
+
+    }
+    public void DealMePURE(int i)
+    {
+        int newhp = (HP * (Amount - 1) + TempHP) - i;
+
+        Amount = Mathf.FloorToInt(newhp / HP);
+
+        TempHP = (newhp - Amount * HP);
+
+        if (TempHP >= 1)
+        {
+
+            Amount++;
+
+        }
+        else TempHP = HP;
+
+        if (Amount < 1)
+        {
+            Died();
+        }
+        else SetTextAmount();
+    }
     #endregion
 
 

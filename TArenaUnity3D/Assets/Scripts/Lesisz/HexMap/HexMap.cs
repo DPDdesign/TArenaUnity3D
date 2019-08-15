@@ -65,6 +65,21 @@ public class HexMap : MonoBehaviour, IQPathWorld
         return hexes[x % 20, y % 12];
     }
 
+    /*
+    public List<HexClass> GetHexAround(int x, int y, int radius)
+    {
+        if (hexes == null)
+        {
+            Debug.LogError("Hexes not found");
+        }
+        List<HexClass> 
+        return hexes[x % 20, y % 12];
+    }
+    */
+
+
+
+
     public Vector3 GetHexPos(int q, int r)
     {
         HexClass h = GetHexAt(q, r);
@@ -395,7 +410,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
         UpdateHexVisuals();
     }
 
-    public void HighlightAround(TosterHexUnit This, TosterHexUnit butremember)
+    public void HighlightAroundToster(TosterHexUnit This, TosterHexUnit butremember)
     {
         HexClass centerHex = This.Hex;
 
@@ -416,6 +431,52 @@ public class HexMap : MonoBehaviour, IQPathWorld
         }
         UpdateHexVisuals();
     }
+
+    public void unHighlightAroundHex(HexClass what, int radius)
+    {
+        HexClass centerHex = what;
+
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex,radius);
+
+        foreach (HexClass h in areaHexes)
+        {
+            //if(h.Elevation < 0)
+            //h.Elevation = 0;
+            if (h != null )
+            {
+                if (hextoGameObjectMap.ContainsKey(h) == true)
+                {
+
+                    h.Highlight = false;
+                }
+            }
+        }
+        UpdateHexVisuals();
+    }
+
+
+    public void HighlightAroundHex(HexClass what, int radius)
+    {
+        HexClass centerHex = what;
+
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, radius);
+
+        foreach (HexClass h in areaHexes)
+        {
+            //if(h.Elevation < 0)
+            //h.Elevation = 0;
+            if (h != null)
+            {
+                if (hextoGameObjectMap.ContainsKey(h) == true)
+                {
+
+                    h.Highlight = true;
+                }
+            }
+        }
+        UpdateHexVisuals();
+    }
+
 
 
     public void CheckWithPath(TosterHexUnit hh)

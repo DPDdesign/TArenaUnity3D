@@ -5,10 +5,11 @@ using UnityEngine;
 
 public class Skill1 : SkillsDefault
 {
-    public Skill1()
+
+ /*   public Skill1()
     {
         this.SkillName = "Skill1";
-    }
+    }*/
 
     #region Heal Ally
     //override public void CastSkill()
@@ -28,6 +29,7 @@ public class Skill1 : SkillsDefault
 
     #region  Triple Shot
     int kochamizabelke = 0;
+    /*
     override public void CastSkill()
     {
         MouseControler.SkillState = true;
@@ -48,7 +50,7 @@ public class Skill1 : SkillsDefault
             }
         
     }
-
+    */
     #endregion
 
 }

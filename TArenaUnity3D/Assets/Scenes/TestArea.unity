@@ -5877,6 +5877,50 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 01bdef6597b249b44a9530ab656246fc, type: 3}
+--- !u!1 &547084145
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 547084147}
+  - component: {fileID: 547084146}
+  m_Layer: 0
+  m_Name: CastMenager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &547084146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 547084145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c8ac255ca394e34bb7351a3730c4f69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mouseControler: {fileID: 1506819735}
+--- !u!4 &547084147
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 547084145}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 721.9242, y: 295.01886, z: -98.10749}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 10
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &548477568
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14508,6 +14552,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9caf9edefd9cc94e8fb639e85710394, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  castManager: {fileID: 547084146}
   LayerIDForHexTiles:
     serializedVersion: 2
     m_Bits: 1024
@@ -14517,6 +14562,7 @@ MonoBehaviour:
   outlineManager: {fileID: 1274245143}
   outlineManagerMainToster: {fileID: 1274245145}
   canvas: {fileID: 1541569964}
+  shiftmode: 0
 --- !u!4 &1506819736
 Transform:
   m_ObjectHideFlags: 0

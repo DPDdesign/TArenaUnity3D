@@ -5,13 +5,14 @@ using UnityEngine.UI;
 using Xenu.Game;
 public class MouseControler : MonoBehaviour
 {
-   
+
 
     HexMap hexMap;
-    public static HexClass hexUnderMouse;
-    public static HexClass hexLastUnderMouse;
+    public HexClass hexUnderMouse;
+    public CastManager castManager;
+    public HexClass hexLastUnderMouse;
     GameObject GOUnderMouse;
-    GameObject GOLastUnderMouse=null;
+    GameObject GOLastUnderMouse = null;
     HexClass[] hexPath;
     public LayerMask LayerIDForHexTiles;
     public LayerMask LayerIDForPartTiles;
@@ -31,15 +32,25 @@ public class MouseControler : MonoBehaviour
     Vector3 LastMouseGroundPlanePosition;
     Vector3 cameraTargetOffset;
     TurnManager TM;
-
-    public static TosterHexUnit SelectedToster = null;
+    int SelectedSpellid = 0;
+    public TosterHexUnit SelectedToster = null;
     TosterHexUnit TempSelectedToster = null;
     TosterHexUnit TempOutlinedToster = null;
     TosterHexUnit TargetToster = null;
+
+
+    public HexClass getHexUnderMouse()
+    {
+        return hexUnderMouse;
+    }
+    public TosterHexUnit getSelectedToster()
+    {
+        return SelectedToster;
+    }
     void Start()
     {
         Update_CurrentFunc = Update_DetectModeStart;
-           hexMap = GameObject.FindObjectOfType<HexMap>();
+        hexMap = GameObject.FindObjectOfType<HexMap>();
         hexPath = null;
 
     }
@@ -50,13 +61,13 @@ public class MouseControler : MonoBehaviour
 
 
     void Update()
-    {   
+    {
         Update_CurrentFunc();
-        
+
         LastMousePosition = Input.mousePosition;
-        
+
         hexUnderMouse = MouseToHex();
-       // MouseToPart();
+        // MouseToPart();
         hexLastUnderMouse = hexUnderMouse;
         GOLastUnderMouse = GOUnderMouse;
     }
@@ -67,8 +78,9 @@ public class MouseControler : MonoBehaviour
     {
         TM = FindObjectOfType<TurnManager>();
 
-        if (SelectedToster!=null)
+        if (SelectedToster != null)
         {
+            Debug.LogError(SelectedToster.Name);
             outlineManagerMainToster.RemoveOutline();
         }
 
@@ -83,7 +95,7 @@ public class MouseControler : MonoBehaviour
             canvas.EndPanel.SetActive(true);
             canvas.EndText.text = "Right Player Win! ";
         }
-      
+
         SelectedToster = TM.AskWhosTurn();
         SelectedToster.isSelected = true;
 
@@ -93,17 +105,17 @@ public class MouseControler : MonoBehaviour
         hexUnderMouse = SelectedToster.Hex;
         SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
         Update_CurrentFunc = SelectTosterMovement;
-        return;     
+        return;
     }
-    
-  
+
+
     // TRYB RUCHU JEDNOSTKI
     void SelectTosterMovement()
     {
         Defense();
         Pathing();
         Outlining();
-        shiftctrlmode();       
+        shiftctrlmode();
         ScrollLook();
         Wait();
         //Heal();
@@ -127,12 +139,12 @@ public class MouseControler : MonoBehaviour
 
                 StartCoroutine(DoMoves());
             }
-           // CancelUpdateFunc();
+            // CancelUpdateFunc();
             return;
         } //DoMove 
     }
 
-    void Outlining()
+    public void Outlining()
     {
         if (hexUnderMouse != SelectedToster.Hex)
         {
@@ -167,16 +179,16 @@ public class MouseControler : MonoBehaviour
     }
     void BeforeNextTurn()
     {
-      //  shiftctrlmode();
-       // ScrollLook();
+        //  shiftctrlmode();
+        // ScrollLook();
     }
     IEnumerator DoMoves()
     {
         SelectedToster.move = true;
         SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
         SelectedToster.Pathing_func(hexUnderMouse, false);
-  
-       // Debug.LogError(SelectedToster.HexPathList.Count);
+
+        // Debug.LogError(SelectedToster.HexPathList.Count);
         SelectedToster.Moved = true;
         Update_CurrentFunc = BeforeNextTurn;
         StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
@@ -195,11 +207,11 @@ public class MouseControler : MonoBehaviour
         if (temp != null && temp.Highlight == true)
         {
             SelectedToster.move = true;
-        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
 
-       
+
             //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
-         //   hexPath = SelectedToster.Pathing(temp);
+            //   hexPath = SelectedToster.Pathing(temp);
 
 
             SelectedToster.Pathing_func(temp, false);
@@ -216,20 +228,221 @@ public class MouseControler : MonoBehaviour
     }
     public void EndSkills()
     {
+        hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
         SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
         SelectedToster.Moved = true;
         CancelUpdateFunc();
         shiftmode = false;
+        return;
+    }
+
+    void SpellCasting()
+    {
+       
+        Outlining();
+
+        if (castManager.isAoE == true)
+        {
+    
+
+            hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius+2);
+            hexMap.HighlightAroundHex(hexUnderMouse, castManager.aoeradius);
+           
+        }
+       
+
+        if (SkillState == false)
+        {
+
+            EndSkills();
+            return;
+        }
+        else
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+
+
+                castManager.startSpell(SelectedToster.skillstrings[SelectedSpellid]);
+
+            }
+        }
+        
+        
+            if (Input.GetMouseButtonDown(1) && castManager.isInProgress==false)
+            {
+            hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
+            CancelUpdateFunc();
+            return;
+            }
+
+        
+    }
+
+    public void HighlightEnemy()
+    {
+        TeamClass team = new TeamClass();
+        if (hexMap.Teams[0] == SelectedToster.Team) team = hexMap.Teams[1];
+        else team = hexMap.Teams[0];
+
+            foreach (HexClass h in team.HexesUnderTeam)
+        {
+            h.Highlight = true;
+        }
+        hexMap.UpdateHexVisuals();
+    }
+
+
+    public void HighlightFriend()
+    {
+        TeamClass team = new TeamClass();
+        if (hexMap.Teams[0] == SelectedToster.Team) team = hexMap.Teams[0];
+        else team = hexMap.Teams[1];
+
+        foreach (HexClass h in team.HexesUnderTeam)
+        {
+            h.Highlight = true;
+        }
+        hexMap.UpdateHexVisuals();
+    }
+    public void unHighlightFriend()
+    {
+        TeamClass team = new TeamClass();
+        if (hexMap.Teams[0] == SelectedToster.Team) team = hexMap.Teams[0];
+        else team = hexMap.Teams[1];
+
+        foreach (HexClass h in team.HexesUnderTeam)
+        {
+            h.Highlight = false;
+        }
+        hexMap.UpdateHexVisuals();
+    }
+
+    public void unHighlightEnemy()
+    {
+        TeamClass team = new TeamClass();
+        if (hexMap.Teams[0] == SelectedToster.Team) team = hexMap.Teams[1];
+        else team = hexMap.Teams[0];
+
+        foreach (HexClass h in team.HexesUnderTeam)
+        {
+            h.Highlight = false;
+        }
+        hexMap.UpdateHexVisuals();
     }
     public static bool SkillState = true;
     void CastSkill()
     {
-       
+
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-              SelectedToster.skills[0].CastSkill(); 
-            if(!SkillState) { EndSkills(); }
-            
+            if (SelectedToster.skillstrings.Count >= 1)
+            {
+                SelectedSpellid = 0;
+                SkillState = true;
+
+                Debug.LogError((SelectedToster.skillstrings[SelectedSpellid]));
+                castManager.getMode(SelectedToster.skillstrings[SelectedSpellid]);
+                if (castManager.unselectaround == true)
+                {
+                    SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+                }
+                if (castManager.RangeSelectingenemy == true)
+                {
+
+                    HighlightEnemy();
+                }
+                if (castManager.selectingfriend == true)
+                {
+                    HighlightFriend();
+                }
+
+                Update_CurrentFunc = SpellCasting;
+                return;
+
+
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            if (SelectedToster.skillstrings.Count >= 2)
+            {
+                SelectedSpellid = 1;
+                SkillState = true;
+
+                Debug.LogError((SelectedToster.skillstrings[SelectedSpellid]));
+                castManager.getMode(SelectedToster.skillstrings[SelectedSpellid]);
+                if (castManager.unselectaround == true)
+                {
+                    SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+                }
+                if (castManager.RangeSelectingenemy == true)
+                {
+                    
+                    HighlightEnemy();
+                }
+                if (castManager.selectingfriend == true)
+                {
+                    HighlightFriend();
+                }
+
+                Update_CurrentFunc = SpellCasting;
+                return;
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            if (SelectedToster.skillstrings.Count >= 3)
+            {
+                SelectedSpellid = 2;
+                SkillState = true;
+
+                Debug.LogError((SelectedToster.skillstrings[SelectedSpellid]));
+                castManager.getMode(SelectedToster.skillstrings[SelectedSpellid]);
+                if (castManager.unselectaround == true)
+                {
+                    SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+                }
+                if (castManager.RangeSelectingenemy == true)
+                {
+
+                    HighlightEnemy();
+                }
+                if (castManager.selectingfriend == true)
+                {
+                    HighlightFriend();
+                }
+
+                Update_CurrentFunc = SpellCasting;
+                return;
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha4))
+        {
+            if (SelectedToster.skillstrings.Count >= 4)
+            {
+                SelectedSpellid = 3;
+                SkillState = true;
+
+                Debug.LogError((SelectedToster.skillstrings[SelectedSpellid]));
+                castManager.getMode(SelectedToster.skillstrings[SelectedSpellid]);
+                if (castManager.unselectaround == true)
+                {
+                    SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+                }
+                if (castManager.RangeSelectingenemy == true)
+                {
+
+                    HighlightEnemy();
+                }
+                if (castManager.selectingfriend == true)
+                {
+                    HighlightFriend();
+                }
+
+                Update_CurrentFunc = SpellCasting;
+                return;
+            }
         }
 
         /*
