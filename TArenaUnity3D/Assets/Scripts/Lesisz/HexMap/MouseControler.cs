@@ -8,8 +8,8 @@ public class MouseControler : MonoBehaviour
    
 
     HexMap hexMap;
-    HexClass hexUnderMouse;
-    HexClass hexLastUnderMouse;
+    public static HexClass hexUnderMouse;
+    public static HexClass hexLastUnderMouse;
     GameObject GOUnderMouse;
     GameObject GOLastUnderMouse=null;
     HexClass[] hexPath;
@@ -23,7 +23,7 @@ public class MouseControler : MonoBehaviour
     UpdateFunc Update_CurrentFunc;
 
     Vector3 LastMousePosition;
-    bool shiftmode = false;
+    public bool shiftmode = false;
     LineRenderer lineRenderer;
     int MouseDragTreshold = 1;
     Vector3 TestGoUp;
@@ -32,7 +32,7 @@ public class MouseControler : MonoBehaviour
     Vector3 cameraTargetOffset;
     TurnManager TM;
 
-    TosterHexUnit SelectedToster = null;
+    public static TosterHexUnit SelectedToster = null;
     TosterHexUnit TempSelectedToster = null;
     TosterHexUnit TempOutlinedToster = null;
     TosterHexUnit TargetToster = null;
@@ -106,8 +106,8 @@ public class MouseControler : MonoBehaviour
         shiftctrlmode();       
         ScrollLook();
         Wait();
-        Heal();
-        //CastSkill();
+        //Heal();
+        CastSkill();
 
         if (Input.GetMouseButtonDown(1) && hexUnderMouse.Tosters.Count > 0)
         {
@@ -217,59 +217,56 @@ public class MouseControler : MonoBehaviour
 
     void CastSkill()
     {
-      
-          /*
-        
 
-        if (Input.GetKeyDown(KeyCode.Alpha2))
+        /*
+
+
+      if (Input.GetKeyDown(KeyCode.Alpha2))
+      {
+          SelectedToster.skills[1].CastSkill(SelectedToster, SelectedToster);
+          SelectedToster.Moved = true;
+          CancelUpdateFunc();
+          shiftmode = false;
+      }
+
+      else  if (Input.GetKeyDown(KeyCode.Alpha3))
+      {
+          SelectedToster.skills[2].CastSkill(SelectedToster, SelectedToster);
+          SelectedToster.Moved = true;
+          CancelUpdateFunc();
+          shiftmode = false;
+      }
+      */
+
+        if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            SelectedToster.skills[1].CastSkill(SelectedToster, SelectedToster);
+            SelectedToster.skills[0].CastSkill();
             SelectedToster.Moved = true;
             CancelUpdateFunc();
             shiftmode = false;
         }
-
-        else  if (Input.GetKeyDown(KeyCode.Alpha3))
-        {
-            SelectedToster.skills[2].CastSkill(SelectedToster, SelectedToster);
-            SelectedToster.Moved = true;
-            CancelUpdateFunc();
-            shiftmode = false;
-        }
-        */
-
-       
-            SelectedToster.skills[0].CastSkill(SelectedToster, SelectedToster);
-            SelectedToster.Moved = true;
-            CancelUpdateFunc();
-            shiftmode = false;
-        
-
     }
 
 
-
+    /*
 
     void Heal()
     {
         if (Input.GetKeyDown(KeyCode.H) && SelectedToster.Name=="TosterHEAL")
         {
             SelectedToster.HealMe(5);
-        }
+        
+    }
 
-        if (Input.GetMouseButtonDown(0) && hexUnderMouse != SelectedToster.Hex && SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse))
-        {
-            if(hexUnderMouse.Tosters.Count > 0)
-            {
-                TosterHexUnit Target = hexUnderMouse.Tosters[0];
-                Target.HealMe(5);
-                Debug.Log(Target.Name);
-                Debug.Log(Target.TempHP);
-            }
-        }
+    */
 
+        void BasicAttack()
+    {
 
     }
+
+
+
 
     void WaitForMove()
     {
@@ -324,7 +321,7 @@ public class MouseControler : MonoBehaviour
         }
     }
 
-    void shiftctrlmode()
+    public virtual void shiftctrlmode()
     {
         if (shiftmode)
         {

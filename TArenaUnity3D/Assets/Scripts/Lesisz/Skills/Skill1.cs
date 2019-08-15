@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class Skill1 : SkillsDefault
 {
    public Skill1()
@@ -9,8 +10,38 @@ public class Skill1 : SkillsDefault
         this.SkillName = "Skill1";
     }
 
-    override public void CastSkill(TosterHexUnit Caster, TosterHexUnit Target)
+    /* Heal Ally
+        override public void CastSkill()
+        {
+            if (hexUnderMouse != SelectedToster.Hex && SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse))
+            {
+                if (hexUnderMouse.Tosters.Count > 0)
+                {
+                    TosterHexUnit trgt = hexUnderMouse.Tosters[0];
+                    trgt.HealMe(5);
+                    Debug.Log(trgt.Name);
+                }
+            }  
+        }
+
+    */
+
+    #region Tripple shot
+
+    override public void CastSkill()
     {
-        Debug.Log("Użyłem Skill1");
+        if (hexUnderMouse != SelectedToster.Hex && SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse))
+        {
+            if (hexUnderMouse.Tosters.Count > 0)
+            {
+                TosterHexUnit trgt = hexUnderMouse.Tosters[0];
+                trgt.AttackMe(trgt);
+                Debug.Log(trgt.Name);
+            }
+        }
     }
+
+    #endregion
+
 }
+

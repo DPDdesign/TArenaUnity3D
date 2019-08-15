@@ -6,6 +6,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using UnityEngine.UI;
 
+
 public class TosterHexUnit : IQPathUnit
 {
     public readonly int C; public readonly int R; public readonly int S; // column.row
@@ -168,6 +169,8 @@ public class TosterHexUnit : IQPathUnit
     {
         Team = t;
     }
+
+
     public TosterHexUnit()
     {
         Name = "NoName";
@@ -180,14 +183,6 @@ public class TosterHexUnit : IQPathUnit
         skills = new List<SkillsDefault>();
         Skill1 s1 = new Skill1();
         skills.Add(s1);
-        /*
-        skill2 s2 = new skill2();
-        skill3 s3 = new skill3();
-      
-        skills.Add(s2);
-        skills.Add(s3);
-        */
-
     }
     public TosterHexUnit(int c, int r, Vector3 vect, GameObject G, GameObject Toster)
     {
@@ -351,14 +346,12 @@ public class TosterHexUnit : IQPathUnit
     // TempHP = current 
     public void HealMe(int h)
     {
-        Debug.Log("Zostalem Uleczony ");
-      
       if (TempHP-h < HP) { TempHP += h; }
         else { TempHP = HP; }
     }
 
 
-    public void AttackMe(TosterHexUnit t)
+    public void AttackMe(TosterHexUnit t, int d)
     {
         int newhp = (HP * (Amount - 1) + TempHP) - Mathf.Max(t.Att / Def * Random.Range(t.mindmg, t.maxdmg),1)*t.Amount;
 
