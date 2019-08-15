@@ -8,4 +8,9 @@ public class Skill1 : SkillsDefault
     {
         this.SkillName = "Skill1";
     }
+
+    override public void CastSkill(TosterHexUnit Caster, TosterHexUnit Target)
+    {
+        Debug.Log("Użyłem Skill1");
+    }
 }

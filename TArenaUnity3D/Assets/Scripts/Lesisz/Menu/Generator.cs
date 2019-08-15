@@ -48,10 +48,10 @@ public class Generator : MonoBehaviour
         }
 
         int i = 0;
-        Debug.LogError(buttons);
+        Debug.Log(buttons);
         foreach (Button button in buttons)
         {
-            Debug.LogError(i);
+            Debug.Log(i);
             SetButtonNew(button);
             i++;
            

@@ -176,6 +176,18 @@ public class TosterHexUnit : IQPathUnit
         Def = 1;
         MovmentSpeed = 5;
         Initiative = 2;
+
+        skills = new List<SkillsDefault>();
+        Skill1 s1 = new Skill1();
+        skills.Add(s1);
+        /*
+        skill2 s2 = new skill2();
+        skill3 s3 = new skill3();
+      
+        skills.Add(s2);
+        skills.Add(s3);
+        */
+
     }
     public TosterHexUnit(int c, int r, Vector3 vect, GameObject G, GameObject Toster)
     {
@@ -200,13 +212,13 @@ public class TosterHexUnit : IQPathUnit
     /*
 		<Units>
              <Unit>
-                 <Name>TosterDPS</Name>
-                 <HP>20</HP>
-                 <Attack>20</Attack>
-                 <Defense>1</Defense>
-                 <Initiative>9</Initiative>
-                 <Speed>10</Speed>
-                 <Skills>
+                0 <Name>TosterDPS</Name>
+                1 <HP>20</HP>
+                2 <Attack>20</Attack>
+                3 <Defense>1</Defense>
+                4 <Initiative>9</Initiative>
+                5 <Speed>10</Speed>
+                6 <Skills>
                       <Skill1>Skill</Skill1>
                  </Skills>
             </Unit> 
@@ -335,6 +347,16 @@ public class TosterHexUnit : IQPathUnit
      
         }
     }
+
+    // TempHP = current 
+    public void HealMe(int h)
+    {
+        Debug.Log("Zostalem Uleczony ");
+      
+      if (TempHP-h < HP) { TempHP += h; }
+        else { TempHP = HP; }
+    }
+
 
     public void AttackMe(TosterHexUnit t)
     {

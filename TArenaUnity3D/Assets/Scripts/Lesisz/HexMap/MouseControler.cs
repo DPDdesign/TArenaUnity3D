@@ -106,11 +106,14 @@ public class MouseControler : MonoBehaviour
         shiftctrlmode();       
         ScrollLook();
         Wait();
+        Heal();
+        //CastSkill();
+
         if (Input.GetMouseButtonDown(1) && hexUnderMouse.Tosters.Count > 0)
         {
             Update_CurrentFunc = ShowInfo;
             ShowInfo();
-        } //ShowStats 
+        } //ShowStats     //hexUnderMouse.Highlight - Dostpeny HEX 
         if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse != SelectedToster.Hex && !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse))
         {
             //     Debug.LogError("test");
@@ -210,6 +213,62 @@ public class MouseControler : MonoBehaviour
             shiftmode = false;
         }
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
+    }
+
+    void CastSkill()
+    {
+      
+          /*
+        
+
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            SelectedToster.skills[1].CastSkill(SelectedToster, SelectedToster);
+            SelectedToster.Moved = true;
+            CancelUpdateFunc();
+            shiftmode = false;
+        }
+
+        else  if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            SelectedToster.skills[2].CastSkill(SelectedToster, SelectedToster);
+            SelectedToster.Moved = true;
+            CancelUpdateFunc();
+            shiftmode = false;
+        }
+        */
+
+       
+            SelectedToster.skills[0].CastSkill(SelectedToster, SelectedToster);
+            SelectedToster.Moved = true;
+            CancelUpdateFunc();
+            shiftmode = false;
+        
+
+    }
+
+
+
+
+    void Heal()
+    {
+        if (Input.GetKeyDown(KeyCode.H) && SelectedToster.Name=="TosterHEAL")
+        {
+            SelectedToster.HealMe(5);
+        }
+
+        if (Input.GetMouseButtonDown(0) && hexUnderMouse != SelectedToster.Hex && SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse))
+        {
+            if(hexUnderMouse.Tosters.Count > 0)
+            {
+                TosterHexUnit Target = hexUnderMouse.Tosters[0];
+                Target.HealMe(5);
+                Debug.Log(Target.Name);
+                Debug.Log(Target.TempHP);
+            }
+        }
+
+
     }
 
     void WaitForMove()
