@@ -214,13 +214,25 @@ public class MouseControler : MonoBehaviour
         }
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
     }
-
+    public void EndSkills()
+    {
+        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+        SelectedToster.Moved = true;
+        CancelUpdateFunc();
+        shiftmode = false;
+    }
+    public static bool SkillState = true;
     void CastSkill()
     {
+       
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+              SelectedToster.skills[0].CastSkill(); 
+            if(!SkillState) { EndSkills(); }
+            
+        }
 
         /*
-
-
       if (Input.GetKeyDown(KeyCode.Alpha2))
       {
           SelectedToster.skills[1].CastSkill(SelectedToster, SelectedToster);
@@ -238,13 +250,7 @@ public class MouseControler : MonoBehaviour
       }
       */
 
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            SelectedToster.skills[0].CastSkill();
-            SelectedToster.Moved = true;
-            CancelUpdateFunc();
-            shiftmode = false;
-        }
+
     }
 
 
@@ -255,18 +261,12 @@ public class MouseControler : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.H) && SelectedToster.Name=="TosterHEAL")
         {
             SelectedToster.HealMe(5);
-        
+        }
+
+  
     }
 
     */
-
-        void BasicAttack()
-    {
-
-    }
-
-
-
 
     void WaitForMove()
     {

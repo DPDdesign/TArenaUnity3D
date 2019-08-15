@@ -5,40 +5,48 @@ using UnityEngine;
 
 public class Skill1 : SkillsDefault
 {
-   public Skill1()
+    public Skill1()
     {
         this.SkillName = "Skill1";
     }
 
-    /* Heal Ally
-        override public void CastSkill()
-        {
-            if (hexUnderMouse != SelectedToster.Hex && SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse))
-            {
-                if (hexUnderMouse.Tosters.Count > 0)
-                {
-                    TosterHexUnit trgt = hexUnderMouse.Tosters[0];
-                    trgt.HealMe(5);
-                    Debug.Log(trgt.Name);
-                }
-            }  
-        }
+    #region Heal Ally
+    //override public void CastSkill()
+    //{
+    //    if (hexUnderMouse != SelectedToster.Hex && SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse)&& hexUnderMouse.Tosters.Count > 0)
+    //    {
+    //        if (hexUnderMouse.Tosters.Count > 0)
+    //        {
+    //            TosterHexUnit trgt = hexUnderMouse.Tosters[0];
+    //            trgt.HealMe(5);
+    //            Debug.Log(trgt.Name);
+    //        }
+    //    }
+    //}
+    #endregion
 
-    */
 
-    #region Tripple shot
-
+    #region  Triple Shot
+    int kochamizabelke = 0;
     override public void CastSkill()
     {
-        if (hexUnderMouse != SelectedToster.Hex && SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse))
-        {
-            if (hexUnderMouse.Tosters.Count > 0)
+        MouseControler.SkillState = true;
+       
+            if (kochamizabelke < 2 && hexUnderMouse != SelectedToster.Hex && !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse) && hexUnderMouse.Tosters.Count > 0 && hexUnderMouse.Tosters.Count > 0)
             {
-                TosterHexUnit trgt = hexUnderMouse.Tosters[0];
-                trgt.AttackMe(trgt);
-                Debug.Log(trgt.Name);
+                        TosterHexUnit trgt = hexUnderMouse.Tosters[0];
+                        trgt.AttackMe(trgt);
+                        Debug.Log("Zaatakowalem: " + trgt.Name);
+            kochamizabelke++;
             }
-        }
+
+            else if (kochamizabelke == 2)
+        { MouseControler.SkillState = false; }
+
+            else { Debug.Log("Nie ma tosta na tym polu");
+            //yield return null;
+            }
+        
     }
 
     #endregion

@@ -8,8 +8,8 @@ using UnityEngine;
 
         virtual public void CastSkill()
         {
-
-        }
+        //yield return null;
+    }
 
 
 

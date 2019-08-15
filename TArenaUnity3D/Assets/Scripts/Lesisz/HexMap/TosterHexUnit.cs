@@ -181,8 +181,9 @@ public class TosterHexUnit : IQPathUnit
         Initiative = 2;
 
         skills = new List<SkillsDefault>();
+        string p = "Skill1";
         Skill1 s1 = new Skill1();
-        skills.Add(s1);
+        skills.Add(s1); 
     }
     public TosterHexUnit(int c, int r, Vector3 vect, GameObject G, GameObject Toster)
     {
@@ -351,7 +352,8 @@ public class TosterHexUnit : IQPathUnit
     }
 
 
-    public void AttackMe(TosterHexUnit t, int d)
+
+    public void AttackMe(TosterHexUnit t)
     {
         int newhp = (HP * (Amount - 1) + TempHP) - Mathf.Max(t.Att / Def * Random.Range(t.mindmg, t.maxdmg),1)*t.Amount;
 
