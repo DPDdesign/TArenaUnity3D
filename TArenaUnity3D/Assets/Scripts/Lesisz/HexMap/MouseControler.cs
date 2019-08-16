@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Xenu.Game;
 public class MouseControler : MonoBehaviour
@@ -148,6 +149,8 @@ public class MouseControler : MonoBehaviour
         } //ShowStats     //hexUnderMouse.Highlight - Dostpeny HEX 
         if (Input.GetMouseButtonDown(0) && hexUnderMouse.Highlight && hexUnderMouse != SelectedToster.Hex && !SelectedToster.Team.HexesUnderTeam.Contains(hexUnderMouse))
         {
+            if (EventSystem.current.IsPointerOverGameObject())
+                return;
             //     Debug.LogError("test");
             if (hexUnderMouse.Tosters.Count > 0 && hexUnderMouse.Tosters[0].Team != SelectedToster.Team)
             {
@@ -322,7 +325,7 @@ public class MouseControler : MonoBehaviour
     {
        
         Outlining();
-
+        ScrollLook();
         if (castManager.isAoE == true)
         {
     
@@ -343,7 +346,8 @@ public class MouseControler : MonoBehaviour
         {
             if (Input.GetMouseButtonDown(0))
             {
-
+                if (EventSystem.current.IsPointerOverGameObject())
+                    return;
 
                 castManager.startSpell(SelectedToster.skillstrings[SelectedSpellid]);
 
