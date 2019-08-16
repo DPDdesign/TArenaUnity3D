@@ -14,8 +14,8 @@ public class PanelArmii : MonoBehaviour
     public Button back;
     public List<Image> Imagess;
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
-    public List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2" });
-    public List<string> ListOfUnits = new List<string>(new string[] { "TosterDPS", "TosterTANK", "TosterHEAL" ,"zodyn"});
+    public List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2", "Sprites/Szaman1" });
+    public List<string> ListOfUnits = new List<string>(new string[] { "TosterDPS", "TosterTANK", "TosterHEAL", "Szaman", "zodyn"});
     public BuildG LoadedBuild;
     [System.Serializable]
     public class BuildG
