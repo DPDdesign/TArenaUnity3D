@@ -302,7 +302,8 @@ public class TosterHexUnit : IQPathUnit
         }
         else
         {
-            TosterPrefab.gameObject.GetComponentInChildren<TextMesh>().text = Amount.ToString();
+            
+           TosterPrefab.gameObject.GetComponentInChildren<TextMesh>().text = Amount.ToString();
         }
     }
     public void SetAmount(int Amount)

@@ -48,10 +48,10 @@ public class Generator : MonoBehaviour
         }
 
         int i = 0;
-        Debug.Log(buttons);
+
         foreach (Button button in buttons)
         {
-            Debug.Log(i);
+        
             SetButtonNew(button);
             i++;
            
@@ -71,18 +71,25 @@ public class Generator : MonoBehaviour
             i++;
         }
         i = 0;
+
+
         foreach (string t in PanelArmii.LoadedBuild.Units)
         {
-      
+       
             if (PanelArmii.ListOfUnits.Contains(t))
             {
-               
+              
+
                 ColorBlock cb = defaultButtons[1].colors;
                 buttons[i].colors = cb;
                 for (int d = 0; d < PanelArmii.ListOfUnits.Count; d++)
                 {
+
                     if (PanelArmii.ListOfUnits[d] == t)
+                    {
                         buttons[i].gameObject.GetComponent<Image>().sprite = Resources.Load<Sprite>(PanelArmii.ListOfImages[d]);
+                
+                    }
 
                     Units[i] = t;
                 }

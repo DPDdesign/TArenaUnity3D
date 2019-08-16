@@ -13,9 +13,9 @@ public class PanelArmii : MonoBehaviour
     public List<Text> texts;
     public Button back;
     public List<Image> Imagess;
-    public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
-    public List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2", "Sprites/Szaman1" });
-    public List<string> ListOfUnits = new List<string>(new string[] { "TosterDPS", "TosterTANK", "TosterHEAL", "Szaman", "zodyn"});
+    public List<string> ListOfHeroes;// = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
+    public List<string> ListOfImages;// = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2", "Sprites/Szaman1" });
+    public List<string> ListOfUnits;// = new List<string>(new string[] { "TosterDPS", "TosterTANK", "TosterHEAL", "Szaman", "zodyn"});
     public BuildG LoadedBuild;
     [System.Serializable]
     public class BuildG
@@ -27,8 +27,7 @@ public class PanelArmii : MonoBehaviour
     }
     void Start()
     {
- 
-
+     
 
 
     }
@@ -130,6 +129,7 @@ public class PanelArmii : MonoBehaviour
             Build.hero = PlayerPrefs.GetInt("which");
             Build.NazwaBohatera = PlayerPrefs.GetString("NazwaBohatera");
             Build.Units = generator.Units;
+          
             Build.NoUnits = generator.UnitsAmount;
             BinaryFormatter formatter = new BinaryFormatter();
             string path = Application.persistentDataPath + "/build"+PlayerPrefs.GetString("BuildNumber")+".d";
