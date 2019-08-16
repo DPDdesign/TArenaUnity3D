@@ -326,7 +326,7 @@ public class MouseControler : MonoBehaviour
        
         Outlining();
         ScrollLook();
-        if (castManager.isAoE == true)
+        if (castManager.RangeisAoE == true)
         {
     
 
@@ -435,10 +435,9 @@ public class MouseControler : MonoBehaviour
         }
         if (castManager.RangeSelectingenemy == true)
         {
-
             HighlightEnemy();
         }
-        if (castManager.selectingfriend == true)
+        if (castManager.Rangeselectingfriend == true)
         {
             HighlightFriend();
         }

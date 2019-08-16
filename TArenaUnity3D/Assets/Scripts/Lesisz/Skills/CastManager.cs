@@ -9,9 +9,9 @@ public class CastManager : MonoBehaviour
     public MouseControler mouseControler;
     int kochamizabelke = 0;
     public bool RangeSelectingenemy = false;
-    public bool selectingfriend = false;
+    public bool Rangeselectingfriend = false;
     public bool unselectaround = false;
-    public bool isAoE = false;
+    public bool RangeisAoE = false;
     public bool isInProgress = false;
     public int aoeradius = 0;
     void Start()
@@ -35,10 +35,11 @@ public class CastManager : MonoBehaviour
     public void SetFalse()
     {
         RangeSelectingenemy = false;
-        selectingfriend = false;
+        Rangeselectingfriend = false;
         unselectaround = false;
-        isAoE = false;
-        aoeradius = 0; MouseControler.SkillState = false;
+        RangeisAoE = false;
+        aoeradius = 0;
+        MouseControler.SkillState = false;
     }
 
 
@@ -102,7 +103,7 @@ public class CastManager : MonoBehaviour
     {
         unselectaround = true;
         aoeradius = 2;
-        isAoE = true;
+        RangeisAoE = true;
 
     }
     #endregion
@@ -120,15 +121,12 @@ public class CastManager : MonoBehaviour
 
         }
 
-
-
-
     }
 
     public void Skill3M()
     {
         unselectaround = true;
-        selectingfriend = true;
+        Rangeselectingfriend = true;
 
     }
     #endregion
