@@ -5907,6 +5907,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mouseControler: {fileID: 1506819735}
+  RangeSelectingenemy: 0
+  selectingfriend: 0
+  unselectaround: 0
+  isAoE: 0
+  isInProgress: 0
+  aoeradius: 0
 --- !u!4 &547084147
 Transform:
   m_ObjectHideFlags: 0
@@ -14562,7 +14568,10 @@ MonoBehaviour:
   outlineManager: {fileID: 1274245143}
   outlineManagerMainToster: {fileID: 1274245145}
   canvas: {fileID: 1541569964}
+  isAiOn: 1
+  isAiTurn: 1
   shiftmode: 0
+  AI: {fileID: 1494982364}
 --- !u!4 &1506819736
 Transform:
   m_ObjectHideFlags: 0
@@ -20841,7 +20850,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 9
   m_Type: 1
-  m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
+  m_Color: {r: 1, g: 0.97544754, b: 0.8632076, a: 1}
   m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30

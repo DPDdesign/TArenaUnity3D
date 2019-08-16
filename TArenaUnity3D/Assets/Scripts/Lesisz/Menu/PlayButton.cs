@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class PlayButton : MonoBehaviour
 {
     public Button ThisButton;
+    public Toggle AI;
     // Start is called before the first frame update
     void Start()
     {
@@ -31,6 +32,10 @@ public class PlayButton : MonoBehaviour
 
     public void PlayGame()
     {
+        if (AI.isOn)
+            PlayerPrefs.SetInt("AI", 1);
+        else
+            PlayerPrefs.SetInt("AI", 0);
         SceneManager.LoadScene(2);
     }
 

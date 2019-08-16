@@ -22,7 +22,8 @@ public class MouseControler : MonoBehaviour
     public UICanvas canvas;
     delegate void UpdateFunc();
     UpdateFunc Update_CurrentFunc;
-
+    public bool isAiOn = true;
+    public bool isAiTurn = true;
     Vector3 LastMousePosition;
     public bool shiftmode = false;
     LineRenderer lineRenderer;
@@ -37,7 +38,7 @@ public class MouseControler : MonoBehaviour
     TosterHexUnit TempSelectedToster = null;
     TosterHexUnit TempOutlinedToster = null;
     TosterHexUnit TargetToster = null;
-
+    public MostStupidAIEver AI;
 
     public HexClass getHexUnderMouse()
     {
@@ -52,7 +53,11 @@ public class MouseControler : MonoBehaviour
         Update_CurrentFunc = Update_DetectModeStart;
         hexMap = GameObject.FindObjectOfType<HexMap>();
         hexPath = null;
-
+        if (PlayerPrefs.GetInt("AI") == 0)
+        {
+            isAiOn = false;
+        }
+        else isAiOn = true;
     }
 
 
@@ -76,6 +81,7 @@ public class MouseControler : MonoBehaviour
 
     void Update_DetectModeStart()
     {
+        hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
         TM = FindObjectOfType<TurnManager>();
 
         if (SelectedToster != null)
@@ -98,6 +104,16 @@ public class MouseControler : MonoBehaviour
 
         SelectedToster = TM.AskWhosTurn();
         SelectedToster.isSelected = true;
+        if (isAiOn==true)
+        {
+            if (SelectedToster.Team == hexMap.Teams[1])
+            {
+                Debug.LogError("1");
+                AI.AskAIwhattodo();
+                return;
+            }
+        }
+
 
         outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
         outlineManagerMainToster.AddMainOutlineWithReset();
@@ -200,6 +216,24 @@ public class MouseControler : MonoBehaviour
 
     }
 
+    public IEnumerator DoMovesPath(List<HexClass> h)
+    {
+        SelectedToster.SetHexPath(h.ToArray());
+        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+   
+
+        // Debug.LogError(SelectedToster.HexPathList.Count);
+        SelectedToster.Moved = true;
+        Update_CurrentFunc = BeforeNextTurn;
+        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
+        CancelUpdateFunc();
+        shiftmode = false;
+        // CancelUpdateFunc();
+
+    }
+
     IEnumerator DoMoveAndAttack(TosterHexUnit toster)
     {
         TargetToster = hexUnderMouse.Tosters[0];
@@ -226,6 +260,35 @@ public class MouseControler : MonoBehaviour
         }
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
     }
+
+
+  public  IEnumerator DoMoveAndAttackWithoutCheck(HexClass temp, TosterHexUnit toster)
+    {
+
+
+            SelectedToster.move = true;
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+
+
+            //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
+            //   hexPath = SelectedToster.Pathing(temp);
+
+
+            SelectedToster.Pathing_func(temp, false);
+            SelectedToster.Moved = true;
+
+            Update_CurrentFunc = BeforeNextTurn;
+            StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+            yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+            toster.AttackMe(SelectedToster);
+            CancelUpdateFunc();
+            shiftmode = false;
+        
+        // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
+    }
+
+
+
     public void EndSkills()
     {
         hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
@@ -330,6 +393,15 @@ public class MouseControler : MonoBehaviour
         }
         hexMap.UpdateHexVisuals();
     }
+
+    public List<HexClass> GetEnemy()
+    {
+        if (hexMap.Teams[0] == SelectedToster.Team) return hexMap.Teams[1].HexesUnderTeam;
+        else return hexMap.Teams[0].HexesUnderTeam;
+    } 
+
+
+
     public static bool SkillState = true;
     void CastSkill()
     {

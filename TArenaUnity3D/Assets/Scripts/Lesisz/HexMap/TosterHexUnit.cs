@@ -98,6 +98,11 @@ public class TosterHexUnit : IQPathUnit
         HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate, false);
         return p;
     }
+    public HexClass[] Pathing(HexClass celhex,bool ignore)
+    {
+        HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate, ignore);
+        return p;
+    }
     public bool IsPathAvaible(HexClass celhex)
     {
         HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate, false);
@@ -336,7 +341,6 @@ public class TosterHexUnit : IQPathUnit
         }
 
         HexClass HexWeAreLeaving =hexPath[0];
-
         HexClass newhex = hexPath[1];
         hexPath.RemoveAt(0);
         if(hexPath.Count==1)
