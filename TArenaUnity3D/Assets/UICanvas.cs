@@ -6,9 +6,11 @@ using UnityEngine.UI;
 public class UICanvas : MonoBehaviour
 {
     public List<Text> InfoTextsList;
+    public List<Button> AButtons;
     public GameObject StatsPanel;
     public GameObject EndPanel;
     public Text EndText;
+    public MouseControler MC;
     // Start is called before the first frame update
     void Start()
     {
@@ -18,6 +20,22 @@ public class UICanvas : MonoBehaviour
 
     public void UpdateCHP(int chp)
     {
+        if(MC.activeButtons==true)
+        {
+
+            foreach (Button b in AButtons)
+            {
+                b.interactable = true;
+            //    b.
+            }
+        }
+        else
+        {
+            foreach (Button b in AButtons)
+            {
+                b.interactable = false;
+            }
+        }
         InfoTextsList[1].text = chp.ToString();
     }
 
