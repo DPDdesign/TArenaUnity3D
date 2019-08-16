@@ -18,7 +18,11 @@ public class HexClass : IPathTile {
         ListOfParts = l;
     }
 
-    public HexClass(HexMap hexMap, int c, int r)
+    public HexClass()
+    {
+        Tosters = new List<TosterHexUnit>();
+    }
+        public HexClass(HexMap hexMap, int c, int r)
     {
         this.hexMap = hexMap;
         this.C = c;

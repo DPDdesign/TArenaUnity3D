@@ -83,12 +83,13 @@ public class MouseControler : MonoBehaviour
 
     void Update_DetectModeStart()
     {
+        activeButtons = false;
         hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
         TM = FindObjectOfType<TurnManager>();
 
         if (SelectedToster != null)
         {
-            Debug.LogError(SelectedToster.Name);
+            //Debug.LogError(SelectedToster.Name);
             outlineManagerMainToster.RemoveOutline();
         }
 
@@ -110,7 +111,7 @@ public class MouseControler : MonoBehaviour
         {
             if (SelectedToster.Team == hexMap.Teams[1])
             {
-                Debug.LogError("1");
+                
                 AI.AskAIwhattodo();
                 return;
             }
@@ -714,9 +715,9 @@ public class MouseControler : MonoBehaviour
             }
             */
         }
-
+         HexClass hex = new HexClass();
         //Debug.Log("Found nothing.");
-        return hexUnderMouse;
+        return hex;// hexUnderMouse;
     }
     Vector3 MouseToGroundPlane(Vector3 mousePos)
     {
@@ -745,6 +746,7 @@ public class MouseControler : MonoBehaviour
             switch (hexGO.name)
             {
                 case "0":
+                     
                     return hexMap.GetHexAt(hexUnderMouse.C, hexUnderMouse.R+1);
                 case "60":
                     return hexMap.GetHexAt(hexUnderMouse.C+1, hexUnderMouse.R);

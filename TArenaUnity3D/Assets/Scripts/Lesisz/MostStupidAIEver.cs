@@ -31,7 +31,7 @@ public class MostStupidAIEver : MonoBehaviour
         HexClass tempCel = null;
         foreach (HexClass h in EnemyHexes)
         {
-            Debug.LogError("1");
+
             if (h.Tosters[0].isDead == false)
             {/*
                 for (int i = 0; i < 6; i++)
@@ -52,10 +52,10 @@ public class MostStupidAIEver : MonoBehaviour
                     {
                         
                         //  tempCel = h.hexMap.GetHexAt(h.C, h.R - 1);
-                        Debug.LogWarning(hex.C + "  " + hex.R);
+                      
                         if (MC.getSelectedToster().IsPathAvaible(hex))
                         {
-                            Debug.LogError("1");
+                           
                             MC.StartCoroutine(MC.DoMoveAndAttackWithoutCheck(hex, h.Tosters[0]));
                             return;
                         }
@@ -71,7 +71,7 @@ public class MostStupidAIEver : MonoBehaviour
         List<HexClass> hexmaxpath = new List<HexClass>();
         foreach (HexClass h in EnemyHexes)
         {
-            Debug.LogError("3");
+           
             if (h.Tosters[0].isDead == false)
             {
                  hexpath = new List<HexClass>(MC.getSelectedToster().Pathing(h, true));
@@ -88,7 +88,7 @@ public class MostStupidAIEver : MonoBehaviour
         hexmaxpath = new List<HexClass>();
         for (int i = 0; i < MC.getSelectedToster().MovmentSpeed; i++)
             hexmaxpath.Add(hexpath[i]);
-        Debug.LogError(hexmaxpath.Count);
+     
         StartCoroutine(MC.DoMovesPath(hexmaxpath));
         return;
 

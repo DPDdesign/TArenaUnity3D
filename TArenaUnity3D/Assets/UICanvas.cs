@@ -6,7 +6,10 @@ using UnityEngine.UI;
 public class UICanvas : MonoBehaviour
 {
     public List<Text> InfoTextsList;
-    public List<Button> AButtons;
+    public List<Button> ActionButtons;
+
+    public List<Button> SkillButtons;
+    public List<Text> SkillT;
     public GameObject StatsPanel;
     public GameObject EndPanel;
     public Text EndText;
@@ -20,22 +23,8 @@ public class UICanvas : MonoBehaviour
 
     public void UpdateCHP(int chp)
     {
-        if(MC.activeButtons==true)
-        {
-
-            foreach (Button b in AButtons)
-            {
-                b.interactable = true;
-            //    b.
-            }
-        }
-        else
-        {
-            foreach (Button b in AButtons)
-            {
-                b.interactable = false;
-            }
-        }
+        
+       
         InfoTextsList[1].text = chp.ToString();
     }
 
@@ -53,6 +42,37 @@ public class UICanvas : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if (MC.activeButtons == true)
+        {
+
+            foreach (Button b in ActionButtons)
+            {
+                b.interactable = true;
+                //    b.
+            }
+            int i = 0;
+            foreach (string b in MC.SelectedToster.skillstrings)
+            {
+                SkillButtons[i].interactable = true;
+                SkillT[i].text = (i + 1).ToString() + "\n" + b;
+                i++;
+            }
+
+        }
+        else
+        {
+            foreach (Button b in ActionButtons)
+            {
+                b.interactable = false;
+            }
+            int i = 0;
+            foreach (Button b in SkillButtons)
+            {
+                b.interactable = false;
+                SkillT[i].text = "";
+                i++;
+            }
+
+        }
     }
 }
