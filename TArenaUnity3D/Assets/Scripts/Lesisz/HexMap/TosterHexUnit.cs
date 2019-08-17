@@ -279,13 +279,10 @@ public class TosterHexUnit : IQPathUnit
     } 
     public void SetTosterPrefab(HexMap h)
     {
-        foreach (GameObject GO in h.TostersPrefabs)
-        {
-            if (GO.name == this.Name)
-            {
-                this.TosterPrefab = GO;
-            }
-        }
+
+                this.TosterPrefab = Resources.Load<GameObject>("Models/TosterPrefabs/" + this.Name);
+
+        
 
     }
     public void SetTextAmount()

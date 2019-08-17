@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Xml;
 using UnityEngine;
 using UnityEngine.UI;
  
@@ -27,9 +28,41 @@ public class PanelArmii : MonoBehaviour
     }
     void Start()
     {
-     
+      
+
+    }
 
 
+
+    public void LoadListOfUnits()
+    {
+
+        ListOfUnits = new List<string>();
+            //TODO: VALIDATE SCHEMA/XML
+            TextAsset textAsset = (TextAsset)Resources.Load("data/Units");
+            XmlDocument xmldoc = new XmlDocument();
+            xmldoc.LoadXml(textAsset.text);
+            XmlNodeList nodes = xmldoc.SelectNodes("Units/Unit/Name");
+            foreach (XmlNode node in nodes)
+            {
+            ListOfUnits.Add(node.InnerText);
+          //  Debug.LogError(node.InnerText);
+            }
+           
+    }
+    public void LoadListOfImages()
+    {
+        ListOfImages = new List<string>();
+        //TODO: VALIDATE SCHEMA/XML
+        TextAsset textAsset = (TextAsset)Resources.Load("data/Units");
+        XmlDocument xmldoc = new XmlDocument();
+        xmldoc.LoadXml(textAsset.text);
+        XmlNodeList nodes = xmldoc.SelectNodes("Units/Unit/Sprite");
+        foreach (XmlNode node in nodes)
+        {
+            ListOfImages.Add(node.InnerText);
+          //  Debug.LogError(node.InnerText);
+        }
     }
 
     public List<string> GetList()
@@ -96,6 +129,8 @@ public class PanelArmii : MonoBehaviour
     }
     private void OnEnable()
     {
+        LoadListOfUnits();
+        LoadListOfImages();
         sprawdz();
     }
     public void BuildNumber(string i)
