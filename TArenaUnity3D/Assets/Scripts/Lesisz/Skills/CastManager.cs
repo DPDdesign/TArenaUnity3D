@@ -12,6 +12,7 @@ public class CastManager : MonoBehaviour
     public bool Rangeselectingfriend = false;
     public bool unselectaround = false;
     public bool RangeisAoE = false;
+    public bool MeleeisAoE = false;
     public bool isInProgress = false;
     public int aoeradius = 0;
     void Start()
@@ -38,6 +39,7 @@ public class CastManager : MonoBehaviour
         Rangeselectingfriend = false;
         unselectaround = false;
         RangeisAoE = false;
+        MeleeisAoE = false;
         aoeradius = 0;
         MouseControler.SkillState = false;
     }
@@ -129,6 +131,30 @@ public class CastManager : MonoBehaviour
         Rangeselectingfriend = true;
 
     }
+    #endregion
+
+    #region Rzutnik_Skill1
+
+    public void Rzutnik_Skill1() //heal
+    {
+        if (mouseControler.getSelectedToster().Team.HexesUnderTeam.Contains(mouseControler.getHexUnderMouse()) && mouseControler.getHexUnderMouse().Tosters.Count > 0)
+        {
+            TosterHexUnit trgt = mouseControler.getHexUnderMouse().Tosters[0];
+            trgt.HealMe(25);
+
+            SetFalse();
+
+        }
+
+    }
+
+    public void Rzutnik_Skill1M()
+    {
+        unselectaround = true;
+        Rangeselectingfriend = true;
+
+    }
+
     #endregion
 
 
