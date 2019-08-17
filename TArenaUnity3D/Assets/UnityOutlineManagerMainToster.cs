@@ -66,6 +66,18 @@ namespace Xenu.Game
             outliners[0].renderer = obje;
         }
 
+        public void ChangeObjects(Renderer[] objects)
+        {
+            int i = 1;
+            foreach (Renderer r in objects)
+            {
+                Debug.LogError(r.name);
+                outliners[i].renderer = r;
+                outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[i].renderer });
+                i++;
+            }
+
+        }
         public void ChangeObjects(List<Renderer> objects)
         {
             int i = 1;
@@ -94,7 +106,11 @@ namespace Xenu.Game
         {
            
             outlinePostEffect.RemoveRenderers(new List<Renderer>() { outliners[0].renderer });
-            outliners[0].renderer = null;
+            foreach (OutlineData r in outliners)
+            {
+                r.renderer = null;
+            }
+            //outliners[0].renderer = null;
 
 
             outlinePostEffect.RecreateCommandBuff();

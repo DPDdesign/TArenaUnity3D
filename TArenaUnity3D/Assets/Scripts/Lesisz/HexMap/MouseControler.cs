@@ -118,7 +118,7 @@ public class MouseControler : MonoBehaviour
             }
         }
 
-
+        //Debug.LogError(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>().bounds);
         outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
         outlineManagerMainToster.AddMainOutlineWithReset();
 

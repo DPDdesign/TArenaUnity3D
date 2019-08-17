@@ -6386,6 +6386,7 @@ MonoBehaviour:
   Rangeselectingfriend: 0
   unselectaround: 0
   RangeisAoE: 0
+  MeleeisAoE: 0
   isInProgress: 0
   aoeradius: 0
 --- !u!4 &547084147
@@ -13463,6 +13464,104 @@ MonoBehaviour:
   outlinePostEffect: {fileID: 1353304687}
   outliners:
   - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
+  - renderer: {fileID: 0}
   Renderers: []
 --- !u!114 &1274245146
 MonoBehaviour:
@@ -13477,8 +13576,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   outlinePostEffect: {fileID: 1353304686}
-  outliners:
-  - renderer: {fileID: 0}
+  outliners: []
   Renderers: []
 --- !u!4 &1284881693 stripped
 Transform:
@@ -14197,7 +14295,7 @@ MonoBehaviour:
   OutlineColor: {r: 1, g: 1, b: 1, a: 0.14509805}
   BufferDrawEvent: 20
   Downsample: 1
-  BlurSize: 0.23
+  BlurSize: 0.07
 --- !u!114 &1353304687
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14211,9 +14309,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   OutlineColor: {r: 1, g: 0.8588345, b: 0.2028302, a: 0.14509805}
-  BufferDrawEvent: 18
-  Downsample: 1
-  BlurSize: 0.23
+  BufferDrawEvent: 20
+  Downsample: 0
+  BlurSize: 0.07
 --- !u!1001 &1356942914
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -16107,7 +16205,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1524992860
 RectTransform:
   m_ObjectHideFlags: 0
@@ -21219,12 +21317,7 @@ MonoBehaviour:
   - Zielony Toster
   HexPrefab: {fileID: 2732853708516877044, guid: 0675edf1747998942b88fe99f6efbeef,
     type: 3}
-  TostersPrefabs:
-  - {fileID: 2397679246302102910, guid: e832416a57bf0344c92a369f8359a673, type: 3}
-  - {fileID: 7369154716350125953, guid: aa672f5e01263c84294d04da23f803d7, type: 3}
-  - {fileID: 2776755036224281529, guid: 9112b3ae353a2834db96a9326b00f3aa, type: 3}
-  - {fileID: 7328425746684356605, guid: 0a958321ba027ca4ca7c89780fe89fcb, type: 3}
-  - {fileID: 6264942973913209139, guid: 45b44c2bc3a9dc64fbbbdb7d14566f0b, type: 3}
+  TostersPrefabs: []
   TosterUnit: {fileID: 2675169444245910802, guid: 6210511a0e3c9fb4b9a6b76b511dbad5,
     type: 3}
   HexMaterials:
