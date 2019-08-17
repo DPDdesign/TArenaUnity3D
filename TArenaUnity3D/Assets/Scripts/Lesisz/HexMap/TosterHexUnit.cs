@@ -279,7 +279,7 @@ public class TosterHexUnit : IQPathUnit
     } 
     public void SetTosterPrefab(HexMap h)
     {
-
+      
                 this.TosterPrefab = Resources.Load<GameObject>("Models/TosterPrefabs/" + this.Name);
 
         
