@@ -52,7 +52,7 @@ public class TurnManager : MonoBehaviour
         }
         if (TeamRed == null) return TeamBlue;
         if (TeamBlue == null) return TeamRed;
-        if (TeamRed.Initiative == TeamBlue.Initiative)
+        if (TeamRed.GetIni() == TeamBlue.GetIni())
         {
             if ((TeamBlue.Waited == false && TeamBlue.Waited == false) || (TeamBlue.Waited == true && TeamBlue.Waited == true))
             {
@@ -83,7 +83,7 @@ public class TurnManager : MonoBehaviour
             }
 
         }
-        if (TeamRed.Initiative > TeamBlue.Initiative && TeamRed.Waited == false)
+        if (TeamRed.GetIni() > TeamBlue.GetIni() && TeamRed.Waited == false)
         {
             return TeamRed;
         }
