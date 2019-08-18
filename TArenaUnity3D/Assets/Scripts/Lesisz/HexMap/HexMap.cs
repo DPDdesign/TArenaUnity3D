@@ -54,6 +54,8 @@ public class HexMap : MonoBehaviour, IQPathWorld
     
     }
 
+    
+
 
     public HexClass GetHexAt(int x, int y)
     {
@@ -347,7 +349,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
     }
 
 
-
+   
 
     public HexClass[] GetHexesWithinRadiusOf(HexClass centerhex, int radius)
     {

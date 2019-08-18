@@ -51,6 +51,21 @@ public class CastManager : MonoBehaviour
     }
 
 
+    public int[] getHexUnderMouseCoordinates()
+    {
+        int x = mouseControler.getHexUnderMouse().C;
+        int y = mouseControler.getHexUnderMouse().R;
+        int[] coords = [x, y];
+        return coords;
+    }
+
+    public HexClass getHexNextToMouse(int x, int y)
+    {
+
+        int[] test = getHexUnderMouseCoordinates();
+        return mouseControler.getHexUnderMouse().hexMap.GetHexAt(test[0] + x, test[1] + y);
+
+    }
 
     #region Skill1 - Triple shot 
     public void Skill1()
@@ -150,6 +165,14 @@ public class CastManager : MonoBehaviour
 
     #region Topornik_Skill1 - Zadaje 1 dmg per unit wszystkim dookoła
 
+
+
+
+
+
+
+
+
     public void Topornik_Skill1()
     {
         List<HexClass> hexarea = new List<HexClass>(mouseControler.getSelectedToster().Hex.hexMap.GetHexesWithinRadiusOf(mouseControler.getSelectedToster().Hex, aoeradius));
@@ -157,10 +180,18 @@ public class CastManager : MonoBehaviour
         {
 
             if (t != null)
-                if (t.Tosters.Count > 0 && !t.Tosters.Contains(mouseControler.getSelectedToster()))
+            {
+                if (t.Tosters.Count > 0)
                 {
-                    t.Tosters[0].DealMePURE(100);
+
+                    if (t.Tosters.Count > 0 && !t.Tosters.Contains(mouseControler.getSelectedToster()) && t.Tosters[0].Team != mouseControler.getSelectedToster().Team)
+                    {
+                        t.Tosters[0].DealMePURE(100);
+                    }
+
                 }
+            }
+            else { Debug.Log("No Tosters Hit"); }
         }
         SetFalse();
     }

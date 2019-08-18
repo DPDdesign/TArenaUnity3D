@@ -333,6 +333,7 @@ public class MouseControler : MonoBehaviour
         {
             HighLightSelectedToster();
         }
+
         if (castManager.RangeisAoE == true)
         {
     
@@ -399,6 +400,7 @@ public class MouseControler : MonoBehaviour
     {
         HexClass h = SelectedToster.Hex;
         h.Highlight = true;
+        hexMap.UpdateHexVisuals();
     }
 
 
