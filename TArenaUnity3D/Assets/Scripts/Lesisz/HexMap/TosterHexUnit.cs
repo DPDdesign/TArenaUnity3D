@@ -409,7 +409,7 @@ public class TosterHexUnit : IQPathUnit
         else { TempHP = GetHP(); }
     }
 
-    public bool CalculateDamageBetweenTosters(TosterHexUnit attacker, TosterHexUnit defender)
+    public double CalculateDamageBetweenTosters(TosterHexUnit attacker, TosterHexUnit defender)
     {
 
         bool isReduced = false;
