@@ -88,6 +88,7 @@ public class MouseControler : MonoBehaviour
         hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
         TM = FindObjectOfType<TurnManager>();
 
+
         if (SelectedToster != null)
         {
             //Debug.LogError(SelectedToster.Name);
@@ -326,6 +327,12 @@ public class MouseControler : MonoBehaviour
        
         Outlining();
         ScrollLook();
+
+
+        if (castManager.SelfCast == true)
+        {
+            HighLightSelectedToster();
+        }
         if (castManager.RangeisAoE == true)
         {
     
@@ -386,6 +393,12 @@ public class MouseControler : MonoBehaviour
             h.Highlight = true;
         }
         hexMap.UpdateHexVisuals();
+    }
+
+    public void HighLightSelectedToster()
+    {
+        HexClass h = SelectedToster.Hex;
+        h.Highlight = true;
     }
 
 

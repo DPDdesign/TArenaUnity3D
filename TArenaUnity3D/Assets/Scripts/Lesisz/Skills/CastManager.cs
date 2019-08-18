@@ -8,13 +8,17 @@ public class CastManager : MonoBehaviour
 {
     public MouseControler mouseControler;
     int kochamizabelke = 0;
+
     public bool RangeSelectingenemy = false;
     public bool Rangeselectingfriend = false;
     public bool unselectaround = false;
     public bool RangeisAoE = false;
     public bool MeleeisAoE = false;
     public bool isInProgress = false;
+    public bool SelfCast = false;
+    public bool EndAfter = false;
     public int aoeradius = 0;
+
     void Start()
     {
 
@@ -40,9 +44,12 @@ public class CastManager : MonoBehaviour
         unselectaround = false;
         RangeisAoE = false;
         MeleeisAoE = false;
+        SelfCast = false;
         aoeradius = 0;
+
         MouseControler.SkillState = false;
     }
+
 
 
     #region Skill1 - Triple shot 
@@ -79,9 +86,8 @@ public class CastManager : MonoBehaviour
     }
     #endregion
 
-
     #region Skill2 - aoe fireball
-    public void Skill2() 
+    public void Skill2()
     {
         Debug.LogError("działam");
         List<HexClass> hexarea = new List<HexClass>(mouseControler.getHexUnderMouse().hexMap.GetHexesWithinRadiusOf(mouseControler.getHexUnderMouse(), aoeradius));
@@ -110,12 +116,8 @@ public class CastManager : MonoBehaviour
     }
     #endregion
 
-
-
-
-
     #region Skill3  - Heal
-    public void Skill3() 
+    public void Skill3()
     {
         if (mouseControler.getSelectedToster().Team.HexesUnderTeam.Contains(mouseControler.getHexUnderMouse()) && mouseControler.getHexUnderMouse().Tosters.Count > 0)
         {
@@ -142,10 +144,13 @@ public class CastManager : MonoBehaviour
     // getHexUnderMouse()
 
     #region Barbarian skills:
-    #region Topornik
-    #region Topornik_Skill1
 
-    public void Topornik_Skill1() //heal
+
+    #region Topornik skills (TIER III)
+
+    #region Topornik_Skill1 - Zadaje 1 dmg per unit wszystkim dookoła
+
+    public void Topornik_Skill1()
     {
         List<HexClass> hexarea = new List<HexClass>(mouseControler.getSelectedToster().Hex.hexMap.GetHexesWithinRadiusOf(mouseControler.getSelectedToster().Hex, aoeradius));
         foreach (HexClass t in hexarea)
@@ -157,12 +162,7 @@ public class CastManager : MonoBehaviour
                     t.Tosters[0].DealMePURE(100);
                 }
         }
-
         SetFalse();
-
-
-
-
     }
 
     public void Topornik_Skill1M()
@@ -170,44 +170,242 @@ public class CastManager : MonoBehaviour
         unselectaround = true;
         aoeradius = 2;
         MeleeisAoE = true;
+    }
+
+    #endregion
+
+    #region Topornik_Skill2 - Zabiera 10% swojego całkowitego HP, zadaje +8% dmg
+
+
+    public void Topornik_Skill2()
+    {
+        TosterHexUnit trgt = mouseControler.getSelectedToster();
+        double dmg = Convert.ToDouble(trgt.HP) * 0.1;
+        trgt.DealMePURE(Convert.ToInt16(dmg));
+        trgt.Att++;
+
+        SetFalse();
+    }
+
+    public void Topornik_Skill2M()
+    {
+        unselectaround = true;
+        SelfCast = true;
+        Debug.Log("Pain... drives me!");
+    }
+    #endregion
+
+    #region Topornik_Skill3 - 10% otrzymanych obrażeń przechodzi na koniec następnej tury
+
+
+    public void Topornik_Skill3()
+    {
+        TosterHexUnit trgt = mouseControler.getSelectedToster();
+        trgt.Def++;
+        SetFalse();
+    }
+
+    public void Topornik_Skill3M()
+    {
+        unselectaround = true;
+        SelfCast = true;
+        Debug.Log("Huh! I can hold it.");
+    }
+
+    #endregion
+
+
+    #endregion
+
+    #region Rzutnik
+
+
+    #region Rzutnik_Skill1
+    
+    public Array SelectMultipleEnemy(int x)
+    {
+        int i = 0;
+        TosterHexUnit[] enemies = new TosterHexUnit[x];
+
+        while (i < x)
+        {
+            if (i < 2 && mouseControler.getHexUnderMouse() != mouseControler.getSelectedToster().Hex && !mouseControler.getSelectedToster().Team.HexesUnderTeam.Contains(mouseControler.getHexUnderMouse()) && mouseControler.getHexUnderMouse().Tosters.Count > 0)
+            {
+                isInProgress = true;
+                enemies[i] = mouseControler.getHexUnderMouse().Tosters[0];
+                Debug.Log("Wybrałem: " + enemies[i].Name);
+                i++;
+            }
+        }
+            return enemies;
+    }
+    
+
+
+    TosterHexUnit[] Rzutnik_Skill1_trgt = new TosterHexUnit[2];
+    short Rzutnik_Skill1_Counter = 0;
+
+    public void Rzutnik_Skill1()
+    {
+  
+        if (Rzutnik_Skill1_Counter < 2 && mouseControler.getHexUnderMouse() != mouseControler.getSelectedToster().Hex && !mouseControler.getSelectedToster().Team.HexesUnderTeam.Contains(mouseControler.getHexUnderMouse()) && mouseControler.getHexUnderMouse().Tosters.Count > 0)
+            {
+            isInProgress = true;
+            Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter] = mouseControler.getHexUnderMouse().Tosters[0];
+              Debug.Log("Wybrałem: " + Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter].Name);
+                Rzutnik_Skill1_Counter++;
+            }
+        
+
+        else if (Rzutnik_Skill1_Counter == 2)
+        {
+
+            Rzutnik_Skill1_trgt[0].DealMePURE(100);
+          Rzutnik_Skill1_trgt[1].DealMePURE(100);
+          Rzutnik_Skill1_Counter = 0; SetFalse(); }
+
+        else
+        {
+            Debug.Log("Nie ma tosta na tym polu");
+            //yield return null;
+        }
+    }
+
+    public void Rzutnik_Skill1M()
+    {
 
     }
 
     #endregion
-    #endregion
+
+    #region Rzutnik_Skill2
+
+    public void Rzutnik_Skill2()
+    {
+        TosterHexUnit trgt = mouseControler.getSelectedToster();
+        double dmg = Convert.ToDouble(trgt.HP) * 0.1;
+        trgt.DealMePURE(Convert.ToInt16(dmg));
+        trgt.Att++;
+
+        SetFalse();
+    }
+
+    public void Rzutnik_Skill2M()
+    {
+
+        unselectaround = true;
+        SelfCast = true;
+        Debug.Log("Pain... drives me!");
+    }
+
     #endregion
 
-    #region FRACTION STRUCUTRE
+    #region Rzutnik_Skill3
+
+    public void Rzutnik_Skill3()
+    {
+        TosterHexUnit trgt = mouseControler.getSelectedToster();
+        trgt.Def++;
+        SetFalse();
+    }
+
+    public void Rzutnik_Skill3M()
+    {
+        unselectaround = true;
+        SelfCast = true;
+        Debug.Log("Huh! I can hold it.");
+    }
+
+    #endregion
+
+    #region Rzutnik_Skill4
+
+    public void Rzutnik_Skill4()
+    {
+
+    }
+
+    public void Rzutnik_Skill4M()
+    {
+
+    }
+
+    #endregion
+
+    #endregion
+
+
+
+
+    #endregion
+
+    #region UNIT STRUCUTRE
     /*
       
     /////////*** FRACTION_NAME *** //////////// 
 
-        #region Fraction_Name
 
             #region Unit_Name
 
 
-                    #region Unit_Name_Skill_1
+                    #region Unit_Name_Skill1
+    
+                        public void Unit_Name_Skill1()
+                        {
+                        
+                        }
 
+                        public void Unit_Name_Skill1M()
+                        {
+
+                        }
+    
                     #endregion
 
-                    #region Unit_Name_Skill_2
+                 #region Unit_Name_Skill2
+    
+                        public void Unit_Name_Skill2()
+                        {
+                        
+                        }
 
+                        public void Unit_Name_Skill2M()
+                        {
+
+                        }
+    
                     #endregion
 
+                     #region Unit_Name_Skill3
+    
+                        public void Unit_Name_Skill3()
+                        {
+                        
+                        }
 
-                    #region Unit_Name_Skill_3
+                        public void Unit_Name_Skill3M()
+                        {
 
+                        }
+    
                     #endregion
 
+                     #region Unit_Name_Skill4
+    
+                        public void Unit_Name_Skill4()
+                        {
+                        
+                        }
 
-                    #region Unit_Name_Skill_4
+                        public void Unit_Name_Skill4M()
+                        {
 
+                        }
+    
                     #endregion
 
             #endregion
 
-        #endregion
     */
     #endregion
 
