@@ -7,36 +7,67 @@ using System.Xml.Serialization;
 using UnityEngine.UI;
 using System;
 using Random = UnityEngine.Random;
-
+using TimeSpells;
 public class TosterHexUnit : IQPathUnit
 {
     public readonly int C; public readonly int R; public readonly int S; // column.row
     public Vector3 vec;
+  
 
-
-
+    List<SpellOverTime> SpellsGoingOn;
     public int SpecialHP = 0;
     public int SpecialAtt = 0;
     public int SpecialDef = 0;
     public int SpecialMS = 0;
     public int SpecialI = 0;
     public int SpecialAm = 0;
+    public int SpecialmaxDMG = 0;
+    public int SpecialminDMG = 0;
+    public int SpecialResistance = 0;
     ///stats
     [XmlAttribute("Name")]
     public string Name = "NoName";
     [XmlAttribute("HP")]
     public int HP = 100;
+    public int GetHP()
+    {
+        return HP + SpecialHP;
+    }
     public int TempHP = 100;
     public int maxdmg = 1;
-    public int mindmg = 1; 
+    public int GetMaxDMG()
+    {
+        return maxdmg + SpecialmaxDMG;
+    }
+    public int mindmg = 1;
+    public int GetMinDmg()
+    {
+        return mindmg + SpecialminDMG;
+    }
     [XmlAttribute("Attack")]
     public int Att = 1;
+    public int GetAtt()
+    {
+        return Att + SpecialAtt;
+    }
     [XmlAttribute("Defense")]
     public int Def = 1;
+    public int GetDef()
+    {
+        return Def + SpecialDef;
+    }
     [XmlAttribute("Speed")]
     public int MovmentSpeed = 5;
+    public int GetMS()
+    {
+        return MovmentSpeed + SpecialMS;
+    }
     [XmlAttribute("Initiative")]
     public int Initiative = 2;
+    public int GetIni()
+    {
+        return Initiative + SpecialI;
+    }
     public int Amount = 1;
   
     public List<string> skillstrings;
@@ -189,7 +220,7 @@ public class TosterHexUnit : IQPathUnit
 
     
         skillstrings = new List<string>();
-   
+        SpellsGoingOn = new List<SpellOverTime>();
         /*
         Type type = Type.GetType(p, true);  
         Skill1 s1 = new Skill1();
@@ -368,19 +399,20 @@ public class TosterHexUnit : IQPathUnit
     // TempHP = current 
     public void HealMe(int h)
     {
-      if (TempHP-h < HP) { TempHP += h; }
-        else { TempHP = HP; }
+      if (TempHP-h < GetHP()) { TempHP += h; }
+        else { TempHP = GetHP(); }
     }
 
 
 
     public void AttackMe(TosterHexUnit t)
     {
-        int newhp = (HP * (Amount - 1) + TempHP) - Mathf.Max(t.Att / Def * Random.Range(t.mindmg, t.maxdmg),1)*t.Amount;
+        int dmgDealt = Mathf.Max(t.GetAtt() / GetDef() * Random.Range(t.GetMinDmg(), t.GetMaxDMG()), 1) * t.Amount;
+        float dmgDealtF = dmgDealt * ((100 - SpecialResistance) / 100);
+        int newhp = (GetHP() * (Amount - 1) + TempHP) - Mathf.FloorToInt(dmgDealtF);
+        Amount = Mathf.FloorToInt(newhp / GetHP());
 
-        Amount = Mathf.FloorToInt(newhp / HP);
-
-        TempHP = (newhp - Amount * HP);
+        TempHP = (newhp - Amount * GetHP());
 
         if (TempHP>=1 )
         {
@@ -388,7 +420,7 @@ public class TosterHexUnit : IQPathUnit
             Amount++;
 
         }
-        else TempHP = HP;
+        else TempHP = GetHP();
 
         if (Amount < 1)
         {
@@ -400,11 +432,17 @@ public class TosterHexUnit : IQPathUnit
             if (CounterAttackAvaible==true)
             {
                 CounterAttackAvaible = false;
-                 newhp = (t.HP * (t.Amount - 1) + t.TempHP) - Mathf.Max(Att / t.Def * Random.Range(mindmg, maxdmg), 1) * Amount;
 
-               t.Amount = Mathf.FloorToInt(newhp / t.HP);
+                 dmgDealt = Mathf.Max(GetAtt() / t.GetDef() * Random.Range(GetMinDmg(), GetMaxDMG()), 1) * Amount;
+                dmgDealtF = dmgDealt * ((100 - t.SpecialResistance) / 100);
 
-                t.TempHP = (newhp - t.Amount *t.HP);
+
+                newhp = (t.GetHP() * (t.Amount - 1) + t.TempHP) - Mathf.FloorToInt(dmgDealtF);
+
+
+                t.Amount = Mathf.FloorToInt(newhp / t.GetHP());
+
+                t.TempHP = (newhp - t.Amount *t.GetHP());
 
                 if (t.TempHP >= 1)
                 {
@@ -412,7 +450,7 @@ public class TosterHexUnit : IQPathUnit
                     t.Amount++;
 
                 }
-                else t.TempHP = t.HP;
+                else t.TempHP = t.GetHP();
 
                 if (t.Amount < 1)
                 {
@@ -433,11 +471,11 @@ public class TosterHexUnit : IQPathUnit
     }
     public void DealMePURE(int i)
     {
-        int newhp = (HP * (Amount - 1) + TempHP) - i;
+        int newhp = (GetHP() * (Amount - 1) + TempHP) - i;
 
-        Amount = Mathf.FloorToInt(newhp / HP);
+        Amount = Mathf.FloorToInt(newhp / GetHP());
 
-        TempHP = (newhp - Amount * HP);
+        TempHP = (newhp - Amount * GetHP());
 
         if (TempHP >= 1)
         {
@@ -445,7 +483,7 @@ public class TosterHexUnit : IQPathUnit
             Amount++;
 
         }
-        else TempHP = HP;
+        else TempHP = GetHP();
 
         if (Amount < 1)
         {
@@ -464,5 +502,36 @@ public class TosterHexUnit : IQPathUnit
         Team.HexesUnderTeam.Remove(this.Hex);
         Hex.RemoveToster(this);
         tosterView.gameObject.transform.localScale = new Vector3(1f, 0.1f, 1f);
+    }
+
+
+    public void CheckSpells()
+    {
+        foreach (SpellOverTime s in SpellsGoingOn)
+        {
+            s.DoTurn();
+            if (s.IsOver())
+            {
+                SpellsGoingOn.Remove(s);
+            }
+        }
+    }
+
+    public void AddNewTimeSpell(int Time,
+                  TosterHexUnit target,
+                  int hp,
+                  int att,
+                  int def,
+                  int ms,
+                  int ini,
+                  int maxdmg,
+                  int mindmg,
+                  int dmgovertime,
+                  int res,
+                  string nameofspell,
+                  bool isStackable)
+    {
+        SpellOverTime spell = new SpellOverTime(Time, target, hp, att, def, ms, ini, maxdmg, mindmg, dmgovertime, res, nameofspell, isStackable);
+        SpellsGoingOn.Add(spell);
     }
 }

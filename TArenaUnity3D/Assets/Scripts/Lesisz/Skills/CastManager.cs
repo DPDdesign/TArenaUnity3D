@@ -55,7 +55,7 @@ public class CastManager : MonoBehaviour
     {
         int x = mouseControler.getHexUnderMouse().C;
         int y = mouseControler.getHexUnderMouse().R;
-        int[] coords = [x, y];
+        int[] coords = { x, y };
         return coords;
     }
 

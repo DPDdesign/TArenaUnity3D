@@ -118,6 +118,7 @@ public class TeamClass
 
                 if (t.Moved == true && t.isDead==false)
                 {
+                    t.CheckSpells();
                     t.Moved = false;
                     t.Waited = false;
                     t.DefenceStance = false;

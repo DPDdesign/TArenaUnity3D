@@ -7,7 +7,7 @@ public class TurnManager : MonoBehaviour
     List<TeamClass> Teams;
     HexMap hexMap;
     MouseControler MController;
-
+   
     private void Start()
     {
         hexMap = FindObjectOfType<HexMap>();
