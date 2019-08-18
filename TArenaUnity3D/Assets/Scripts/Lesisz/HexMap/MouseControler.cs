@@ -211,7 +211,7 @@ public class MouseControler : MonoBehaviour
     {
         activeButtons = false;
         SelectedToster.move = true;
-        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
         SelectedToster.Pathing_func(hexUnderMouse, false);
 
         // Debug.LogError(SelectedToster.HexPathList.Count);
@@ -230,7 +230,7 @@ public class MouseControler : MonoBehaviour
     {
         activeButtons = false;
         SelectedToster.SetHexPath(h.ToArray());
-        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
    
 
         // Debug.LogError(SelectedToster.HexPathList.Count);
@@ -253,7 +253,7 @@ public class MouseControler : MonoBehaviour
         if (temp != null && temp.Highlight == true)
         {
             SelectedToster.move = true;
-            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
 
 
             //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
@@ -279,7 +279,7 @@ public class MouseControler : MonoBehaviour
 
 
             SelectedToster.move = true;
-            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
 
 
             //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
@@ -304,7 +304,7 @@ public class MouseControler : MonoBehaviour
     public void EndSkills()
     {
         hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
-        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
         SelectedToster.Moved = true;
         CancelUpdateFunc();
         shiftmode = false;
@@ -457,7 +457,7 @@ public class MouseControler : MonoBehaviour
         castManager.getMode(SelectedToster.skillstrings[SelectedSpellid]);
         if (castManager.unselectaround == true)
         {
-            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
         }
         if (castManager.RangeSelectingenemy == true)
         {
@@ -604,7 +604,7 @@ public class MouseControler : MonoBehaviour
             if (Input.GetKeyUp(KeyCode.LeftShift) || Input.GetKeyUp(KeyCode.LeftControl))
             {
                 shiftmode = false;
-                if (TempSelectedToster != null) TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.MovmentSpeed, SelectedToster);
+                if (TempSelectedToster != null) TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.GetMS(), SelectedToster);
                 CancelUpdateFunc();
             }
             else
@@ -614,7 +614,7 @@ public class MouseControler : MonoBehaviour
                     if (hexUnderMouse.Tosters[0] != TempSelectedToster)
                     {
 
-                        TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.MovmentSpeed, SelectedToster);
+                        TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.GetMS(), SelectedToster);
                         TempSelectedToster = null;
                     }
                 if (TempSelectedToster != hexUnderMouse.Tosters[0])
@@ -628,7 +628,7 @@ public class MouseControler : MonoBehaviour
             {
                 if (TempSelectedToster != null)
                 {
-                    TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.MovmentSpeed, SelectedToster);
+                    TempSelectedToster.Hex.hexMap.unCheckAround(TempSelectedToster.Hex.C, TempSelectedToster.Hex.R, TempSelectedToster.GetMS(), SelectedToster);
                     TempSelectedToster = null;
 
                 }
@@ -662,7 +662,7 @@ public class MouseControler : MonoBehaviour
         {
             if (SelectedToster.Waited == false)
             {
-                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
                 SelectedToster.Waited = true;
                 CancelUpdateFunc();
             }
@@ -695,7 +695,7 @@ public class MouseControler : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.Space))
         {
     
-                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
                 SelectedToster.Moved = true;
                 SelectedToster.DefenceStance = true;
                 CancelUpdateFunc();
@@ -886,7 +886,7 @@ public class MouseControler : MonoBehaviour
       
                 if (SelectedToster.Waited == false)
                 {
-                    SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+                    SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
                     SelectedToster.Waited = true;
                     CancelUpdateFunc();
                 }
@@ -897,7 +897,7 @@ public class MouseControler : MonoBehaviour
    public  void DefenseB()
     {
 
-                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.MovmentSpeed);
+                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
                 SelectedToster.Moved = true;
                 SelectedToster.DefenceStance = true;
                 CancelUpdateFunc();
