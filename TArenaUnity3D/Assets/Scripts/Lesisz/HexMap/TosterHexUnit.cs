@@ -237,7 +237,7 @@ public class TosterHexUnit : IQPathUnit
         ThisToster = G;
         TosterPrefab = Toster;
     }
-    public void SetStats(string newname, int newhp, int newattack, int newdefense, int newinitiative, int newspeed, List<string> spells)
+    public void SetStats(string newname, int newhp, int newattack, int newdefense, int newinitiative, int newspeed, List<string> spells, int min, int max)
     {
         Name = newname;
         HP = newhp;
@@ -247,6 +247,8 @@ public class TosterHexUnit : IQPathUnit
         Initiative = newinitiative;
         MovmentSpeed = newspeed;
         skillstrings = spells;
+        mindmg = min;
+        maxdmg = max;
     }
     #region Układ danych w xmlu
     /*
@@ -289,15 +291,17 @@ public class TosterHexUnit : IQPathUnit
         if (found == true)
         {
             XmlNodeList UnitNodes = nodes[NumberOfNode].ChildNodes;
-            XmlNodeList spells = UnitNodes[6].ChildNodes;
+            XmlNodeList spells = UnitNodes[8].ChildNodes;
         
             List<string> sp = new List<string>();
             foreach (XmlNode s in spells)
             {
                 
                 sp.Add(s.InnerText);
-                
+
             }
+
+            
             SetStats(
                 UnitNodes[0].InnerText,
                 int.Parse(UnitNodes[1].InnerText),
@@ -305,7 +309,9 @@ public class TosterHexUnit : IQPathUnit
                 int.Parse(UnitNodes[3].InnerText),
                 int.Parse(UnitNodes[4].InnerText),
                 int.Parse(UnitNodes[5].InnerText),
-                sp);
+                sp,
+                int.Parse(UnitNodes[6].InnerText),
+                int.Parse(UnitNodes[7].InnerText));
         }
     } 
     public void SetTosterPrefab(HexMap h)
