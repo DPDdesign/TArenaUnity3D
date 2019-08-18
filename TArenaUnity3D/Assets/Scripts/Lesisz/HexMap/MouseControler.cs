@@ -118,18 +118,28 @@ public class MouseControler : MonoBehaviour
                 return;
             }
         }
-
+   
         //Debug.LogError(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>().bounds);
         outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
         outlineManagerMainToster.AddMainOutlineWithReset();
 
         hexUnderMouse = SelectedToster.Hex;
+        if (SelectedToster.Taunt==true)
+        {
+            Update_CurrentFunc = Taunted;
+            return;
+        }
         SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
         Update_CurrentFunc = SelectTosterMovement;
         return;
     }
 
+    void Taunted()
+    {
+        Debug.Log("HOW DARE YOU!?");
 
+        StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.whoTauntedMe.Hex,SelectedToster.whoTauntedMe));
+    }
     // TRYB RUCHU JEDNOSTKI
     void SelectTosterMovement()
     {
@@ -342,7 +352,7 @@ public class MouseControler : MonoBehaviour
             hexMap.HighlightAroundHex(hexUnderMouse, castManager.aoeradius);
            
         }
-
+        
        
     
         if (castManager.MeleeisAoE == true)
@@ -353,7 +363,11 @@ public class MouseControler : MonoBehaviour
             hexMap.HighlightAroundHex(getSelectedToster().Hex, castManager.aoeradius);
 
         }
-
+        if (castManager.SingleTarget)
+        {
+            hexMap.DownHex(hexUnderMouse, 1);
+            hexMap.UpHex(hexUnderMouse, 0);
+        }
 
         if (SkillState == false)
         {
@@ -467,7 +481,10 @@ public class MouseControler : MonoBehaviour
         {
             HighlightFriend();
         }
-
+        if (castManager.Global==true)
+        {
+            hexMap.HighlightAroundHex(SelectedToster.Hex, 20);
+        }
         Update_CurrentFunc = SpellCasting;
     }
 
@@ -698,7 +715,8 @@ public class MouseControler : MonoBehaviour
                 SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
                 SelectedToster.Moved = true;
                 SelectedToster.DefenceStance = true;
-                CancelUpdateFunc();
+            SelectedToster.SpecialDef += 5;
+            CancelUpdateFunc();
             
         }
     }
@@ -719,7 +737,7 @@ public class MouseControler : MonoBehaviour
     }
 
     // SPRAWDZ NA JAKI HEX CELUJE MYSZ (JEZELI W OGOLE) - ZWRACA TEN HEX ///////// TODO: ZAWSZE PODWYZSZAJ (ZAZNACZAJ) HEXA NA KTOREGO CELUJE MYSZ
-    HexClass MouseToHex()
+    public HexClass MouseToHex()
     {
         Ray mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit hitInfo;
@@ -900,6 +918,7 @@ public class MouseControler : MonoBehaviour
                 SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
                 SelectedToster.Moved = true;
                 SelectedToster.DefenceStance = true;
+                SelectedToster.SpecialDef += 5;
                 CancelUpdateFunc();
   
     }

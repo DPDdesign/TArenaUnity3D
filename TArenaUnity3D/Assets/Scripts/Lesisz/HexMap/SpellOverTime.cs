@@ -6,13 +6,14 @@ namespace TimeSpells
     public class SpellOverTime
     {
         public int Time = 0;
-        public TosterHexUnit target;
-        int hp = 0, att = 0, def = 0, ms = 0, ini = 0, maxdmg = 0, mindmg = 0, dmgovertime = 0, res = 0, SpecialDMGModificator = 0;
+        public TosterHexUnit target, me;
+        int hp = 0, att = 0, def = 0, ms = 0, ini = 0, maxdmg = 0, mindmg = 0, dmgovertime = 0, res = 0, SpecialDMGModificator = 0, counterattacks = 0;
         public string nameofspell = null;
         public bool isStackable = false;
         List<int> SpecialEvents;
      public   SpellOverTime(int Time,
                       TosterHexUnit target,
+                      TosterHexUnit me,
                       int hp,
                       int att,
                       int def,
@@ -22,11 +23,13 @@ namespace TimeSpells
                       int mindmg,
                       int dmgovertime,
                       int res,
+                          int counterattacks,
                      int SpecialDMGModificator,
                       string nameofspell,
                       bool isStackable)
         {
             this.Time = Time;
+            this.me = me;
             this.target = target;
             this.hp = hp;
             this.att = att;
@@ -36,6 +39,7 @@ namespace TimeSpells
             this.maxdmg = maxdmg;
             this.mindmg = mindmg;
             this.res = res;
+            this.counterattacks = counterattacks;
             this.dmgovertime = dmgovertime;
             this.nameofspell = nameofspell;
             this.isStackable = isStackable;
@@ -47,47 +51,50 @@ namespace TimeSpells
 
         void StartSpell()
         {
-            target.SpecialHP += hp;
-            target.HealMe(hp);
-            target.SpecialAtt += att;
-            target.SpecialDef += def;
-            target.SpecialMS += ms;
-            target.SpecialI += ini;
-            target.SpecialmaxDMG += maxdmg;
-            target.SpecialminDMG += mindmg;
-            target.SpecialResistance += res;
-            target.SpecialDMGModificator += SpecialDMGModificator;
+            me.SpecialHP += hp;
+            me.HealMe(hp);
+            me.SpecialAtt += att;
+            me.SpecialDef += def;
+            me.SpecialMS += ms;
+            me.SpecialI += ini;
+            me.SpecialmaxDMG += maxdmg;
+            me.SpecialminDMG += mindmg;
+            me.SpecialResistance += res;
+            me.SpecialDMGModificator += SpecialDMGModificator;
+            me.CounterAttacks += counterattacks;
+            me.TempCounterAttacks += counterattacks;
         }
         public void DoTurn()
         {
             Time--;
             if (dmgovertime > 0)
             {
-                target.DealMePURE(dmgovertime);
+                me.DealMePURE(dmgovertime);
             }
             else if (dmgovertime < 0)
             {
-                target.HealMe(dmgovertime);
+                me.HealMe(dmgovertime);
             }
         }
         public bool IsOver()
         {
             if (Time == 0)
             {
-                target.SpecialHP -= hp;
-                if (target.TempHP > target.GetHP())
+                me.SpecialHP -= hp;
+                if (me.TempHP > me.GetHP())
                 {
-                    target.TempHP = target.GetHP();
+                    me.TempHP = me.GetHP();
                 }
-                
-                target.SpecialAtt -= att;
-                target.SpecialDef -= def;
-                target.SpecialMS -= ms;
-                target.SpecialI -= ini;
-                target.SpecialmaxDMG -= maxdmg;
-                target.SpecialminDMG -= mindmg;
-                target.SpecialResistance -= res;
-                target.SpecialDMGModificator -= SpecialDMGModificator;
+
+                me.SpecialAtt -= att;
+                me.SpecialDef -= def;
+                me.SpecialMS -= ms;
+                me.SpecialI -= ini;
+                me.SpecialmaxDMG -= maxdmg;
+                me.SpecialminDMG -= mindmg;
+                me.SpecialResistance -= res;
+                me.SpecialDMGModificator -= SpecialDMGModificator;
+                me.CounterAttacks -= counterattacks;
                 SpecialThingOnEnd();
                 return true;
             }
@@ -99,20 +106,57 @@ namespace TimeSpells
         {
             if (nameofspell == "Topornik_Skill3" )
             {
-                SpecialEvents.Add(target.GetHP());
-                SpecialEvents.Add(target.TempHP);
-                SpecialEvents.Add(target.Amount);
+                SpecialEvents.Add(me.GetHP());
+                SpecialEvents.Add(me.TempHP);
+                SpecialEvents.Add(me.Amount);
+            }
+            if (nameofspell == "Taunt")
+            {
+                GetTaunted();
             }
         }
+
+
+        public void GetStuned()
+        {
+            me.Stuned = true;
+        }
+        public void GetTaunted()
+        {
+            if (me.Taunt == true)
+            {
+                
+                SpellOverTime temp = me.AskForSpell(nameofspell, this);
+                Debug.LogError(temp.Time);
+                this.Time += temp.Time;
+                me.RemoveSpell(temp);
+
+            }
+            else { me.Taunt = true; }
+          
+            me.whoTauntedMe = target;
+        }
+        public void TauntEnd()
+        {
+            me.Taunt = false;
+            me.whoTauntedMe = null;
+        }
+
+
+
         public void SpecialThingOnEnd()
         {
             if (nameofspell == "Topornik_Skill3")
             {
                 int TargetStartHP = (SpecialEvents[0] * (SpecialEvents[2] - 1) + SpecialEvents[1]);
-                int TargetActualHP = target.GetHP() * (target.Amount - 1) + target.TempHP;
+                int TargetActualHP = me.GetHP() * (me.Amount - 1) + me.TempHP;
                 int dmgdone = TargetStartHP - TargetActualHP;
-                
-                target.DealMePURE(Mathf.RoundToInt(dmgdone*0.1f));
+
+                me.DealMePURE(Mathf.RoundToInt(dmgdone*0.1f));
+            }
+            if (nameofspell == "Taunt")
+            {
+                TauntEnd();
             }
         }
 

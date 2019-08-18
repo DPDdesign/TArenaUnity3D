@@ -17,6 +17,8 @@ public class CastManager : MonoBehaviour
     public bool isInProgress = false;
     public bool SelfCast = false;
     public bool EndAfter = false;
+    public bool Global = false;
+    public bool SingleTarget = false;
     public int aoeradius = 0;
 
     void Start()
@@ -46,8 +48,9 @@ public class CastManager : MonoBehaviour
         MeleeisAoE = false;
         SelfCast = false;
         aoeradius = 0;
-
-        MouseControler.SkillState = false;
+        Global = false;
+        SingleTarget = false;
+    MouseControler.SkillState = false;
     }
 
 
@@ -202,10 +205,10 @@ public class CastManager : MonoBehaviour
     public void Topornik_Skill2()
     {
         TosterHexUnit trgt = mouseControler.getSelectedToster();
-        double dmg = Convert.ToDouble(trgt.GetHP())*trgt.Amount * 0.1;
-      
+        double dmg = Convert.ToDouble(trgt.GetHP()) * trgt.Amount * 0.1;
+
         trgt.DealMePURE(Convert.ToInt16(dmg));
-        trgt.AddNewTimeSpell(1, trgt, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, "Topornik_Skill2", true);
+        trgt.AddNewTimeSpell(1, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, "Topornik_Skill2", true);
         SetFalse();
     }
 
@@ -223,8 +226,8 @@ public class CastManager : MonoBehaviour
     public void Topornik_Skill3()
     {
         TosterHexUnit trgt = mouseControler.getSelectedToster();
-        trgt.AddNewTimeSpell(1, trgt, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, "Topornik_Skill3", true);
-     //   trgt.Def++;
+        trgt.AddNewTimeSpell(1, null, 0, 0, 0, 0, 0, 0, 0, 0, 10,0, 0, "Topornik_Skill3", true);
+        //   trgt.Def++;
         SetFalse();
     }
 
@@ -244,7 +247,7 @@ public class CastManager : MonoBehaviour
 
 
     #region Rzutnik_Skill1
-    
+
     public Array SelectMultipleEnemy(int x)
     {
         int i = 0;
@@ -260,9 +263,9 @@ public class CastManager : MonoBehaviour
                 i++;
             }
         }
-            return enemies;
+        return enemies;
     }
-    
+
 
 
     TosterHexUnit[] Rzutnik_Skill1_trgt = new TosterHexUnit[2];
@@ -270,22 +273,22 @@ public class CastManager : MonoBehaviour
 
     public void Rzutnik_Skill1()
     {
-  
+
         if (Rzutnik_Skill1_Counter < 2 && mouseControler.getHexUnderMouse() != mouseControler.getSelectedToster().Hex && !mouseControler.getSelectedToster().Team.HexesUnderTeam.Contains(mouseControler.getHexUnderMouse()) && mouseControler.getHexUnderMouse().Tosters.Count > 0)
-            {
+        {
             isInProgress = true;
             Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter] = mouseControler.getHexUnderMouse().Tosters[0];
-              Debug.Log("Wybrałem: " + Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter].Name);
-                Rzutnik_Skill1_Counter++;
-            }
-        
+            Debug.Log("Wybrałem: " + Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter].Name);
+            Rzutnik_Skill1_Counter++;
+        }
+
 
         else if (Rzutnik_Skill1_Counter == 2)
         {
             //     mouseControler.getSelectedToster().AddNewTimeSpell(1, mouseControler.getSelectedToster(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -40, "Rzutnik_skill1", true);
             mouseControler.getSelectedToster().SpecialDMGModificator += 40;
-            Rzutnik_Skill1_trgt[0].DealMePURE(Convert.ToInt32(mouseControler.getSelectedToster().CalculateDamageBetweenTosters(mouseControler.getSelectedToster(),Rzutnik_Skill1_trgt[0],1)));
-          Rzutnik_Skill1_trgt[1].DealMePURE(Convert.ToInt32(mouseControler.getSelectedToster().CalculateDamageBetweenTosters(mouseControler.getSelectedToster(), Rzutnik_Skill1_trgt[1], 1)));
+            Rzutnik_Skill1_trgt[0].DealMePURE(Convert.ToInt32(mouseControler.getSelectedToster().CalculateDamageBetweenTosters(mouseControler.getSelectedToster(), Rzutnik_Skill1_trgt[0], 1)));
+            Rzutnik_Skill1_trgt[1].DealMePURE(Convert.ToInt32(mouseControler.getSelectedToster().CalculateDamageBetweenTosters(mouseControler.getSelectedToster(), Rzutnik_Skill1_trgt[1], 1)));
             mouseControler.getSelectedToster().SpecialDMGModificator -= 40;
             Rzutnik_Skill1_Counter = 0; SetFalse(); }
 
@@ -310,7 +313,7 @@ public class CastManager : MonoBehaviour
         TosterHexUnit trgt = mouseControler.getSelectedToster();
         double dmg = Convert.ToDouble(trgt.HP) * 0.1;
         trgt.DealMePURE(Convert.ToInt16(dmg));
-   //     trgt.AddNewTimeSpell(1, trgt, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rzutnik_Skill2", true);
+        //     trgt.AddNewTimeSpell(1, trgt, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rzutnik_Skill2", true);
 
         SetFalse();
     }
@@ -359,11 +362,74 @@ public class CastManager : MonoBehaviour
 
     #endregion
 
+    #region Tank
+
+
+    #region Tank_Skill1 - Tauntuje wszystkich w odległości 1 oraz dodaje +2 CounterAttacks do końca następnej tury
+    public void Tank_Skill1() //Taunt
+    {
+        mouseControler.getSelectedToster().AddNewTimeSpell(2, mouseControler.getSelectedToster(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, "Tank_Skill1", false);
+        List<HexClass> hexarea = new List<HexClass>(mouseControler.getSelectedToster().Hex.hexMap.GetHexesWithinRadiusOf(mouseControler.getSelectedToster().Hex, aoeradius));
+        foreach (HexClass t in hexarea)
+        {
+
+            if (t != null)
+            {
+                if (t.Tosters.Count > 0)
+                {
+
+                    if (t.Tosters.Count > 0 && !t.Tosters.Contains(mouseControler.getSelectedToster()) )
+                    {
+                        t.Tosters[0].AddNewTimeSpell(2, mouseControler.getSelectedToster(), 0, 0, 0, 0, 0,  0, 0, 0, 0,0, 0, "Taunt", false);
+                    }
+
+                }
+            }
+            else { Debug.Log("No Tosters Hit"); }
+        }
+        SetFalse();
+    }
+
+    public void Tank_Skill1M()
+    {
+        unselectaround = true;
+        aoeradius = 1;
+        MeleeisAoE = true;
+    }
 
 
 
     #endregion
 
+
+    #region Tank_Skill2- Teleport XD
+    public void Tank_Skill2() //Taunt
+    {
+        if (mouseControler.getHexUnderMouse() != mouseControler.getSelectedToster().Hex && mouseControler.getHexUnderMouse().Tosters.Count == 0)
+        {
+
+            HexClass hextomove = mouseControler.getHexUnderMouse();
+            if (hextomove.Highlight == true)
+            {
+                mouseControler.getSelectedToster().TeleportToHex(hextomove);//SetHex(hextomove);
+
+                SetFalse();
+            }
+        }
+    }
+
+    public void Tank_Skill2M()
+    {
+        Global = true;
+        SingleTarget = true;
+    }
+
+
+
+    #endregion 
+    #endregion
+
+    #endregion
     #region UNIT STRUCUTRE
     /*
       

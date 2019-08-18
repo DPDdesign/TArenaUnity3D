@@ -479,7 +479,52 @@ public class HexMap : MonoBehaviour, IQPathWorld
         UpdateHexVisuals();
     }
 
+    public void UpHex(HexClass what, int radius)
+    {
+        HexClass centerHex = what;
 
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, radius);
+
+        foreach (HexClass h in areaHexes)
+        {
+            //if(h.Elevation < 0)
+            //h.Elevation = 0;
+            if (h != null)
+            {
+                if (hextoGameObjectMap.ContainsKey(h) == true)
+                {
+
+                    Vector3 TestGoUp = h.MyHex.transform.position;
+                    TestGoUp.y = -0.1f;
+                    h.MyHex.transform.position = TestGoUp;
+                }
+            }
+        }
+        UpdateHexVisuals();
+    }
+    public void DownHex(HexClass what, int radius)
+    {
+        HexClass centerHex = what;
+
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, radius);
+
+        foreach (HexClass h in areaHexes)
+        {
+            //if(h.Elevation < 0)
+            //h.Elevation = 0;
+            if (h != null)
+            {
+                if (hextoGameObjectMap.ContainsKey(h) == true)
+                {
+
+                    Vector3 TestGoUp = h.MyHex.transform.position;
+                    TestGoUp.y = 0f;
+                    h.MyHex.transform.position = TestGoUp;
+                }
+            }
+        }
+        UpdateHexVisuals();
+    }
 
     public void CheckWithPath(TosterHexUnit hh)
     {

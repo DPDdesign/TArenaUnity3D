@@ -53,6 +53,10 @@ public class TosterView : MonoBehaviour
         newPos.y = beforeJumpPos.y;
     }
 
+    public void TeleportTo(HexClass hex)
+    {
+        this.transform.position = hex.Position();
+    }
     
 
     private void Update()
@@ -66,6 +70,10 @@ public class TosterView : MonoBehaviour
         {
             AnimationIsPlaying = false;
            // GameObject.FindObjectOfType<HexMap>().AnimationIsPlaying = false;
+        }
+        if (Vector3.Distance(this.transform.position, newPos) > 2f)
+        {
+       //     this.transform.position = newPos;
         }
         // this.transform.position = Vector3.SmoothDamp(this.transform.position, newPos, ref currentV, smoothTime);
 

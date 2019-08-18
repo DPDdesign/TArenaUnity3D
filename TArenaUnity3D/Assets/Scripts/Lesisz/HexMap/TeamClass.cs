@@ -121,8 +121,10 @@ public class TeamClass
                     t.CheckSpells();
                     t.Moved = false;
                     t.Waited = false;
+                    if (t.DefenceStance == true)
+                        t.SpecialDef -= 5;
                     t.DefenceStance = false;
-                    t.CounterAttackAvaible = true;
+                    t.ResetCounterAttack();
                 }
             }
         }

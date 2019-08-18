@@ -70,12 +70,79 @@ public class TosterHexUnit : IQPathUnit
         return Initiative + SpecialI;
     }
     public int Amount = 1;
-  
+    public int TempCounterAttacks = 1;
+    public int CounterAttacks = 1;
     public List<string> skillstrings;
     public bool Waited = false;
     public bool DefenceStance = false;
     public bool isDead = false;
     public bool CounterAttackAvaible = true;
+
+    public bool Stuned = false;
+    public bool Blinded = false;
+    public bool Rooted = false;
+    public bool Taunt = false;
+    public TosterHexUnit whoTauntedMe = null;
+    public bool Disarm = false;
+    public bool Berserk = false;
+
+
+    public void isStuned()
+    {
+        if (Stuned == true)
+        {
+            Moved = true;
+        }
+    }
+
+    public void isBlinded() { }
+
+
+
+  public  void ResetCounterAttack()
+    {
+        CounterAttackAvaible = true;
+        TempCounterAttacks = CounterAttacks;
+    }
+
+
+
+    public void CounterAttackBools()
+    {
+        //CounterAttackAvaible = true;
+        TempCounterAttacks--;
+        if (TempCounterAttacks == 0) CounterAttackAvaible = false;
+    }
+
+
+
+
+
+
+
+    public void TeleportToHex(HexClass hex)
+    {
+        tosterView.TeleportTo(hex);
+        HexClass oldHex = Hex;
+        if (this.Hex != null)
+        {
+            this.Team.HexesUnderTeam.Remove(oldHex);
+            this.Hex.RemoveToster(this);
+        }
+        Hex = hex;
+        Hex.AddToster(this);
+        if (OnTosterMoved != null)
+        {
+            OnTosterMoved(oldHex, hex);
+        }
+        this.SetTextAmount();
+        this.Team.HexesUnderTeam.Add(Hex);
+    }
+
+
+
+
+
     public TosterView tosterView;
     /// <summary>
     /// 
@@ -472,7 +539,7 @@ public class TosterHexUnit : IQPathUnit
             SetTextAmount();
             if (CounterAttackAvaible==true)
             {
-                CounterAttackAvaible = false;
+                CounterAttackBools();
 
                  dmgDealtF = CalculateDamageBetweenTosters(this, t,1);
           
@@ -549,6 +616,7 @@ public class TosterHexUnit : IQPathUnit
         List<SpellOverTime> SpellsToRemove = new List<SpellOverTime>();
         foreach (SpellOverTime s in SpellsGoingOn)
         {
+            Debug.LogError(s.Time);
             s.DoTurn();
             if (s.IsOver())
             {
@@ -563,6 +631,27 @@ public class TosterHexUnit : IQPathUnit
         }
     }
 
+
+    public SpellOverTime AskForSpell(string str, SpellOverTime spell)
+    {
+        List<SpellOverTime> SpellsToRemove = new List<SpellOverTime>();
+        foreach (SpellOverTime s in SpellsGoingOn)
+        {
+            if (s.nameofspell == str&&s!=spell)
+            {
+                return s;
+            }
+
+        }
+        return null;
+    }
+    public void RemoveSpell(SpellOverTime spell)
+    {
+        SpellsGoingOn.Remove(spell);
+    }
+
+
+
     public void AddNewTimeSpell(int Time,
                   TosterHexUnit target,
                   int hp,
@@ -574,11 +663,12 @@ public class TosterHexUnit : IQPathUnit
                   int mindmg,
                   int dmgovertime,
                   int res,
+                  int counterattacks,
                   int SpecialDMGModificator,
                   string nameofspell,
                   bool isStackable)
     {
-        SpellOverTime spell = new SpellOverTime(Time, target, hp, att, def, ms, ini, maxdmg, mindmg, dmgovertime, res, SpecialDMGModificator, nameofspell, isStackable);
+        SpellOverTime spell = new SpellOverTime(Time, target, this, hp, att, def, ms, ini, maxdmg, mindmg, dmgovertime, res, counterattacks, SpecialDMGModificator, nameofspell, isStackable);
         SpellsGoingOn.Add(spell);
     }
 }
