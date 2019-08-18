@@ -403,7 +403,30 @@ public class TosterHexUnit : IQPathUnit
         else { TempHP = GetHP(); }
     }
 
+    public bool CalculateDamageBetweenTosters(TosterHexUnit attacker, TosterHexUnit defender)
+    {
 
+        bool isReduced = false;
+
+        int ai = attacker.GetAtt();
+        int di = defender.GetDef();
+        double dmgi = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount;
+
+        double a = Convert.ToDouble(ai);
+        double d = Convert.ToDouble(di);
+
+        double I1 = a > d ? 0.05 * (a - d) : 0;
+
+        double R1 = d > a ? 0.025 * (d - a) : 0;
+        double R5 = isReduced ? 0.5 : 0;
+        
+        double DMGb = attacker.Amount*Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG());
+
+        double DMGf = DMGb * (1 + I1) * (1 - R1) * (1 - R5);
+
+        return DMGf;
+
+    }
 
     public void AttackMe(TosterHexUnit t)
     {
