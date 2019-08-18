@@ -165,14 +165,6 @@ public class CastManager : MonoBehaviour
 
     #region Topornik_Skill1 - Zadaje 1 dmg per unit wszystkim dookoła
 
-
-
-
-
-
-
-
-
     public void Topornik_Skill1()
     {
         List<HexClass> hexarea = new List<HexClass>(mouseControler.getSelectedToster().Hex.hexMap.GetHexesWithinRadiusOf(mouseControler.getSelectedToster().Hex, aoeradius));
@@ -207,13 +199,11 @@ public class CastManager : MonoBehaviour
 
     #region Topornik_Skill2 - Zabiera 10% swojego całkowitego HP, zadaje +8% dmg
 
-
     public void Topornik_Skill2()
     {
         TosterHexUnit trgt = mouseControler.getSelectedToster();
-        double dmg = Convert.ToDouble(trgt.HP) * 0.1;
+        double dmg = Convert.ToDouble(trgt.GetHP())*trgt.Amount * 0.1;
         trgt.DealMePURE(Convert.ToInt16(dmg));
-        trgt.Att++;
 
         SetFalse();
     }
