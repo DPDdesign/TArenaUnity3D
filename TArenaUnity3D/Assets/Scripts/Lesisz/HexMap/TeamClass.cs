@@ -68,23 +68,23 @@ public class TeamClass
         foreach (TosterHexUnit t in Tosters)
         {
 
-            if (t.Moved==false&&t.Initiative>Initiative)
+            if (t.Moved==false&&t.GetIni()>Initiative)
             {
 
                 if (t.Waited == false)
                 {
                     T = t;
-                    Initiative = t.Initiative;
+                    Initiative = t.GetIni();
                 }
             }
         }
         if (T == null)
             foreach (TosterHexUnit t in Tosters)
             {
-            if (t.Moved == false && t.Initiative > Initiative)
+            if (t.Moved == false && t.GetIni() > Initiative)
             {
                 T = t;
-                Initiative = t.Initiative;
+                Initiative = t.GetIni();
             }
         }
         return T;

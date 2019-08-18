@@ -86,7 +86,7 @@ public class MostStupidAIEver : MonoBehaviour
 
         hexpath = new List<HexClass>(MC.getSelectedToster().Pathing(EnemyHexes[hNo], true));
         hexmaxpath = new List<HexClass>();
-        for (int i = 0; i < MC.getSelectedToster().MovmentSpeed; i++)
+        for (int i = 0; i < MC.getSelectedToster().GetMS(); i++)
             hexmaxpath.Add(hexpath[i]);
      
         StartCoroutine(MC.DoMovesPath(hexmaxpath));

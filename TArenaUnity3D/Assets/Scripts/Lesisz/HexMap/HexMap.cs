@@ -394,7 +394,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
     {
         HexClass centerHex = hh.Hex;
 
-        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, hh.MovmentSpeed);
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, hh.GetMS());
 
         foreach (HexClass h in areaHexes)
         {
@@ -416,7 +416,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
     {
         HexClass centerHex = This.Hex;
 
-        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, This.MovmentSpeed);
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, This.GetMS());
 
         foreach (HexClass h in areaHexes)
         {
@@ -485,7 +485,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
     {
         HexClass centerHex = hh.Hex;
 
-        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, hh.MovmentSpeed);
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, hh.GetMS());
 
         foreach (HexClass h in areaHexes)
         {
