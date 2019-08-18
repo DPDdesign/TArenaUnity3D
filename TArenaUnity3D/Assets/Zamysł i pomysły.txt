@@ -1,6 +1,8 @@
 Tutaj zapisujemy pomys³y i idee ca³ego projektu:
 
 1. Czym jest TArena??
+	
+	TArena jest turow¹ gr¹ bitewn¹ gatunku COBA (Chess Online Battle Arena)
 
 2. Organizacja jednostek.
 
@@ -9,3 +11,66 @@ Tutaj zapisujemy pomys³y i idee ca³ego projektu:
 4. Organizacja zaklêæ itp.
 
 5. Organizacja statystyk i innych pierdó³.
+
+6. System Fazowy:
+	
+	I) Jednostki wzmacniaj¹ siê wzrast z kolejn¹ faz¹ 
+	
+	II) Wzmacnianie polega na odblokowywaniu kolejnych skilli
+		(lub/oraz buffie do statystyk - ale mo¿ê tylko dla niektórych jednostek?)
+
+	III) ¯eby ograniczyæ czas gry, po 'n-tej' turze nastêpuje 'nag³a œmieræ' 
+			a) Zadaj¹ siê true DMG wszystkim jednostkom z ka¿d¹ tur¹
+			b) W 'n-tej' turze liczy siê sumê 'wartoœæi bojowej' jenostek (punktów które zosta³y)
+
+	IV) Walka rozpoczyna siê w fazie (0)
+
+		a) W fazie (1) Buffa dostaj¹ jednostki Tier I (unlock skill)
+
+		b) W fazie (2) buffa dostaj¹ jednostki Tier I, Tier II (od razu dwa skille?)
+
+		c) W fazie (3)  Tier I, Tier II, Tier III
+
+		d) W Fazie (4) Wszystkie tiery
+
+		Faz mo¿e byæ wiêcej te¿, tak ¿eby ka¿da jednostka mog³a wzsystkie skille odblokowaæ.
+		Ale chodzi o to, ¿eby op³aca³o siê braæ jednostki ni¿szych tierów 
+		(problem hiro³s 3 Arena jak robiliœmy i trzeba by³o mocno statami i kosztem dzia³aæ xD)
+
+	V) Iloœæ albo d³ugosæ poszczególnych faz zale¿y od rodzaju rozgrywki
+		
+		a) -  quick mode ka¿da faza = 1 tura
+		b) -  medium np faza 1 = 2 tury, faza 2 = 3 tury 
+		c) -  long mode jeszce inaczej
+
+		Dodatkowo proponujê ¿eby ruch nie blokowa³ mo¿liwoœci zaklêcia,
+		je¿eli gra bêdzie siê bardziej opieraæ na skillach. A wydaje mi siê to ciekawsze.
+		W Samych h3 walka nie jest g³ównym elementem i by³a by zmu³a trochê XD
+
+7. Rodzaje rozgrywki:
+	
+	I)	Quick mode - 5000 punktów bojowych
+	II) Medium mode - 10000 punktów bojowych
+	III) Long mode - 50000 punktów bojowych
+
+8. Unlock skill - proponujê daæ boole do skilli isCastable i je z ka¿¹ faz¹ / tur¹ odblokowywaæ.
+
+9. System obra¿eñ
+
+10. Jak zrobiæ Damage / CC over Time / œcianê ? 
+	Tak ¿eby efekt czaru nie zanika³ po turach
+
+11. CastManager - uproœciæ.
+ Zrobiæ funkcje o baridzej intuicyjnych nazwach. (a na pewno spisaæ te które s¹)
+ np:
+ GetHexUnderToster(toster)  - jak siê nazywa klasa tosterów xD?
+ GetHexUnderMouse ()
+ GetHexWithRadius(hex, aoe) - ta nazwa bêdzie lepiej pasow¹æ
+ GetHexWithCoordinates(x,y)
+
+ najlepiej to by by³o wjebaæ potem do jakiegoœ namespace xD 
+ i wywo³ywaæ przez jakieœ funkcje ghut(t) ghum() gwr(h,a) to by siê potem
+ ³atwiej czyta³o i wiedzia³o co skill robi XD
+
+
+ 

@@ -45,12 +45,12 @@ public class CastManager : MonoBehaviour
     }
 
 
-    #region Skill1
+    #region Skill1 - Triple shot 
     public void Skill1()
     {
         Debug.LogError("działam");
 
-        if (kochamizabelke < 2 && mouseControler.getHexUnderMouse() != mouseControler.getSelectedToster().Hex && !mouseControler.getSelectedToster().Team.HexesUnderTeam.Contains(mouseControler.getHexUnderMouse()) && mouseControler.getHexUnderMouse().Tosters.Count > 0 && mouseControler.getHexUnderMouse().Tosters.Count > 0)
+        if (kochamizabelke < 2 && mouseControler.getHexUnderMouse() != mouseControler.getSelectedToster().Hex && !mouseControler.getSelectedToster().Team.HexesUnderTeam.Contains(mouseControler.getHexUnderMouse()) && mouseControler.getHexUnderMouse().Tosters.Count > 0)
         {
             isInProgress = true;
             TosterHexUnit trgt = mouseControler.getHexUnderMouse().Tosters[0];
@@ -80,8 +80,8 @@ public class CastManager : MonoBehaviour
     #endregion
 
 
-    #region Skill2
-    public void Skill2() //aoefireball
+    #region Skill2 - aoe fireball
+    public void Skill2() 
     {
         Debug.LogError("działam");
         List<HexClass> hexarea = new List<HexClass>(mouseControler.getHexUnderMouse().hexMap.GetHexesWithinRadiusOf(mouseControler.getHexUnderMouse(), aoeradius));
@@ -111,8 +111,11 @@ public class CastManager : MonoBehaviour
     #endregion
 
 
-    #region Skill3
-    public void Skill3() //heal
+
+
+
+    #region Skill3  - Heal
+    public void Skill3() 
     {
         if (mouseControler.getSelectedToster().Team.HexesUnderTeam.Contains(mouseControler.getHexUnderMouse()) && mouseControler.getHexUnderMouse().Tosters.Count > 0)
         {
@@ -133,30 +136,46 @@ public class CastManager : MonoBehaviour
     }
     #endregion
 
-    #region Rzutnik_Skill1
 
-    public void Rzutnik_Skill1() //heal
+    // mouseControler.getSelectedToster().Team.HexesUnderTeam.Contains(mouseControler.getHexUnderMouse())
+    // getSelectedToster().Hex
+    // getHexUnderMouse()
+
+    #region Barbarian skills:
+    #region Topornik
+    #region Topornik_Skill1
+
+    public void Topornik_Skill1() //heal
     {
-        if (mouseControler.getSelectedToster().Team.HexesUnderTeam.Contains(mouseControler.getHexUnderMouse()) && mouseControler.getHexUnderMouse().Tosters.Count > 0)
+        List<HexClass> hexarea = new List<HexClass>(mouseControler.getSelectedToster().Hex.hexMap.GetHexesWithinRadiusOf(mouseControler.getSelectedToster().Hex, aoeradius));
+        foreach (HexClass t in hexarea)
         {
-            TosterHexUnit trgt = mouseControler.getHexUnderMouse().Tosters[0];
-            trgt.HealMe(25);
 
-            SetFalse();
-
+            if (t != null)
+                if (t.Tosters.Count > 0 && !t.Tosters.Contains(mouseControler.getSelectedToster()))
+                {
+                    t.Tosters[0].DealMePURE(100);
+                }
         }
+
+        SetFalse();
+
+
+
 
     }
 
-    public void Rzutnik_Skill1M()
+    public void Topornik_Skill1M()
     {
         unselectaround = true;
-        Rangeselectingfriend = true;
+        aoeradius = 2;
+        MeleeisAoE = true;
 
     }
 
     #endregion
-
+    #endregion
+    #endregion
 
     #region FRACTION STRUCUTRE
     /*

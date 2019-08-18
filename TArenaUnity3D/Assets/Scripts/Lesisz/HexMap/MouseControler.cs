@@ -334,7 +334,18 @@ public class MouseControler : MonoBehaviour
             hexMap.HighlightAroundHex(hexUnderMouse, castManager.aoeradius);
            
         }
+
        
+    
+        if (castManager.MeleeisAoE == true)
+        {
+
+
+            hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 2);
+            hexMap.HighlightAroundHex(getSelectedToster().Hex, castManager.aoeradius);
+
+        }
+
 
         if (SkillState == false)
         {
