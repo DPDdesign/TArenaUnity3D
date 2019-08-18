@@ -283,10 +283,10 @@ public class CastManager : MonoBehaviour
         else if (Rzutnik_Skill1_Counter == 2)
         {
             //     mouseControler.getSelectedToster().AddNewTimeSpell(1, mouseControler.getSelectedToster(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -40, "Rzutnik_skill1", true);
-            mouseControler.getSelectedToster().SpecialDMGModificator += -40;
+            mouseControler.getSelectedToster().SpecialDMGModificator += 40;
             Rzutnik_Skill1_trgt[0].DealMePURE(Convert.ToInt32(mouseControler.getSelectedToster().CalculateDamageBetweenTosters(mouseControler.getSelectedToster(),Rzutnik_Skill1_trgt[0],1)));
           Rzutnik_Skill1_trgt[1].DealMePURE(Convert.ToInt32(mouseControler.getSelectedToster().CalculateDamageBetweenTosters(mouseControler.getSelectedToster(), Rzutnik_Skill1_trgt[1], 1)));
-            mouseControler.getSelectedToster().SpecialDMGModificator -= -40;
+            mouseControler.getSelectedToster().SpecialDMGModificator -= 40;
             Rzutnik_Skill1_Counter = 0; SetFalse(); }
 
         else
