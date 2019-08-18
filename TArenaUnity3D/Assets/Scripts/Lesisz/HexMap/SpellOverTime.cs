@@ -7,7 +7,7 @@ namespace TimeSpells
     {
         public int Time = 0;
         public TosterHexUnit target;
-        int hp = 0, att = 0, def = 0, ms = 0, ini = 0, maxdmg = 0, mindmg = 0, dmgovertime = 0, res = 0;
+        int hp = 0, att = 0, def = 0, ms = 0, ini = 0, maxdmg = 0, mindmg = 0, dmgovertime = 0, res = 0, SpecialDMGModificator = 0;
         public string nameofspell = null;
         public bool isStackable = false;
         List<int> SpecialEvents;
@@ -22,6 +22,7 @@ namespace TimeSpells
                       int mindmg,
                       int dmgovertime,
                       int res,
+                     int SpecialDMGModificator,
                       string nameofspell,
                       bool isStackable)
         {
@@ -38,6 +39,7 @@ namespace TimeSpells
             this.dmgovertime = dmgovertime;
             this.nameofspell = nameofspell;
             this.isStackable = isStackable;
+            this.SpecialDMGModificator = SpecialDMGModificator;
             this.SpecialEvents = new List<int>();
             StartSpell();
             SpecialThingOnStart();
@@ -54,6 +56,7 @@ namespace TimeSpells
             target.SpecialmaxDMG += maxdmg;
             target.SpecialminDMG += mindmg;
             target.SpecialResistance += res;
+            target.SpecialDMGModificator += SpecialDMGModificator;
         }
         public void DoTurn()
         {
@@ -84,6 +87,7 @@ namespace TimeSpells
                 target.SpecialmaxDMG -= maxdmg;
                 target.SpecialminDMG -= mindmg;
                 target.SpecialResistance -= res;
+                target.SpecialDMGModificator -= SpecialDMGModificator;
                 SpecialThingOnEnd();
                 return true;
             }

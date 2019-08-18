@@ -197,14 +197,15 @@ public class CastManager : MonoBehaviour
 
     #endregion
 
-    #region Topornik_Skill2 - Zabiera 10% swojego całkowitego HP, zadaje +8% dmg
+    #region Topornik_Skill2 - Zabiera 10% swojego całkowitego HP, zadaje +80% dmg (do konca tury)
 
     public void Topornik_Skill2()
     {
         TosterHexUnit trgt = mouseControler.getSelectedToster();
         double dmg = Convert.ToDouble(trgt.GetHP())*trgt.Amount * 0.1;
+      
         trgt.DealMePURE(Convert.ToInt16(dmg));
-
+        trgt.AddNewTimeSpell(1, trgt, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, "Topornik_Skill2", true);
         SetFalse();
     }
 
@@ -222,7 +223,7 @@ public class CastManager : MonoBehaviour
     public void Topornik_Skill3()
     {
         TosterHexUnit trgt = mouseControler.getSelectedToster();
-        trgt.AddNewTimeSpell(1, trgt, 0, 0, 0, 0, 0, 0, 0, 0, 10, "Topornik_Skill3", true);
+        trgt.AddNewTimeSpell(1, trgt, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, "Topornik_Skill3", true);
      //   trgt.Def++;
         SetFalse();
     }
@@ -281,10 +282,12 @@ public class CastManager : MonoBehaviour
 
         else if (Rzutnik_Skill1_Counter == 2)
         {
-
-            Rzutnik_Skill1_trgt[0].DealMePURE(100);
-          Rzutnik_Skill1_trgt[1].DealMePURE(100);
-          Rzutnik_Skill1_Counter = 0; SetFalse(); }
+            //     mouseControler.getSelectedToster().AddNewTimeSpell(1, mouseControler.getSelectedToster(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -40, "Rzutnik_skill1", true);
+            mouseControler.getSelectedToster().SpecialDMGModificator += -40;
+            Rzutnik_Skill1_trgt[0].DealMePURE(Convert.ToInt32(mouseControler.getSelectedToster().CalculateDamageBetweenTosters(mouseControler.getSelectedToster(),Rzutnik_Skill1_trgt[0],1)));
+          Rzutnik_Skill1_trgt[1].DealMePURE(Convert.ToInt32(mouseControler.getSelectedToster().CalculateDamageBetweenTosters(mouseControler.getSelectedToster(), Rzutnik_Skill1_trgt[1], 1)));
+            mouseControler.getSelectedToster().SpecialDMGModificator -= -40;
+            Rzutnik_Skill1_Counter = 0; SetFalse(); }
 
         else
         {
@@ -307,7 +310,7 @@ public class CastManager : MonoBehaviour
         TosterHexUnit trgt = mouseControler.getSelectedToster();
         double dmg = Convert.ToDouble(trgt.HP) * 0.1;
         trgt.DealMePURE(Convert.ToInt16(dmg));
-        trgt.Att++;
+   //     trgt.AddNewTimeSpell(1, trgt, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rzutnik_Skill2", true);
 
         SetFalse();
     }

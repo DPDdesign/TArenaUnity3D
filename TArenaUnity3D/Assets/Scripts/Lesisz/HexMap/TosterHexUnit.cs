@@ -24,6 +24,7 @@ public class TosterHexUnit : IQPathUnit
     public int SpecialmaxDMG = 0;
     public int SpecialminDMG = 0;
     public int SpecialResistance = 0;
+    public int SpecialDMGModificator = 0;
     ///stats
     [XmlAttribute("Name")]
     public string Name = "NoName";
@@ -425,7 +426,7 @@ public class TosterHexUnit : IQPathUnit
 
         double R1 = d > a ? 0.025 * (d - a) : 0;
         double R5 = isReduced ? 0.5 : 0;
-        double DMGb = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount * modifier;
+        double DMGb = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount * /*modifier*/(((100.0 - attacker.SpecialDMGModificator) / 100.0)); 
         Debug.Log(DMGb);
         double DMGf = DMGb * (1 + I1) * (1 - R1) * (1 - R5) * (((100.0 - defender.SpecialResistance) / 100.0));
         Debug.Log(((100.0 - defender.SpecialResistance) / 100.0));
@@ -564,10 +565,11 @@ public class TosterHexUnit : IQPathUnit
                   int mindmg,
                   int dmgovertime,
                   int res,
+                  int SpecialDMGModificator,
                   string nameofspell,
                   bool isStackable)
     {
-        SpellOverTime spell = new SpellOverTime(Time, target, hp, att, def, ms, ini, maxdmg, mindmg, dmgovertime, res, nameofspell, isStackable);
+        SpellOverTime spell = new SpellOverTime(Time, target, hp, att, def, ms, ini, maxdmg, mindmg, dmgovertime, res, SpecialDMGModificator, nameofspell, isStackable);
         SpellsGoingOn.Add(spell);
     }
 }
