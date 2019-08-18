@@ -423,9 +423,11 @@ public class TosterHexUnit : IQPathUnit
         double d = Convert.ToDouble(di);
 
         double I1 = a > d ? 0.05 * (a - d) : 0;
-
+        Debug.LogError("I1" + I1);
         double R1 = d > a ? 0.025 * (d - a) : 0;
+        Debug.LogError("R1" + R1);
         double R5 = isReduced ? 0.5 : 0;
+        Debug.LogError("R5" + R5);
         double DMGb = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount * /*modifier*/(((100.0 - attacker.SpecialDMGModificator) / 100.0)); 
         Debug.Log(DMGb);
         double DMGf = DMGb * (1 + I1) * (1 - R1) * (1 - R5) * (((100.0 - defender.SpecialResistance) / 100.0));
@@ -441,7 +443,7 @@ public class TosterHexUnit : IQPathUnit
         double dmgDealtF = CalculateDamageBetweenTosters(t, this, 1);
 
         Debug.Log(dmgDealtF);
-        int newhp = (GetHP() * (Amount - 1) + TempHP) - Convert.ToInt16(dmgDealtF);
+        int newhp = (GetHP() * (Amount - 1) + TempHP) - Convert.ToInt32(dmgDealtF);
         Amount = Mathf.FloorToInt(newhp / GetHP());
         TempHP = (newhp - Amount * GetHP());
 
@@ -467,7 +469,7 @@ public class TosterHexUnit : IQPathUnit
 
                  dmgDealtF = CalculateDamageBetweenTosters(t, this,1);
           
-                newhp = (t.GetHP() * (t.Amount - 1) + t.TempHP) - Convert.ToInt16(dmgDealtF);
+                newhp = (t.GetHP() * (t.Amount - 1) + t.TempHP) - Convert.ToInt32(dmgDealtF);
 
 
                 t.Amount = Mathf.FloorToInt(newhp / t.GetHP());
