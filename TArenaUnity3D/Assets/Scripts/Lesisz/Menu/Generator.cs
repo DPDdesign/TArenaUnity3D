@@ -13,6 +13,7 @@ public class Generator : MonoBehaviour
     public Text NazwaBohatera;
     public Button ButtonPanelA;
     public List<string> Units;
+    public List<int> Costs;
     public int NumberOfUnit;
     public List<InputField> inputFields;
     public List<int> UnitsAmount;
@@ -20,21 +21,26 @@ public class Generator : MonoBehaviour
     public List<Button> defaultButtons;
     public Sprite defaultS;
     public PanelArmii PanelArmii;
+
+    public List<GameObject> RacePanels;
+
     public void Start()
     {
 
 
-       
+
     }
 
     public void CallMe()
     {
         Units = new List<string>();
         UnitsAmount = new List<int>();
+        Costs = new List<int>();
         for (int i = 0; i < 7; i++)
         {
             Units.Add(null);
             UnitsAmount.Add(0);
+            Costs.Add(0);
         }
         
     }
@@ -62,6 +68,24 @@ public class Generator : MonoBehaviour
     {
 
         NazwaBohatera.text = PanelArmii.LoadedBuild.NazwaBohatera;// PlayerPrefs.GetString("NazwaBohatera");
+        if (NazwaBohatera.text == "Biały Toster")
+        {
+            RacePanels[0].SetActive(true);
+            RacePanels[1].SetActive(false);
+            RacePanels[2].SetActive(false);
+        }
+        if (NazwaBohatera.text == "Czerwony Toster")
+        {
+            RacePanels[0].SetActive(false);
+            RacePanels[1].SetActive(true);
+            RacePanels[2].SetActive(false);
+        }
+        if (NazwaBohatera.text == "Zielony Toster")
+        {
+            RacePanels[0].SetActive(false);
+            RacePanels[1].SetActive(false);
+            RacePanels[2].SetActive(true);
+        }
         int i = 0;
         foreach (int t in PanelArmii.LoadedBuild.NoUnits)
         {
@@ -101,7 +125,10 @@ public class Generator : MonoBehaviour
             i++;
         }
     }
-
+    private void Update()
+    {
+     
+    }
 
 
     public void selectW()
@@ -109,7 +136,9 @@ public class Generator : MonoBehaviour
         PlayerPrefs.SetInt("which", 1);
         PlayerPrefs.SetString("NazwaBohatera", "Biały Toster");
 
-  
+        RacePanels[0].SetActive(true);
+        RacePanels[1].SetActive(false);
+        RacePanels[2].SetActive(false);
         NazwaBohatera.text = "Biały Toster";
         
     }
@@ -117,14 +146,18 @@ public class Generator : MonoBehaviour
     {
         PlayerPrefs.SetInt("which", 2);
         PlayerPrefs.SetString("NazwaBohatera", "Czerwony Toster");
-
+        RacePanels[0].SetActive(false);
+        RacePanels[1].SetActive(true);
+        RacePanels[2].SetActive(false);
         NazwaBohatera.text = "Czerwony Toster";
     }
     public void selectN()
     {
         PlayerPrefs.SetInt("which", 3);
         PlayerPrefs.SetString("NazwaBohatera", "Zielony Toster");
-
+        RacePanels[0].SetActive(false);
+        RacePanels[1].SetActive(false);
+        RacePanels[2].SetActive(true);
         NazwaBohatera.text = "Zielony Toster";
     }
     
@@ -176,8 +209,14 @@ public class Generator : MonoBehaviour
 
 
     }
+    public void SaveCost(int t)
+    {
+
+        Costs[NumberOfUnit] = t;
 
 
+    }
+    
 
 
 }
