@@ -408,8 +408,12 @@ public class TosterHexUnit : IQPathUnit
     public void AttackMe(TosterHexUnit t)
     {
         int dmgDealt = Mathf.Max(t.GetAtt() / GetDef() * Random.Range(t.GetMinDmg(), t.GetMaxDMG()), 1) * t.Amount;
-        float dmgDealtF = dmgDealt * ((100 - SpecialResistance) / 100);
-        int newhp = (GetHP() * (Amount - 1) + TempHP) - Mathf.FloorToInt(dmgDealtF);
+        Debug.Log(dmgDealt);
+        
+        Double dmgDealtF = Convert.ToDouble(dmgDealt) * ((100.0 - SpecialResistance) / 100.0);
+        Debug.Log(dmgDealtF);
+     //   Debug.Log(Mathf.FloorToInt(dmgDealtF));
+        int newhp = (GetHP() * (Amount - 1) + TempHP) - Convert.ToInt16(dmgDealtF);
         Amount = Mathf.FloorToInt(newhp / GetHP());
 
         TempHP = (newhp - Amount * GetHP());
@@ -434,10 +438,10 @@ public class TosterHexUnit : IQPathUnit
                 CounterAttackAvaible = false;
 
                  dmgDealt = Mathf.Max(GetAtt() / t.GetDef() * Random.Range(GetMinDmg(), GetMaxDMG()), 1) * Amount;
-                dmgDealtF = dmgDealt * ((100 - t.SpecialResistance) / 100);
+                dmgDealtF = Convert.ToDouble(dmgDealt) * ((100.0 - t.SpecialResistance) / 100.0);
 
 
-                newhp = (t.GetHP() * (t.Amount - 1) + t.TempHP) - Mathf.FloorToInt(dmgDealtF);
+                newhp = (t.GetHP() * (t.Amount - 1) + t.TempHP) - Convert.ToInt16(dmgDealtF);
 
 
                 t.Amount = Mathf.FloorToInt(newhp / t.GetHP());
@@ -507,13 +511,20 @@ public class TosterHexUnit : IQPathUnit
 
     public void CheckSpells()
     {
+        List<SpellOverTime> SpellsToRemove = new List<SpellOverTime>();
         foreach (SpellOverTime s in SpellsGoingOn)
         {
             s.DoTurn();
             if (s.IsOver())
             {
-                SpellsGoingOn.Remove(s);
+                SpellsToRemove.Add(s);
+               
             }
+        }
+
+        foreach (SpellOverTime s in SpellsToRemove)
+        {
+            SpellsGoingOn.Remove(s);
         }
     }
 
