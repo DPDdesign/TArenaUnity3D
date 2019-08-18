@@ -436,10 +436,10 @@ public class TosterHexUnit : IQPathUnit
 
     public void AttackMe(TosterHexUnit t)
     {
-        int dmgDealt = CalculateDamageBetweenTosters(t, this);
+        double dmgDealt = CalculateDamageBetweenTosters(t, this);
         Debug.Log(dmgDealt);
         
-        Double dmgDealtF = Convert.ToDouble(dmgDealt) * ((100.0 - SpecialResistance) / 100.0);
+        Double dmgDealtF = dmgDealt * ((100.0 - SpecialResistance) / 100.0);
         Debug.Log(dmgDealtF);
      //   Debug.Log(Mathf.FloorToInt(dmgDealtF));
         int newhp = (GetHP() * (Amount - 1) + TempHP) - Convert.ToInt16(dmgDealtF);
