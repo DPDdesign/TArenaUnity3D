@@ -436,7 +436,7 @@ public class TosterHexUnit : IQPathUnit
 
     public void AttackMe(TosterHexUnit t)
     {
-        int dmgDealt = Mathf.Max(t.GetAtt() / GetDef() * Random.Range(t.GetMinDmg(), t.GetMaxDMG()), 1) * t.Amount;
+        int dmgDealt = CalculateDamageBetweenTosters(t, this);
         Debug.Log(dmgDealt);
         
         Double dmgDealtF = Convert.ToDouble(dmgDealt) * ((100.0 - SpecialResistance) / 100.0);
