@@ -39,6 +39,19 @@ public class UICanvas : MonoBehaviour
         InfoTextsList[6].text = INT.ToString();
         InfoTextsList[7].text = N;
     }
+
+    public void UpdateAllStats(TosterHexUnit toster)
+    {
+        InfoTextsList[0].text = toster.HP.ToString()+"("+toster.GetHP().ToString()+")";
+        InfoTextsList[1].text = toster.TempHP.ToString();
+        InfoTextsList[2].text = toster.Att.ToString() + "(" + toster.GetAtt().ToString() + ")";
+        InfoTextsList[3].text = toster.Def.ToString() + "(" + toster.GetAtt().ToString() + ")";
+        InfoTextsList[4].text = toster.mindmg.ToString() + "(" + toster.GetMinDmg().ToString() + ")" + "-" + toster.maxdmg.ToString()  +"(" + toster.GetMaxDMG().ToString() + ")";
+        InfoTextsList[5].text = toster.MovmentSpeed.ToString() + "(" + toster.GetMS().ToString() + ")";
+        InfoTextsList[6].text = toster.Initiative.ToString() + "(" + toster.GetIni().ToString() + ")";
+        InfoTextsList[7].text = toster.Name;
+    }
+
     // Update is called once per frame
     void Update()
     {

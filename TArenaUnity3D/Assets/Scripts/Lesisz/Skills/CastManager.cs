@@ -232,7 +232,8 @@ public class CastManager : MonoBehaviour
     public void Topornik_Skill3()
     {
         TosterHexUnit trgt = mouseControler.getSelectedToster();
-        trgt.Def++;
+        trgt.AddNewTimeSpell(1, trgt, 0, 0, 0, 0, 0, 0, 0, 0, 10, "Topornik_Skill3", true);
+     //   trgt.Def++;
         SetFalse();
     }
 

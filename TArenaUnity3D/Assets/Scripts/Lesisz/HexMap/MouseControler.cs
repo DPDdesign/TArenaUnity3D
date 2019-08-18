@@ -676,7 +676,7 @@ public class MouseControler : MonoBehaviour
         if (hexUnderMouse.Tosters.Count > 0)
         {
             TosterHexUnit t = hexUnderMouse.Tosters[0];
-            canvas.UpdateAllStats(t.HP, t.TempHP, t.Att, t.Def, 1, t.MovmentSpeed, t.Initiative, t.Name);
+            canvas.UpdateAllStats(t);
             canvas.StatsPanel.SetActive(true);
            
         }

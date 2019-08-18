@@ -10,7 +10,7 @@ namespace TimeSpells
         int hp = 0, att = 0, def = 0, ms = 0, ini = 0, maxdmg = 0, mindmg = 0, dmgovertime = 0, res = 0;
         public string nameofspell = null;
         public bool isStackable = false;
-        public int[] SpecialEvents;
+        List<int> SpecialEvents;
      public   SpellOverTime(int Time,
                       TosterHexUnit target,
                       int hp,
@@ -38,7 +38,9 @@ namespace TimeSpells
             this.dmgovertime = dmgovertime;
             this.nameofspell = nameofspell;
             this.isStackable = isStackable;
+            this.SpecialEvents = new List<int>();
             StartSpell();
+            SpecialThingOnStart();
         }
 
         void StartSpell()
@@ -51,6 +53,7 @@ namespace TimeSpells
             target.SpecialI += ini;
             target.SpecialmaxDMG += maxdmg;
             target.SpecialminDMG += mindmg;
+            target.SpecialResistance += res;
         }
         public void DoTurn()
         {
@@ -73,24 +76,43 @@ namespace TimeSpells
                 {
                     target.TempHP = target.GetHP();
                 }
+                
                 target.SpecialAtt -= att;
                 target.SpecialDef -= def;
                 target.SpecialMS -= ms;
                 target.SpecialI -= ini;
                 target.SpecialmaxDMG -= maxdmg;
                 target.SpecialminDMG -= mindmg;
+                target.SpecialResistance -= res;
+                SpecialThingOnEnd();
                 return true;
             }
             else return false;
         }
 
 
-        public void SpecialThing()
+        public void SpecialThingOnStart()
         {
-            /if (nameofspell == )
+            if (nameofspell == "Topornik_Skill3" )
+            {
+                SpecialEvents.Add(target.GetHP());
+                SpecialEvents.Add(target.TempHP);
+                SpecialEvents.Add(target.Amount);
+            }
+        }
+        public void SpecialThingOnEnd()
+        {
+            if (nameofspell == "Topornik_Skill3")
+            {
+                int TargetStartHP = (SpecialEvents[0] * (SpecialEvents[2] - 1) + SpecialEvents[1]);
+                int TargetActualHP = target.GetHP() * (target.Amount - 1) + target.TempHP;
+                int dmgdone = TargetStartHP - TargetActualHP;
+                
+                target.DealMePURE(Mathf.RoundToInt(dmgdone*0.1f));
+            }
         }
 
-       
+
 
 
     }
