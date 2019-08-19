@@ -21,7 +21,7 @@ public class Generator : MonoBehaviour
     public List<Button> defaultButtons;
     public Sprite defaultS;
     public PanelArmii PanelArmii;
-
+    public List<Text> CostText;
     public List<GameObject> RacePanels;
 
     public void Start()
@@ -95,7 +95,11 @@ public class Generator : MonoBehaviour
             i++;
         }
         i = 0;
+        Costs = PanelArmii.LoadedBuild.Costs;
+      /*  foreach (int t in PanelArmii.LoadedBuild.Costs)
+        {
 
+        }*/
 
         foreach (string t in PanelArmii.LoadedBuild.Units)
         {

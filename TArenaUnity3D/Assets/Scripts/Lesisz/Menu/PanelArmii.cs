@@ -25,6 +25,7 @@ public class PanelArmii : MonoBehaviour
         public string NazwaBohatera;
         public List<string> Units;
         public List<int> NoUnits;
+        public List<int> Costs;
     }
     void Start()
     {
@@ -166,6 +167,7 @@ public class PanelArmii : MonoBehaviour
             Build.Units = generator.Units;
           
             Build.NoUnits = generator.UnitsAmount;
+            Build.Costs = generator.Costs;
             BinaryFormatter formatter = new BinaryFormatter();
             string path = Application.persistentDataPath + "/build"+PlayerPrefs.GetString("BuildNumber")+".d";
             FileStream file = File.Create(path);
