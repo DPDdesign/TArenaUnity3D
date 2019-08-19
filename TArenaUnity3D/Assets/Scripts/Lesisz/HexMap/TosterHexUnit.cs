@@ -387,7 +387,9 @@ public class TosterHexUnit : IQPathUnit
       
                 this.TosterPrefab = Resources.Load<GameObject>("Models/TosterPrefabs/" + this.Name);
 
-        
+
+
+
 
     }
     public void SetTextAmount()
