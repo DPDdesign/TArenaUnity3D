@@ -114,12 +114,25 @@ namespace TimeSpells
             {
                 GetTaunted();
             }
+            if (nameofspell == "Stun")
+            {
+                GetStuned();
+            }
         }
 
 
         public void GetStuned()
         {
             me.Stuned = true;
+            if (me.Stuned == true)
+            {
+                SpellOverTime temp = me.AskForSpell(nameofspell, this);
+                Debug.LogError(temp.Time);
+                int newtime = this.Time > temp.Time ? this.Time : temp.Time;
+                this.Time = newtime;
+                me.RemoveSpell(temp);
+            }
+            else { me.Stuned = true; }
         }
         public void GetTaunted()
         {
@@ -128,7 +141,10 @@ namespace TimeSpells
                 
                 SpellOverTime temp = me.AskForSpell(nameofspell, this);
                 Debug.LogError(temp.Time);
-                this.Time += temp.Time;
+                Debug.LogError(this.Time);
+                int newtime = this.Time > temp.Time ? this.Time : temp.Time;
+                this.Time = newtime;
+                Debug.LogError(newtime);
                 me.RemoveSpell(temp);
 
             }
@@ -140,6 +156,10 @@ namespace TimeSpells
         {
             me.Taunt = false;
             me.whoTauntedMe = null;
+        }
+        public void StunEnd()
+        {
+            me.Stuned = false;       
         }
 
 
@@ -157,6 +177,10 @@ namespace TimeSpells
             if (nameofspell == "Taunt")
             {
                 TauntEnd();
+            }
+            if(nameofspell == "Stun")
+            {
+                StunEnd();
             }
         }
 

@@ -514,68 +514,33 @@ public class TosterHexUnit : IQPathUnit
 
     public void AttackMe(TosterHexUnit t)
     {
-        double dmgDealtF = CalculateDamageBetweenTosters(t, this, 1);
+        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        if (DealMePURE(Convert.ToInt32(dmgdouble)))
 
-        Debug.Log(dmgDealtF);
-        int newhp = (GetHP() * (Amount - 1) + TempHP) - Convert.ToInt32(dmgDealtF);
-        Amount = Mathf.FloorToInt(newhp / GetHP());
-        TempHP = (newhp - Amount * GetHP());
-
-        if (TempHP>=1 )
-        {
-            Amount++;
-        }
-
-        else TempHP = GetHP();
-
-        if (Amount < 1)
-        {
-            Died();
-        }
-
-
-        else
-        {
-            SetTextAmount();
-            if (CounterAttackAvaible==true)
+            if (CounterAttackAvaible == true)
             {
                 CounterAttackBools();
 
-                 dmgDealtF = CalculateDamageBetweenTosters(this, t,1);
-          
-                newhp = (t.GetHP() * (t.Amount - 1) + t.TempHP) - Convert.ToInt32(dmgDealtF);
+                dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
 
-
-                t.Amount = Mathf.FloorToInt(newhp / t.GetHP());
-
-                t.TempHP = (newhp - t.Amount *t.GetHP());
-
-                if (t.TempHP >= 1)
-                {
-
-                    t.Amount++;
-
-                }
-                else t.TempHP = t.GetHP();
-
-                if (t.Amount < 1)
-                {
-                    t.Died();
-                    
-                }
-                else
-                    t.SetTextAmount();
+                t.DealMePURE(Convert.ToInt32(dmgdouble));
             }
-        }
+
 
     }
-    
 
-    public void DealMeDMG()
+
+    public void DealMeDMG(TosterHexUnit t)
+    {
+        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        DealMePURE(Convert.ToInt32(dmgdouble));
+    }
+
+    public void CalculateResult(double dmgdouble)
     {
 
     }
-    public void DealMePURE(int i)
+    public bool DealMePURE(int i)
     {
         int newhp = (GetHP() * (Amount - 1) + TempHP) - i;
 
@@ -594,8 +559,9 @@ public class TosterHexUnit : IQPathUnit
         if (Amount < 1)
         {
             Died();
+            return false;
         }
-        else SetTextAmount();
+        else { SetTextAmount(); return true; }
     }
     #endregion
 
@@ -617,6 +583,7 @@ public class TosterHexUnit : IQPathUnit
         foreach (SpellOverTime s in SpellsGoingOn)
         {
             Debug.LogError(s.Time);
+            Debug.LogError(s.me.Name);
             s.DoTurn();
             if (s.IsOver())
             {
