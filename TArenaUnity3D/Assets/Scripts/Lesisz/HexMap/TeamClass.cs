@@ -171,6 +171,7 @@ public class TeamClass
         {
             if (Tost != null)
             {
+                Tost.teamN = You;
                 Tost.SetTosterPrefab(h);
                 Tost.SetTextAmount();
             }

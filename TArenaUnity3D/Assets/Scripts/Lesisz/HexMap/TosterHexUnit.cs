@@ -72,6 +72,7 @@ public class TosterHexUnit : IQPathUnit
     public int Amount = 1;
     public int TempCounterAttacks = 1;
     public int CounterAttacks = 1;
+    public bool teamN = true;
     public List<string> skillstrings;
     public bool Waited = false;
     public bool DefenceStance = false;
@@ -85,7 +86,7 @@ public class TosterHexUnit : IQPathUnit
     public TosterHexUnit whoTauntedMe = null;
     public bool Disarm = false;
     public bool Berserk = false;
-
+ //   private HexMap hexMap;
 
     public void isStuned()
     {
@@ -307,6 +308,7 @@ public class TosterHexUnit : IQPathUnit
     }
     public void SetStats(string newname, int newhp, int newattack, int newdefense, int newinitiative, int newspeed, List<string> spells, int min, int max)
     {
+       
         Name = newname;
         HP = newhp;
         TempHP = newhp;
@@ -386,7 +388,10 @@ public class TosterHexUnit : IQPathUnit
     {
       
                 this.TosterPrefab = Resources.Load<GameObject>("Models/TosterPrefabs/" + this.Name);
+        if (this.teamN == true) this.TosterPrefab.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
+                else this.TosterPrefab.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
 
+        //  Debug.Log( this.TosterPrefab.GetComponentInChildren<Renderer>().transform.SetPositionAndRotation(new Vector3(0,0,0),new Quaternion.Euler(0,180,0)));
 
 
 
