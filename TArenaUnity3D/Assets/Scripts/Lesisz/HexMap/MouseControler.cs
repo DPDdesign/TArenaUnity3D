@@ -120,7 +120,8 @@ public class MouseControler : MonoBehaviour
         }
    
         //Debug.LogError(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>().bounds);
-        outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
+       // outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
+        outlineManagerMainToster.ChangeObj(hexMap.GetObjectFromHex(SelectedToster.Hex).GetComponentInChildren<Renderer>());//SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());
         outlineManagerMainToster.AddMainOutlineWithReset();
 
         hexUnderMouse = SelectedToster.Hex;
@@ -189,7 +190,9 @@ public class MouseControler : MonoBehaviour
 
                     TempOutlinedToster = hexUnderMouse.Tosters[0];
                     List<Renderer> Ren = new List<Renderer>();
-                    Ren.Add(hexUnderMouse.Tosters[0].tosterView.gameObject.GetComponentInChildren<Renderer>());
+                  //  outlineManagerMainToster.ChangeObj(hexMap.GetObjectFromHex(SelectedToster.Hex).GetComponentInChildren<Renderer>());//SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());
+
+                    Ren.Add((hexMap.GetObjectFromHex(hexUnderMouse).GetComponentInChildren<Renderer>()));
                     outlineManager.ChangeObjects(Ren);
                 }
                 else if (TempOutlinedToster != hexUnderMouse.Tosters[0])
@@ -197,8 +200,8 @@ public class MouseControler : MonoBehaviour
 
                     outlineManager.RemoveAllButMain();
                     TempOutlinedToster = hexUnderMouse.Tosters[0];
-                    List<Renderer> Ren = new List<Renderer>();
-                    Ren.Add(hexUnderMouse.Tosters[0].tosterView.gameObject.GetComponentInChildren<Renderer>());
+                    List<Renderer> Ren = new List<Renderer>(); Ren.Add((hexMap.GetObjectFromHex(hexUnderMouse).GetComponentInChildren<Renderer>()));
+
                     outlineManager.ChangeObjects(Ren);
                 }
             }
@@ -219,6 +222,7 @@ public class MouseControler : MonoBehaviour
     }
     IEnumerator DoMoves()
     {
+        outlineManagerMainToster.RemoveOutline();
         activeButtons = false;
         SelectedToster.move = true;
         SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
@@ -257,6 +261,7 @@ public class MouseControler : MonoBehaviour
 
     IEnumerator DoMoveAndAttack(TosterHexUnit toster)
     {
+        outlineManagerMainToster.RemoveOutline();
         activeButtons = false;
         TargetToster = hexUnderMouse.Tosters[0];
         var temp = MouseToPart();
@@ -287,8 +292,8 @@ public class MouseControler : MonoBehaviour
   public  IEnumerator DoMoveAndAttackWithoutCheck(HexClass temp, TosterHexUnit toster)
     {
 
-
-            SelectedToster.move = true;
+        outlineManagerMainToster.RemoveOutline();
+        SelectedToster.move = true;
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
 
 
