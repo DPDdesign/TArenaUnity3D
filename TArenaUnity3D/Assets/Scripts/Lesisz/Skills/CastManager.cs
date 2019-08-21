@@ -216,7 +216,7 @@ public class CastManager : MonoBehaviour
         double dmg = Convert.ToDouble(trgt.GetHP()) * trgt.Amount * 0.1;
 
         trgt.DealMePURE(Convert.ToInt16(dmg));
-        trgt.AddNewTimeSpell(1, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, "Topornik_Skill2", true);
+        trgt.AddNewTimeSpell(2, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, "Topornik_Skill2", true);
         SetFalse();
     }
 
@@ -309,7 +309,8 @@ public class CastManager : MonoBehaviour
 
     public void Rzutnik_Skill1M()
     {
-
+        unselectaround = true;
+        RangeSelectingenemy = true;
     }
 
     #endregion
@@ -321,7 +322,7 @@ public class CastManager : MonoBehaviour
         TosterHexUnit trgt = SelectedT();
         double dmg = Convert.ToDouble(trgt.HP) * 0.1;
         trgt.DealMePURE(Convert.ToInt16(dmg));
-        //     trgt.AddNewTimeSpell(1, trgt, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rzutnik_Skill2", true);
+            trgt.AddNewTimeSpell(2, trgt, 0, 25, -10, 0, 0, 0, 0, 0, 0, 0,8, "Rzutnik_Skill2", true);
 
         SetFalse();
     }
@@ -341,7 +342,7 @@ public class CastManager : MonoBehaviour
     public void Rzutnik_Skill3()
     {
         TosterHexUnit trgt = SelectedT();
-        trgt.Def++;
+        trgt.AddNewTimeSpell(2, trgt, 0, 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, "Rzutnik_Skill3", true);
         SetFalse();
     }
 
