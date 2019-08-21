@@ -46,11 +46,11 @@ public class SimButtonCh : MonoBehaviour
     {
         if (Toster == "left")
         {
-            g.SetToster1(tosterStats);
+            g.SetToster1(tosterStats, Name);
 
         }
         if (Toster == "right")
-            g.SetToster2(tosterStats);
+            g.SetToster2(tosterStats, Name);
 
 
         StatsText1[0].text = Name;

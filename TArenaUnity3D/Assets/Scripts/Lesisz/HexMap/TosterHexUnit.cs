@@ -535,6 +535,22 @@ public class TosterHexUnit : IQPathUnit
 
 
     }
+    public void AttackMeS(TosterHexUnit t)
+    {
+        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        if (DealMePURESim(Convert.ToInt32(dmgdouble)))
+
+            if (CounterAttackAvaible == true)
+            {
+                CounterAttackBools();
+
+                dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
+
+                t.DealMePURESim(Convert.ToInt32(dmgdouble));
+            }
+
+
+    }
 
 
     public void DealMeDMG(TosterHexUnit t)
@@ -570,12 +586,36 @@ public class TosterHexUnit : IQPathUnit
         }
         else { SetTextAmount(); return true; }
     }
+
+    public bool DealMePURESim(int i)
+    {
+        int newhp = (GetHP() * (Amount - 1) + TempHP) - i;
+
+        Amount = Mathf.FloorToInt(newhp / GetHP());
+
+        TempHP = (newhp - Amount * GetHP());
+
+        if (TempHP >= 1)
+        {
+
+            Amount++;
+
+        }
+        else TempHP = GetHP();
+
+        if (Amount < 1)
+        {
+            Debug.LogError(this.Name+ ": DIED");
+            return false;
+        }
+        else {  return true; }
+    }
     #endregion
 
 
     public void Died()
     {
-        tosterView.gameObject.GetComponentInChildren<TextMesh>().text = "DEAD";
+        tosterView.gameObject.GetComponentInChildren<TextMesh>().text = "";
         isDead = true;
         Moved = true;
         Team.HexesUnderTeam.Remove(this.Hex);
