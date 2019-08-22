@@ -514,9 +514,9 @@ public class TosterHexUnit : IQPathUnit
 
         double DMGf = DMGb * (1 + I1) * (1 - R1) * (1 - R5) * (((100.0 - defender.SpecialResistance) / 100.0));
      
-        Debug.Log("After Defense: " + DMGf + " (" + (DMGf/DMGb)*100 + "%)");
+        Debug.Log("After Defense: " + Math.Ceiling(DMGf) + " (" + (Math.Ceiling(DMGf) / DMGb)*100 + "%)");
 
-        return DMGf;
+        return Math.Ceiling(DMGf);
 
     }
 
@@ -543,6 +543,7 @@ public class TosterHexUnit : IQPathUnit
 
             if (CounterAttackAvaible == true)
             {
+                Debug.LogWarning("CounterAttack");
                 CounterAttackBools();
 
                 dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
@@ -598,18 +599,23 @@ public class TosterHexUnit : IQPathUnit
     public bool DealMePURESim(int i)
     {
         int newhp = (GetHP() * (Amount - 1) + TempHP) - i;
-        Debug.Log("Toster: " + this.Name + " lost " + (Amount - Mathf.FloorToInt(newhp / GetHP())) + " units");
+
+        int tempamount = Amount-Mathf.FloorToInt(newhp / GetHP());
         Amount = Mathf.FloorToInt(newhp / GetHP());
 
-        TempHP = (newhp - Amount * GetHP());
+       TempHP = (newhp - Amount * GetHP());
 
         if (TempHP >= 1)
         {
-
+          
             Amount++;
 
         }
-        else TempHP = GetHP();
+        else
+        {
+            Debug.Log("Toster: " + this.Name + " lost " + tempamount + " units");
+            TempHP = GetHP();
+        }
 
         if (Amount < 1)
         {

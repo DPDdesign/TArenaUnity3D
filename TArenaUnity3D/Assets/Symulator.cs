@@ -35,17 +35,24 @@ public class Symulator : MonoBehaviour
         Debug.LogError("left");
         left = new TosterHexUnit();
         left.InitateType(leftname);
-        afterA();
+        LeftAmount.text = left.Amount.ToString();
+        left.ResetCounterAttack();
+        LeftHP.text = left.TempHP.ToString();
     }
     public void SetToster2(SimButtonCh.TosterStats s, string rightname)
     {
         Debug.LogError("right");
         right = new TosterHexUnit();
         right.InitateType(rightname);
-        afterA();
+        RightAmount.text = right.Amount.ToString();
+        right.ResetCounterAttack();
+
+
+        RightHP.text = right.TempHP.ToString();
     }
     public void LeftAttackRight()
     {
+        Debug.LogWarning("Left Attacks");
         beforeA();
         right.AttackMeS(left);
 
@@ -54,6 +61,7 @@ public class Symulator : MonoBehaviour
     }
     public void RightAttackLeft()
     {
+        Debug.LogWarning("Right Attacks");
         beforeA();
         left.AttackMeS(right);
 
@@ -63,6 +71,7 @@ public class Symulator : MonoBehaviour
     }
     public void LeftAttackRightNoC()
     {
+        Debug.LogWarning("Left Attacks");
         beforeA();
         right.DealMeDMGS(left);
         afterA();
@@ -70,7 +79,9 @@ public class Symulator : MonoBehaviour
     }
     public void RightAttackLeftNoC()
     {
+        Debug.LogWarning("Right Attacks");
         beforeA();
+
         left.DealMeDMGS(right);
         afterA();
 
@@ -100,6 +111,8 @@ public class Symulator : MonoBehaviour
             RightHP.text = right.TempHP.ToString();
         }
     }
+
+
 
     public void SetSpecialS()
     {
@@ -156,5 +169,19 @@ public class Symulator : MonoBehaviour
     {
         right.HealMe(1000);
         RightHP.text = right.TempHP.ToString();
+    }
+
+public void LoopTilEnd()
+    {
+        while (Int32.Parse(LeftAmount.text) > 0 && Int32.Parse(RightAmount.text) > 0)
+        {
+            LeftAttackRight();
+            if(Int32.Parse(LeftAmount.text) <= 0 || Int32.Parse(RightAmount.text) <= 0)
+            {
+                return;
+            }
+            RightAttackLeft();
+        }
+        
     }
 }
