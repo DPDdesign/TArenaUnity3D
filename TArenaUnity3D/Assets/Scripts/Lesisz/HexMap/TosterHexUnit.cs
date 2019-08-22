@@ -493,26 +493,24 @@ public class TosterHexUnit : IQPathUnit
 
         int ai = attacker.GetAtt();
         int di = defender.GetDef();
-        double I1=0;
-        double R1=0;
+        double M = 0;
    
         double a = Convert.ToDouble(ai);
         double d = Convert.ToDouble(di);
         double ADD = a - d;
 
-        if (ADD >= 60) I1 = 3;
-        else if (ADD > 0 && ADD < 60) I1 = 0.05 * (a - d);
-        else if (ADD < 0 && ADD > -28) R1 = 0.025 * (d - a);
-        else if (ADD < -28) R1 = 0.7;
+        if (ADD == 0) M = 1;
+        else if (ADD > 0) M = 0.04;
+        else if(ADD<0) M = 0.014;
         
  
         double R5 = isReduced ? 0.5 : 0;
 
-        double DMGb = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount * /*modifier*/(((100.0 - attacker.SpecialDMGModificator) / 100.0));
+        double DMGb = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount * (1+(ADD*M)) ;
         Debug.Log("Toster name: " + attacker.Name + " attacks for: " + DMGb + " (before defense) ");
 
 
-        double DMGf = DMGb * (1 + I1) * (1 - R1) * (1 - R5) * (((100.0 - defender.SpecialResistance) / 100.0));
+        double DMGf = DMGb * (((100.0 - defender.SpecialResistance) / 100.0));
      
         Debug.Log("After Defense: " + Math.Ceiling(DMGf) + " (" + (Math.Ceiling(DMGf) / DMGb)*100 + "%)");
 
