@@ -15,6 +15,8 @@ public class Symulator : MonoBehaviour
     public InputField RightAmount;
     public Text LeftHP;
     public Text RightHP;
+    public List<InputField> SpecialS;
+    public List<Text> dmgtexts;
     // Start is called before the first frame update
     void Start()
     {
@@ -33,41 +35,89 @@ public class Symulator : MonoBehaviour
         Debug.LogError("left");
         left = new TosterHexUnit();
         left.InitateType(leftname);
+        afterA();
     }
     public void SetToster2(SimButtonCh.TosterStats s, string rightname)
     {
         Debug.LogError("right");
         right = new TosterHexUnit();
         right.InitateType(rightname);
+        afterA();
     }
     public void LeftAttackRight()
     {
-        Debug.LogError(left.Amount);
-        Debug.LogError(right.Amount);
-        left.Amount = Int32.Parse("0"+LeftAmount.text);
-        right.Amount = Int32.Parse("0"+RightAmount.text);
+        beforeA();
         right.AttackMeS(left);
-        LeftAmount.text = left.Amount.ToString();
-        RightAmount.text = right.Amount.ToString();
-        right.ResetCounterAttack();
-        left.ResetCounterAttack();
-        LeftHP.text = left.TempHP.ToString();
-       RightHP.text = right.TempHP.ToString();
+
+        afterA();
+
     }
     public void RightAttackLeft()
     {
-        left.Amount = Int32.Parse("0" + LeftAmount.text);
-        right.Amount = Int32.Parse("0" + RightAmount.text);
+        beforeA();
         left.AttackMeS(right);
-        LeftAmount.text = left.Amount.ToString();
-        RightAmount.text = right.Amount.ToString();
-        right.ResetCounterAttack();
-        left.ResetCounterAttack();
-        LeftHP.text = left.TempHP.ToString();
-        RightHP.text = right.TempHP.ToString();
+
+       
+        afterA();
+
+    }
+    public void LeftAttackRightNoC()
+    {
+        beforeA();
+        right.DealMeDMGS(left);
+        afterA();
+
+    }
+    public void RightAttackLeftNoC()
+    {
+        beforeA();
+        left.DealMeDMGS(right);
+        afterA();
 
     }
 
+    public void beforeA()
+    {
+        left.Amount = Int32.Parse("0" + LeftAmount.text);
+        right.Amount = Int32.Parse("0" + RightAmount.text);
+        SetSpecialS();
+    }
+
+    public void afterA()
+    {
+        if (left != null)
+        {
+            LeftAmount.text = left.Amount.ToString();
+            left.ResetCounterAttack();
+            LeftHP.text = left.TempHP.ToString();
+        }
+        if (right != null)
+        {
+            RightAmount.text = right.Amount.ToString();
+            right.ResetCounterAttack();
+
+
+            RightHP.text = right.TempHP.ToString();
+        }
+    }
+
+    public void SetSpecialS()
+    {
+  
+        left.SpecialHP = Int32.Parse(SpecialS[0].text + "0") / 10;
+        left.SpecialAtt = Int32.Parse( SpecialS[1].text + "0") / 10;
+        left.SpecialDef = Int32.Parse( SpecialS[2].text + "0") / 10;
+        left.SpecialminDMG = Int32.Parse(SpecialS[3].text + "0") / 10;
+        left.SpecialmaxDMG = Int32.Parse(SpecialS[4].text + "0") / 10;
+
+        right.SpecialHP = Int32.Parse( SpecialS[5].text + "0") / 10;
+        right.SpecialAtt = Int32.Parse( SpecialS[6].text + "0") / 10;
+        right.SpecialDef = Int32.Parse( SpecialS[7].text + "0") / 10;
+        right.SpecialminDMG = Int32.Parse(SpecialS[8].text + "0") / 10;
+        
+        right.SpecialmaxDMG = Int32.Parse(SpecialS[9].text+"0") / 10;
+
+    }
     internal void SaveCost(int cost)
     {
         throw new NotImplementedException();
@@ -76,5 +126,35 @@ public class Symulator : MonoBehaviour
     internal void SaveUnit(string name)
     {
         throw new NotImplementedException();
+    }
+
+
+    public void ResetB()
+    {
+        foreach (InputField input in SpecialS)
+        {
+            input.text = "0";
+        }
+    }
+
+    public void setDMG1()
+    {
+        SpecialS[3].text = (-Int32.Parse(dmgtexts[0].text + "0") / 10 +1).ToString();
+        SpecialS[4].text = (-Int32.Parse(dmgtexts[1].text + "0") / 10 + 1).ToString();
+        SpecialS[8].text = (-Int32.Parse(dmgtexts[2].text + "0") / 10 + 1).ToString();
+        SpecialS[9].text = (-Int32.Parse(dmgtexts[3].text + "0") / 10 + 1).ToString();
+  
+    }
+
+
+   public void HealL()
+    {
+        left.HealMe(1000);
+        LeftHP.text = left.TempHP.ToString();
+    }
+    public void HealR()
+    {
+        right.HealMe(1000);
+        RightHP.text = right.TempHP.ToString();
     }
 }

@@ -57,7 +57,8 @@ public class SimButtonCh : MonoBehaviour
         StatsText1[1].text = tosterStats.hp.ToString();
         StatsText1[2].text = tosterStats.att.ToString();
         StatsText1[3].text = tosterStats.def.ToString();
-        StatsText1[4].text = tosterStats.DmgMin.ToString() + " - " + tosterStats.DmgMax.ToString();
+        StatsText1[4].text = tosterStats.DmgMin.ToString();
+        StatsText1[9].text = tosterStats.DmgMax.ToString();
         StatsText1[5].text = tosterStats.speed.ToString();
         StatsText1[6].text = tosterStats.Int.ToString();
         StatsText1[7].text = tosterStats.Cost.ToString();
