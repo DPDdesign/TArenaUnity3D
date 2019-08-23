@@ -2,13 +2,13 @@
 <Units xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <Unit>
     <Name>TosterDPS</Name>
-    <HP>10</HP>
-    <Attack>10</Attack>
-    <Defense>10</Defense>
+    <HP>125</HP>
+    <Attack>25</Attack>
+    <Defense>25</Defense>
     <Initiative>10</Initiative>
     <Speed>6</Speed>
-    <DamageMinimum>10</DamageMinimum>
-    <DamageMaximum>10</DamageMaximum>
+    <DamageMinimum>25</DamageMinimum>
+    <DamageMaximum>25</DamageMaximum>
     <Skills>
       <Skill1>Skill1</Skill1>
     </Skills>
@@ -60,13 +60,13 @@
   </Unit>
   <Unit>
     <Name>axe1</Name>
-    <HP>40</HP>
+    <HP>53</HP>
     <Attack>13</Attack>
     <Defense>10</Defense>
     <Initiative>7</Initiative>
     <Speed>7</Speed>
     <DamageMinimum>11</DamageMinimum>
-    <DamageMaximum>15</DamageMaximum>
+    <DamageMaximum>11</DamageMaximum>
     <Skills>
       <Skill1>Rzutnik_Skill1</Skill1>
       <Skill2>Rzutnik_Skill2</Skill2>
@@ -77,13 +77,13 @@
   </Unit>
   <Unit>
     <Name>Lizard</Name>
-    <HP>5</HP>
-    <Attack>4</Attack>
-    <Defense>3</Defense>
+    <HP>40</HP>
+    <Attack>21</Attack>
+    <Defense>25</Defense>
     <Initiative>4</Initiative>
     <Speed>4</Speed>
-    <DamageMinimum>1</DamageMinimum>
-    <DamageMaximum>3</DamageMaximum>
+    <DamageMinimum>9</DamageMinimum>
+    <DamageMaximum>9</DamageMaximum>
     <Skills>
       <Skill1>Topornik_Skill1</Skill1>
       <Skill2>Topornik_Skill2</Skill2>
@@ -107,5 +107,21 @@
     </Skills>
     <Sprite>Sprites/superL</Sprite>
     <Cost>491</Cost>
+  </Unit>
+  <Unit>
+    <Name>TosterTemplate</Name>
+    <HP>0</HP>
+    <Attack>0</Attack>
+    <Defense>0</Defense>
+    <Initiative>0</Initiative>
+    <Speed>0</Speed>
+    <DamageMinimum>0</DamageMinimum>
+    <DamageMaximum>0</DamageMaximum>
+    <Skills>
+      <Skill1>Tank_Skill1</Skill1>
+      <Skill2>Tank_Skill2</Skill2>
+    </Skills>
+    <Sprite>Sprites/superL</Sprite>
+    <Cost>0</Cost>
   </Unit>
 </Units>

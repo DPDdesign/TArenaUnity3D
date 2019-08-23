@@ -506,20 +506,51 @@ public class TosterHexUnit : IQPathUnit
  
         double R5 = isReduced ? 0.5 : 0;
 
-        double DMGb = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount * (1+(ADD*M)) ;
-        Debug.Log("Toster name: " + attacker.Name + " attacks for: " + DMGb + " (before defense) ");
+        double DMGb = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount * (1+(ADD*M)) * (((100.0 - attacker.SpecialDMGModificator) / 100.0)); ;
+      
 
 
         double DMGf = DMGb * (((100.0 - defender.SpecialResistance) / 100.0));
-     
-        Debug.Log("After Defense: " + Math.Ceiling(DMGf) + " (" + (Math.Ceiling(DMGf) / DMGb)*100 + "%)");
+        Debug.Log("Toster name: " + attacker.Name + " attacks for: " + Math.Ceiling(DMGf));
+       
 
         return Math.Ceiling(DMGf);
 
     }
+    public double CalculateDamageBetweenTostersH3(TosterHexUnit attacker, TosterHexUnit defender, double modifier)
+    {
 
+        bool isReduced = false;
+
+        int ai = attacker.GetAtt();
+        int di = defender.GetDef();
+        double M = 0;
+
+        double a = Convert.ToDouble(ai);
+        double d = Convert.ToDouble(di);
+        double ADD = a - d;
+
+        if (ADD == 0) M = 1;
+        else if (ADD > 0) M = 0.05;
+        else if (ADD < 0) M = 0.025;
+
+
+        double R5 = isReduced ? 0.5 : 0;
+
+        double DMGb = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount * (1 + (ADD * M)) * (((100.0 - attacker.SpecialDMGModificator) / 100.0)); ;
+
+
+
+        double DMGf = DMGb * (((100.0 - defender.SpecialResistance) / 100.0));
+        Debug.Log("Toster name: " + attacker.Name + " attacks for: " + Math.Ceiling(DMGf));
+
+
+        return Math.Ceiling(DMGf);
+
+    }
     public void AttackMe(TosterHexUnit t)
     {
+      //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
         double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
         if (DealMePURE(Convert.ToInt32(dmgdouble)))
 
@@ -527,7 +558,9 @@ public class TosterHexUnit : IQPathUnit
             {
                 CounterAttackBools();
 
-                dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
+               // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
+
+               dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
 
                 t.DealMePURE(Convert.ToInt32(dmgdouble));
             }
@@ -536,7 +569,8 @@ public class TosterHexUnit : IQPathUnit
     }
     public void AttackMeS(TosterHexUnit t)
     {
-        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+      //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
+                                                                        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
         if (DealMePURESim(Convert.ToInt32(dmgdouble)))
 
             if (CounterAttackAvaible == true)
@@ -544,7 +578,9 @@ public class TosterHexUnit : IQPathUnit
                 Debug.LogWarning("CounterAttack");
                 CounterAttackBools();
 
-                dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
+             //   dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
+
+                    dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
 
                 t.DealMePURESim(Convert.ToInt32(dmgdouble));
             }
@@ -556,12 +592,14 @@ public class TosterHexUnit : IQPathUnit
 
     public void DealMeDMG(TosterHexUnit t)
     {
-        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+       // double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
+                                                                       double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
         DealMePURE(Convert.ToInt32(dmgdouble));
     }
     public void DealMeDMGS(TosterHexUnit t)
     {
-        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        //double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
+                                                                        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
         DealMePURESim(Convert.ToInt32(dmgdouble));
     }
 
@@ -596,22 +634,26 @@ public class TosterHexUnit : IQPathUnit
 
     public bool DealMePURESim(int i)
     {
+        Debug.Log("Dmg: " + i);
         int newhp = (GetHP() * (Amount - 1) + TempHP) - i;
 
-        int tempamount = Amount-Mathf.FloorToInt(newhp / GetHP());
+
+        int tempamount = Amount;
+
         Amount = Mathf.FloorToInt(newhp / GetHP());
 
-       TempHP = (newhp - Amount * GetHP());
+        TempHP = (newhp - Amount * GetHP());
 
         if (TempHP >= 1)
         {
-          
+           
+         
             Amount++;
-
+            Debug.Log("Toster: " + this.Name + " lost " + (tempamount - Amount) + " units");
         }
         else
         {
-            Debug.Log("Toster: " + this.Name + " lost " + tempamount + " units");
+            Debug.Log("Toster: " + this.Name + " lost " + (tempamount - Amount) + " units");    
             TempHP = GetHP();
         }
 

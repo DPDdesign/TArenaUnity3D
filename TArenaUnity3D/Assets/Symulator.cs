@@ -173,14 +173,17 @@ public class Symulator : MonoBehaviour
 
 public void LoopTilEnd()
     {
+        int turn = 1;
         while (Int32.Parse(LeftAmount.text) > 0 && Int32.Parse(RightAmount.text) > 0)
         {
+            Debug.LogError("Turn "+turn);
             LeftAttackRight();
             if(Int32.Parse(LeftAmount.text) <= 0 || Int32.Parse(RightAmount.text) <= 0)
             {
                 return;
             }
             RightAttackLeft();
+            turn++;
         }
         
     }
