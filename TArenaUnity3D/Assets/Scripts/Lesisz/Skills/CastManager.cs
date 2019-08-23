@@ -8,7 +8,7 @@ public class CastManager : MonoBehaviour
 {
     public MouseControler mouseControler;
     int kochamizabelke = 0;
-
+    TosterHexUnit tempToster;
     public bool RangeSelectingenemy = false;
     public bool Rangeselectingfriend = false;
     public bool unselectaround = false;
@@ -51,8 +51,9 @@ public class CastManager : MonoBehaviour
         Global = false;
         SingleTarget = false;
     MouseControler.SkillState = false;
+        tempToster = null;
     }
-    public HexClass getHexUT()
+    public HexClass getHexUM()
     {
       return mouseControler.getHexUnderMouse();
     }
@@ -64,8 +65,8 @@ public class CastManager : MonoBehaviour
 
     public int[] getHexUnderMouseCoordinates()
     {
-        int x = getHexUT().C;
-        int y = getHexUT().R;
+        int x = getHexUM().C;
+        int y = getHexUM().R;
         int[] coords = { x, y };
         return coords;
     }
@@ -74,7 +75,7 @@ public class CastManager : MonoBehaviour
     {
 
         int[] test = getHexUnderMouseCoordinates();
-        return getHexUT().hexMap.GetHexAt(test[0] + x, test[1] + y);
+        return getHexUM().hexMap.GetHexAt(test[0] + x, test[1] + y);
 
     }
 
@@ -83,10 +84,10 @@ public class CastManager : MonoBehaviour
     {
         Debug.LogError("działam");
 
-        if (kochamizabelke < 2 && getHexUT() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUT()) && getHexUT().Tosters.Count > 0)
+        if (kochamizabelke < 2 && getHexUM() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUM()) && getHexUM().Tosters.Count > 0)
         {
             isInProgress = true;
-            TosterHexUnit trgt = getHexUT().Tosters[0];
+            TosterHexUnit trgt = getHexUM().Tosters[0];
             trgt.DealMePURE(100);
             Debug.Log("Zaatakowalem: " + trgt.Name);
             kochamizabelke++;
@@ -116,7 +117,7 @@ public class CastManager : MonoBehaviour
     public void Skill2()
     {
         Debug.LogError("działam");
-        List<HexClass> hexarea = new List<HexClass>(getHexUT().hexMap.GetHexesWithinRadiusOf(getHexUT(), aoeradius));
+        List<HexClass> hexarea = new List<HexClass>(getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), aoeradius));
         foreach (HexClass t in hexarea)
         {
             if (t != null)
@@ -145,9 +146,9 @@ public class CastManager : MonoBehaviour
     #region Skill3  - Heal
     public void Skill3()
     {
-        if (SelectedT().Team.HexesUnderTeam.Contains(getHexUT()) && getHexUT().Tosters.Count > 0)
+        if (SelectedT().Team.HexesUnderTeam.Contains(getHexUM()) && getHexUM().Tosters.Count > 0)
         {
-            TosterHexUnit trgt = getHexUT().Tosters[0];
+            TosterHexUnit trgt = getHexUM().Tosters[0];
             trgt.HealMe(25);
 
             SetFalse();
@@ -164,6 +165,51 @@ public class CastManager : MonoBehaviour
     }
     #endregion
 
+    #region Teleport Other Toster
+   
+    public void TeleportOT() //Taunt
+    {
+
+//        Debug.LogError(getHexUM().Tosters[0].Name);
+        if (getHexUM().Tosters.Count > 0 && Global == false)
+        {
+            tempToster = getHexUM().Tosters[0];
+    
+            Global = true;
+            SingleTarget = true;
+            RangeSelectingenemy = false;
+            Rangeselectingfriend = false;
+            mouseControler.CastSkillOnlyBooleans();
+        }
+        else
+        if (Global == true && SingleTarget == true && tempToster != null)
+        {
+            if (getHexUM() != tempToster.Hex && getHexUM().Tosters.Count == 0)
+            {
+      
+                HexClass hextomove = getHexUM();
+                if (hextomove.Highlight == true)
+                {
+                    tempToster.TeleportToHex(hextomove);//SetHex(hextomove);
+
+                    SetFalse();
+                }
+            }
+        }
+    }
+
+    public void TeleportOTM()
+    {
+        unselectaround = true;
+        RangeSelectingenemy = true;
+        Rangeselectingfriend = true;
+
+        tempToster = new TosterHexUnit();
+    }
+
+
+
+    #endregion
 
     // SelectedT().Team.HexesUnderTeam.Contains(getHexUT())
     // getSelectedToster().Hex
@@ -263,10 +309,10 @@ public class CastManager : MonoBehaviour
 
         while (i < x)
         {
-            if (i < 2 && getHexUT() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUT()) && getHexUT().Tosters.Count > 0)
+            if (i < 2 && getHexUM() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUM()) && getHexUM().Tosters.Count > 0)
             {
                 isInProgress = true;
-                enemies[i] = getHexUT().Tosters[0];
+                enemies[i] = getHexUM().Tosters[0];
                 Debug.Log("Wybrałem: " + enemies[i].Name);
                 i++;
             }
@@ -282,10 +328,10 @@ public class CastManager : MonoBehaviour
     public void Rzutnik_Skill1()
     {
 
-        if (Rzutnik_Skill1_Counter < 2 && getHexUT() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUT()) && getHexUT().Tosters.Count > 0)
+        if (Rzutnik_Skill1_Counter < 2 && getHexUM() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUM()) && getHexUM().Tosters.Count > 0)
         {
             isInProgress = true;
-            Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter] = getHexUT().Tosters[0];
+            Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter] = getHexUM().Tosters[0];
             Debug.Log("Wybrałem: " + Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter].Name);
             Rzutnik_Skill1_Counter++;
         }
@@ -414,10 +460,10 @@ public class CastManager : MonoBehaviour
     #region Tank_Skill2- Teleport XD
     public void Tank_Skill2() //Taunt
     {
-        if (getHexUT() != SelectedT().Hex && getHexUT().Tosters.Count == 0)
+        if (getHexUM() != SelectedT().Hex && getHexUM().Tosters.Count == 0)
         {
 
-            HexClass hextomove = getHexUT();
+            HexClass hextomove = getHexUM();
             if (hextomove.Highlight == true)
             {
                 SelectedT().TeleportToHex(hextomove);//SetHex(hextomove);
