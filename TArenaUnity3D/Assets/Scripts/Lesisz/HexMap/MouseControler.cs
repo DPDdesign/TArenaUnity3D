@@ -43,6 +43,11 @@ public class MouseControler : MonoBehaviour
 
     public MostStupidAIEver AI;
 
+
+    public int GetSelectedSpellID()
+    {
+        return SelectedSpellid;
+    }
     public HexClass getHexUnderMouse()
     {
         return hexUnderMouse;
@@ -491,6 +496,28 @@ public class MouseControler : MonoBehaviour
             hexMap.HighlightAroundHex(SelectedToster.Hex, 20);
         }
         Update_CurrentFunc = SpellCasting;
+    }
+    public void CastSkillOnlyBooleans()
+    {
+  
+     
+        if (castManager.unselectaround == true)
+        {
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+        }
+        if (castManager.RangeSelectingenemy == true)
+        {
+            HighlightEnemy();
+        }
+        if (castManager.Rangeselectingfriend == true)
+        {
+            HighlightFriend();
+        }
+        if (castManager.Global == true)
+        {
+            hexMap.HighlightAroundHex(SelectedToster.Hex, 20);
+        }
+      
     }
 
     public static bool SkillState = true;
