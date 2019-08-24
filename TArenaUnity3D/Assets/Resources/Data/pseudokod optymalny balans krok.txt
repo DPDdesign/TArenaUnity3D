@@ -1,0 +1,67 @@
+SUPER ALGH DO LICZENIA OPTYMALNEJ ILOŚCI JEDNOSTEK - 
+
+StartAmL - startowa ilość jednostek Left
+StartAmR - startowa ilość jednostek Right
+Iter - iteracja
+p = 0.2 - startprocent
+
+
+1.  lewy vs prawy
+1.1 if wygrywa prawy
+1.1.1T szukaj prawego = true && szukajwgóre=false
+1.1.1F sprawdz %zostałych (ladv)
+
+2.  prawy vs lewy
+2.1 if wygrywa lewy
+2.1.1T szukaj prawego = true && szukajwgóre=true
+2.1.1F sprawdz %zostałych (padv)
+
+3. if ladv-padv > 0.05 && szukaj prawego == false
+3.1T szukaj prawego = true && szukajwgóre=true
+3.1F if ladv-padv > -0.05
+3.1F.1T szukaj prawego = true && szukajwgóre=false
+3.1F.1F szukaj prawego = false  ////////// JEST OPTYMALNIE
+
+
+4.2T i = 1;
+4. while szukaj prawego == true
+
+4.2T if szukajwgóre == true
+
+4.2T.1T StartAmR* (1+(i*(p/Iter)) vs lewy
+4.2T.1T if wygrywa lewy
+4.2T.1T.1T i++
+4.2T.1T.2T ->4.
+4.2T.1T.1F sprawdz %zostałych (padv)
+4.2T.1T.1F if padv należy do <0.15;0.3>
+4.2T.1T.1F.1T RETURN  StartAmR * (1+(i*(p/Iter))  - optymalny punkt
+4.2T.1T.1F.1F if padv <0.15
+4.2T.1T.1F.1F.1T i++
+4.2T.1T.1F.1F.2T ->4.
+4.2T.1T.1F.2F if padv >0.3
+4.2T.1T.1F.2F.1T Iter++
+4.2T.1T.1F.2F.2T szukajwgóre = false
+4.2T.1T.1F.2F.3T StartAmR = StartAmR* (1+(i*(p/Iter))
+4.2T.1T.1F.2F.4T i=1;
+4.2T.1T.1F.2F.5T ->4.
+
+4.2T.1F StartAmR* (1-(i*(p/Iter))  vs lewy
+4.2T.1F if wygrywa lewy
+4.2T.1F.1T i--
+4.2T.1F.2T ->4.
+4.2T.1F.1F sprawdz %zostałych (padv)
+4.2T.1F.1F if padv należy do <0.1;0.2>
+4.2T.1F.1F.1T RETURN  StartAmR* (1-(i*(p/Iter)) - optymalny punkt
+4.2T.1F.1F.1F if padv <0.1
+4.2T.1F.1F.1F.1T i--
+4.2T.1F.1F.1F.2T ->4.
+4.2T.1F.1F.2F if padv >0.2
+4.2T.1F.1F.2F.1T Iter++
+4.2T.1F.1F.2F.1T szukajwgóre = true
+4.2T.1T.1F.2F.2T StartAmR = StartAmR* (1-(i*(p/Iter))
+4.2T.1T.1F.2F.3T i=1;
+4.2T.1F.1F.2F.4T ->4.
+
+
+
+

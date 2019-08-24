@@ -1,0 +1,76 @@
+SUPER ALGH DO LICZENIA OPTYMALNEJ ILOŚCI JEDNOSTEK - 
+
+StartAmL - startowa ilość jednostek Left
+StartAmR - startowa ilość jednostek Right
+
+
+
+1.  lewy vs prawy
+1.1 if wygrywa prawy
+1.1.1T prawy *0.5 && szukaj prawego = true
+1.1.1F sprawdz %zostałych (ladv)
+
+2.  prawy vs lewy
+2.1 if wygrywa lewy
+2.1.1T prawy *1.5 && szukaj prawego = true
+2.1.1F sprawdz %zostałych (padv)
+
+3. if ladv-padv > 0.1 && szukaj prawego == false
+3.1T prawy *1.2 && szukaj prawego = true
+3.1F if ladv-padv > -0.1
+3.1F.1T prawy *0.8 && szukaj prawego = true
+3.1F.1F szukaj prawego = false  ////////// JEST OPTYMALNIE
+
+
+
+
+
+
+
+
+
+
+4. while szukaj prawego == true
+4.1T if prawy>StartAmR
+4.1T.1T prawy vs lewy
+4.1T.1T.1 if wygrywa lewy
+4.1T.1T.1.1T prawy *1.5 && szukaj prawego = true
+4.1T.1T.1.1F med = (prawy+StartAmR)/2
+4.1T.1T.1.2F szukaj srodek (INT)
+4.1T.1T.1.2F.1 med*0.95 vs lewy
+4.1T.1T.1.2F.1.1 sprawdz %zostałych (Fadv)
+4.1T.1T.1.2F.1.2 if wygrywa med
+4.1T.1T.1.2F.1.2.1T (Fwin = med)
+4.1T.1T.1.2F.1.2.1F (Fwin = lewy)
+4.1T.1T.1.2F.2 med*1.05 vs lewy
+4.1T.1T.1.2F.2.1 sprawdz %zostałych (Sadv)
+4.1T.1T.1.2F.2.2 if wygrywa med
+4.1T.1T.1.2F.2.2.1T (Fwin2 = med)
+4.1T.1T.1.2F.2.2.1F (Fwin2 = lewy)
+4.1T.1T.1.2F.3.1 if Fadv -
+
+
+4.1T.1T med = (prawy+StartAmR)/2
+4.1T.2T szukaj srodek
+4.1T.2T.1 med*0.95 vs lewy
+4.1T.2T.1.1 if wygrywa med*0.95
+4.1T.2T.1.1.1T prawy *1.5 && szukaj prawego = true
+4.1T.2T.1.1.2T OD NOWA 4.
+4.1T.2T.1.1.1F sprawdz %zostałych (ladv)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

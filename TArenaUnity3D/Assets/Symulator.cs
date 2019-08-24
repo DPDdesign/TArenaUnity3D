@@ -52,7 +52,7 @@ public class Symulator : MonoBehaviour
     }
     public void LeftAttackRight()
     {
-        Debug.LogWarning("Left Attacks");
+        //Debug.LogWarning("Left Attacks");
         beforeA();
         right.AttackMeS(left);
 
@@ -61,7 +61,7 @@ public class Symulator : MonoBehaviour
     }
     public void RightAttackLeft()
     {
-        Debug.LogWarning("Right Attacks");
+       // Debug.LogWarning("Right Attacks");
         beforeA();
         left.AttackMeS(right);
 
@@ -176,15 +176,371 @@ public void LoopTilEnd()
         int turn = 1;
         while (Int32.Parse(LeftAmount.text) > 0 && Int32.Parse(RightAmount.text) > 0)
         {
-            Debug.LogError("Turn "+turn);
+         
             LeftAttackRight();
             if(Int32.Parse(LeftAmount.text) <= 0 || Int32.Parse(RightAmount.text) <= 0)
+            {
+                Debug.LogError("Turns " + turn);
+                return;
+            }
+            RightAttackLeft();
+            turn++;
+        }
+        Debug.LogError("Turns " + turn);
+    }
+    public void LoopTilEnd2()
+    {
+        int turn = 1;
+        while (Int32.Parse(LeftAmount.text) > 0 && Int32.Parse(RightAmount.text) > 0)
+        {
+         
+            RightAttackLeft();
+            if (Int32.Parse(LeftAmount.text) <= 0 || Int32.Parse(RightAmount.text) <= 0)
+            {
+                Debug.LogError("Turns " + turn);
+                return;
+            }
+            LeftAttackRight();
+           
+            turn++;
+        }
+        Debug.LogError("Turns " + turn);
+    }
+    public void ResetStats(int startleft, int startright)
+    {
+
+        RightAmount.text = startright.ToString();
+        LeftAmount.text = startleft.ToString();
+        left.Amount = Int32.Parse("0" + LeftAmount.text);
+        right.Amount = Int32.Parse("0" + RightAmount.text);
+        SetSpecialS();
+        HealL();
+        HealR();
+
+    }
+    public void FindBALANSforlowarmy()
+    {
+        left.Amount = Int32.Parse("0" + LeftAmount.text);
+        right.Amount = Int32.Parse("0" + RightAmount.text);
+        SetSpecialS();
+        int StartLeftAmount = left.Amount; int StartRightAmount = right.Amount;
+        bool LeftOK = false;
+        bool RightOK = false;
+
+
+        while (LeftOK == false && RightOK == false)
+        {
+            ResetStats(StartLeftAmount, StartRightAmount);
+            TryFightLeftRight();
+            if (left.Amount > right.Amount)
+            {
+                LeftOK = true;
+            }
+            ResetStats(StartLeftAmount, StartRightAmount);
+            TryFightRightLeft();
+            if (right.Amount > left.Amount)
+            {
+                RightOK = true;
+            }
+            if(LeftOK==false)
+            {
+                StartLeftAmount++;
+                RightOK = false;
+            }
+            else if(RightOK ==false)
+            {
+                StartRightAmount++;
+                LeftOK = false;
+            }
+            Debug.LogError("Left: " + StartLeftAmount);
+            Debug.LogError("Right: " + StartRightAmount);
+        }
+        Debug.Log("Perfect Left: " + StartLeftAmount);
+        Debug.Log("Perfect Right: " + StartRightAmount);
+
+    }
+
+
+
+
+    public void FindOPTIMALBALANSforlowarmy()
+    {
+
+        left.Amount = Int32.Parse("0" + LeftAmount.text);
+        right.Amount = Int32.Parse("0" + RightAmount.text);
+        SetSpecialS();
+        double StartLeftAmount = left.Amount; double StartRightAmount = right.Amount;
+        int Iter = 1;
+        double ladv = 0, padv = 0;
+        double p = 0.2;
+        bool SzukajPrawego = false;
+        bool SzukajWGore = false;
+        Debug.Log(Convert.ToInt32(StartRightAmount));
+        ResetStats(Convert.ToInt32(StartLeftAmount), Convert.ToInt32(StartRightAmount));
+        TryFightLeftRight();
+        if (left.Amount < right.Amount)
+        {
+            SzukajPrawego = true;
+            SzukajWGore = false;
+        }
+        else
+        {
+            ladv = left.Amount / StartLeftAmount;
+        }
+        ResetStats(Convert.ToInt32(StartLeftAmount), Convert.ToInt32(StartRightAmount));
+        TryFightRightLeft();
+        if (left.Amount > right.Amount)
+        {
+            SzukajPrawego = true;
+            SzukajWGore = true;
+        }
+        else
+        {
+            padv = right.Amount / StartRightAmount;
+        }
+        if (padv != 0 && ladv != 0) 
+        if (ladv - padv > 0.10 && SzukajPrawego == false)
+        {
+            SzukajPrawego = true;
+            SzukajWGore = true;
+        }
+        else if (ladv - padv > -0.10)
+        {
+            SzukajWGore = true; SzukajWGore = false;
+        }
+        else
+        {
+            SzukajPrawego = false;
+        }
+       // Debug.Log("padv " + padv);
+      //  Debug.Log("ladv " + ladv);
+        int i = 1;
+        while (SzukajPrawego == true)
+        {
+            //    break;
+
+          //  Debug.Log("Iter:" + Iter);
+         
+            if (Iter > 25) return;
+            if (SzukajWGore == true)
+            {
+               // Debug.Log((1 + (i * p) / Iter));
+                //Debug.Log(StartRightAmount * (1 + (i * p) / Iter));
+                ResetStats(Convert.ToInt32(StartLeftAmount), Convert.ToInt32(StartRightAmount * (1 + (i * p) / Iter)));
+                TryFightRightLeft();
+                
+                   /* if (left.Amount < right.Amount)
+                {
+                    i++;
+                    continue;
+                }*/
+               
+                    padv = Convert.ToDouble(right.Amount ) / Convert.ToInt32(StartRightAmount * (1 + (i * p) / Iter));
+                    if (padv < 0.1)
+                    {
+                        i++;
+                        continue;
+                    }
+                    else if (padv > 0.2)
+                    {
+                        Iter++;
+                        SzukajWGore = false;
+                        StartRightAmount = Convert.ToInt32(StartRightAmount * (1 + (i * p) / Iter));
+                        i = 1;
+                    }
+                    else
+                    {
+                    StartRightAmount=Convert.ToInt32(StartRightAmount * (1 + (i * p) / Iter));
+                 //   Debug.Log("Optymalna ilość: " + Convert.ToInt32(StartRightAmount * (1 + (i * p) / Iter)));
+                        SzukajPrawego = false;
+                    }
+                
+            }
+            else if (SzukajWGore == false)
+            {
+             //   Debug.Log((1 - (i * p) / Iter));
+              //  Debug.Log(StartRightAmount * (1 - (i * p) / Iter));
+                ResetStats(Convert.ToInt32(StartLeftAmount), Convert.ToInt32(StartRightAmount * (1 - (i * p) / Iter)));
+                TryFightRightLeft();
+               /* if (left.Amount < right.Amount)
+                {
+                    i++;
+                    continue;
+                }*/
+               
+                    padv = Convert.ToDouble(right.Amount) / Convert.ToInt32(StartRightAmount * (1 - (i * p) / Iter));
+                   // Debug.Log(padv);
+                    if (padv < 0.05)
+                    {
+                //        Debug.Log(padv);
+                        Iter++;
+                        SzukajWGore = true;
+                        StartRightAmount = Convert.ToInt32(StartRightAmount * (1 - (i * p) / Iter));
+                        i = 1;
+                     
+                    }
+                    else if (padv > 0.1)
+                    {
+                        Debug.Log(padv);
+                        i++;
+                        continue;
+                    }
+                    else
+                {
+                    StartRightAmount = Convert.ToInt32(StartRightAmount * (1 - (i * p) / Iter));
+                //    Debug.Log("Optymalna ilość: " + Convert.ToInt32(StartRightAmount * (1 - (i * p) / Iter)));
+                        SzukajPrawego = false;
+                    }
+                
+            }
+
+        }
+        Debug.LogError("Iter:" + Iter);
+
+        Debug.Log("Perfect Left: " + StartLeftAmount);
+        Debug.Log("Perfect Right: " + StartRightAmount);
+
+
+
+
+    }
+
+
+
+
+    public int LookForMiddle(int left1, int middle1)
+    {
+        double Fadvantage = 0, Sadvantage = 0;
+        ResetStats(left1, Convert.ToInt32(middle1*0.95));
+        TryFightLeftRight();
+        Fadvantage = right.Amount / Convert.ToInt32(middle1 * 0.95);
+        ResetStats(left1, Convert.ToInt32(middle1 * 1.05));
+        TryFightLeftRight();
+        Sadvantage = right.Amount / Convert.ToInt32(middle1 * 1.05);
+        if (Fadvantage > Sadvantage && Fadvantage > 0)
+        {
+
+        }
+        if(Fadvantage<Sadvantage)
+        {
+
+        }
+        Debug.LogError("ERROR");
+        return 0;
+    }
+
+
+    public void FindBALANSformediumarmy()
+    {
+        left.Amount = Int32.Parse("0" + LeftAmount.text);
+        right.Amount = Int32.Parse("0" + RightAmount.text);
+        SetSpecialS();
+        int StartLeftAmount = 10*left.Amount; int StartRightAmount = 10*right.Amount;
+        bool LeftOK = false;
+        bool RightOK = false;
+
+
+        while (LeftOK == false && RightOK == false)
+        {
+            ResetStats(StartLeftAmount, StartRightAmount);
+            TryFightLeftRight();
+            if (left.Amount > right.Amount)
+            {
+                LeftOK = true;
+            }
+            ResetStats(StartLeftAmount, StartRightAmount);
+            TryFightRightLeft();
+            if (right.Amount > left.Amount)
+            {
+                RightOK = true;
+            }
+            if (LeftOK == false)
+            {
+                StartLeftAmount++;
+                RightOK = false;
+            }
+            else if (RightOK == false)
+            {
+                StartRightAmount++;
+                LeftOK = false;
+            }
+        }
+
+    }
+
+    public void FindBALANSforBigarmy()
+    {
+        left.Amount = Int32.Parse("0" + LeftAmount.text);
+        right.Amount = Int32.Parse("0" + RightAmount.text);
+        SetSpecialS();
+        int StartLeftAmount = 100 * left.Amount; int StartRightAmount = 100 * right.Amount;
+        bool LeftOK = false;
+        bool RightOK = false;
+
+
+        while (LeftOK == false && RightOK == false)
+        {
+            ResetStats(StartLeftAmount, StartRightAmount);
+            TryFightLeftRight();
+            if (left.Amount > right.Amount)
+            {
+                LeftOK = true;
+            }
+            ResetStats(StartLeftAmount, StartRightAmount);
+            TryFightRightLeft();
+            if (right.Amount > left.Amount)
+            {
+                RightOK = true;
+            }
+            if (LeftOK == false)
+            {
+                StartLeftAmount++;
+                RightOK = false;
+            }
+            else if (RightOK == false)
+            {
+                StartRightAmount++;
+                LeftOK = false;
+            }
+        }
+
+    }
+
+
+
+
+    public void TryFightLeftRight()
+    {
+        int turn = 1;
+        while (Int32.Parse(LeftAmount.text) > 0 && Int32.Parse(RightAmount.text) > 0)
+        {
+            Debug.LogError("Turn " + turn);
+            LeftAttackRight();
+            if (Int32.Parse(LeftAmount.text) <= 0 || Int32.Parse(RightAmount.text) <= 0)
             {
                 return;
             }
             RightAttackLeft();
             turn++;
         }
-        
     }
+
+
+    public void TryFightRightLeft()
+    {
+        int turn = 1;
+        while (Int32.Parse(LeftAmount.text) > 0 && Int32.Parse(RightAmount.text) > 0)
+        {
+          //  Debug.LogError("Turn " + turn);
+            RightAttackLeft();
+            if (Int32.Parse(LeftAmount.text) <= 0 || Int32.Parse(RightAmount.text) <= 0)
+            {
+                return;
+            }
+            LeftAttackRight();
+           
+            turn++;
+        }
+    }
+
 }

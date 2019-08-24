@@ -511,7 +511,7 @@ public class TosterHexUnit : IQPathUnit
 
 
         double DMGf = DMGb * (((100.0 - defender.SpecialResistance) / 100.0));
-        Debug.Log("Toster name: " + attacker.Name + " attacks for: " + Math.Ceiling(DMGf));
+      //  Debug.Log("Toster name: " + attacker.Name + " attacks for: " + Math.Ceiling(DMGf));
        
 
         return Math.Ceiling(DMGf);
@@ -575,7 +575,7 @@ public class TosterHexUnit : IQPathUnit
 
             if (CounterAttackAvaible == true)
             {
-                Debug.LogWarning("CounterAttack");
+             //   Debug.LogWarning("CounterAttack");
                 CounterAttackBools();
 
              //   dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
@@ -634,7 +634,7 @@ public class TosterHexUnit : IQPathUnit
 
     public bool DealMePURESim(int i)
     {
-        Debug.Log("Dmg: " + i);
+      //  Debug.Log("Dmg: " + i);
         int newhp = (GetHP() * (Amount - 1) + TempHP) - i;
 
 
@@ -649,17 +649,17 @@ public class TosterHexUnit : IQPathUnit
            
          
             Amount++;
-            Debug.Log("Toster: " + this.Name + " lost " + (tempamount - Amount) + " units");
+       //     Debug.Log("Toster: " + this.Name + " lost " + (tempamount - Amount) + " units");
         }
         else
         {
-            Debug.Log("Toster: " + this.Name + " lost " + (tempamount - Amount) + " units");    
+          //  Debug.Log("Toster: " + this.Name + " lost " + (tempamount - Amount) + " units");    
             TempHP = GetHP();
         }
 
         if (Amount < 1)
         {
-            Debug.LogError(this.Name+ ": DIED");
+           // Debug.LogError(this.Name+ ": DIED");
             return false;
         }
         else {  return true; }
