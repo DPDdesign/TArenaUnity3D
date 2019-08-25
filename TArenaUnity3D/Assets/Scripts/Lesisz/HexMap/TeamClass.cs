@@ -178,24 +178,33 @@ public class TeamClass
         }
         if (You == true)
         {
-          
-            if (Tosters.Count <6)
+
+
+
+
+            if (Tosters.Count < 6)
             {
                 foreach (TosterHexUnit t in Tosters)
                 {
                     if (t != null)
                     {
                         h.GenerateToster(0 + i, 10 - 2 * i, t);
-                    
+
                     }
                     i++;
                 }
             }
-            else
-            {
+            else 
+            { 
                 int ktory = 1;
                 foreach (TosterHexUnit t in Tosters)
                 {
+                    if (ktory == 3 && t != null)
+                    {
+                        h.GenerateToster(1, 7, t);
+                        i--;
+                    }
+                    else
                     if (ktory == 4 && t != null)
                     {
                         h.GenerateToster(2, 5, t);
@@ -212,7 +221,40 @@ public class TeamClass
                 }
             }
         }
-        if (You ==false)
+            /*  if (Tosters.Count <6)
+              {
+                  foreach (TosterHexUnit t in Tosters)
+                  {
+                      if (t != null)
+                      {
+                          h.GenerateToster(0 + i, 10 - 2 * i, t);
+
+                      }
+                      i++;
+                  }
+              }
+              else
+              {
+                  int ktory = 1;
+                  foreach (TosterHexUnit t in Tosters)
+                  {
+                      if (ktory == 4 && t != null)
+                      {
+                          h.GenerateToster(2, 5, t);
+                          i--;
+                      }
+                      else
+                      if (t != null)
+                      {
+                          h.GenerateToster(0 + i, 10 - 2 * i, t);
+
+                      }
+                      ktory++;
+                      i++;
+                  }
+              }
+          }*/
+            if (You ==false)
         {
             if (Tosters.Count < 6)
             {
@@ -220,7 +262,7 @@ public class TeamClass
                 {
                     if (t != null)
                     {
-                        h.GenerateToster(14 + i, 10 - 2 * i, t);
+                        h.GenerateToster(12 + i, 10 - 2 * i, t);
 
                     }
                     i++;
@@ -231,15 +273,21 @@ public class TeamClass
                 int ktory = 1;
                 foreach (TosterHexUnit t in Tosters)
                 {
+                    if (ktory == 3 && t != null)
+                    {
+                        h.GenerateToster(13, 7, t);
+                        i--;
+                    }
+                    else
                     if (ktory == 4)
                     {
-                        h.GenerateToster(16, 5, t);
+                        h.GenerateToster(14, 5, t);
                         i--;
                     }
                     else
                     if (t != null)
                     {
-                        h.GenerateToster(14 + i, 10 - 2 * i, t);
+                        h.GenerateToster(12 + i, 10 - 2 * i, t);
 
                     }
                     ktory++;

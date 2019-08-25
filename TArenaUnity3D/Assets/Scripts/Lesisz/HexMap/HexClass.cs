@@ -84,7 +84,7 @@ public class HexClass : IPathTile {
     {
         
             
-        float height = radius * 2;
+        float height = radius * 2.5f;
         float width = Mathf.Sqrt(3) / 2 * height;
         float vert = height * 0.75f;
         float horiz = width;

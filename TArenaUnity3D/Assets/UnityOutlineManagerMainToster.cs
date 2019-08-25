@@ -68,6 +68,7 @@ namespace Xenu.Game
 
         public void ChangeObjects(Renderer[] objects)
         {
+            RemoveAllButMain();
             int i = 1;
             foreach (Renderer r in objects)
             {
@@ -78,6 +79,20 @@ namespace Xenu.Game
             }
 
         }
+        public void ChangeObjectss(List<Renderer> objects)
+        {
+            int i = 1;
+            foreach (Renderer r in objects)
+            {
+                Debug.LogError(r.name);
+                outliners[i].renderer = r;
+                outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[i].renderer });
+                i++;
+            }
+
+        }
+
+
         public void ChangeObjects(List<Renderer> objects)
         {
             int i = 1;

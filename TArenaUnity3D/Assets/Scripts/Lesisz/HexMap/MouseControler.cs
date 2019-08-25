@@ -169,7 +169,7 @@ public class MouseControler : MonoBehaviour
             if (EventSystem.current.IsPointerOverGameObject())
                 return;
             //     Debug.LogError("test");
-            if (hexUnderMouse.Tosters.Count > 0 && hexUnderMouse.Tosters[0].Team != SelectedToster.Team)
+            if (hexUnderMouse.Tosters.Count > 0 && hexUnderMouse.Tosters[0].Team != SelectedToster.Team && SelectedToster.IsPathAvaible(hexUnderMouse))
             {
 
                 StartCoroutine(DoMoveAndAttack(hexUnderMouse.Tosters[0]));
@@ -266,30 +266,63 @@ public class MouseControler : MonoBehaviour
 
     IEnumerator DoMoveAndAttack(TosterHexUnit toster)
     {
-        outlineManagerMainToster.RemoveOutline();
-        activeButtons = false;
-        TargetToster = hexUnderMouse.Tosters[0];
+
         var temp = MouseToPart();
-        if (temp != null && temp.Highlight == true)
+        if (temp.Tosters.Count == 0)
         {
-            SelectedToster.move = true;
-            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+            if (temp != null && temp.Highlight == true)
+            {
+
+                outlineManagerMainToster.RemoveOutline();
+                activeButtons = false;
+                TargetToster = hexUnderMouse.Tosters[0];
+                SelectedToster.move = true;
+                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
 
 
-            //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
-            //   hexPath = SelectedToster.Pathing(temp);
+                //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
+                //   hexPath = SelectedToster.Pathing(temp);
 
 
-            SelectedToster.Pathing_func(temp, false);
-            SelectedToster.Moved = true;
+                SelectedToster.Pathing_func(temp, false);
+                SelectedToster.Moved = true;
 
-            Update_CurrentFunc = BeforeNextTurn;
-            StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-            yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
-            toster.AttackMe(SelectedToster);
-            CancelUpdateFunc();
-            shiftmode = false;
+                Update_CurrentFunc = BeforeNextTurn;
+                StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+                yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+                toster.AttackMe(SelectedToster);
+                CancelUpdateFunc();
+                shiftmode = false;
+            }
         }
+        else if (temp.Tosters[0] == SelectedToster)
+        {
+            if (temp != null && temp.Highlight == true)
+            {
+
+                outlineManagerMainToster.RemoveOutline();
+                activeButtons = false;
+                TargetToster = hexUnderMouse.Tosters[0];
+                SelectedToster.move = true;
+                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+
+
+                //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
+                //   hexPath = SelectedToster.Pathing(temp);
+
+
+                SelectedToster.Pathing_func(temp, false);
+                SelectedToster.Moved = true;
+
+                Update_CurrentFunc = BeforeNextTurn;
+                StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+                yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+                toster.AttackMe(SelectedToster);
+                CancelUpdateFunc();
+                shiftmode = false;
+            }
+        }
+     
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
     }
 
@@ -613,16 +646,20 @@ public class MouseControler : MonoBehaviour
         {
             if (hexUnderMouse.Tosters.Count == 0)
             {
+            //    List<Renderer> listofhexes = new List<Renderer>(); 
                 hexPath = SelectedToster.Pathing(hexUnderMouse);
                 if (hexPath != null)
                 {
                     foreach (HexClass h in hexPath)
                     {
-                        TestGoUp = h.MyHex.transform.position;
-                        TestGoUp.y = -0.1f;
+                     
+                           TestGoUp = h.MyHex.transform.position;
+                        TestGoUp.y = 0.2f;
                         h.MyHex.transform.position = TestGoUp;
+                   //     listofhexes.Add(h.MyHex.GetComponent<Renderer>());
                     }
                 }
+               // outlineManagerMainToster.ChangeObjectss(listofhexes);
             }
             else if (hexUnderMouse.Tosters[0].Team!=SelectedToster.Team)
             {
@@ -637,7 +674,7 @@ public class MouseControler : MonoBehaviour
                         foreach (HexClass h in hexPath)
                         {
                             TestGoUp = h.MyHex.transform.position;
-                            TestGoUp.y = -0.1f;
+                            TestGoUp.y = -0.2f;
                             h.MyHex.transform.position = TestGoUp;
                         }
                     }

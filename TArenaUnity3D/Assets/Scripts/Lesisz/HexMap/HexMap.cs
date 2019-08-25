@@ -64,7 +64,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
             Debug.LogError("Hexes not found");
         }
 
-        return hexes[x % 20, y % 12];
+        return hexes[x % 20, y % 11];
     }
 
     /*
@@ -114,7 +114,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
         hexes = new HexClass[mapHeight, mapWidth];
         hextoGameObjectMap = new Dictionary<HexClass, GameObject>();
         gameObjectToHexMap = new Dictionary<GameObject, HexClass>();
-        for (int col = 0; col < 5; col++)
+        for (int col = 0; col < 4; col++)
         {
             for (int row = 11 - ((col + 1) * 2); row < 11; row++)
             {
@@ -132,7 +132,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
 
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 gameObjectToHexMap[HexGo] = h;
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count); //{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count); //{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap.Add(h, HexGo);
                 h.MyHex = HexGo;
@@ -145,9 +145,9 @@ public class HexMap : MonoBehaviour, IQPathWorld
         }
 
 
-        for (int col = 5; col < 15; col++)
+        for (int col = 4; col < 13; col++)
         {
-            for (int row = 0; row < 11; row++)
+            for (int row = 2; row < 11; row++)
             {
                 HexClass h = new HexClass(this, col, row);
                 hexes[col, row] = h;
@@ -160,7 +160,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count);//{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
@@ -171,9 +171,9 @@ public class HexMap : MonoBehaviour, IQPathWorld
             }
         }
 
-        for (int col = 15; col < 20; col++)
+        for (int col = 13; col < 18; col++)
         {
-            for (int row = 0; row < ((19 - col) * 2 + 1); row++)
+            for (int row = 2; row < ((17 - col) * 2 + 1); row++)
             {
                 HexClass h = new HexClass(this, col, row);
                 hexes[col, row] = h;
@@ -186,7 +186,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count);//{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
