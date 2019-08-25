@@ -1,34 +1,21 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Units xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <Unit>
-    <Name>TosterDPS</Name>
-    <HP>125</HP>
-    <Attack>25</Attack>
-    <Defense>25</Defense>
-    <Initiative>10</Initiative>
-    <Speed>6</Speed>
-    <DamageMinimum>25</DamageMinimum>
-    <DamageMaximum>25</DamageMaximum>
-    <Skills>
-      <Skill1>Skill1</Skill1>
-    </Skills>
-    <Sprite>Sprites/redT2</Sprite>
-    <Cost>100</Cost>
-  </Unit>
-  <Unit>
-    <Name>TosterTANK</Name>
-    <HP>100</HP>
-    <Attack>1</Attack>
+    <Name>SuperLizard</Name>
+    <HP>172</HP>
+    <Attack>50</Attack>
     <Defense>50</Defense>
-    <Initiative>2</Initiative>
-    <Speed>2</Speed>
-    <DamageMinimum>5</DamageMinimum>
-    <DamageMaximum>5</DamageMaximum>
+    <Initiative>5</Initiative>
+    <Speed>4</Speed>
+    <DamageMinimum>50</DamageMinimum>
+    <DamageMaximum>50</DamageMaximum>
     <Skills>
-      <Skill2>Skill2</Skill2>
+      <Skill1>Tank_Skill1</Skill1>
+      <Skill2>Tank_Skill2</Skill2>
+      <Skill3>TeleportOT</Skill3>
     </Skills>
-    <Sprite>Sprites/wT1</Sprite>
-    <Cost>100</Cost>
+    <Sprite>Sprites/superL</Sprite>
+    <Cost>1000</Cost>
   </Unit>
   <Unit>
     <Name>TosterHEAL</Name>
@@ -43,7 +30,95 @@
       <Skill3>Skill3</Skill3>
     </Skills>
     <Sprite>Sprites/gT2</Sprite>
-    <Cost>100</Cost>
+    <Cost>4</Cost>
+  </Unit>
+  <Unit>
+    <Name>Rusher</Name>
+    <HP>7</HP>
+    <Attack>5</Attack>
+    <Defense>3</Defense>
+    <DamageMinimum>2</DamageMinimum>
+    <DamageMaximum>2</DamageMaximum>
+    <Skills/>
+    <Sprite>Sprites/Brb_Rusher_sprite</Sprite>
+    <Cost>14</Cost>
+  </Unit>
+  <Unit>
+    <Name>Thrower</Name>
+    <HP>15</HP>
+    <Attack>5</Attack>
+    <Defense>3</Defense>
+    <DamageMinimum>4</DamageMinimum>
+    <DamageMaximum>4</DamageMaximum>
+    <Skills/>
+    <Sprite>Sprites/Brb_Thrower_sprite</Sprite>
+    <Cost>30</Cost>
+  </Unit>
+  <Unit>
+    <Name>Axeman</Name>
+    <HP>50</HP>
+    <Attack>15</Attack>
+    <Defense>11</Defense>
+    <DamageMinimum>10</DamageMinimum>
+    <DamageMaximum>10</DamageMaximum>
+    <Skills/>
+    <Sprite>Sprites/Brb_Axeman_sprite</Sprite>
+    <Cost>105</Cost>
+  </Unit>
+  <Unit>
+    <Name>HeavyHitter</Name>
+    <HP>145</HP>
+    <Attack>28</Attack>
+    <Defense>15</Defense>
+    <DamageMinimum>24</DamageMinimum>
+    <DamageMaximum>24</DamageMaximum>
+    <Skills/>
+    <Sprite>Sprites/Brb_HeavyHitter_sprite</Sprite>
+    <Cost>335</Cost>
+  </Unit>
+  <Unit>
+    <Name>Trapper</Name>
+    <HP>8</HP>
+    <Attack>3</Attack>
+    <Defense>4</Defense>
+    <DamageMinimum>2</DamageMinimum>
+    <DamageMaximum>2</DamageMaximum>
+    <Skills/>
+    <Sprite>Sprites/Liz_Trapper_sprite</Sprite>
+    <Cost>15</Cost>
+  </Unit>
+  <Unit>
+    <Name>Healer</Name>
+    <HP>20</HP>
+    <Attack>2</Attack>
+    <Defense>7</Defense>
+    <DamageMinimum>3</DamageMinimum>
+    <DamageMaximum>3</DamageMaximum>
+    <Skills/>
+    <Sprite>Sprites/Liz_Healer_sprite</Sprite>
+    <Cost>31</Cost>
+  </Unit>
+  <Unit>
+    <Name>Specialist</Name>
+    <HP>45</HP>
+    <Attack>6</Attack>
+    <Defense>6</Defense>
+    <DamageMinimum>7</DamageMinimum>
+    <DamageMaximum>7</DamageMaximum>
+    <Skills/>
+    <Sprite>Sprites/Liz_Specialist_sprite</Sprite>
+    <Cost>72</Cost>
+  </Unit>
+  <Unit>
+    <Name>Tank</Name>
+    <HP>165</HP>
+    <Attack>12</Attack>
+    <Defense>17</Defense>
+    <DamageMinimum>16</DamageMinimum>
+    <DamageMaximum>16</DamageMaximum>
+    <Skills/>
+    <Sprite>Sprites/Liz_Tank_sprite</Sprite>
+    <Cost>252</Cost>
   </Unit>
   <Unit>
     <Name>Szaman</Name>
@@ -55,8 +130,8 @@
     <DamageMinimum>13</DamageMinimum>
     <DamageMaximum>13</DamageMaximum>
     <Skills/>
-    <Sprite>Sprites/Szaman1</Sprite>
-    <Cost>31</Cost>
+    <Sprite>Spprites/Szaman1</Sprite>
+    <Cost>103</Cost>
   </Unit>
   <Unit>
     <Name>axe1</Name>
@@ -73,7 +148,37 @@
       <Skill3>Rzutnik_Skill3</Skill3>
     </Skills>
     <Sprite>Sprites/axe</Sprite>
-    <Cost>300</Cost>
+    <Cost>111</Cost>
+  </Unit>
+  <Unit>
+    <Name>TosterDPS</Name>
+    <HP>125</HP>
+    <Attack>25</Attack>
+    <Defense>25</Defense>
+    <Initiative>6</Initiative>
+    <Speed>10</Speed>
+    <DamageMinimum>25</DamageMinimum>
+    <DamageMaximum>25</DamageMaximum>
+    <Skills>
+      <Skill1>Skill1</Skill1>
+    </Skills>
+    <Sprite>Sprites/redT2</Sprite>
+    <Cost>351</Cost>
+  </Unit>
+  <Unit>
+    <Name>TosterTANK</Name>
+    <HP>100</HP>
+    <Attack>1</Attack>
+    <Defense>50</Defense>
+    <Initiative>2</Initiative>
+    <Speed>2</Speed>
+    <DamageMinimum>5</DamageMinimum>
+    <DamageMaximum>5</DamageMaximum>
+    <Skills>
+      <Skill2>Skill2</Skill2>
+    </Skills>
+    <Sprite>Sprites/wT1</Sprite>
+    <Cost>141</Cost>
   </Unit>
   <Unit>
     <Name>Lizard</Name>
@@ -90,24 +195,7 @@
       <Skill3>Topornik_Skill2</Skill3>
     </Skills>
     <Sprite>Sprites/lizard</Sprite>
-    <Cost>25</Cost>
-  </Unit>
-  <Unit>
-    <Name>SuperLizard</Name>
-    <HP>170</HP>
-    <Attack>50</Attack>
-    <Defense>50</Defense>
-    <Initiative>4</Initiative>
-    <Speed>5</Speed>
-    <DamageMinimum>50</DamageMinimum>
-    <DamageMaximum>50</DamageMaximum>
-    <Skills>
-      <Skill1>Tank_Skill1</Skill1>
-      <Skill2>Tank_Skill2</Skill2>
-      <Skill3>TeleportOT</Skill3>
-    </Skills>
-    <Sprite>Sprites/superL</Sprite>
-    <Cost>491</Cost>
+    <Cost>117</Cost>
   </Unit>
   <Unit>
     <Name>TosterTemplate</Name>

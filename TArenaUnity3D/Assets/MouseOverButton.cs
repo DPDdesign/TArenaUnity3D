@@ -41,7 +41,7 @@ public class MouseOverButton : MonoBehaviour, IPointerEnterHandler, IPointerExit
  public   Generator g;
    public void SendToGenerator()
     {
-        g.SaveCost(tosterStats.Cost);
+       g.SaveCost(tosterStats.Cost);
         g.SaveUnit(Name);
     }
     // Start is called before the first frame update

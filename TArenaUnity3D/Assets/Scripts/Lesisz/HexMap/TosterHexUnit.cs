@@ -389,7 +389,7 @@ public class TosterHexUnit : IQPathUnit
     public void SetTosterPrefab(HexMap h)
     {
       
-                this.TosterPrefab = Resources.Load<GameObject>("Models/TosterPrefabs/" + this.Name);
+                this.TosterPrefab = Resources.Load<GameObject>("Models/TosterModels/" + this.Name);
         if (this.teamN == true) this.TosterPrefab.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
                 else this.TosterPrefab.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
 
