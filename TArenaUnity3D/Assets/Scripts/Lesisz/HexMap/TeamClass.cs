@@ -14,6 +14,8 @@ public class TeamClass
     {
         Tosters = new List<TosterHexUnit>();
         HexesUnderTeam = new List<HexClass>();
+     
+        // ListOfAutocasts
     }
 
     public void WczytajPlik() // wczytaj plik zgodnie z reprezentacją buildu w PanelArmii - TODO: przenieść strukture/classe buildu do osobnego skryptu
@@ -46,6 +48,7 @@ public class TeamClass
                 nowytoster.InitateType(toster);                 // Znajdz tostera w xmlu -> wczytaj jego staty
                 nowytoster.SetMyTeam(this);                     // Ustaw tosterowi do którego teamu należy
                 nowytoster.SetAmount(buildG.NoUnits[i]);        // Wczytaj ilość jednostki z buildG
+                nowytoster.StartAutocast();
                 AddNewUnit(nowytoster);                         // Zapisz naszego tosta do TEGO teamu
                 
             }
@@ -78,10 +81,11 @@ public class TeamClass
                 }
             }
         }
+        Initiative = 13;
         if (T == null)
             foreach (TosterHexUnit t in Tosters)
             {
-            if (t.Moved == false && t.GetIni() > Initiative)
+            if (t.Moved == false && t.GetIni() <= Initiative)
             {
                 T = t;
                 Initiative = t.GetIni();
@@ -99,26 +103,15 @@ public class TeamClass
 
     public void NewTurn()
     {
-        bool AllMoved=true;
-        foreach (TosterHexUnit t in Tosters)
-        {
-
-            if (t.Moved == false)
-            {
-                AllMoved = false;
-
-
-            }
-        }
-
-        if (AllMoved == true)
-        {
+    
             foreach (TosterHexUnit t in Tosters)
             {
 
                 if (t.Moved == true && t.isDead==false)
                 {
+                    
                     t.CheckSpells();
+
                     t.Moved = false;
                     t.Waited = false;
                     if (t.DefenceStance == true)
@@ -127,7 +120,7 @@ public class TeamClass
                     t.ResetCounterAttack();
                 }
             }
-        }
+        
 
     }
 

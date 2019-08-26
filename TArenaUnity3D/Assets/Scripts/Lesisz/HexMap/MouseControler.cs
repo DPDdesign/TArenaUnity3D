@@ -58,6 +58,8 @@ public class MouseControler : MonoBehaviour
     }
     void Start()
     {
+        TM = FindObjectOfType<TurnManager>();
+
         Update_CurrentFunc = Update_DetectModeStart;
         hexMap = GameObject.FindObjectOfType<HexMap>();
         hexPath = null;
@@ -66,6 +68,7 @@ public class MouseControler : MonoBehaviour
             isAiOn = false;
         }
         else isAiOn = true;
+       
     }
 
 
@@ -91,7 +94,7 @@ public class MouseControler : MonoBehaviour
     {
         activeButtons = false;
         hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
-        TM = FindObjectOfType<TurnManager>();
+
 
 
         if (SelectedToster != null)
@@ -345,7 +348,12 @@ public class MouseControler : MonoBehaviour
             Update_CurrentFunc = BeforeNextTurn;
             StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
             yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        if (toster != null)
+        {
+
+
             toster.AttackMe(SelectedToster);
+        }
             CancelUpdateFunc();
             shiftmode = false;
         
@@ -411,9 +419,22 @@ public class MouseControler : MonoBehaviour
             hexMap.HighlightAroundHex(hexUnderMouse, castManager.aoeradius);
            
         }
-        
-       
+
+        if (castManager.SlashTarget == true)
+        {
+            if ((hexUnderMouse.Tosters.Count != 0 && hexUnderMouse != SelectedToster.Hex) || hexUnderMouse.Tosters.Count == 0)
+            {
+                
+                hexMap.unHighlightAroundHex(SelectedToster.Hex, 1);
+
+                hexMap.HighlightSlash(SelectedToster, hexUnderMouse);//hexUnderMouse.Tosters[0]);
+
+            }
+            
     
+
+        }
+
         if (castManager.MeleeisAoE == true)
         {
 
@@ -422,12 +443,26 @@ public class MouseControler : MonoBehaviour
             hexMap.HighlightAroundHex(getSelectedToster().Hex, castManager.aoeradius);
 
         }
+        if (castManager.MeleeisAoEOnlyRadius == true)
+        {
+
+
+            // hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 2);
+      
+            hexMap.HighlightRadiusNoEmpty(getSelectedToster().Hex, castManager.aoeradius);
+
+        }
+
+        
         if (castManager.SingleTarget)
         {
             hexMap.DownHex(hexUnderMouse, 1);
             hexMap.UpHex(hexUnderMouse, 0);
         }
-
+        if (castManager.rush==true)
+        {
+            HighlightLine();
+        }
         if (SkillState == false)
         {
 
@@ -456,6 +491,88 @@ public class MouseControler : MonoBehaviour
         
     }
 
+    public void HighlightLineOnlyLast()
+    {
+        List<HexClass> HexesToHighlight = new List<HexClass>();
+        if (SelectedToster.teamN == true) // true znaczy ze jest z teamu po lewej stronie
+        {
+            for (int i = 1; i < 5 - SelectedToster.Hex.C; i++)
+            {
+
+
+                HexesToHighlight.Add(hexMap.GetHexAt(SelectedToster.Hex.C + i, SelectedToster.Hex.R));
+                if (hexMap.GetHexAt(SelectedToster.Hex.C + i, SelectedToster.Hex.R).Tosters.Count > 0)
+                {
+                    i = 20;
+                }
+            }
+            foreach (HexClass h in HexesToHighlight)
+            {
+                h.Highlight = true;
+            }
+        }
+        if (SelectedToster.teamN == false) // true znaczy ze jest z teamu po lewej stronie
+        {
+            for (int i = 1; i < SelectedToster.Hex.C + 1; i++)
+            {
+                //  Debug.Log(SelectedToster.Hex.C - i);
+
+
+                HexesToHighlight.Add(hexMap.GetHexAt(SelectedToster.Hex.C - i, SelectedToster.Hex.R));
+                if (hexMap.GetHexAt(SelectedToster.Hex.C - i, SelectedToster.Hex.R) != null && hexMap.GetHexAt(SelectedToster.Hex.C - i, SelectedToster.Hex.R).Tosters.Count > 0)
+                {
+
+                    i = 20;
+                }
+            }
+            foreach (HexClass h in HexesToHighlight)
+            {
+                h.Highlight = true;
+            }
+        }
+        hexMap.UpdateHexVisuals();
+    }
+    public void HighlightLine()
+    {
+        List<HexClass> HexesToHighlight = new List<HexClass>();
+        if (SelectedToster.teamN==true) // true znaczy ze jest z teamu po lewej stronie
+        {
+            for (int i = 1; i < 5- SelectedToster.Hex.C; i++)
+            {
+             
+                
+                HexesToHighlight.Add(hexMap.GetHexAt(SelectedToster.Hex.C + i, SelectedToster.Hex.R));
+                if (hexMap.GetHexAt(SelectedToster.Hex.C + i, SelectedToster.Hex.R).Tosters.Count > 0)
+                {
+                    i = 20;
+                }
+            }
+            foreach( HexClass h in HexesToHighlight)
+            {
+                h.Highlight = true;
+            }
+        }
+        if (SelectedToster.teamN == false) // true znaczy ze jest z teamu po lewej stronie
+        {
+            for (int i = 1; i < SelectedToster.Hex.C+1; i++)
+            {
+              //  Debug.Log(SelectedToster.Hex.C - i);
+       
+               
+                    HexesToHighlight.Add(hexMap.GetHexAt(SelectedToster.Hex.C - i, SelectedToster.Hex.R));
+                if (hexMap.GetHexAt(SelectedToster.Hex.C - i, SelectedToster.Hex.R) != null && hexMap.GetHexAt(SelectedToster.Hex.C - i, SelectedToster.Hex.R).Tosters.Count > 0)
+                {
+
+                    i = 20;
+                }
+            }
+            foreach (HexClass h in HexesToHighlight)
+            {
+                h.Highlight = true;
+            }
+        }
+        hexMap.UpdateHexVisuals();
+    }
     public void HighlightEnemy()
     {
         TeamClass team = new TeamClass();
@@ -528,6 +645,13 @@ public class MouseControler : MonoBehaviour
 
         Debug.LogError((SelectedToster.skillstrings[SelectedSpellid]));
         castManager.getMode(SelectedToster.skillstrings[SelectedSpellid]);
+        if (castManager.isAvailable == false)
+        {
+            Debug.LogError("Umiejetnosc niedostepna");
+            castManager.SetFalse();
+            CancelUpdateFunc();
+            return;
+        }
         if (castManager.unselectaround == true)
         {
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
@@ -544,12 +668,24 @@ public class MouseControler : MonoBehaviour
         {
             hexMap.HighlightAroundHex(SelectedToster.Hex, 20);
         }
+
+        if (castManager.SlashTarget == true)
+        {
+         //   hexMap.HighlightRadiusNoEmpty(getSelectedToster().Hex, 1);
+        }
+
         Update_CurrentFunc = SpellCasting;
     }
     public void CastSkillOnlyBooleans()
     {
-  
-     
+        if (castManager.isAvailable == false)
+        {
+            Debug.LogError("Umiejetnosc niedostepna");
+            castManager.SetFalse();
+            CancelUpdateFunc();
+            return;
+        }
+
         if (castManager.unselectaround == true)
         {
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
