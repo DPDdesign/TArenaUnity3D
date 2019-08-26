@@ -63,11 +63,11 @@ public class TurnManager : MonoBehaviour
         if (TeamRed == null) return TeamBlue;
         if (TeamBlue == null) return TeamRed;
        
-        if (TeamBlue.GetIni() > TeamRed.GetIni() && TeamBlue.Waited != true || TeamBlue.GetIni() <= TeamRed.GetIni() && TeamRed.Waited == true && TeamBlue.Waited != true)
+        if (TeamBlue.GetIni() > TeamRed.GetIni() && TeamBlue.Waited != true || (TeamBlue.GetIni() <= TeamRed.GetIni() && TeamRed.Waited == true && TeamBlue.Waited != true))
         {
             return TeamBlue;
         }
-        if (TeamRed.GetIni() > TeamBlue.GetIni() && TeamRed.Waited != true || TeamRed.GetIni()<=TeamBlue.GetIni() && TeamBlue.Waited == true && TeamRed.Waited != true)
+        if (TeamRed.GetIni() > TeamBlue.GetIni() && TeamRed.Waited != true || (TeamRed.GetIni()<=TeamBlue.GetIni() && TeamBlue.Waited == true && TeamRed.Waited != true))
         {
             return TeamRed;
         }

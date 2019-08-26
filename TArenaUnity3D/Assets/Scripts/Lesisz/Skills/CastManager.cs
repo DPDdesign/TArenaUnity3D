@@ -63,6 +63,7 @@ public class CastManager : MonoBehaviour
         cooldown = 0;
         rush = false;
         isAvailable = true;
+        isInProgress = false;
         SlashTarget = false;
     }
     public HexClass getHexUM()
@@ -342,7 +343,7 @@ public class CastManager : MonoBehaviour
         }
 
 
-        else if (Rzutnik_Skill1_Counter == 2)
+        if (Rzutnik_Skill1_Counter == 2)
         {
             //     SelectedT().AddNewTimeSpell(1, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -40, "Rzutnik_skill1", true);
             SelectedT().SpecialDMGModificator += 60;
@@ -352,15 +353,12 @@ public class CastManager : MonoBehaviour
             Rzutnik_Skill1_Counter = 0; SetFalse();
         }
 
-        else
-        {
-            Debug.Log("Nie ma tosta na tym polu");
-            //yield return null;
-        }
+       
     }
 
     public void Double_ThrowM()
     {
+        isTurn = true;
         unselectaround = true;
         RangeSelectingenemy = true;
     }
@@ -850,7 +848,7 @@ public class CastManager : MonoBehaviour
     #endregion
     #endregion
     #region Healer  skills (T2)
-    #region Tough_Skin //TODO: CIELU
+    #region Tough_Skin 
     public void Tough_Skin()
     {
         if(getHexUM().Highlight==true)
@@ -867,9 +865,10 @@ public class CastManager : MonoBehaviour
             unselectaround = true;
             Rangeselectingfriend = true;
             SelfCast = true;
+        isTurn = true;
     }
     #endregion
-    #region Defence_Ritual //TODO: CIELU
+    #region Defence_Ritual 
     public void Defence_Ritual()
     {
         if (SelectedT().Team == getHexUM().hexMap.Teams[0])
@@ -897,11 +896,12 @@ public class CastManager : MonoBehaviour
         unselectaround = true;
         Rangeselectingfriend = true;
         SelfCast = true;
+        isTurn = true;
     }
 
     #endregion
 
-    #region Cleanse  //TODO: CIELU
+    #region Cleanse  //TODO: 
     public void Cleanse()
     {
 
@@ -920,24 +920,62 @@ public class CastManager : MonoBehaviour
     #region Specialist  (T3)
     #region Force_Pull  //Cielu
 
+
+
+
+
     public void Force_Pull()
     {
+        if (getHexUM().Tosters.Count > 0 && MeleeisAoE == false)
+        {
+            tempToster = getHexUM().Tosters[0];
 
+
+            SingleTarget = true;
+            RangeSelectingenemy = false;
+            Rangeselectingfriend = false;
+            MeleeisAoE = true;
+            aoeradius = 2;
+            mouseControler.CastSkillOnlyBooleans();
+        }
+        else
+     if (MeleeisAoE == true && SingleTarget == true && tempToster != null)
+        {
+            if (getHexUM() != tempToster.Hex && getHexUM().Tosters.Count == 0)
+            {
+
+                HexClass hextomove = getHexUM();
+                if (hextomove.Highlight == true)
+                {
+                    tempToster.TeleportToHex(hextomove);//SetHex(hextomove);
+
+                    SetFalse();
+                }
+            }
+        }
     }
     public void Force_PullM()
     {
-        // Proste, jest podobne, trzeba tylko ograniczyć zasięg
+        unselectaround = true;
+     
+        Rangeselectingfriend = true;
+        isTurn = true;
+        tempToster = new TosterHexUnit();
     }
     #endregion
-    #region Stone_Stance //Cielu1
+    #region Stone_Stance 
 
     public void Stone_Stance()
     {
-
+        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -SelectedT().CounterAttacks, 0,-100, "Stone_Stance", false);
+        SelectedT().CounterAttackAvaible = false;
+        SetFalse();
     }
     public void Stone_StanceM()
-    {
-
+    { 
+        isTurn = true;
+        SelfCast = true;
+        unselectaround = true;
     }
     #endregion
     #region Brak_Weny //Lesisz
@@ -953,12 +991,14 @@ public class CastManager : MonoBehaviour
     #endregion
     #endregion
     #region Tank  (T4)
-    #region Toxic_Fume  //Cielu
+    #region Toxic_Fume  
 
     public void Toxic_Fume()
     {
+
+
+        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -SelectedT().CounterAttacks, 0, 0, "Toxic_Fume", false);
         SelectedT().CounterAttackAvaible = false;
-        SelectedT().CounterAttacks = 0;
         List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, aoeradius));
         foreach (HexClass t in hexarea)
         {
@@ -968,7 +1008,7 @@ public class CastManager : MonoBehaviour
                 if (t.Tosters.Count > 0)
                 {
 
-                    if (t.Tosters.Count > 0 && !t.Tosters.Contains(SelectedT()))
+                    if (t.Tosters.Count > 0 && !t.Tosters.Contains(SelectedT())&& t.Tosters[0].Team!=SelectedT().Team)
                     {
                         t.Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
                     }
@@ -991,7 +1031,10 @@ public class CastManager : MonoBehaviour
 
     public void Shapeshift()
     {
-
+        int temp = SelectedT().MovmentSpeed;
+        SelectedT().MovmentSpeed = SelectedT().Initiative;
+        SelectedT().Initiative = temp;
+        SetFalse();
     }
     public void ShapeshiftM()
     {

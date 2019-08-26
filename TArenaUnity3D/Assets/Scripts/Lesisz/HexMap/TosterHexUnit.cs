@@ -607,18 +607,7 @@ public class TosterHexUnit : IQPathUnit
         {
             dmgdouble -= dmgdouble / 2;
         }
-        if (DealMePURE(Convert.ToInt32(dmgdouble)))
-
-            if (CounterAttackAvaible == true)
-            {
-                CounterAttackBools();
-
-                // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
-
-                dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
-
-                t.DealMePURE(Convert.ToInt32(dmgdouble));
-            }
+        DealMePURE(Convert.ToInt32(dmgdouble));
 
 
     }
