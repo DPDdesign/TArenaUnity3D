@@ -66,9 +66,19 @@ public class UICanvas : MonoBehaviour
             int i = 0;
             foreach (string b in MC.SelectedToster.skillstrings)
             {
-                SkillButtons[i].interactable = true;
-                SkillT[i].text = (i + 1).ToString() + "\n" + b;
+                if (MC.SelectedToster.cooldowns[i] == 0)
+                {
+                    SkillButtons[i].interactable = true;
+                    SkillT[i].text = (i + 1).ToString() + "\n" + b;
+                }
+                else
+                {
+                    SkillButtons[i].interactable = false;
+                    SkillT[i].text = "Wait: " + MC.SelectedToster.cooldowns[i].ToString() + " Turns";
+                }
                 i++;
+
+
             }
 
         }

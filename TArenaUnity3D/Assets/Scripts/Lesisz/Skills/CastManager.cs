@@ -8,6 +8,7 @@ public class CastManager : MonoBehaviour
 {
     public MouseControler mouseControler;
     int kochamizabelke = 0;
+  public  int cooldown = 0;
     TosterHexUnit tempToster;
     public bool RangeSelectingenemy = false;
     public bool Rangeselectingfriend = false;
@@ -19,6 +20,7 @@ public class CastManager : MonoBehaviour
     public bool EndAfter = false;
     public bool Global = false;
     public bool SingleTarget = false;
+    public bool isTurn = false;
     public int aoeradius = 0;
 
     void Start()
@@ -52,6 +54,7 @@ public class CastManager : MonoBehaviour
         SingleTarget = false;
     MouseControler.SkillState = false;
         tempToster = null;
+        cooldown = 0;
     }
     public HexClass getHexUM()
     {
@@ -203,7 +206,7 @@ public class CastManager : MonoBehaviour
         unselectaround = true;
         RangeSelectingenemy = true;
         Rangeselectingfriend = true;
-
+        isTurn = true;
         tempToster = new TosterHexUnit();
     }
 
@@ -247,6 +250,7 @@ public class CastManager : MonoBehaviour
 
     public void Topornik_Skill1M()
     {
+        isTurn = true;
         unselectaround = true;
         aoeradius = 2;
         MeleeisAoE = true;
@@ -263,11 +267,14 @@ public class CastManager : MonoBehaviour
 
         trgt.DealMePURE(Convert.ToInt16(dmg));
         trgt.AddNewTimeSpell(2, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, "Topornik_Skill2", true);
+        mouseControler.SetCD();
         SetFalse();
     }
 
     public void Topornik_Skill2M()
     {
+        isTurn =  false;
+        cooldown = 2;
         unselectaround = true;
         SelfCast = true;
         Debug.Log("Pain... drives me!");
@@ -287,6 +294,7 @@ public class CastManager : MonoBehaviour
 
     public void Topornik_Skill3M()
     {
+        isTurn = false;
         unselectaround = true;
         SelfCast = true;
         Debug.Log("Huh! I can hold it.");
@@ -369,13 +377,14 @@ public class CastManager : MonoBehaviour
         double dmg = Convert.ToDouble(trgt.HP) * 0.1;
         trgt.DealMePURE(Convert.ToInt16(dmg));
             trgt.AddNewTimeSpell(2, trgt, 0, 25, -10, 0, 0, 0, 0, 0, 0, 0,8, "Rzutnik_Skill2", true);
-
+        mouseControler.SetCD();
         SetFalse();
     }
 
     public void Rzutnik_Skill2M()
     {
-
+        isTurn = false;
+        cooldown = 3;
         unselectaround = true;
         SelfCast = true;
         Debug.Log("Pain... drives me!");
@@ -394,6 +403,7 @@ public class CastManager : MonoBehaviour
 
     public void Rzutnik_Skill3M()
     {
+        isTurn = false;
         unselectaround = true;
         SelfCast = true;
         Debug.Log("Huh! I can hold it.");
@@ -447,6 +457,7 @@ public class CastManager : MonoBehaviour
 
     public void Tank_Skill1M()
     {
+        isTurn = true;
         unselectaround = true;
         aoeradius = 1;
         MeleeisAoE = true;
@@ -458,7 +469,7 @@ public class CastManager : MonoBehaviour
 
 
     #region Tank_Skill2- Teleport XD
-    public void Tank_Skill2() //Taunt
+    public void Tank_Skill2() //teleport
     {
         if (getHexUM() != SelectedT().Hex && getHexUM().Tosters.Count == 0)
         {
@@ -475,6 +486,7 @@ public class CastManager : MonoBehaviour
 
     public void Tank_Skill2M()
     {
+        isTurn = true;
         Global = true;
         SingleTarget = true;
     }

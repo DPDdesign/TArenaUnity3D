@@ -356,11 +356,22 @@ public class MouseControler : MonoBehaviour
 
     public void EndSkills()
     {
-        hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
-        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-        SelectedToster.Moved = true;
-        CancelUpdateFunc();
-        shiftmode = false;
+        if (castManager.isTurn)
+        {
+            hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+            SelectedToster.Moved = true;
+            CancelUpdateFunc();
+            shiftmode = false;
+        }
+        else
+        {
+            hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+       
+            CancelUpdateFunc();
+            shiftmode = false;
+        }
         return;
     }
 
@@ -374,7 +385,12 @@ public class MouseControler : MonoBehaviour
             return;
         }
     }
-
+    public void SetCD()
+    {
+        SelectedToster.cooldowns[SelectedSpellid] = castManager.cooldown;
+        Debug.LogError(SelectedSpellid);
+        Debug.LogError(SelectedToster.cooldowns[SelectedSpellid]);
+    }
     void SpellCasting()
     {
        
@@ -559,7 +575,7 @@ public class MouseControler : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            if (SelectedToster.skillstrings.Count >= 1)
+            if (SelectedToster.skillstrings.Count >= 1 && SelectedToster.cooldowns[0]==0)
             {
                 CastSkillBooleans(0);
                 return;
@@ -567,7 +583,7 @@ public class MouseControler : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            if (SelectedToster.skillstrings.Count >= 2)
+            if (SelectedToster.skillstrings.Count >= 2 && SelectedToster.cooldowns[1] == 0)
             {
                 CastSkillBooleans(1);
                 return;
@@ -575,7 +591,7 @@ public class MouseControler : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            if (SelectedToster.skillstrings.Count >= 3)
+            if (SelectedToster.skillstrings.Count >= 3 && SelectedToster.cooldowns[2] == 0)
             {
                 CastSkillBooleans(2);
                 return;
@@ -583,7 +599,7 @@ public class MouseControler : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.Alpha4))
         {
-            if (SelectedToster.skillstrings.Count >= 4)
+            if (SelectedToster.skillstrings.Count >= 4 && SelectedToster.cooldowns[3] == 0)
             {
                 CastSkillBooleans(3);
                 return;
@@ -994,6 +1010,7 @@ public class MouseControler : MonoBehaviour
 
     public void CastSkill1B()
     {
+        
         CancelSpellCasting();
         CastSkillBooleans(0);
     }

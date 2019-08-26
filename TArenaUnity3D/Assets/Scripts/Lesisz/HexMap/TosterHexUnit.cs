@@ -76,6 +76,7 @@ public class TosterHexUnit : IQPathUnit
     public int CounterAttacks = 1;
     public bool teamN = true;
     public List<string> skillstrings;
+    public List<int> cooldowns;
     public bool Waited = false;
     public bool DefenceStance = false;
     public bool isDead = false;
@@ -291,6 +292,7 @@ public class TosterHexUnit : IQPathUnit
 
     
         skillstrings = new List<string>();
+        cooldowns = new List<int>();
         SpellsGoingOn = new List<SpellOverTime>();
         /*
         Type type = Type.GetType(p, true);  
@@ -319,6 +321,11 @@ public class TosterHexUnit : IQPathUnit
         Initiative = newinitiative;
         MovmentSpeed = newspeed;
         skillstrings = spells;
+
+        foreach (string s in skillstrings)
+        {
+            cooldowns.Add(0);
+        }
         mindmg = min;
         maxdmg = max;
     }
@@ -696,6 +703,16 @@ public class TosterHexUnit : IQPathUnit
         foreach (SpellOverTime s in SpellsToRemove)
         {
             SpellsGoingOn.Remove(s);
+        }
+
+        //int i = 0;
+        for (int i=0; i<cooldowns.Count;i++)
+        {
+            if (cooldowns[i] > 0)
+            {
+                cooldowns[i]--;
+            }
+   
         }
     }
 

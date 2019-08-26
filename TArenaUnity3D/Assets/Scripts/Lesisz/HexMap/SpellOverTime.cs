@@ -7,7 +7,7 @@ namespace TimeSpells
     {
         public int Time = 0;
         public TosterHexUnit target, me;
-        int hp = 0, att = 0, def = 0, ms = 0, ini = 0, maxdmg = 0, mindmg = 0, dmgovertime = 0, res = 0, SpecialDMGModificator = 0, counterattacks = 0;
+        int hp = 0, att = 0, def = 0, ms = 0, ini = 0, maxdmg = 0, mindmg = 0, dmgovertime = 0, res = 0, SpecialDMGModificator = 0, counterattacks = 0,  CoolDown=0;
         public string nameofspell = null;
         public bool isStackable = false;
         List<int> SpecialEvents;
