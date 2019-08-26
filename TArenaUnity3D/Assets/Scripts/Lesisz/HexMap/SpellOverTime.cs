@@ -25,6 +25,7 @@ namespace TimeSpells
                       int res,
                           int counterattacks,
                      int SpecialDMGModificator,
+                    int SpecialResistance,
                       string nameofspell,
                       bool isStackable)
         {
@@ -43,6 +44,7 @@ namespace TimeSpells
             this.dmgovertime = dmgovertime;
             this.nameofspell = nameofspell;
             this.isStackable = isStackable;
+            this.res = SpecialResistance;
             this.SpecialDMGModificator = SpecialDMGModificator;
             this.SpecialEvents = new List<int>();
             StartSpell();

@@ -441,7 +441,7 @@ public class TosterHexUnit : IQPathUnit
             cooldowns.Add(0);
             if (ListOfAutocasts.Contains(s))
             {
-                AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, false);
+                AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, s, false);
             }
         }
     }
@@ -596,6 +596,32 @@ public class TosterHexUnit : IQPathUnit
 
 
     }
+
+
+    public void ShootME(TosterHexUnit t)
+    {
+        //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
+        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        HexClass[] Distance = Pathing(t.Hex);
+        if (Distance.Length>6)
+        {
+            dmgdouble -= dmgdouble / 2;
+        }
+        if (DealMePURE(Convert.ToInt32(dmgdouble)))
+
+            if (CounterAttackAvaible == true)
+            {
+                CounterAttackBools();
+
+                // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
+
+                dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
+
+                t.DealMePURE(Convert.ToInt32(dmgdouble));
+            }
+
+
+    }
     public void AttackMeS(TosterHexUnit t)
     {
       //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
@@ -740,7 +766,7 @@ public class TosterHexUnit : IQPathUnit
         {
             if (ListOfAutocasts.Contains(s))
             {
-                AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, false);
+                AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, s, false);
             }
         }
 
@@ -780,10 +806,11 @@ public class TosterHexUnit : IQPathUnit
                   int res,
                   int counterattacks,
                   int SpecialDMGModificator,
+                  int SpecialResistance,
                   string nameofspell,
                   bool isStackable)
     {
-        SpellOverTime spell = new SpellOverTime(Time, target, this, hp, att, def, ms, ini, maxdmg, mindmg, dmgovertime, res, counterattacks, SpecialDMGModificator, nameofspell, isStackable);
+        SpellOverTime spell = new SpellOverTime(Time, target, this, hp, att, def, ms, ini, maxdmg, mindmg, dmgovertime, res, counterattacks, SpecialDMGModificator, SpecialResistance, nameofspell, isStackable);
         SpellsGoingOn.Add(spell);
     }
 }
