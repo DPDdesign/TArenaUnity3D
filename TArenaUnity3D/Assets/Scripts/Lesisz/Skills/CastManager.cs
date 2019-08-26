@@ -15,6 +15,7 @@ public class CastManager : MonoBehaviour
     public bool unselectaround = false;
     public bool RangeisAoE = false;
     public bool MeleeisAoE = false;
+    public bool MeleeisAoEOnlyRadius = false; 
     public bool isInProgress = false;
     public bool SelfCast = false;
     public bool EndAfter = false;
@@ -22,7 +23,11 @@ public class CastManager : MonoBehaviour
     public bool SingleTarget = false;
     public bool isTurn = false;
     public int aoeradius = 0;
-
+    public int MeleeisAoEbetweenRadiusInt = 0;
+    public bool rush = false;
+    public bool isAvailable = true;
+    public bool SlashTarget = false;
+    
     void Start()
     {
 
@@ -48,6 +53,7 @@ public class CastManager : MonoBehaviour
         unselectaround = false;
         RangeisAoE = false;
         MeleeisAoE = false;
+        MeleeisAoEOnlyRadius = false;
         SelfCast = false;
         aoeradius = 0;
         Global = false;
@@ -55,6 +61,9 @@ public class CastManager : MonoBehaviour
     MouseControler.SkillState = false;
         tempToster = null;
         cooldown = 0;
+        rush = false;
+        isAvailable = true;
+        SlashTarget = false;
     }
     public HexClass getHexUM()
     {
@@ -219,8 +228,241 @@ public class CastManager : MonoBehaviour
     // getHexUnderMouse()
 
     #region Barbarian skills:
+    #region Rusher skills (T1)
+    #region Skill 1 - Chope
 
+    public void Chope() // kręci się dookoła i zadaje 40% obrażen wszystkim jednostkom, traci kontratak
+    {
+        List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, aoeradius));
+        foreach (HexClass t in hexarea)
+        {
+         
+            if (t != null)
+            {
+                if (t.Tosters.Count > 0)
+                {
+                    
+                    if (t.Tosters.Count > 0 && !t.Tosters.Contains(SelectedT()))
+                    {
+                       
+                        t.Tosters[0].DealMeDMG(SelectedT());
+                        
+                    }
 
+                }
+            }
+            else { Debug.Log("No Tosters Hit"); }
+        }
+        SelectedT().SpecialDMGModificator = 0;
+        SelectedT().CounterAttackAvaible = false;
+        SelectedT().CounterAttacks = 0;
+        SetFalse();
+    }
+    public void ChopeM()
+    {
+        isTurn = true;
+        unselectaround = true;
+        aoeradius = 1;
+        MeleeisAoE = true;
+    }
+
+    #endregion
+    #region Skill 2 - Rush
+    public void Rush() //Biegnie przed siebie atakuje pierwszego napotkanego przeciwnika ??? +1 do ataku, traci 8 % jednostek, nie może zostać użyte poniżej 30.
+    {
+        SelectedT().Amount = Convert.ToInt32(SelectedT().Amount * 0.92);
+        SelectedT().AddNewTimeSpell(1, null, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rush", true);
+
+        if (getHexUM() != null && getHexUM().Highlight == true)
+        {
+            if (getHexUM().Tosters.Count > 0)
+            {
+                HexClass temp;
+                if (SelectedT().teamN ==true)
+                {
+                    temp = getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R);
+                }
+                else
+                {
+                  
+                    
+                   temp = getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R);
+                    
+                }
+                Debug.Log("this");
+                mouseControler.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(temp, getHexUM().Tosters[0]));
+            }
+            else
+            {
+                
+ 
+                mouseControler.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(getHexUM(), null));
+                SetFalse();
+            }
+        }
+
+    }
+    public void RushM()
+    {
+        if (SelectedT().Amount<30)
+        {
+            isAvailable = false;
+        }
+        unselectaround = true;
+        rush = true;
+    }
+
+    #endregion
+    #endregion
+    #region Thrower skills (T2)
+    #region Range_Stance //TODO: CIELU
+    public void Range_Stance()
+    {
+
+    }
+    public void Range_StanceM()
+    {
+        /*
+         *
+         * 
+         *  wydaje się proste, jak nie dasz rady to spróbuje ja
+         * 
+         */
+    }
+    #endregion
+    #region Double_Throw //TODO: CIELU
+    public void Double_Throw()
+    {
+        
+    }
+    public void Double_ThrowM()
+    {
+        /*
+         * 
+         *  Łatwe - robiliśmy podobne
+         * 
+         * 
+         */
+    }
+
+    #endregion
+
+    #region Axe_Rain //TODO: CIELU
+    public void Axe_Rain()
+    {
+
+    }
+    public void Axe_RainM()
+    {
+        /*
+         * Łatwe ,taki fireball tylko z różnym dmg
+         * 
+         */
+    }
+    #endregion
+    #endregion
+    #region Axeman (T3)
+    #region Slash 
+
+    public void Slash()
+    {
+        if (getHexUM().Highlight==true)
+        {
+            HexClass[] hexarray = getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), 1);
+            SelectedT().SpecialDMGModificator = 60;
+            foreach (HexClass h in hexarray)
+            {
+                if (h.Highlight==true)
+                {
+                    if (h.Tosters.Count>0 && h.Tosters[0]!=SelectedT())
+                    {
+                        h.Tosters[0].DealMeDMG(SelectedT());
+                    }
+                }
+            }
+            SelectedT().SpecialDMGModificator = 0;
+            SelectedT().CounterAttackAvaible = false;
+            SelectedT().CounterAttacks = 0;
+            SetFalse();
+        }
+    }
+    public void SlashM()
+    {
+        unselectaround = true;
+        
+        SlashTarget = true;
+        isTurn = true;
+
+    }
+    #endregion
+    #region Hate 
+
+    public void Hate() 
+    {
+        if (getHexUM().Highlight==true)
+        {
+            SelectedT().AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Hate", false);
+            getHexUM().Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Hate", false);
+            mouseControler.SetCD();
+            SetFalse();
+        }
+    }
+    public void HateM()
+    {
+        isTurn = false;
+        cooldown = 2;
+        unselectaround = true;
+        RangeSelectingenemy = true;
+    }
+    #endregion
+    #region Cold_Blood
+
+    public void Cold_Blood() //PASSIVE = AUTOCAST
+    {
+
+    }
+    public void Cold_BloodM()
+    {
+
+    }
+    #endregion
+    #endregion
+    #region Heavy Hitter (T4)
+    #region Insult //Cielu
+
+    public void Insult()
+    {
+
+    }
+    public void InsultM()
+    {
+
+    }
+    #endregion
+    #region Rage  //Cielu
+
+    public void Rage()
+    {
+
+    }
+    public void RageM()
+    {
+
+    }
+    #endregion
+    #region Massochism 
+
+    public void Massochism() //PASSIVE = AUTOCAST
+    {
+    //  SelectedT().AddNewTimeSpell(1, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Massochism", false);
+    }
+    public void MassochismM()
+    {
+
+    }
+    #endregion
+    #endregion
+    #region StareSkille/Jednostki
     #region Topornik skills (TIER III)
 
     #region Topornik_Skill1 - Zadaje 1 dmg per unit wszystkim dookoła
@@ -493,10 +735,209 @@ public class CastManager : MonoBehaviour
 
 
 
-    #endregion 
+    #endregion
+    #endregion
+    #endregion
     #endregion
 
+
+    #region Lizards skills:
+    #region Trapper  skills (T1) Trapy...
+    #region Skill 1 - Range_Stance
+
+    public void Range_StanceT() 
+    {
+     
+    }
+    public void Range_StanceTM()
+    {
+
+    }
+
     #endregion
+    #region Skill 2 - Spike_trap
+    public void Spike_trap() 
+    {
+        
+
+    }
+    public void Spike_trapM()
+    {
+
+    }
+
+    #endregion
+    #region Skill 3 - Rope_trap
+    public void Rope_trap() 
+    {
+
+
+    }
+    public void Rope_trapM()
+    {
+
+    }
+
+    #endregion
+    #endregion
+    #region Healer  skills (T2)
+    #region Tough_Skin //TODO: CIELU
+    public void Tough_Skin()
+    {
+
+    }
+    public void Tough_SkinM()
+    {
+        /*
+         *
+         * 
+         *  wydaje się proste
+         * 
+         */
+    }
+    #endregion
+    #region Defence_Ritual //TODO: CIELU
+    public void Defence_Ritual()
+    {
+
+    }
+    public void Defence_RitualM()
+    {
+        /*
+         * 
+         *  Łatwe - robiliśmy podobne
+         * 
+         * 
+         */
+    }
+
+    #endregion
+
+    #region Cleanse  //TODO: CIELU
+    public void Cleanse()
+    {
+
+    }
+    public void CleanseM()
+    {
+        /*
+         *
+         * 
+         *  może być różnie, narazie dla Ciela
+         * 
+         */
+    }
+    #endregion
+    #endregion
+    #region Specialist  (T3)
+    #region Force_Pull  //Cielu
+
+    public void Force_Pull()
+    {
+
+    }
+    public void Force_PullM()
+    {
+        // Proste, jest podobne, trzeba tylko ograniczyć zasięg
+    }
+    #endregion
+    #region Stone_Stance //Cielu1
+
+    public void Stone_Stance()
+    {
+
+    }
+    public void Stone_StanceM()
+    {
+
+    }
+    #endregion
+    #region Brak_Weny //Lesisz
+
+    public void Brak_Weny()
+    {
+
+    }
+    public void Brak_WenyM()
+    {
+
+    }
+    #endregion
+    #endregion
+    #region Tank  (T4)
+    #region Toxic_Fume  //Cielu
+
+    public void Toxic_Fume()
+    {
+
+    }
+    public void Toxic_FumeM()
+    {
+        //było
+    }
+    #endregion
+    #region Shapeshift   //Cielu
+
+    public void Shapeshift()
+    {
+
+    }
+    public void ShapeshiftM()
+    {
+        //proste
+    }
+    #endregion
+    #region Long_Lick
+
+    public void Long_Lick()
+    {
+        if (getHexUM().Tosters.Count>0)
+        {
+            if (getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2).Tosters.Count == 0)
+            {
+                getHexUM().Tosters[0].SetHex(getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2));
+                SetFalse();
+                return;
+            }
+            HexClass[] hexes = getHexUM().hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, 1);
+
+            foreach(HexClass h in hexes)
+            {
+                            
+                if (h!= null && h.Tosters.Count==0)
+                {
+                    getHexUM().Tosters[0].SetHex(h);
+                    SetFalse();
+                    return;
+                }
+
+            }
+            Debug.Log("All Hexes full!!");
+        }
+    }
+    public void Long_LickM()
+    {
+        unselectaround = true;
+        MeleeisAoEOnlyRadius = true;
+        aoeradius = 2;
+        isTurn = true;
+
+    }
+    #endregion
+    #endregion
+    #region StareSkille/Jednostki
+    #region Topornik skills (TIER III)
+
+    #region Topornik_Skill1 - Zadaje 1 dmg per unit wszystkim dookoła
+
+
+    #endregion
+    #endregion
+    #endregion
+    #endregion
+
+
+
     #region UNIT STRUCUTRE
     /*
       

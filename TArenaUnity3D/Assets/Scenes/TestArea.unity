@@ -7027,17 +7027,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mouseControler: {fileID: 1506819735}
+  cooldown: 0
   RangeSelectingenemy: 0
   Rangeselectingfriend: 0
   unselectaround: 0
   RangeisAoE: 0
   MeleeisAoE: 0
+  MeleeisAoEOnlyRadius: 0
   isInProgress: 0
   SelfCast: 0
   EndAfter: 0
   Global: 0
   SingleTarget: 0
+  isTurn: 0
   aoeradius: 0
+  MeleeisAoEbetweenRadiusInt: 0
+  rush: 0
+  isAvailable: 1
 --- !u!4 &547084147
 Transform:
   m_ObjectHideFlags: 0
@@ -12860,14 +12866,14 @@ RectTransform:
   m_GameObject: {fileID: 1115775648}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.10913, y: 0.10913, z: 0.10913}
+  m_LocalScale: {x: 0.04921872, y: 0.04921872, z: 0.04921872}
   m_Children: []
   m_Father: {fileID: 478575528}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.9000015, y: -18.399998}
+  m_AnchoredPosition: {x: -0.9000015, y: -0.6999779}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1115775650
@@ -12895,7 +12901,7 @@ MonoBehaviour:
     m_FontSize: 300
     m_FontStyle: 3
     m_BestFit: 0
-    m_MinSize: 3
+    m_MinSize: 150
     m_MaxSize: 300
     m_Alignment: 4
     m_AlignByGeometry: 1
@@ -13569,14 +13575,14 @@ RectTransform:
   m_GameObject: {fileID: 1189847601}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.10651795, y: 0.10651795, z: 0.10651795}
+  m_LocalScale: {x: 0.04804066, y: 0.04804066, z: 0.04804066}
   m_Children: []
   m_Father: {fileID: 1234732535}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -18}
+  m_AnchoredPosition: {x: 0, y: -0.29998016}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1189847603
@@ -13604,7 +13610,7 @@ MonoBehaviour:
     m_FontSize: 300
     m_FontStyle: 3
     m_BestFit: 0
-    m_MinSize: 3
+    m_MinSize: 150
     m_MaxSize: 300
     m_Alignment: 4
     m_AlignByGeometry: 1
@@ -16119,14 +16125,14 @@ RectTransform:
   m_GameObject: {fileID: 1370625761}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.11438091, y: 0.11438091, z: 0.11438091}
+  m_LocalScale: {x: 0.051586933, y: 0.051586933, z: 0.051586933}
   m_Children: []
   m_Father: {fileID: 444201986}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -17.8}
+  m_AnchoredPosition: {x: 0, y: -0.099998474}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1370625763
@@ -16154,7 +16160,7 @@ MonoBehaviour:
     m_FontSize: 300
     m_FontStyle: 3
     m_BestFit: 0
-    m_MinSize: 3
+    m_MinSize: 150
     m_MaxSize: 300
     m_Alignment: 4
     m_AlignByGeometry: 1
@@ -21266,14 +21272,14 @@ RectTransform:
   m_GameObject: {fileID: 1747108865}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.10488, y: 0.10488, z: 0.10488}
+  m_LocalScale: {x: 0.047301926, y: 0.047301926, z: 0.047301926}
   m_Children: []
   m_Father: {fileID: 1619487189}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.9000015, y: -18.399998}
+  m_AnchoredPosition: {x: 0.9000015, y: -0.6999779}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1747108867
@@ -21301,7 +21307,7 @@ MonoBehaviour:
     m_FontSize: 300
     m_FontStyle: 3
     m_BestFit: 0
-    m_MinSize: 3
+    m_MinSize: 150
     m_MaxSize: 300
     m_Alignment: 4
     m_AlignByGeometry: 1
@@ -23459,6 +23465,8 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 45505103b8165634980feb9ac6ffbb68, type: 2}
   - {fileID: 2100000, guid: 96e889931e8b96b4e865e9ee139d2685, type: 2}
   AnimationIsPlaying: 0
+  isTraped: 0
+  TypeOfTrap: 
 --- !u!4 &1939305790
 Transform:
   m_ObjectHideFlags: 0

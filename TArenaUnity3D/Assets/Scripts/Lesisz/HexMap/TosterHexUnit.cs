@@ -12,11 +12,12 @@ public class TosterHexUnit : IQPathUnit
 {
     public readonly int C; public readonly int R; public readonly int S; // column.row
     public Vector3 vec;
-  
 
+    CastManager cm;
     List<SpellOverTime> SpellsGoingOn;
     public int SpecialHP = 0;
     public int SpecialAtt = 0;
+    public int SpecialPUREDMG = 0;
     public int SpecialDef = 0;
     public int SpecialMS = 0;
     public int SpecialI = 0;
@@ -74,7 +75,7 @@ public class TosterHexUnit : IQPathUnit
     public int Amount = 1;
     public int TempCounterAttacks = 1;
     public int CounterAttacks = 1;
-    public bool teamN = true;
+    public bool teamN = true; // True znaczy ze jest z teamu z "lewej" strony
     public List<string> skillstrings;
     public List<int> cooldowns;
     public bool Waited = false;
@@ -87,6 +88,7 @@ public class TosterHexUnit : IQPathUnit
     public bool Rooted = false;
     public bool Taunt = false;
     public TosterHexUnit whoTauntedMe = null;
+    public TosterHexUnit HATED = null;
     public bool Disarm = false;
     public bool Berserk = false;
  //   private HexMap hexMap;
@@ -145,8 +147,8 @@ public class TosterHexUnit : IQPathUnit
 
 
 
-
-
+    public List<string> ListOfAutocasts;
+   
     public TosterView tosterView;
     /// <summary>
     /// 
@@ -321,11 +323,10 @@ public class TosterHexUnit : IQPathUnit
         Initiative = newinitiative;
         MovmentSpeed = newspeed;
         skillstrings = spells;
+      
+     
 
-        foreach (string s in skillstrings)
-        {
-            cooldowns.Add(0);
-        }
+        
         mindmg = min;
         maxdmg = max;
     }
@@ -427,6 +428,22 @@ public class TosterHexUnit : IQPathUnit
     public void SetAmount(int Amount)
     {
         this.Amount = Amount;
+      
+    }
+
+    public void StartAutocast()
+    {
+        ListOfAutocasts = new List<string>(new string[] { "Massochism", "Cold_Blood" });
+
+
+        foreach (string s in skillstrings)
+        {
+            cooldowns.Add(0);
+            if (ListOfAutocasts.Contains(s))
+            {
+                AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, false);
+            }
+        }
     }
     #endregion
     #region Tury/ruchy
@@ -518,8 +535,13 @@ public class TosterHexUnit : IQPathUnit
 
 
         double DMGf = DMGb * (((100.0 - defender.SpecialResistance) / 100.0));
-      //  Debug.Log("Toster name: " + attacker.Name + " attacks for: " + Math.Ceiling(DMGf));
-       
+        //  Debug.Log("Toster name: " + attacker.Name + " attacks for: " + Math.Ceiling(DMGf));
+        DMGf += attacker.SpecialPUREDMG;
+        attacker.SpecialPUREDMG = 0;
+        if (defender == attacker.HATED)
+        {
+            DMGf += DMGf / 2;
+        }
 
         return Math.Ceiling(DMGf);
 
@@ -714,6 +736,14 @@ public class TosterHexUnit : IQPathUnit
             }
    
         }
+        foreach (string s in skillstrings)
+        {
+            if (ListOfAutocasts.Contains(s))
+            {
+                AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, false);
+            }
+        }
+
     }
 
 

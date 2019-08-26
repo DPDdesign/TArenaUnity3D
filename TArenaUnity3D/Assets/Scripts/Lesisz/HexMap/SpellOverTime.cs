@@ -7,7 +7,7 @@ namespace TimeSpells
     {
         public int Time = 0;
         public TosterHexUnit target, me;
-        int hp = 0, att = 0, def = 0, ms = 0, ini = 0, maxdmg = 0, mindmg = 0, dmgovertime = 0, res = 0, SpecialDMGModificator = 0, counterattacks = 0,  CoolDown=0;
+        int hp = 0, att = 0, def = 0, ms = 0, ini = 0, maxdmg = 0, mindmg = 0, dmgovertime = 0, res = 0, SpecialDMGModificator = 0, counterattacks = 0, CoolDown = 0, puredmg = 0;
         public string nameofspell = null;
         public bool isStackable = false;
         List<int> SpecialEvents;
@@ -104,11 +104,13 @@ namespace TimeSpells
 
         public void SpecialThingOnStart()
         {
-            if (nameofspell == "Topornik_Skill3" )
+            if (nameofspell == "Cold_Blood")
             {
                 SpecialEvents.Add(me.GetHP());
                 SpecialEvents.Add(me.TempHP);
                 SpecialEvents.Add(me.Amount);
+                res = 20;
+                me.SpecialResistance += 20;
             }
             if (nameofspell == "Taunt")
             {
@@ -117,6 +119,16 @@ namespace TimeSpells
             if (nameofspell == "Stun")
             {
                 GetStuned();
+            }
+            if (nameofspell == "Massochism")
+            {
+              
+                SpecialEvents.Add(me.GetHP()*(me.Amount-1)+me.TempHP);
+                Debug.Log(me.GetHP() * me.Amount + me.TempHP);
+            }
+            if (nameofspell == "Hate")
+            {
+                me.HATED = target;
             }
         }
 
@@ -166,13 +178,14 @@ namespace TimeSpells
 
         public void SpecialThingOnEnd()
         {
-            if (nameofspell == "Topornik_Skill3")
+            if (nameofspell == "Cold_Blood")
             {
                 int TargetStartHP = (SpecialEvents[0] * (SpecialEvents[2] - 1) + SpecialEvents[1]);
                 int TargetActualHP = me.GetHP() * (me.Amount - 1) + me.TempHP;
                 int dmgdone = TargetStartHP - TargetActualHP;
 
-                me.DealMePURE(Mathf.RoundToInt(dmgdone*0.1f));
+                me.DealMePURE(Mathf.RoundToInt(dmgdone*0.2f));
+                Debug.Log(Mathf.RoundToInt(dmgdone * 0.2f));
             }
             if (nameofspell == "Taunt")
             {
@@ -181,6 +194,16 @@ namespace TimeSpells
             if(nameofspell == "Stun")
             {
                 StunEnd();
+            }
+            if (nameofspell == "Massochism")
+            {
+                puredmg = (SpecialEvents[0] - (me.GetHP() * (me.Amount-1) + me.TempHP));
+                Debug.Log(puredmg/2);
+                me.SpecialPUREDMG = puredmg/2;
+            }
+            if (nameofspell == "Hate")
+            {
+                me.HATED = null;
             }
         }
 

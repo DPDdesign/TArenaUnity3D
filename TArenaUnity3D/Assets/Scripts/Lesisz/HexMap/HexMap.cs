@@ -7,6 +7,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using static PanelArmii;
 using HPath;
+using System.Linq;
+
 public class HexMap : MonoBehaviour, IQPathWorld
 {
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
@@ -24,7 +26,8 @@ public class HexMap : MonoBehaviour, IQPathWorld
     private List<TosterHexUnit> tostersList;
     private Dictionary<TosterHexUnit, GameObject> tostertoGameObjectMap;
     private Dictionary<GameObject, HexClass> gameObjectToHexMap;
-    
+    public bool isTraped = false;
+    public string TypeOfTrap = "";
     void Start()
     {
         LoadArmy();
@@ -132,7 +135,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
 
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 gameObjectToHexMap[HexGo] = h;
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count); //{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count); //{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap.Add(h, HexGo);
                 h.MyHex = HexGo;
@@ -160,7 +163,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count);//{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
@@ -186,7 +189,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count);//{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
@@ -368,7 +371,28 @@ public class HexMap : MonoBehaviour, IQPathWorld
         return results.ToArray();
     }
 
+    public void HighlightSlash(TosterHexUnit This, HexClass target)
+    {
+        HexClass centerHex = This.Hex;
 
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex,1);
+        HexClass[] targetHexes = GetHexesWithinRadiusOf(target, 1);
+
+        foreach (HexClass h in areaHexes)
+        {
+            //if(h.Elevation < 0)
+            //h.Elevation = 0;
+            if (h != null && targetHexes.Contains(h) )
+            {
+                if (hextoGameObjectMap.ContainsKey(h) == true)
+                {
+
+                    h.Highlight = true;
+                }
+            }
+        }
+        UpdateHexVisuals();
+    }
     public void Highlight(int q, int r, int range, float centerHeight = .8f)
     {
         HexClass centerHex = GetHexAt(q, r);
@@ -479,6 +503,30 @@ public class HexMap : MonoBehaviour, IQPathWorld
         UpdateHexVisuals();
     }
 
+
+    public void HighlightRadiusNoEmpty(HexClass what, int radius)
+    {
+        HexClass centerHex = what;
+
+        HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, radius);
+        HexClass[] areaHexes2 = GetHexesWithinRadiusOf(centerHex, radius-1);
+      
+        foreach (HexClass h in areaHexes)
+        {
+            //if(h.Elevation < 0)
+            //h.Elevation = 0;
+            if (h != null && !areaHexes2.Contains(h) && h.Tosters.Count>0)
+            {
+                if (hextoGameObjectMap.ContainsKey(h) == true)
+                {
+
+                    h.Highlight = true;
+                }
+            }
+        }
+        UpdateHexVisuals();
+    }
+   
     public void UpHex(HexClass what, int radius)
     {
         HexClass centerHex = what;
