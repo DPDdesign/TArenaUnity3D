@@ -27,8 +27,8 @@ public class MultiControler : MonoBehaviour
             GameObject.Find("UserName").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("USERNAME");
             userEmail = PlayerPrefs.GetString("EMAIL");
             GameObject.Find("Email").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("EMAIL");
-            var request = new LoginWithEmailAddressRequest { Email = userEmail, Password = userPassword};
-            PlayFabClientAPI.LoginWithEmailAddress(request, OnLoginSuccess, OnLoginFailure);
+            //var request = new LoginWithEmailAddressRequest { Email = userEmail, Password = userPassword};
+            //PlayFabClientAPI.LoginWithEmailAddress(request, OnLoginSuccess, OnLoginFailure);
         }
 
 
@@ -54,7 +54,7 @@ public class MultiControler : MonoBehaviour
 
         var RegisterRequest = new RegisterPlayFabUserRequest { Email = userEmail, Password = userPassword, Username = tosterName };
         PlayFabClientAPI.RegisterPlayFabUser(RegisterRequest, OnRegisterSuccess, OnRegisterFailure);
-
+        GameObject.Find("LogIn").GetComponentInChildren<Text>().text ="Register";
         Debug.LogError(error.GenerateErrorReport());
     }
 
@@ -66,6 +66,7 @@ public class MultiControler : MonoBehaviour
         PlayerPrefs.SetString("PASSWORD", userPassword);
         PlayerPrefs.SetString("USERNAME", tosterName);
         PlayerPrefs.SetString("EMAIL", userEmail);
+        GameObject.Find("LogIn").GetComponentInChildren<Text>().text = "Log in";
 
 
     }
@@ -73,9 +74,8 @@ public class MultiControler : MonoBehaviour
     private void OnRegisterFailure (PlayFabError error)
     {
         Debug.LogError(error.GenerateErrorReport());
-        PlayerPrefs.SetString("PASSWORD", userPassword);
-        PlayerPrefs.SetString("USERNAME", tosterName);
-        PlayerPrefs.SetString("EMAIL", userEmail);
+
+
     }
 
 
