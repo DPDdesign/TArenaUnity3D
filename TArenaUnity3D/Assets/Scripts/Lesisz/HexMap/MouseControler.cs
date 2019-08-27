@@ -945,8 +945,14 @@ public class MouseControler : MonoBehaviour
     {
         if (Input.GetKeyUp(KeyCode.Space))
         {
-    
-                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+            var d =SelectedToster.tosterView.GetComponentInChildren<Animator>();
+            if (d != null)
+            {
+                Debug.Log(d);
+                d.Play("Defense");
+
+            }
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
                 SelectedToster.Moved = true;
                 SelectedToster.DefenceStance = true;
             SelectedToster.SpecialDef += 5;
