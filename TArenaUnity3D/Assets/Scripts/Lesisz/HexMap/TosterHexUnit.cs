@@ -610,16 +610,19 @@ public class TosterHexUnit : IQPathUnit
     {
       //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
         double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        var d = t.tosterView.GetComponentInChildren<Animator>();
-        if (d != null)
-        {
-            Debug.Log(d);
-            d.Play("Atak");
+       this.DealMePURE(Convert.ToInt32(dmgdouble));
 
-        }
+        Animator d = null;
         if (CounterAttackAvaible == true)
-            {
-                CounterAttackBools();
+        {
+            CounterAttackBools();
+
+            // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
+
+            dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
+
+            t.DealMePURE(Convert.ToInt32(dmgdouble));
+
              d = this.tosterView.GetComponentInChildren<Animator>();
             if (d != null)
             {
@@ -627,14 +630,14 @@ public class TosterHexUnit : IQPathUnit
                 d.Play("Atak");
 
             }
-            // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
+        }
+        d = t.tosterView.GetComponentInChildren<Animator>();
+        if (d != null)
+        {
+            Debug.Log(d);
+            d.Play("Atak");
 
-            dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
-
-                t.DealMePURE(Convert.ToInt32(dmgdouble));
-            }
-
-
+        }
     }
 
 

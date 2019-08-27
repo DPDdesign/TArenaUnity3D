@@ -380,22 +380,26 @@ public class CastManager : MonoBehaviour
     {
         Debug.LogError("działam");
         List<HexClass> hexarea = new List<HexClass>(getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), aoeradius));
+
         foreach (HexClass t in hexarea)
         {
-            if (t==getHexUM())
+            if (t != SelectedT().Hex && t!=null)
             {
-                SelectedT().SpecialDMGModificator = 20;
-                t.Tosters[0].ShootME(SelectedT());
-                             SelectedT().SpecialDMGModificator = 0;
-            }
-            else
-            if (t != null)
-                if (t.Tosters.Count > 0)
+                if (t == getHexUM() && t.Tosters.Count>0)
                 {
-                    SelectedT().SpecialDMGModificator = 70;
+                    SelectedT().SpecialDMGModificator = 20;
                     t.Tosters[0].ShootME(SelectedT());
                     SelectedT().SpecialDMGModificator = 0;
                 }
+                else
+                if (t != null)
+                    if (t.Tosters.Count > 0)
+                    {
+                        SelectedT().SpecialDMGModificator = 70;
+                        t.Tosters[0].ShootME(SelectedT());
+                        SelectedT().SpecialDMGModificator = 0;
+                    }
+            }
         }
 
         SetFalse();
@@ -405,7 +409,7 @@ public class CastManager : MonoBehaviour
         unselectaround = true;
         aoeradius = 1;
         RangeisAoE = true;
-
+        isTurn = true;
     }
     #endregion
     #endregion

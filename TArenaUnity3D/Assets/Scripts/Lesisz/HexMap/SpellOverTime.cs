@@ -150,7 +150,7 @@ namespace TimeSpells
             {
               
                 SpecialEvents.Add(me.GetHP()*(me.Amount-1)+me.TempHP);
-                Debug.Log(me.GetHP() * me.Amount + me.TempHP);
+          //      Debug.Log(me.GetHP() * me.Amount + me.TempHP);
             }
             if (nameofspell == "Hate")
             {
