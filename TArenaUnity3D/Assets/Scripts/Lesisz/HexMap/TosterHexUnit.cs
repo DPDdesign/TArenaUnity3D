@@ -24,8 +24,9 @@ public class TosterHexUnit : IQPathUnit
     public int SpecialAm = 0;
     public int SpecialmaxDMG = 0;
     public int SpecialminDMG = 0;
-    public int SpecialResistance = 0;
-    public int SpecialDMGModificator = 0;
+    public int SpecialResistance = 0; // +20 oznacza że otrzymany dmg zostanie zmniejszony o 20%
+    public int SpecialDMGModificator = 0;// +20 oznacza że zadawany dmg zostanie zmniejszony o 20%
+    public bool isRange = false;
     ///stats
     [XmlAttribute("Name")]
     public string Name = "NoName";
@@ -775,12 +776,45 @@ public class TosterHexUnit : IQPathUnit
         }
         return null;
     }
+    public SpellOverTime AskForSpell(string str)
+    {
+        List<SpellOverTime> SpellsToRemove = new List<SpellOverTime>();
+        foreach (SpellOverTime s in SpellsGoingOn)
+        {
+            Debug.LogError(s.nameofspell);
+            if (s.nameofspell == str)
+            {
+                return s;
+            }
+
+        }
+        return null;
+    }
+    public void SetOver(SpellOverTime spell)
+    {
+        List<SpellOverTime> SpellsToRemove = new List<SpellOverTime>();
+        foreach (SpellOverTime s in SpellsGoingOn)
+        {
+            Debug.LogError(s.nameofspell);
+            if (s == spell)
+            {
+                Debug.Log("Toster");
+                s.Time = 0;
+                s.IsOver();
+                SpellsToRemove.Add(s);
+            }
+
+        }
+        foreach (SpellOverTime s in SpellsToRemove)
+        {
+            SpellsGoingOn.Remove(s);
+        }
+    }
+
     public void RemoveSpell(SpellOverTime spell)
     {
         SpellsGoingOn.Remove(spell);
     }
-
-
 
     public void AddNewTimeSpell(int Time,
                   TosterHexUnit target,
@@ -801,5 +835,12 @@ public class TosterHexUnit : IQPathUnit
     {
         SpellOverTime spell = new SpellOverTime(Time, target, this, hp, att, def, ms, ini, maxdmg, mindmg, dmgovertime, res, counterattacks, SpecialDMGModificator, SpecialResistance, nameofspell, isStackable);
         SpellsGoingOn.Add(spell);
+    }
+    public void AddNewTimeSpell(SpellOverTime spell)
+    {
+        spell.me = this;
+        SpellOverTime spelll = new SpellOverTime(spell);
+     
+        SpellsGoingOn.Add(spelll);
     }
 }

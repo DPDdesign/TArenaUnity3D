@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 namespace TimeSpells
@@ -46,6 +47,29 @@ namespace TimeSpells
             this.isStackable = isStackable;
             this.res = SpecialResistance;
             this.SpecialDMGModificator = SpecialDMGModificator;
+            this.SpecialEvents = new List<int>();
+            StartSpell();
+            SpecialThingOnStart();
+        }
+        public SpellOverTime(SpellOverTime spell)
+        {
+            this.Time = spell.Time;
+            this.me = spell.me;
+            this.target = spell.target;
+            this.hp = spell.hp;
+            this.att = spell.att;
+            this.def = spell.def;
+            this.ms = spell.ms;
+            this.ini = spell.ini;
+            this.maxdmg = spell.maxdmg;
+            this.mindmg = spell.mindmg;
+            this.res = spell.res;
+            this.counterattacks = spell.counterattacks;
+            this.dmgovertime = spell.dmgovertime;
+            this.nameofspell = spell.nameofspell;
+            this.isStackable = spell.isStackable;
+            this.res = spell.res;
+            this.SpecialDMGModificator = spell.SpecialDMGModificator;
             this.SpecialEvents = new List<int>();
             StartSpell();
             SpecialThingOnStart();
@@ -209,8 +233,6 @@ namespace TimeSpells
             }
         }
 
-
-
-
+  
     }
 }

@@ -323,12 +323,19 @@ public class CastManager : MonoBehaviour
     }
     public void Range_StanceM()
     {
-        /*
-         *
-         * 
-         *  wydaje się proste, jak nie dasz rady to spróbuje ja
-         * 
-         */
+        if(SelectedT().isRange = !SelectedT().isRange)
+        {
+            Debug.Log(SelectedT().isRange);
+            SelectedT().SpecialDMGModificator = 20;
+            SelectedT().SpecialResistance = 20;
+        }
+        else
+        {
+            Debug.Log(SelectedT().isRange);
+            SelectedT().SpecialDMGModificator = 0;
+            SelectedT().SpecialResistance = 0;
+        }
+        SetFalse();
     }
     #endregion
     #region Double_Throw 
@@ -462,7 +469,7 @@ public class CastManager : MonoBehaviour
     }
     public void Cold_BloodM()
     {
-
+        SetFalse();
     }
     #endregion
     #endregion
@@ -525,7 +532,7 @@ public class CastManager : MonoBehaviour
     }
     public void MassochismM()
     {
-
+        SetFalse();
     }
     #endregion
     #endregion
@@ -818,7 +825,19 @@ public class CastManager : MonoBehaviour
     }
     public void Range_StanceTM()
     {
-
+        if (SelectedT().isRange = !SelectedT().isRange)
+        {
+            Debug.Log(SelectedT().isRange);
+            SelectedT().SpecialDMGModificator = 20;
+            SelectedT().SpecialResistance = 20;
+        }
+        else
+        {
+            Debug.Log(SelectedT().isRange);
+            SelectedT().SpecialDMGModificator = 0;
+            SelectedT().SpecialResistance = 0;
+        }
+        SetFalse();
     }
 
     #endregion
@@ -904,10 +923,31 @@ public class CastManager : MonoBehaviour
     #region Cleanse  //TODO: 
     public void Cleanse()
     {
-
+        List<string> SpellsToRemove = new List<string>(new string[] { "Slow", "Insult" });
+        if (getHexUM().Tosters.Count > 0 && getHexUM().Highlight == true)
+        {
+            foreach (string s in SpellsToRemove)
+            {
+                TimeSpells.SpellOverTime spell = getHexUM().Tosters[0].AskForSpell(s);
+              
+                if (spell!= null)
+                {
+                    Debug.Log(spell.nameofspell);
+                    getHexUM().Tosters[0].SetOver(spell);
+                    SelectedT().AddNewTimeSpell(spell);
+                  
+                
+                }
+            }
+        }
     }
     public void CleanseM()
     {
+
+
+        unselectaround = true;
+        Rangeselectingfriend = true;
+        isTurn = true;
         /*
          *
          * 

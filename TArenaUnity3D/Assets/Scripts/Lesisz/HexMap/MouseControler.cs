@@ -161,6 +161,10 @@ public class MouseControler : MonoBehaviour
         Wait();
         //Heal();
         CastSkill();
+     if (SelectedToster.isRange == true)
+        {
+            HighlightEnemy();
+        }
 
         if (Input.GetMouseButtonDown(1) && hexUnderMouse.Tosters.Count > 0)
         {
@@ -172,10 +176,19 @@ public class MouseControler : MonoBehaviour
             if (EventSystem.current.IsPointerOverGameObject())
                 return;
             //     Debug.LogError("test");
-            if (hexUnderMouse.Tosters.Count > 0 && hexUnderMouse.Tosters[0].Team != SelectedToster.Team && SelectedToster.IsPathAvaible(hexUnderMouse))
+            if (hexUnderMouse.Tosters.Count > 0 && hexUnderMouse.Tosters[0].Team != SelectedToster.Team)
             {
-
-                StartCoroutine(DoMoveAndAttack(hexUnderMouse.Tosters[0]));
+                if (SelectedToster.isRange == false)
+                {
+                    if (SelectedToster.IsPathAvaible(hexUnderMouse))
+                        StartCoroutine(DoMoveAndAttack(hexUnderMouse.Tosters[0]));
+                }
+                else if (hexUnderMouse.Highlight == true)
+                {
+                    hexUnderMouse.Tosters[0].ShootME(SelectedToster);
+                    SelectedToster.Moved = true;
+                    CancelUpdateFunc();
+                }
             }
             else if (hexUnderMouse.Tosters.Count == 0)
             {
@@ -813,7 +826,7 @@ public class MouseControler : MonoBehaviour
                 }
                // outlineManagerMainToster.ChangeObjectss(listofhexes);
             }
-            else if (hexUnderMouse.Tosters[0].Team!=SelectedToster.Team)
+            else if (hexUnderMouse.Tosters[0].Team!=SelectedToster.Team && SelectedToster.isRange==false)
             {
                 TargetToster = hexUnderMouse.Tosters[0];
                 var temp = MouseToPart();
