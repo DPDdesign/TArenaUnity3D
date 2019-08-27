@@ -16,6 +16,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
     public List<GameObject> TostersPrefabs;
     public List<TeamClass> Teams;
     public GameObject TosterUnit;
+    public GameObject Projectile;
     public Material[] HexMaterials;
     // Update is called once per frame
     private HexClass[,] hexes;
@@ -28,6 +29,7 @@ public class HexMap : MonoBehaviour, IQPathWorld
     private Dictionary<GameObject, HexClass> gameObjectToHexMap;
     public bool isTraped = false;
     public string TypeOfTrap = "";
+    GameObject bullet;
     void Start()
     {
         LoadArmy();
@@ -58,7 +60,17 @@ public class HexMap : MonoBehaviour, IQPathWorld
     }
 
     
+    public void ThrowAxe(TosterHexUnit target, TosterHexUnit Shooter)
+    {
+        
+        Vector3 m_EulerAngleVelocity = new Vector3(-960, -960, -360);
+        bullet = new GameObject();
+        bullet = Instantiate(Projectile, Shooter.tosterView.gameObject.transform.position, Quaternion.identity) as GameObject;
+    
+        bullet.GetComponent<Rigidbody>().AddForce((target.tosterView.gameObject.transform.position- Shooter.tosterView.gameObject.transform.position )* 50);
+        bullet.GetComponent<Rigidbody>().AddTorque(m_EulerAngleVelocity);
 
+    }
 
     public HexClass GetHexAt(int x, int y)
     {

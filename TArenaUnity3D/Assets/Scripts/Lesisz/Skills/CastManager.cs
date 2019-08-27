@@ -335,7 +335,9 @@ public class CastManager : MonoBehaviour
             SelectedT().SpecialDMGModificator = 0;
             SelectedT().SpecialResistance = 0;
         }
+        isTurn = false;
         SetFalse();
+        
     }
     #endregion
     #region Double_Throw 
@@ -837,6 +839,7 @@ public class CastManager : MonoBehaviour
             SelectedT().SpecialDMGModificator = 0;
             SelectedT().SpecialResistance = 0;
         }
+        isTurn = false;
         SetFalse();
     }
 

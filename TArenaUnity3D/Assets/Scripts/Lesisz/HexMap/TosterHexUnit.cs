@@ -610,15 +610,26 @@ public class TosterHexUnit : IQPathUnit
     {
       //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
         double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        if (DealMePURE(Convert.ToInt32(dmgdouble)))
+        var d = t.tosterView.GetComponentInChildren<Animator>();
+        if (d != null)
+        {
+            Debug.Log(d);
+            d.Play("Atak");
 
-            if (CounterAttackAvaible == true)
+        }
+        if (CounterAttackAvaible == true)
             {
                 CounterAttackBools();
+             d = this.tosterView.GetComponentInChildren<Animator>();
+            if (d != null)
+            {
+                Debug.Log(d);
+                d.Play("Atak");
 
-               // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
+            }
+            // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
 
-               dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
+            dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
 
                 t.DealMePURE(Convert.ToInt32(dmgdouble));
             }
@@ -637,7 +648,7 @@ public class TosterHexUnit : IQPathUnit
             dmgdouble -= dmgdouble / 2;
         }
         DealMePURE(Convert.ToInt32(dmgdouble));
-
+        Hex.hexMap.ThrowAxe(this, t);
 
     }
     public void AttackMeS(TosterHexUnit t)
