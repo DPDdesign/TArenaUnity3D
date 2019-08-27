@@ -842,26 +842,47 @@ public class CastManager : MonoBehaviour
 
     #endregion
     #region Skill 2 - Spike_trap
-    public void Spike_trap() 
+    public void Spike_Trap() 
     {
-        
+        if (getHexUM()!=null)
+        {
+            getHexUM().AddTrap("Spike_Trap");
+            mouseControler.SetCD();
+            SetFalse();
+            
+        }
+
 
     }
-    public void Spike_trapM()
+    public void Spike_TrapM()
     {
-
+        unselectaround = true;
+        Global = true;
+        SingleTarget = true;
+        isTurn = true;
+        cooldown = 3;
     }
 
     #endregion
     #region Skill 3 - Rope_trap
-    public void Rope_trap() 
+    public void Rope_Trap() 
     {
 
+        if (getHexUM() != null)
+        {
+            getHexUM().AddTrap("Rope_Trap");
+            mouseControler.SetCD();
+            SetFalse();
 
+        }
     }
-    public void Rope_trapM()
+    public void Rope_TrapM()
     {
-
+        unselectaround = true;
+        Global = true;
+        SingleTarget = true;
+        isTurn = true;
+        cooldown = 2;
     }
 
     #endregion

@@ -11,13 +11,24 @@ public class HexClass : IPathTile {
     public GameObject MyHex;
     public readonly HexMap hexMap;
     public List<GameObject> ListOfParts;
+    public bool isTraped = false;
 
+    public Traps.Traps trap;
     public void crealistofparts(List<GameObject> l)
     {
         ListOfParts = new List<GameObject>();
         ListOfParts = l;
     }
-
+    public void AddTrap(string name)
+    {
+        isTraped = true;
+        trap = new Traps.Traps(999, name, this);
+    }
+    public void RemoveTrap()
+    {
+        isTraped = false;
+        trap.Remove();
+    }
     public HexClass()
     {
         Tosters = new List<TosterHexUnit>();

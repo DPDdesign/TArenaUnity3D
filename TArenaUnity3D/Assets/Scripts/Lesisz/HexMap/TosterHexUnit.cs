@@ -247,6 +247,34 @@ public class TosterHexUnit : IQPathUnit
             this.Team.HexesUnderTeam.Remove(oldHex);
             this.Hex.RemoveToster(this);
         }
+        if (hex.isTraped)
+        {
+            if (hex.trap.NameOfTraps == "Rope_Trap")
+            {
+
+                Pathing_func(hex,true);
+                this.AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, "Rope_Trap", false);
+                hex.RemoveTrap();
+            }
+            if (hex.trap.NameOfTraps == "Spike_Trap")
+            {
+
+              
+                this.AddNewTimeSpell(2, this, 0, 0, 0, -2, 0, 0, 0, 0, 0, 0, 0, 0, "Spike_Trap", false);
+                if (hexPath.Count>1)
+                {
+                    hexPath.RemoveAt(hexPath.Count - 1);
+                    hexPath.RemoveAt(hexPath.Count - 1);
+                }
+                if (hexPath.Count == 1)
+                {
+                    hexPath.RemoveAt(hexPath.Count - 1);
+
+                }
+
+                hex.RemoveTrap();
+            }
+        }
         Hex = hex;
         Hex.AddToster(this);
         if (OnTosterMoved != null)

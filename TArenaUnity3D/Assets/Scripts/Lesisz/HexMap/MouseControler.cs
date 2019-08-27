@@ -306,7 +306,7 @@ public class MouseControler : MonoBehaviour
                 Update_CurrentFunc = BeforeNextTurn;
                 StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
                 yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
-                toster.AttackMe(SelectedToster);
+                if (SelectedToster.Hex == temp) toster.AttackMe(SelectedToster);
                 CancelUpdateFunc();
                 shiftmode = false;
             }
@@ -333,7 +333,7 @@ public class MouseControler : MonoBehaviour
                 Update_CurrentFunc = BeforeNextTurn;
                 StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
                 yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
-                toster.AttackMe(SelectedToster);
+                if (SelectedToster.Hex==temp) toster.AttackMe(SelectedToster);
                 CancelUpdateFunc();
                 shiftmode = false;
             }
@@ -365,7 +365,7 @@ public class MouseControler : MonoBehaviour
         {
 
 
-            toster.AttackMe(SelectedToster);
+            if (SelectedToster.Hex == temp) toster.AttackMe(SelectedToster);
         }
             CancelUpdateFunc();
             shiftmode = false;
