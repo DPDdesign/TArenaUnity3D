@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Photon;
+using Photon.Pun;
 using UnityEngine.UI;
-public class PhotonControler : Photon.PunBehaviour 
+public class PhotonControler : Photon.Pun.MonoBehaviourPun
 {
     public string GameVersion;
     public Text ConnectState;
@@ -21,11 +22,11 @@ public class PhotonControler : Photon.PunBehaviour
     }
     public void FixedUpdate()
     {
-        ConnectState.text = PhotonNetwork.connectionStateDetailed.ToString();
+     // ConnectState.text = PhotonNetwork.connectionStateDetailed.ToString();
     }
     public void connecttogheter()
     {
         
-        PhotonNetwork.ConnectUsingSettings(GameVersion);
+      //PhotonNetwork.ConnectUsingSettings(GameVersion);
     }
 }
