@@ -4,6 +4,7 @@ using UnityEngine;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 
 public class PlayFabControler : MonoBehaviour
@@ -43,11 +44,13 @@ public class PlayFabControler : MonoBehaviour
 
     private void OnLoginSuccess(LoginResult result)
     {
+
         Debug.Log("WELCOME TO RETSOT");
         PlayerPrefs.SetString("EMAIL", userEmail);
         PlayerPrefs.SetString("PASSWORD", userPassword);
         PlayerPrefs.SetString("USERNAME", tosterName);
         loginPanel.SetActive(false);
+        SceneManager.LoadScene("Master");
     }
 
     private void OnLoginFailure(PlayFabError error)

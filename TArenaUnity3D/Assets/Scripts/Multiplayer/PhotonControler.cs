@@ -4,15 +4,25 @@ using UnityEngine;
 using Photon;
 using Photon.Pun;
 using UnityEngine.UI;
-public class PhotonControler : Photon.Pun.MonoBehaviourPun
+public class PhotonControler : MonoBehaviourPunCallbacks
 {
-    public string GameVersion;
+    public string GameVersion = "pre-alpha";
     public Text ConnectState;
+    public string Region = "eu";
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        ServerSettings settings = PhotonNetwork.PhotonServerSettings;
+        settings.AppSettings.FixedRegion = Region;
+
+        PhotonNetwork.ConnectUsingSettings();
+    }
+
+
+    public override void OnConnectedToMaster()
+    {
+        Debug.Log("We are now connected to photon!");
     }
 
     // Update is called once per frame
