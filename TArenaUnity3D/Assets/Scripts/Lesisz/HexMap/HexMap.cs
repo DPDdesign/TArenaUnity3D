@@ -37,6 +37,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     GameObject bullet;
     public bool isCreated=false;
     bool ready = false;
+    bool DidIGetOtherBuild = false;
     private static HexMap instance;
 
     public static HexMap Instance
@@ -53,74 +54,65 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     }
     void Start()
     {
-        buildG1 = new BuildG();
-        buildG2 = new BuildG();
-       if ( PhotonNetwork.CurrentRoom.GetPlayer(1).IsMasterClient)
+        if (PlayerPrefs.GetInt("Multi") == 1)
         {
-            
-            TeamClass Team = new TeamClass();
-            Hashtable t = new Hashtable();
-            Team.ThisTeamNO = 0;
-            Team.WczytajPlik();
-            //
+            buildG1 = new BuildG();
+            buildG2 = new BuildG();
+            if (PhotonNetwork.LocalPlayer.IsMasterClient)
+            {
 
-            //         
-            //       
-            //         t.Add("Team1U", Team.buildG.Units);
-            //         int i = 0;
-            //         foreach (string units in Team.buildG.Units)
-            //         {
-            //             t.Add("Team1U" + i, units);
-            //             i++;
-            //         }
-            //         i = 0;
-            //         t.Add("Team1NU", Team.buildG.NoUnits);
-            //         foreach (int units in Team.buildG.NoUnits)
-            //         {
-            //             t.Add("Team1NU" + i, units);
-            //             i++;
-            //         }
-            buildG1 = Team.buildG;
-            Team.ThisTeamNO = 1;
-            Team.WczytajPlik();
- //         t.Add("Team2U", Team.buildG.Units);
- //         foreach (string units in Team.buildG.Units)
- //         {
- //             
- //             t.Add("Team2U" + i, units);
- //             i++;
-  //         }
- //         i = 0;
- //         t.Add("Team2NU", Team.buildG.NoUnits);
- //        foreach (int units in Team.buildG.NoUnits)
-   //        {
- //           t.Add("Team2NU" +i, units);
-  //            i++;
-  //        }
-            buildG2 = Team.buildG;
-         //   PhotonNetwork.CurrentRoom.GetPlayer(1).SetCustomProperties(t);
+                TeamClass Team = new TeamClass();
+                Hashtable t = new Hashtable();
+                Team.ThisTeamNO = PlayerPrefs.GetInt("YourArmy");
+                Team.WczytajPlik();
+
+                buildG1 = Team.buildG;
+                //        Team.ThisTeamNO = PlayerPrefs.GetInt("EnemyArmy");
+                //       Team.WczytajPlik();
+
+                //                buildG2 = Team.buildG;
+                //   PhotonNetwork.CurrentRoom.GetPlayer(1).SetCustomProperties(t);
+            }
+            else  //(PhotonNetwork.LocalPlayer == PhotonNetwork.CurrentRoom.GetPlayer(2))
+            {
+                TeamClass Team = new TeamClass();
+                //ASK MASTER FOR HIS BUILD + SEND HIM  YOUR BUILD
+                Team.ThisTeamNO = PlayerPrefs.GetInt("YourArmy");/// THIS IS YOUR BUILD - NOW HOW TO SHARE IT?
+
+                Team.WczytajPlik();
+                Debug.LogError("THIS IS YOUR BUILD - NOW HOW TO SHARE IT?");
+                buildG2 = Team.buildG;
+                photonView.RPC("UnitsAmount", RpcTarget.Others, new object[] { buildG2.NoUnits[0], buildG2.NoUnits[1], buildG2.NoUnits[2], buildG2.NoUnits[3], buildG2.NoUnits[4], buildG2.NoUnits[5], buildG2.NoUnits[6] });
+                photonView.RPC("UnitsNames", RpcTarget.Others, new object[] { buildG2.Units[0], buildG2.Units[1], buildG2.Units[2], buildG2.Units[3], buildG2.Units[4], buildG2.Units[5], buildG2.Units[6] });
+
+              //  DidIGetOtherBuild = true;
+
+            }
+            if (PhotonNetwork.CurrentRoom.PlayerCount > 1)
+            {
+                if (DidIGetOtherBuild == false)
+                {
+                    photonView.RPC("IntToSend", RpcTarget.Others, new object[] { 5 });
+                    // DO NOTHING / WAIT FOR IT -> GO TO UPDATE()
+                }
+               // DO I HAVE ALL BUILDS READY? BOOL DID I GET OTHERS BUILD
+            }
+
         }
         else
         {
+            Debug.LogError("here");
+            TeamClass Team = new TeamClass();
+            Team.ThisTeamNO = PlayerPrefs.GetInt("YourArmy");
+            Team.WczytajPlik();
 
-            photonView.RPC("READY", RpcTarget.All, new object[] { true });
+            buildG1 = Team.buildG;
+            Team.ThisTeamNO = PlayerPrefs.GetInt("EnemyArmy");
+            Team.WczytajPlik();
+
+            buildG2 = Team.buildG;
+            CreateWorld();
         }
-        if (PhotonNetwork.CurrentRoom.PlayerCount > 1 )
-        {
-          //  ready = true;
-         /*
-         var hashtable = PhotonNetwork.LocalPlayer.CustomProperties;
-
-            for (int i = 0; i < 7; i++) {
-                buildG1.NoUnits[i] = (int)PhotonNetwork.LocalPlayer.CustomProperties["Team1NU"+i];
-                buildG1.Units[i]= (string)PhotonNetwork.LocalPlayer.CustomProperties["Team1U"+i];
-                buildG2.NoUnits[i] = (int)PhotonNetwork.LocalPlayer.CustomProperties["Team2NU"+i];
-                buildG2.Units[i] = (string)PhotonNetwork.LocalPlayer.CustomProperties["Team2U"+i];
-            }
-          */
-         //   Instance.CreateWorld();
-        }
-
 
     }
     [PunRPC]
@@ -139,6 +131,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     [PunRPC]
     void ListsToSave(List<string> bg1, List<string> bg2, List<int> bg1i, List<int> bg2i)
     {
+        Debug.LogError("thishappen");
         buildG1.Units = bg1;
         buildG1.NoUnits = bg1i;
 
@@ -149,6 +142,88 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
         if (isCreated == false) CreateWorld();
     }
 
+    [PunRPC]
+    void IntToSend(int i)
+    {
+        Debug.Log(i);     
+   
+    }
+    [PunRPC]
+    void UnitsAmount(int i, int j, int k , int t, int p , int l , int s)
+    {
+        Debug.LogError(i);
+
+        buildG2.NoUnits.Add(i);
+
+        Debug.LogError(buildG2.NoUnits[0]);
+        buildG2.NoUnits.Add(j);
+        buildG2.NoUnits.Add(k);
+        buildG2.NoUnits.Add(t);
+        buildG2.NoUnits.Add(p);
+        buildG2.NoUnits.Add(l);
+        buildG2.NoUnits.Add(s);
+
+
+    }
+    [PunRPC]
+    void UnitsAmount1(int i, int j, int k, int t, int p, int l, int s)
+    {
+        Debug.LogError(i);
+
+        buildG1.NoUnits.Add(i);
+
+        Debug.LogError(buildG2.NoUnits[0]);
+        buildG1.NoUnits.Add(j);
+        buildG1.NoUnits.Add(k);
+        buildG1.NoUnits.Add(t);
+        buildG1.NoUnits.Add(p);
+        buildG1.NoUnits.Add(l);
+        buildG1.NoUnits.Add(s);
+
+
+    }
+    [PunRPC]
+    void UnitsNames(string i, string j, string k, string t, string p, string l, string s)
+    {
+       // Debug.LogError(i);
+
+        buildG2.Units.Add(i);
+
+      //  Debug.LogError(buildG2.NoUnits[0]);
+        buildG2.Units.Add(j);
+        buildG2.Units.Add(k);
+        buildG2.Units.Add(t);
+        buildG2.Units.Add(p);
+        buildG2.Units.Add(l);
+        buildG2.Units.Add(s);
+        photonView.RPC("UnitsAmount1", RpcTarget.Others, new object[] { buildG1.NoUnits[0], buildG1.NoUnits[1], buildG1.NoUnits[2], buildG1.NoUnits[3], buildG1.NoUnits[4], buildG1.NoUnits[5], buildG1.NoUnits[6] });
+        photonView.RPC("UnitsNames1", RpcTarget.Others, new object[] { buildG1.Units[0], buildG1.Units[1], buildG1.Units[2], buildG1.Units[3], buildG1.Units[4], buildG1.Units[5], buildG1.Units[6] });
+        DidIGetOtherBuild = true;
+
+    }
+    [PunRPC]
+    void UnitsNames1(string i, string j, string k, string t, string p, string l, string s)
+    {
+        // Debug.LogError(i);
+
+        buildG1.Units.Add(i);
+
+        //  Debug.LogError(buildG2.NoUnits[0]);
+        buildG1.Units.Add(j);
+        buildG1.Units.Add(k);
+        buildG1.Units.Add(t);
+        buildG1.Units.Add(p);
+        buildG1.Units.Add(l);
+        buildG1.Units.Add(s);
+        DidIGetOtherBuild = true;
+
+    }
+    [PunRPC]
+    void DidIGetOtherBuildY(bool y)
+    {
+        DidIGetOtherBuild = y;
+
+    }
     public static Stream GenerateStreamFromString(string s)
     {
         var stream = new MemoryStream();
@@ -182,18 +257,15 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     }
     private void Update()
     {
-     
-        if(PhotonNetwork.LocalPlayer.IsMasterClient && ready==true)
+        if (PlayerPrefs.GetInt("Multi") == 1)
         {
-            photonView.RPC("ListsToSave", RpcTarget.All , new object[] { buildG1.Units, buildG2.Units, buildG1.NoUnits, buildG2.NoUnits });
-        
-        }
-    
-        if (PhotonNetwork.CurrentRoom.PlayerCount > 1  || ready == true)
-        {
-         
-            ready = false;
-            if (isCreated == false) CreateWorld();
+
+            if (PhotonNetwork.CurrentRoom.PlayerCount > 1 && DidIGetOtherBuild == true) /// When can I get OtherBuild - when new player joins, he send it to us. If I am new player, I Ask for build.
+            {
+                Debug.LogError("here");
+                if (isCreated == false) CreateWorld();
+            }
+
         }
     }
 
@@ -858,57 +930,11 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
-        if (newPlayer.IsMasterClient)
-        {
-            TeamClass Team = new TeamClass();
-            Hashtable t = new Hashtable();
-
-
-
-            Team.ThisTeamNO = 0;
-            Team.WczytajPlik();
-
-            t.Add("Team1U", Team.buildG.Units);
-            int i = 0;
-            foreach (string units in Team.buildG.Units)
-            {
-                t.Add("Team1U"+"i", units);
-                i++;
-            }
-            i = 0;
-            t.Add("Team1NU", Team.buildG.NoUnits);
-            foreach (int units in Team.buildG.NoUnits)
-            {
-                t.Add("Team1NU" + "i", units);
-                i++;
-            }
-            buildG1 = Team.buildG;
-            Team.ThisTeamNO = 1;
-            Team.WczytajPlik();
-            t.Add("Team2U", Team.buildG.Units);
-            foreach (string units in Team.buildG.Units)
-            {
-                t.Add("Team2U" + "i", units);
-                i++;
-            }
-            i = 0;
-            t.Add("Team2NU", Team.buildG.NoUnits);
-            foreach (int units in Team.buildG.NoUnits)
-            {
-                t.Add("Team2NU" + "i", units);
-                i++;
-            }
-            buildG2 = Team.buildG;
-               newPlayer.SetCustomProperties(t);
-            //Debug.LogError(buildG1.NazwaBohatera);
-            //photonView.RPC("InitilizeMyPlayerRPC", newPlayer, new object[] { buildG1, buildG2 });
-          //  Debug.LogError("thishappen");
-        }
         
         Debug.LogError("test");
        if(PhotonNetwork.CurrentRoom.PlayerCount >1)
         {
-            Instance.CreateWorld();
+           // Instance.CreateWorld();
         }     
     }
    

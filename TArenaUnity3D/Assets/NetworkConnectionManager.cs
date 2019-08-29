@@ -11,7 +11,7 @@ public class NetworkConnectionManager : MonoBehaviourPunCallbacks
     public Button BtnConnectMaster;
     public Button BtnConnectRoom;
     public InputField InputField;
-
+    public Toggle isMulti;
     public bool TriesToConnectToMaster;
     public bool TriesToConnectToRoom;
     
@@ -33,8 +33,9 @@ public class NetworkConnectionManager : MonoBehaviourPunCallbacks
     }
     public void OnClickConnectToMaster()
     {
-        PhotonNetwork.OfflineMode = false;
-        PhotonNetwork.NickName = InputField.text;
+        
+        PhotonNetwork.OfflineMode = !isMulti.isOn;
+        PhotonNetwork.NickName = "Toster";
  //       PhotonNetwork.AutomaticallySyncScene = true;
         PhotonNetwork.GameVersion = "v1";
 
@@ -54,8 +55,9 @@ public class NetworkConnectionManager : MonoBehaviourPunCallbacks
     public override void OnConnectedToMaster()
     {
         Debug.LogError("Connected to Master!");
-        base.OnConnectedToMaster();
-        TriesToConnectToMaster = false;
+        base.OnConnectedToMaster(); 
+         TriesToConnectToMaster = false;
+        OnClickConnectToRoom();
         Debug.LogError("Connected to Master2!");
     }
 

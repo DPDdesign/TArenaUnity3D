@@ -59,17 +59,23 @@ public class MouseControler : MonoBehaviourPunCallbacks
     }
     void Start()
     {
-       
-        TM = FindObjectOfType<TurnManager>();
-
-        Update_CurrentFunc = Update_DetectModeStart;
-        hexMap = GameObject.FindObjectOfType<HexMap>();
-        hexPath = null;
         if (PlayerPrefs.GetInt("AI") == 0)
         {
             isAiOn = false;
         }
         else isAiOn = true;
+
+        if (PlayerPrefs.GetInt("Multi") == 0)
+        {
+            isMulti = false;
+        }
+        else isMulti = true;
+        TM = FindObjectOfType<TurnManager>();
+
+        Update_CurrentFunc = Update_DetectModeStart;
+        hexMap = GameObject.FindObjectOfType<HexMap>();
+        hexPath = null;
+   
         Debug.Log("Camera");
     }
 

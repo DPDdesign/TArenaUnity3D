@@ -27,6 +27,13 @@ public class PanelArmii : MonoBehaviour
         public List<string> Units;
         public List<int> NoUnits;
         public List<int> Costs;
+
+     public   BuildG()
+        {
+            Units = new List<string>();
+            NoUnits = new List<int>();
+            Costs = new List<int>();
+    }
     }
     void Start()
     {

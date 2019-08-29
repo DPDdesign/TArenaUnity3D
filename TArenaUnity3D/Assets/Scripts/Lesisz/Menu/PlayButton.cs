@@ -7,7 +7,8 @@ using UnityEngine.UI;
 public class PlayButton : MonoBehaviour
 {
     public Button ThisButton;
-    public Toggle AI;
+    public Toggle AI, MultiPlayer;
+    public NetworkConnectionManager NetworkConnectionManager;
     // Start is called before the first frame update
     void Start()
     {
@@ -36,7 +37,14 @@ public class PlayButton : MonoBehaviour
             PlayerPrefs.SetInt("AI", 1);
         else
             PlayerPrefs.SetInt("AI", 0);
-        SceneManager.LoadScene(2);
+        if (MultiPlayer.isOn) {
+            PlayerPrefs.SetInt("Multi", 1);
+            
+                }
+        else
+            PlayerPrefs.SetInt("Multi", 0);
+        NetworkConnectionManager.OnClickConnectToMaster();
+ 
     }
 
 }
