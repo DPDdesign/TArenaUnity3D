@@ -1,10 +1,11 @@
-﻿using System.Collections;
+﻿using Photon.Pun;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Xenu.Game;
-public class MouseControler : MonoBehaviour
+public class MouseControler : MonoBehaviourPunCallbacks
 {
 
 
@@ -40,9 +41,9 @@ public class MouseControler : MonoBehaviour
     TosterHexUnit TempOutlinedToster = null;
     TosterHexUnit TargetToster = null;
     public bool activeButtons = false;
-
+    public bool isMulti = true;
     public MostStupidAIEver AI;
-
+    public Camera c;
 
     public int GetSelectedSpellID()
     {
@@ -58,6 +59,7 @@ public class MouseControler : MonoBehaviour
     }
     void Start()
     {
+       
         TM = FindObjectOfType<TurnManager>();
 
         Update_CurrentFunc = Update_DetectModeStart;
@@ -68,16 +70,30 @@ public class MouseControler : MonoBehaviour
             isAiOn = false;
         }
         else isAiOn = true;
-       
+        Debug.Log("Camera");
     }
 
 
 
     /// // TODO : CZEKAC NA NASTEPNA TURE DO KONCA ANIMACJI!!!  - > ZOBACZ NA:     StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+    public bool isCamera()
+    {
+        if (c != null)
+        {
+            return true;
+        }
+        else
+        {
+            c = FindObjectOfType<Camera>();
+            return false;
 
+        }
+    }
 
     void Update()
     {
+        
+        if (!isCamera() || !hexMap.isCreated) return;
         Update_CurrentFunc();
 
         LastMousePosition = Input.mousePosition;
@@ -126,9 +142,22 @@ public class MouseControler : MonoBehaviour
                 return;
             }
         }
-   
+
+        if (isMulti == true)
+        {
+            if (SelectedToster.Team == hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
+            {
+
+                return;
+            }
+            else
+                if (SelectedToster.Team == hexMap.Teams[0] && !PhotonNetwork.LocalPlayer.IsMasterClient)
+            {
+                return;
+            }
+        }
         //Debug.LogError(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>().bounds);
-       // outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
+        // outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
         outlineManagerMainToster.ChangeObj(hexMap.GetObjectFromHex(SelectedToster.Hex).GetComponentInChildren<Renderer>());//SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());
         outlineManagerMainToster.AddMainOutlineWithReset();
 
@@ -146,8 +175,21 @@ public class MouseControler : MonoBehaviour
     void Taunted()
     {
         Debug.Log("HOW DARE YOU!?");
+        photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R, SelectedToster.whoTauntedMe.C, SelectedToster.whoTauntedMe.R });
+      //StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.whoTauntedMe.Hex,SelectedToster.whoTauntedMe));
+    }
 
-        StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.whoTauntedMe.Hex,SelectedToster.whoTauntedMe));
+    [PunRPC]
+    void StartCoroutineDoMoveAndAttackWithoutCheck(int i, int k, int r, int f)
+    {
+        if (r == -5 && f == -5)
+        {
+            StartCoroutine(DoMoveAndAttackWithoutCheck(hexMap.GetHexAt(i, k), null));
+        }
+        else
+        {
+            StartCoroutine(DoMoveAndAttackWithoutCheck(hexMap.GetHexAt(i, k), hexMap.GetHexAt(r, f).Tosters[0]));
+        }
     }
     // TRYB RUCHU JEDNOSTKI
     void SelectTosterMovement()
@@ -181,25 +223,49 @@ public class MouseControler : MonoBehaviour
                 if (SelectedToster.isRange == false)
                 {
                     if (SelectedToster.IsPathAvaible(hexUnderMouse))
-                        StartCoroutine(DoMoveAndAttack(hexUnderMouse.Tosters[0]));
+                    {
+                        var temp = MouseToPart();
+                        photonView.RPC("StartCoroutineDoMoveAndAttack", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R, temp.C, temp.R });
+                    }                 //   StartCoroutineDoMoveAndAttack(hexUnderMouse.C, hexUnderMouse.R);
+                     //   StartCoroutine(DoMoveAndAttack(hexUnderMouse.Tosters[0]));
                 }
                 else if (hexUnderMouse.Highlight == true)
                 {
-                    hexUnderMouse.Tosters[0].ShootME(SelectedToster);
-                    SelectedToster.Moved = true;
-                    CancelUpdateFunc();
+                    photonView.RPC("Shot", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R });
                 }
             }
             else if (hexUnderMouse.Tosters.Count == 0)
             {
 
-                StartCoroutine(DoMoves());
+                Debug.Log(RpcTarget.All);
+               photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R });
             }
             // CancelUpdateFunc();
             return;
         } //DoMove 
     }
+    [PunRPC]
+    void Shot(int i, int k)
+    {
+        hexMap.GetHexAt(i,k).Tosters[0].ShootME(SelectedToster);
+        SelectedToster.Moved = true;
+        CancelUpdateFunc();
 
+    }
+
+    [PunRPC]
+    void StartCoroutineDoMoveAndAttack(int i , int k, int r, int f)
+    {
+        StartCoroutine(DoMoveAndAttack(hexMap.GetHexAt(i, k).Tosters[0], hexMap.GetHexAt(r, f)));
+
+    }
+    [PunRPC]
+    void StartCoroutineDoMoves(int i, int k)
+    {
+        Debug.Log("happen");
+        StartCoroutine(DoMoves(hexMap.GetHexAt(i, k)));
+
+    }
     public void Outlining()
     {
         if (hexUnderMouse != SelectedToster.Hex)
@@ -241,13 +307,13 @@ public class MouseControler : MonoBehaviour
         //  shiftctrlmode();
         // ScrollLook();
     }
-    IEnumerator DoMoves()
+    IEnumerator DoMoves(HexClass hex)
     {
         outlineManagerMainToster.RemoveOutline();
         activeButtons = false;
         SelectedToster.move = true;
         SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-        SelectedToster.Pathing_func(hexUnderMouse, false);
+        SelectedToster.Pathing_func(hex, false);
 
         // Debug.LogError(SelectedToster.HexPathList.Count);
         SelectedToster.Moved = true;
@@ -280,10 +346,10 @@ public class MouseControler : MonoBehaviour
 
     }
 
-    IEnumerator DoMoveAndAttack(TosterHexUnit toster)
+    IEnumerator DoMoveAndAttack(TosterHexUnit toster, HexClass temp)
     {
 
-        var temp = MouseToPart();
+        
         if (temp.Tosters.Count == 0)
         {
             if (temp != null && temp.Highlight == true)
@@ -291,7 +357,7 @@ public class MouseControler : MonoBehaviour
 
                 outlineManagerMainToster.RemoveOutline();
                 activeButtons = false;
-                TargetToster = hexUnderMouse.Tosters[0];
+                TargetToster = toster;// hexUnderMouse.Tosters[0];
                 SelectedToster.move = true;
                 SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
 
@@ -318,7 +384,7 @@ public class MouseControler : MonoBehaviour
 
                 outlineManagerMainToster.RemoveOutline();
                 activeButtons = false;
-                TargetToster = hexUnderMouse.Tosters[0];
+                TargetToster = toster;//hexUnderMouse.Tosters[0];
                 SelectedToster.move = true;
                 SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
 
@@ -377,6 +443,12 @@ public class MouseControler : MonoBehaviour
 
     public void EndSkills()
     {
+        photonView.RPC("EndSkillss", RpcTarget.All, new object[] { });
+    }
+
+    [PunRPC]
+    void EndSkillss()
+    {
         if (castManager.isTurn)
         {
             hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
@@ -389,11 +461,17 @@ public class MouseControler : MonoBehaviour
         {
             hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-       
+
             CancelUpdateFunc();
             shiftmode = false;
         }
         return;
+    }
+
+    [PunRPC]
+    void TeleportToster(int i , int j,int k, int t)
+    {
+        hexMap.GetHexAt(i, j).Tosters[0].TeleportToHex(hexMap.GetHexAt(k, t));  
     }
 
     public void CancelSpellCasting()
@@ -488,8 +566,8 @@ public class MouseControler : MonoBehaviour
             {
                 if (EventSystem.current.IsPointerOverGameObject())
                     return;
-
-                castManager.startSpell(SelectedToster.skillstrings[SelectedSpellid]);
+                photonView.RPC("startSpell", RpcTarget.All, new object[] { hexUnderMouse.C,hexUnderMouse.R});
+               // castManager.startSpell(SelectedToster.skillstrings[SelectedSpellid]);
 
             }
         }
@@ -503,6 +581,14 @@ public class MouseControler : MonoBehaviour
 
         
     }
+
+    [PunRPC]
+    void startSpell(int i, int j)
+    {
+        castManager.startSpell(SelectedToster.skillstrings[SelectedSpellid],hexMap.GetHexAt(i,j));
+
+    }
+
 
     public void HighlightLineOnlyLast()
     {
@@ -687,8 +773,15 @@ public class MouseControler : MonoBehaviour
          //   hexMap.HighlightRadiusNoEmpty(getSelectedToster().Hex, 1);
         }
 
-        Update_CurrentFunc = SpellCasting;
+      
     }
+    [PunRPC]
+    void CastSkillBooleanss(int SelectedSkill)
+    {
+        CastSkillBooleans(SelectedSkill);
+
+    }
+
     public void CastSkillOnlyBooleans()
     {
         if (castManager.isAvailable == false)
@@ -726,7 +819,8 @@ public class MouseControler : MonoBehaviour
         {
             if (SelectedToster.skillstrings.Count >= 1 && SelectedToster.cooldowns[0]==0)
             {
-                CastSkillBooleans(0);
+                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 0});
+                Update_CurrentFunc = SpellCasting;
                 return;
             }
         }
@@ -734,7 +828,8 @@ public class MouseControler : MonoBehaviour
         {
             if (SelectedToster.skillstrings.Count >= 2 && SelectedToster.cooldowns[1] == 0)
             {
-                CastSkillBooleans(1);
+                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 1 });
+                Update_CurrentFunc = SpellCasting;
                 return;
             }
         }
@@ -742,7 +837,8 @@ public class MouseControler : MonoBehaviour
         {
             if (SelectedToster.skillstrings.Count >= 3 && SelectedToster.cooldowns[2] == 0)
             {
-                CastSkillBooleans(2);
+                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 2 });
+                Update_CurrentFunc = SpellCasting;
                 return;
             }
         }
@@ -750,7 +846,8 @@ public class MouseControler : MonoBehaviour
         {
             if (SelectedToster.skillstrings.Count >= 4 && SelectedToster.cooldowns[3] == 0)
             {
-                CastSkillBooleans(3);
+                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 3 });
+                Update_CurrentFunc = SpellCasting;
                 return;
             }
         }
@@ -914,12 +1011,20 @@ public class MouseControler : MonoBehaviour
             if (SelectedToster.Waited == false)
             {
                 SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-                SelectedToster.Waited = true;
-                CancelUpdateFunc();
+                photonView.RPC("Waitt", RpcTarget.All, new object[] { });
             }
         }
     }
-    
+
+    [PunRPC]
+    void Waitt()
+    {
+        SelectedToster.Waited = true;
+        CancelUpdateFunc();
+
+    }
+
+
     void ShowInfo()
     {
         shiftctrlmode();
@@ -945,21 +1050,33 @@ public class MouseControler : MonoBehaviour
     {
         if (Input.GetKeyUp(KeyCode.Space))
         {
-            var d =SelectedToster.tosterView.GetComponentInChildren<Animator>();
-            if (d != null)
-            {
-                Debug.Log(d);
-                d.Play("Defense");
-
-            }
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-                SelectedToster.Moved = true;
-                SelectedToster.DefenceStance = true;
-            SelectedToster.SpecialDef += 5;
-            CancelUpdateFunc();
+            photonView.RPC("Defensee", RpcTarget.All, new object[] { });
+          
             
         }
     }
+
+
+    [PunRPC]
+    void Defensee()
+    {
+        var d = SelectedToster.tosterView.GetComponentInChildren<Animator>();
+        if (d != null)
+        {
+            Debug.Log(d);
+            d.Play("Defense");
+
+        }
+
+
+        SelectedToster.Moved = true;
+        SelectedToster.DefenceStance = true;
+        SelectedToster.SpecialDef += 5;
+        CancelUpdateFunc();
+
+    }
+
 
     // SZUKAJ DROGI OD ZAZNACZONEGO HEXA - NOT USED
     void DrawPath(HexClass[] hexPath)
@@ -979,12 +1096,13 @@ public class MouseControler : MonoBehaviour
     // SPRAWDZ NA JAKI HEX CELUJE MYSZ (JEZELI W OGOLE) - ZWRACA TEN HEX ///////// TODO: ZAWSZE PODWYZSZAJ (ZAZNACZAJ) HEXA NA KTOREGO CELUJE MYSZ
     public HexClass MouseToHex()
     {
-        Ray mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+        
+        Ray mouseRay = c.ScreenPointToRay(Input.mousePosition);
         RaycastHit hitInfo;
         int layerMask = LayerIDForHexTiles.value;
         if (Physics.Raycast(mouseRay, out hitInfo, Mathf.Infinity, layerMask))
         {
-            //   Debug.Log( hitInfo.collider.name ); -> WYSWIETL NA CO WSKAZUJE MYSZ
+             //  Debug.Log( hitInfo.collider.name ); //-> WYSWIETL NA CO WSKAZUJE MYSZ
            GameObject hexGO = hitInfo.rigidbody.gameObject;
            HexClass hexUnderMouse1 = hexMap.GetHexFromGameObject(hexGO);
 
@@ -1008,7 +1126,7 @@ public class MouseControler : MonoBehaviour
     }
     Vector3 MouseToGroundPlane(Vector3 mousePos)
     {
-        Ray mouseRay = Camera.main.ScreenPointToRay(mousePos);
+        Ray mouseRay = c.ScreenPointToRay(mousePos);
         // What is the point at which the mouse ray intersects Y=0
         if (mouseRay.direction.y >= 0)
         {
@@ -1022,7 +1140,7 @@ public class MouseControler : MonoBehaviour
 
     HexClass MouseToPart()
     {
-        Ray mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray mouseRay = c.ScreenPointToRay(Input.mousePosition);
         RaycastHit hitInfo;
         int layerMask = LayerIDForPartTiles.value;
         if (Physics.Raycast(mouseRay, out hitInfo, Mathf.Infinity, layerMask))
@@ -1065,42 +1183,42 @@ public class MouseControler : MonoBehaviour
         float maxHeight = 27;
         // Move camera towards hitPos
         Vector3 hitPos = MouseToGroundPlane(Input.mousePosition);
-        Vector3 dir = hitPos - Camera.main.transform.position;
+        Vector3 dir = hitPos - c.transform.position;
         
-        Vector3 p = Camera.main.transform.position;
+        Vector3 p = c.transform.position;
 
         // Stop zooming out at a certain distance.
         // TODO: Maybe you should still slide around at 20 zoom?
         if (scrollAmount > 0 || p.y < (maxHeight - 0.1f)) {
             cameraTargetOffset += dir * scrollAmount;
         }
-        Vector3 lastCameraPosition = Camera.main.transform.position;
-        Vector3 Cam = Camera.main.transform.position;
+        Vector3 lastCameraPosition = c.transform.position;
+        Vector3 Cam = c.transform.position;
         Cam.y += cameraTargetOffset.y;
-        Camera.main.transform.position = Vector3.Lerp(Camera.main.transform.position, Camera.main.transform.position+ cameraTargetOffset, Time.deltaTime);
-        cameraTargetOffset -= Camera.main.transform.position - lastCameraPosition;
+        c.transform.position = Vector3.Lerp(c.transform.position, c.transform.position+ cameraTargetOffset, Time.deltaTime);
+        cameraTargetOffset -=c.transform.position - lastCameraPosition;
 
 
-        p = Camera.main.transform.position;
+        p = c.transform.position;
         if (p.y < minHeight) {
             p.y = minHeight;
         }
         if (p.y > maxHeight) {
             p.y = maxHeight;
         }
-        Camera.main.transform.position = p;
+        c.transform.position = p;
         /*
         // Change camera angle
-        Camera.main.transform.rotation = Quaternion.Euler (
-            Mathf.Lerp (45, 65, Camera.main.transform.position.y / maxHeight),
-            Camera.main.transform.rotation.eulerAngles.y,
-            Camera.main.transform.rotation.eulerAngles.z
+        c.transform.rotation = Quaternion.Euler (
+            Mathf.Lerp (45, 65, c.transform.position.y / maxHeight),
+            c.transform.rotation.eulerAngles.y,
+            c.transform.rotation.eulerAngles.z
         );
         */
-        Camera.main.transform.rotation = Quaternion.Euler(
-    Mathf.Lerp(45, 65, Camera.main.transform.position.x / maxHeight),
-    Camera.main.transform.rotation.eulerAngles.y,
-    Camera.main.transform.rotation.eulerAngles.z
+        c.transform.rotation = Quaternion.Euler(
+    Mathf.Lerp(45, 65,c.transform.position.x / maxHeight),
+    c.transform.rotation.eulerAngles.y,
+    c.transform.rotation.eulerAngles.z
 );
     }
 

@@ -8,8 +8,9 @@ public class TeamClass
 {
     public List<TosterHexUnit> Tosters;
     public List<HexClass> HexesUnderTeam;
-    int ThisTeamNO;
-    PanelArmii.BuildG buildG;
+   public int ThisTeamNO;
+  public  PanelArmii.BuildG buildG;
+
    public  TeamClass()
     {
         Tosters = new List<TosterHexUnit>();
@@ -35,8 +36,10 @@ public class TeamClass
 
     public void CreateTeamFromFile()
     {
-        WczytajPlik();
+        //WczytajPlik();
         // plik wczytany do buildG //
+
+  //  buildG = 
         int i = 0;
         foreach (string toster in buildG.Units) //Tosty są określone po ich nazwie // Ta funkcja ZAWSZE powinna wykonać się 7 razy
         {

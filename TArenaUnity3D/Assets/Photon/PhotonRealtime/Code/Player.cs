@@ -424,5 +424,7 @@ namespace Photon.Realtime
                 this.RoomReference.LoadBalancingClient.LoadBalancingPeer.OpSetPropertiesOfActor(this.ActorNumber, properties);
             }
         }
+
+
     }
 }

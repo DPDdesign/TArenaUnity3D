@@ -8,7 +8,9 @@ using UnityEngine.UI;
 using System;
 using Random = UnityEngine.Random;
 using TimeSpells;
-
+using Photon;
+using Photon.Realtime;
+using Photon.Pun;
 
 public class TosterHexUnit : IQPathUnit
 {
@@ -286,6 +288,9 @@ public class TosterHexUnit : IQPathUnit
         this.SetTextAmount();
         this.Team.HexesUnderTeam.Add(Hex);
     }
+
+
+
     public void FindTosterPath()
     {
         List<int[]> m = new List<int[]>();

@@ -19,75 +19,106 @@ namespace Xenu.Game
         public List<Renderer> Renderers;
         private void Start()
         {
+            outlinePostEffect = FindObjectOfType<UnityOutlineFXMainToster>();
             Renderers = new List<Renderer>();
 
         }
 
+        public bool isCamera()
+        {
+            if (outlinePostEffect!=null)
+            {
+                return true;
+            }
+            else
+            {
+                outlinePostEffect = FindObjectOfType<UnityOutlineFXMainToster>();
+                return false;
 
+            }
+        }
         public void RemoveOutline()
         {
-            foreach (var obj in outliners)
+            if (isCamera())
             {
-                outlinePostEffect.RemoveRenderers(new List<Renderer>() { obj.renderer });
-            }
-            foreach (var obj in Renderers)
-            {
-                outlinePostEffect.RemoveRenderers(new List<Renderer>() { obj });
-            }
+                foreach (var obj in outliners)
+                {
+                    outlinePostEffect.RemoveRenderers(new List<Renderer>() { obj.renderer });
+                }
+                foreach (var obj in Renderers)
+                {
+                    outlinePostEffect.RemoveRenderers(new List<Renderer>() { obj });
+                }
 
-            outlinePostEffect.ClearOutlineData();
+                outlinePostEffect.ClearOutlineData();
+
+            }
         }
 
         public void AddRenderer()
         {
-            RemoveOutline();
-            outlinePostEffect.ClearOutlineData();
-            Debug.LogError("Test");
-            foreach (var obj in outliners)
+            if (isCamera())
             {
-                outlinePostEffect.AddRenderers(new List<Renderer>() { obj.renderer });
-            }
-            foreach (var obj in Renderers)
-            {
-                outlinePostEffect.AddRenderers(new List<Renderer>() { obj });
+                RemoveOutline();
+                outlinePostEffect.ClearOutlineData();
+                Debug.LogError("Test");
+                foreach (var obj in outliners)
+                {
+                    outlinePostEffect.AddRenderers(new List<Renderer>() { obj.renderer });
+                }
+                foreach (var obj in Renderers)
+                {
+                    outlinePostEffect.AddRenderers(new List<Renderer>() { obj });
+                }
             }
         }
         public void AddMainOutlineWithReset()
         {
-
-            outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[0].renderer });
+            if (isCamera())
+            {
+                outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[0].renderer });
+            }
         }
 
 
 
         public void ChangeObj(Renderer obje)
         {
-            RemoveOutline();
-            outliners[0].renderer = obje;
+            if (isCamera())
+            {
+                RemoveOutline();
+                outliners[0].renderer = obje;
+            }
         }
 
         public void ChangeObjects(Renderer[] objects)
         {
-            RemoveAllButMain();
-            int i = 1;
-            foreach (Renderer r in objects)
+            if (isCamera())
             {
-                Debug.LogError(r.name);
-                outliners[i].renderer = r;
-                outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[i].renderer });
-                i++;
+                RemoveAllButMain();
+                int i = 1;
+                foreach (Renderer r in objects)
+                {
+                    Debug.LogError(r.name);
+                    outliners[i].renderer = r;
+                    outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[i].renderer });
+                    i++;
+                }
             }
 
         }
         public void ChangeObjectss(List<Renderer> objects)
         {
-            int i = 1;
-            foreach (Renderer r in objects)
+            if (isCamera())
             {
-                Debug.LogError(r.name);
-                outliners[i].renderer = r;
-                outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[i].renderer });
-                i++;
+                int i = 1;
+                foreach (Renderer r in objects)
+                {
+                    Debug.LogError(r.name);
+                    outliners[i].renderer = r;
+                    outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[i].renderer });
+                    i++;
+                }
             }
 
         }
@@ -95,55 +126,66 @@ namespace Xenu.Game
 
         public void ChangeObjects(List<Renderer> objects)
         {
-            int i = 1;
-            foreach (Renderer r in objects)
+            if (isCamera())
             {
+                int i = 1;
+                foreach (Renderer r in objects)
+                {
 
-                outliners[i].renderer = r;
-                outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[i].renderer });
-                i++;
+                    outliners[i].renderer = r;
+                    outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[i].renderer });
+                    i++;
+                }
             }
 
         }
         public void RemoveObjects(List<Renderer> objects)
         {
-            int i = 1;
-            foreach (Renderer r in objects)
+            if (isCamera())
             {
-                outlinePostEffect.RemoveRenderers(new List<Renderer>() { outliners[i].renderer });
-                outliners[i].renderer = null;
-                i++;
+                int i = 1;
+                foreach (Renderer r in objects)
+                {
+                    outlinePostEffect.RemoveRenderers(new List<Renderer>() { outliners[i].renderer });
+                    outliners[i].renderer = null;
+                    i++;
+                }
             }
 
         }
 
         public void RemoveAllOnlyMain()
         {
-           
-            outlinePostEffect.RemoveRenderers(new List<Renderer>() { outliners[0].renderer });
-            foreach (OutlineData r in outliners)
+            if (isCamera())
             {
-                r.renderer = null;
+                outlinePostEffect.RemoveRenderers(new List<Renderer>() { outliners[0].renderer });
+                foreach (OutlineData r in outliners)
+                {
+                    r.renderer = null;
+                }
+                //outliners[0].renderer = null;
+
+
+                outlinePostEffect.RecreateCommandBuff();
             }
-            //outliners[0].renderer = null;
-
-
-            outlinePostEffect.RecreateCommandBuff();
         }
 
         public void RemoveAllButMain()
         {
-            int i = 0;
-            foreach (var obj in outliners)
+            if (isCamera())
             {
-                if (i > 0)
+                int i = 0;
+                foreach (var obj in outliners)
                 {
-                    outlinePostEffect.RemoveRenderers(new List<Renderer>() { outliners[i].renderer });
-                    outliners[i].renderer = null;
+                    if (i > 0)
+                    {
+                        outlinePostEffect.RemoveRenderers(new List<Renderer>() { outliners[i].renderer });
+                        outliners[i].renderer = null;
+                    }
+                    i++;
                 }
-                i++;
+                outlinePostEffect.RecreateCommandBuff();
             }
-            outlinePostEffect.RecreateCommandBuff();
         }
 
     }

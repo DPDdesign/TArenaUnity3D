@@ -16,13 +16,28 @@ namespace Xenu.Game {
         public List<Renderer> Renderers;
 		private void Start()
 		{
-             Renderers = new List<Renderer>();
+            outlinePostEffect = FindObjectOfType<UnityOutlineFX>();
+            Renderers = new List<Renderer>();
          
         }
+        public bool isCamera()
+        {
+            if (outlinePostEffect != null)
+            {
+                return true;
+            }
+            else
+            {
+                outlinePostEffect = FindObjectOfType<UnityOutlineFX>();
+                return false;
 
+            }
+        }
 
         public void RemoveOutline()
         {
+            if (!isCamera()) return;
+              
             foreach (var obj in outliners)
             {
                 outlinePostEffect.RemoveRenderers(new List<Renderer>() { obj.renderer });
@@ -37,6 +52,7 @@ namespace Xenu.Game {
 
         public void AddRenderer()
         {
+            if (!isCamera()) return;
             RemoveOutline();
             outlinePostEffect.ClearOutlineData();
             Debug.LogError("Test");
@@ -51,7 +67,8 @@ namespace Xenu.Game {
         }
         public void AddMainOutlineWithReset()
         {
-           
+            if (!isCamera()) return;
+
             outlinePostEffect.AddRenderers(new List<Renderer>() { outliners[0].renderer });
         }
 
@@ -59,12 +76,14 @@ namespace Xenu.Game {
 
         public void ChangeObj(Renderer obje)
         {
+            if (!isCamera()) return;
             RemoveAllOnlyMain();
             outliners[0].renderer = obje;       
         }
 
         public void ChangeObjects(List<Renderer>  objects)
         {
+            if (!isCamera()) return;
             int i = 1;
             foreach (Renderer r in objects)
             {
@@ -77,6 +96,7 @@ namespace Xenu.Game {
         }
         public void RemoveObjects(List<Renderer> objects)
         {
+            if (!isCamera()) return;
             int i = 1;
             foreach (Renderer r in objects)
             {
@@ -89,6 +109,7 @@ namespace Xenu.Game {
 
         public void RemoveAllOnlyMain()
         {
+            if (!isCamera()) return;
 
             outlinePostEffect.RemoveRenderers(new List<Renderer>() { outliners[0].renderer });
             outliners[0].renderer = null;
@@ -99,6 +120,7 @@ namespace Xenu.Game {
 
         public void RemoveAllButMain()
         {
+            if (!isCamera()) return;
             int i = 0;
             foreach (var obj in outliners)
             {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Photon.Pun;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -27,13 +28,14 @@ public class CastManager : MonoBehaviour
     public bool rush = false;
     public bool isAvailable = true;
     public bool SlashTarget = false;
-    
+    HexClass hexum;
     void Start()
     {
-
+        mouseControler = FindObjectOfType<MouseControler>();
     }
-    public void startSpell(string spellID)
+    public void startSpell(string spellID, HexClass hex)
     {
+        hexum = hex;
         Type type = this.GetType();
         MethodInfo method = type.GetMethod(spellID);
         method.Invoke(this, null);
@@ -68,7 +70,7 @@ public class CastManager : MonoBehaviour
     }
     public HexClass getHexUM()
     {
-      return mouseControler.getHexUnderMouse();
+        return hexum;
     }
     public TosterHexUnit SelectedT()
     {
@@ -271,13 +273,14 @@ public class CastManager : MonoBehaviour
     #region Skill 2 - Rush
     public void Rush() //Biegnie przed siebie atakuje pierwszego napotkanego przeciwnika ??? +1 do ataku, traci 8 % jednostek, nie może zostać użyte poniżej 30.
     {
-        SelectedT().Amount = Convert.ToInt32(SelectedT().Amount * 0.92);
-        SelectedT().AddNewTimeSpell(1, null, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, "Rush", true);
+ 
 
         if (getHexUM() != null && getHexUM().Highlight == true)
         {
             if (getHexUM().Tosters.Count > 0)
             {
+                SelectedT().Amount = Convert.ToInt32(SelectedT().Amount * 0.92);
+                SelectedT().AddNewTimeSpell(1, null, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rush", true);
                 HexClass temp;
                 if (SelectedT().teamN ==true)
                 {
@@ -291,13 +294,14 @@ public class CastManager : MonoBehaviour
                     
                 }
                 Debug.Log("this");
-                mouseControler.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(temp, getHexUM().Tosters[0]));
+           //     mouseControler.photonView.RPC.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(temp, getHexUM().Tosters[0]));
+                mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { temp.C, temp.R, getHexUM().C, getHexUM().R });
             }
             else
             {
-                
- 
-                mouseControler.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(getHexUM(), null));
+
+                mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R, -5, -5 });
+              //  mouseControler.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(getHexUM(), null));
                 SetFalse();
             }
         }
@@ -1015,7 +1019,8 @@ public class CastManager : MonoBehaviour
                 HexClass hextomove = getHexUM();
                 if (hextomove.Highlight == true)
                 {
-                    tempToster.TeleportToHex(hextomove);//SetHex(hextomove);
+                    mouseControler.photonView.RPC("TeleportToster", RpcTarget.All, new object[] { tempToster.Hex.C, tempToster.Hex.R,hextomove.C,hextomove.R });
+                  //  tempToster.TeleportToHex(hextomove);//SetHex(hextomove);
 
                     SetFalse();
                 }

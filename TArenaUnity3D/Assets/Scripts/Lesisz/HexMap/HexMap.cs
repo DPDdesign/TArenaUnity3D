@@ -8,8 +8,10 @@ using UnityEngine.SceneManagement;
 using static PanelArmii;
 using HPath;
 using System.Linq;
-
-public class HexMap : MonoBehaviour, IQPathWorld
+using Photon.Pun;
+using Photon.Realtime;
+using Hashtable = ExitGames.Client.Photon.Hashtable;
+public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
 {
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
     public GameObject HexPrefab;
@@ -29,9 +31,139 @@ public class HexMap : MonoBehaviour, IQPathWorld
     private Dictionary<GameObject, HexClass> gameObjectToHexMap;
     public bool isTraped = false;
     public string TypeOfTrap = "";
+    public PlayerP playerPrefab;
+    public PlayerP LocalPlayer;
+    public PanelArmii.BuildG buildG1, buildG2;
     GameObject bullet;
+    public bool isCreated=false;
+    bool ready = false;
+    private static HexMap instance;
+
+    public static HexMap Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                instance = FindObjectOfType<HexMap>();
+            }
+
+            return instance;
+        }
+    }
     void Start()
     {
+        buildG1 = new BuildG();
+        buildG2 = new BuildG();
+       if ( PhotonNetwork.CurrentRoom.GetPlayer(1).IsMasterClient)
+        {
+            
+            TeamClass Team = new TeamClass();
+            Hashtable t = new Hashtable();
+            Team.ThisTeamNO = 0;
+            Team.WczytajPlik();
+            //
+
+            //         
+            //       
+            //         t.Add("Team1U", Team.buildG.Units);
+            //         int i = 0;
+            //         foreach (string units in Team.buildG.Units)
+            //         {
+            //             t.Add("Team1U" + i, units);
+            //             i++;
+            //         }
+            //         i = 0;
+            //         t.Add("Team1NU", Team.buildG.NoUnits);
+            //         foreach (int units in Team.buildG.NoUnits)
+            //         {
+            //             t.Add("Team1NU" + i, units);
+            //             i++;
+            //         }
+            buildG1 = Team.buildG;
+            Team.ThisTeamNO = 1;
+            Team.WczytajPlik();
+ //         t.Add("Team2U", Team.buildG.Units);
+ //         foreach (string units in Team.buildG.Units)
+ //         {
+ //             
+ //             t.Add("Team2U" + i, units);
+ //             i++;
+  //         }
+ //         i = 0;
+ //         t.Add("Team2NU", Team.buildG.NoUnits);
+ //        foreach (int units in Team.buildG.NoUnits)
+   //        {
+ //           t.Add("Team2NU" +i, units);
+  //            i++;
+  //        }
+            buildG2 = Team.buildG;
+         //   PhotonNetwork.CurrentRoom.GetPlayer(1).SetCustomProperties(t);
+        }
+        else
+        {
+
+            photonView.RPC("READY", RpcTarget.All, new object[] { true });
+        }
+        if (PhotonNetwork.CurrentRoom.PlayerCount > 1 )
+        {
+          //  ready = true;
+         /*
+         var hashtable = PhotonNetwork.LocalPlayer.CustomProperties;
+
+            for (int i = 0; i < 7; i++) {
+                buildG1.NoUnits[i] = (int)PhotonNetwork.LocalPlayer.CustomProperties["Team1NU"+i];
+                buildG1.Units[i]= (string)PhotonNetwork.LocalPlayer.CustomProperties["Team1U"+i];
+                buildG2.NoUnits[i] = (int)PhotonNetwork.LocalPlayer.CustomProperties["Team2NU"+i];
+                buildG2.Units[i] = (string)PhotonNetwork.LocalPlayer.CustomProperties["Team2U"+i];
+            }
+          */
+         //   Instance.CreateWorld();
+        }
+
+
+    }
+    [PunRPC]
+    void InitilizeMyPlayerRPC(BuildG toShare, BuildG toShare2)
+    {
+        buildG1 = toShare;
+        Debug.LogError(buildG1.NazwaBohatera);
+        buildG2 = toShare2;
+
+    }
+    [PunRPC]
+    void READY(bool read)
+    {
+        ready = read;
+    }
+    [PunRPC]
+    void ListsToSave(List<string> bg1, List<string> bg2, List<int> bg1i, List<int> bg2i)
+    {
+        buildG1.Units = bg1;
+        buildG1.NoUnits = bg1i;
+
+        buildG2.Units = bg2;
+        buildG2.NoUnits = bg2i;
+        ready = true;
+        Debug.LogError(isCreated);
+        if (isCreated == false) CreateWorld();
+    }
+
+    public static Stream GenerateStreamFromString(string s)
+    {
+        var stream = new MemoryStream();
+        var writer = new StreamWriter(stream);
+        writer.Write(s);
+        writer.Flush();
+        stream.Position = 0;
+        return stream;
+    }
+    public void CreateWorld()
+    {
+        isCreated = true;
+        Debug.LogError("this");
+        // PlayerP.RefreshInstance(ref LocalPlayer, playerPrefab);
+        Debug.LogError("this");
         LoadArmy();
         GenerateMap();
         TeamClass team1 = new TeamClass();
@@ -42,24 +174,37 @@ public class HexMap : MonoBehaviour, IQPathWorld
         Teams.Add(team1);
         Teams.Add(team2);
 
-
+        team1.buildG = buildG1;
+        team2.buildG = buildG2;
         team1.GenerateTeam(this, PlayerPrefs.GetInt("YourArmy"), true);
         team2.GenerateTeam(this, PlayerPrefs.GetInt("EnemyArmy"), false);
         // GenerateToster(2,5, PlayerPrefs.GetInt("LewyToster"));
-
-
-
-
-
     }
-
-
     private void Update()
     {
+     
+        if(PhotonNetwork.LocalPlayer.IsMasterClient && ready==true)
+        {
+            photonView.RPC("ListsToSave", RpcTarget.All , new object[] { buildG1.Units, buildG2.Units, buildG1.NoUnits, buildG2.NoUnits });
+        
+        }
     
+        if (PhotonNetwork.CurrentRoom.PlayerCount > 1  || ready == true)
+        {
+         
+            ready = false;
+            if (isCreated == false) CreateWorld();
+        }
     }
 
-    
+    private void Awake()
+    {
+        if(!PhotonNetwork.IsConnected)
+        {
+            SceneManager.LoadScene("Log");
+            return;
+        }
+    }
     public void ThrowAxe(TosterHexUnit target, TosterHexUnit Shooter)
     {
         
@@ -710,6 +855,65 @@ public class HexMap : MonoBehaviour, IQPathWorld
 
         }
     }
+
+    public override void OnPlayerEnteredRoom(Player newPlayer)
+    {
+        if (newPlayer.IsMasterClient)
+        {
+            TeamClass Team = new TeamClass();
+            Hashtable t = new Hashtable();
+
+
+
+            Team.ThisTeamNO = 0;
+            Team.WczytajPlik();
+
+            t.Add("Team1U", Team.buildG.Units);
+            int i = 0;
+            foreach (string units in Team.buildG.Units)
+            {
+                t.Add("Team1U"+"i", units);
+                i++;
+            }
+            i = 0;
+            t.Add("Team1NU", Team.buildG.NoUnits);
+            foreach (int units in Team.buildG.NoUnits)
+            {
+                t.Add("Team1NU" + "i", units);
+                i++;
+            }
+            buildG1 = Team.buildG;
+            Team.ThisTeamNO = 1;
+            Team.WczytajPlik();
+            t.Add("Team2U", Team.buildG.Units);
+            foreach (string units in Team.buildG.Units)
+            {
+                t.Add("Team2U" + "i", units);
+                i++;
+            }
+            i = 0;
+            t.Add("Team2NU", Team.buildG.NoUnits);
+            foreach (int units in Team.buildG.NoUnits)
+            {
+                t.Add("Team2NU" + "i", units);
+                i++;
+            }
+            buildG2 = Team.buildG;
+               newPlayer.SetCustomProperties(t);
+            //Debug.LogError(buildG1.NazwaBohatera);
+            //photonView.RPC("InitilizeMyPlayerRPC", newPlayer, new object[] { buildG1, buildG2 });
+          //  Debug.LogError("thishappen");
+        }
+        
+        Debug.LogError("test");
+       if(PhotonNetwork.CurrentRoom.PlayerCount >1)
+        {
+            Instance.CreateWorld();
+        }     
+    }
+   
+
+
 }
 
 
