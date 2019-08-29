@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Photon.Pun;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,8 +20,12 @@ public class UICanvas : MonoBehaviour
     {
         MC = FindObjectOfType<MouseControler>();
     }
-
-
+    
+    public void Disconnect()
+    {
+        PhotonNetwork.LeaveRoom();
+        PhotonNetwork.Disconnect();
+    }
     public void UpdateCHP(int chp)
     {
         

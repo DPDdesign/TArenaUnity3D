@@ -262,7 +262,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
 
             if (PhotonNetwork.CurrentRoom.PlayerCount > 1 && DidIGetOtherBuild == true) /// When can I get OtherBuild - when new player joins, he send it to us. If I am new player, I Ask for build.
             {
-                Debug.LogError("here");
+          //      Debug.LogError("here");
                 if (isCreated == false) CreateWorld();
             }
 
@@ -273,7 +273,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     {
         if(!PhotonNetwork.IsConnected)
         {
-            SceneManager.LoadScene("Log");
+            SceneManager.LoadScene("MainMenu_Scene");
             return;
         }
     }
