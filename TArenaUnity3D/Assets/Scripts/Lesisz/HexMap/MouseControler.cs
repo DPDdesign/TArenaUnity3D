@@ -112,7 +112,6 @@ public class MouseControler : MonoBehaviourPunCallbacks
         hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
 
 
-
         if (SelectedToster != null)
         {
             //Debug.LogError(SelectedToster.Name);
@@ -147,7 +146,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         {
             if (SelectedToster.Team == hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
             {
-
+            
                 return;
             }
             else
@@ -156,6 +155,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
                 return;
             }
         }
+           hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
         //Debug.LogError(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>().bounds);
         // outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
         outlineManagerMainToster.ChangeObj(hexMap.GetObjectFromHex(SelectedToster.Hex).GetComponentInChildren<Renderer>());//SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());
@@ -175,7 +175,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     void Taunted()
     {
         Debug.Log("HOW DARE YOU!?");
-        photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R, SelectedToster.whoTauntedMe.C, SelectedToster.whoTauntedMe.R });
+        photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R });
       //StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.whoTauntedMe.Hex,SelectedToster.whoTauntedMe));
     }
 
@@ -188,6 +188,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         }
         else
         {
+            Debug.LogError("i" + i + "k" + k + "r" + r + "f" + f);
             StartCoroutine(DoMoveAndAttackWithoutCheck(hexMap.GetHexAt(i, k), hexMap.GetHexAt(r, f).Tosters[0]));
         }
     }
@@ -225,7 +226,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
                     if (SelectedToster.IsPathAvaible(hexUnderMouse))
                     {
                         var temp = MouseToPart();
-                        photonView.RPC("StartCoroutineDoMoveAndAttack", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R, temp.C, temp.R });
+                        DoMoveAndAttack(hexUnderMouse.Tosters[0], hexMap.GetHexAt(temp.C, temp.R));
+                       // photonView.RPC("StartCoroutineDoMoveAndAttack", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R, temp.C, temp.R });
                     }                 //   StartCoroutineDoMoveAndAttack(hexUnderMouse.C, hexUnderMouse.R);
                      //   StartCoroutine(DoMoveAndAttack(hexUnderMouse.Tosters[0]));
                 }
@@ -256,9 +258,12 @@ public class MouseControler : MonoBehaviourPunCallbacks
     [PunRPC]
     void StartCoroutineDoMoveAndAttack(int i , int k, int r, int f)
     {
-        StartCoroutine(DoMoveAndAttack(hexMap.GetHexAt(i, k).Tosters[0], hexMap.GetHexAt(r, f)));
+       // StartCoroutine(DoMoveAndAttack(hexMap.GetHexAt(i, k).Tosters[0], hexMap.GetHexAt(r, f)));
 
     }
+
+
+   
     [PunRPC]
     void StartCoroutineDoMoves(int i, int k)
     {
@@ -346,7 +351,72 @@ public class MouseControler : MonoBehaviourPunCallbacks
 
     }
 
-    IEnumerator DoMoveAndAttack(TosterHexUnit toster, HexClass temp)
+
+
+    [PunRPC]
+    void DoMoveAndAttackA(int i, int k, int r, int f)
+    {
+        StartCoroutine(StartCoroutineDoMoveAndAttackA(i, k, r, f));
+
+    }
+    IEnumerator StartCoroutineDoMoveAndAttackA(int i, int k, int r, int f)
+    {
+        outlineManagerMainToster.RemoveOutline();
+        activeButtons = false;
+        TargetToster = hexMap.GetHexAt(i, k).Tosters[0];// hexUnderMouse.Tosters[0];
+        SelectedToster.move = true;
+        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+
+
+        //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
+        //   hexPath = SelectedToster.Pathing(temp);
+
+
+        SelectedToster.Pathing_func(hexMap.GetHexAt(r, f), false);
+        SelectedToster.Moved = true;
+
+        Update_CurrentFunc = BeforeNextTurn;
+        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        if (SelectedToster.Hex == hexMap.GetHexAt(r, f)) hexMap.GetHexAt(i, k).Tosters[0].AttackMe(SelectedToster);
+        CancelUpdateFunc();
+        shiftmode = false;
+
+    }
+
+    [PunRPC]
+    void DoMoveAndAttackB(int i, int k, int r, int f)
+    {
+        StartCoroutine(StartCoroutineDoMoveAndAttackB(i,k,r,f));
+
+    }
+
+
+    IEnumerator StartCoroutineDoMoveAndAttackB(int i, int k, int r, int f)
+    {
+        outlineManagerMainToster.RemoveOutline();
+        activeButtons = false;
+        TargetToster = hexMap.GetHexAt(i, k).Tosters[0];//hexUnderMouse.Tosters[0];
+        SelectedToster.move = true;
+        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+
+
+        //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
+        //   hexPath = SelectedToster.Pathing(temp);
+
+
+        SelectedToster.Pathing_func(hexMap.GetHexAt(r, f), false);
+        SelectedToster.Moved = true;
+
+        Update_CurrentFunc = BeforeNextTurn;
+        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        if (SelectedToster.Hex == hexMap.GetHexAt(r, f)) hexMap.GetHexAt(i, k).Tosters[0].AttackMe(SelectedToster);
+        CancelUpdateFunc();
+        shiftmode = false;
+    }
+
+    void DoMoveAndAttack(TosterHexUnit toster, HexClass temp)
     {
 
         
@@ -354,7 +424,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
         {
             if (temp != null && temp.Highlight == true)
             {
-
+                photonView.RPC("DoMoveAndAttackA", RpcTarget.All, new object[] { toster.Hex.C, toster.Hex.R, temp.C, temp.R });
+                /*
                 outlineManagerMainToster.RemoveOutline();
                 activeButtons = false;
                 TargetToster = toster;// hexUnderMouse.Tosters[0];
@@ -374,14 +445,15 @@ public class MouseControler : MonoBehaviourPunCallbacks
                 yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
                 if (SelectedToster.Hex == temp) toster.AttackMe(SelectedToster);
                 CancelUpdateFunc();
-                shiftmode = false;
+                shiftmode = false;*/
             }
         }
         else if (temp.Tosters[0] == SelectedToster)
         {
             if (temp != null && temp.Highlight == true)
             {
-
+                photonView.RPC("DoMoveAndAttackB", RpcTarget.All, new object[] { toster.Hex.C, toster.Hex.R, temp.C, temp.R });
+                /*
                 outlineManagerMainToster.RemoveOutline();
                 activeButtons = false;
                 TargetToster = toster;//hexUnderMouse.Tosters[0];
@@ -401,7 +473,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
                 yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
                 if (SelectedToster.Hex==temp) toster.AttackMe(SelectedToster);
                 CancelUpdateFunc();
-                shiftmode = false;
+                shiftmode = false;*/
             }
         }
      
@@ -429,10 +501,10 @@ public class MouseControler : MonoBehaviourPunCallbacks
             yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
         if (toster != null)
         {
+            Debug.LogError(toster.Name);
 
-
-            if (SelectedToster.Hex == temp) toster.AttackMe(SelectedToster);
-        }
+            if (SelectedToster.Hex == temp) { toster.AttackMe(SelectedToster);   Debug.LogError(toster.Name); }
+            }
             CancelUpdateFunc();
             shiftmode = false;
         
