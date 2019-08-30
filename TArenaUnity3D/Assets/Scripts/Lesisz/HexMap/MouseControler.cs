@@ -152,12 +152,13 @@ public class MouseControler : MonoBehaviourPunCallbacks
         {
             if (SelectedToster.Team == hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
             {
-            
+                Update_CurrentFunc = WaitinForYourTurn;
                 return;
             }
             else
                 if (SelectedToster.Team == hexMap.Teams[0] && !PhotonNetwork.LocalPlayer.IsMasterClient)
             {
+                Update_CurrentFunc = WaitinForYourTurn;
                 return;
             }
         }
@@ -199,6 +200,85 @@ public class MouseControler : MonoBehaviourPunCallbacks
         }
     }
     // TRYB RUCHU JEDNOSTKI
+
+    void WaitinForYourTurn()
+    {
+        activeButtons = false;
+        hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
+        Outlining();
+        shiftctrlmode();
+        ScrollLook();
+        //Heal();
+       
+        if (Input.GetMouseButtonDown(1) && hexUnderMouse.Tosters.Count > 0)
+        {
+            Update_CurrentFunc = ShowInfo;
+            ShowInfo();
+        } //ShowStats     //hexUnderMouse.Highlight - Dostpeny HEX 
+
+   
+
+
+        if (SelectedToster != null)
+        {
+            //Debug.LogError(SelectedToster.Name);
+            outlineManagerMainToster.RemoveOutline();
+        }
+
+        if (TM.isAnyoneAlive() == 2)
+        {
+            canvas.EndPanel.SetActive(true);
+            canvas.EndText.text = "Left Player Win! ";
+        }
+        else
+        if (TM.isAnyoneAlive() == 1)
+        {
+            canvas.EndPanel.SetActive(true);
+            canvas.EndText.text = "Right Player Win! ";
+        }
+
+        SelectedToster = TM.AskWhosTurn();
+        SelectedToster.isSelected = true;
+        if (isAiOn == true)
+        {
+            if (SelectedToster.Team == hexMap.Teams[1])
+            {
+
+                AI.AskAIwhattodo();
+                return;
+            }
+        }
+
+        if (isMulti == true)
+        {
+            if (SelectedToster.Team == hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
+            {
+
+                return;
+            }
+            else
+                if (SelectedToster.Team == hexMap.Teams[0] && !PhotonNetwork.LocalPlayer.IsMasterClient)
+            {
+                return;
+            }
+        }
+        hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
+        //Debug.LogError(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>().bounds);
+        // outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
+        outlineManagerMainToster.ChangeObj(hexMap.GetObjectFromHex(SelectedToster.Hex).GetComponentInChildren<Renderer>());//SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());
+        outlineManagerMainToster.AddMainOutlineWithReset();
+
+        hexUnderMouse = SelectedToster.Hex;
+        if (SelectedToster.Taunt == true)
+        {
+            Update_CurrentFunc = Taunted;
+            return;
+        }
+        SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
+        Update_CurrentFunc = SelectTosterMovement;
+        return;
+
+    }
     void SelectTosterMovement()
     {
         activeButtons = true;
@@ -255,12 +335,26 @@ public class MouseControler : MonoBehaviourPunCallbacks
     [PunRPC]
     void Shot(int i, int k)
     {
-        hexMap.GetHexAt(i,k).Tosters[0].ShootME(SelectedToster);
+        hexMap.GetHexAt(i, k).Tosters[0].ShootME(SelectedToster);
         SelectedToster.Moved = true;
         CancelUpdateFunc();
 
     }
 
+    [PunRPC]
+    void JustDmg(int i, int k, int mod  )
+    {
+
+        SelectedToster.SpecialDMGModificator = mod;
+        hexMap.GetHexAt(i, k).Tosters[0].DealMeDMG(SelectedToster);
+        SelectedToster.SpecialDMGModificator = 0;
+    }
+    [PunRPC]
+    void JustSetFalse()
+    {
+        castManager.SetFalse();
+
+    }
     [PunRPC]
     void StartCoroutineDoMoveAndAttack(int i , int k, int r, int f)
     {
@@ -269,7 +363,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     }
 
 
-   
+
     [PunRPC]
     void StartCoroutineDoMoves(int i, int k)
     {

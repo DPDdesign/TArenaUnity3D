@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-public class CastManager : MonoBehaviour
+public class CastManager : MonoBehaviourPunCallbacks
 {
     public MouseControler mouseControler;
     int kochamizabelke = 0;
@@ -60,7 +60,7 @@ public class CastManager : MonoBehaviour
         aoeradius = 0;
         Global = false;
         SingleTarget = false;
-    MouseControler.SkillState = false;
+        MouseControler.SkillState = false;
         tempToster = null;
         cooldown = 0;
         rush = false;
@@ -424,23 +424,44 @@ public class CastManager : MonoBehaviour
     {
         if (getHexUM().Highlight==true)
         {
-            HexClass[] hexarray = getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), 1);
-            SelectedT().SpecialDMGModificator = 60;
-            foreach (HexClass h in hexarray)
+            photonView.RPC("slash", RpcTarget.All, new object[] { });
+        }
+    }
+    [PunRPC]
+
+    public void slash()
+    {
+
+        HexClass[] hexarray = getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), 1);
+       // SelectedT().SpecialDMGModificator = 60;
+        Debug.LogError(SelectedT().Name);
+        if (SelectedT().Team == getHexUM().hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
+        {
+
+        }
+        else
+                if (SelectedT().Team == getHexUM().hexMap.Teams[0] && !PhotonNetwork.LocalPlayer.IsMasterClient)
+        {
+            return;
+        }
+        else
+        foreach (HexClass h in hexarray)
+        {
+
+            if (h.Highlight == true)
             {
-                if (h.Highlight==true)
+                if (h.Tosters.Count > 0 && h.Tosters[0] != SelectedT())
                 {
-                    if (h.Tosters.Count>0 && h.Tosters[0]!=SelectedT())
-                    {
-                        h.Tosters[0].DealMeDMG(SelectedT());
-                    }
+                    mouseControler.photonView.RPC("JustDmg", RpcTarget.All, new object[] { h.C, h.R, 60 });
+
+
                 }
             }
-            SelectedT().SpecialDMGModificator = 0;
-            SelectedT().CounterAttackAvaible = false;
-            SelectedT().CounterAttacks = 0;
-            SetFalse();
         }
+     //   SelectedT().SpecialDMGModificator = 0;
+        SelectedT().CounterAttackAvaible = false;
+        SelectedT().CounterAttacks = 0;
+        SetFalse();
     }
     public void SlashM()
     {
