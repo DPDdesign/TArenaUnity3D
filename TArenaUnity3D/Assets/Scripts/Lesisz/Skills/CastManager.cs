@@ -477,13 +477,26 @@ public class CastManager : MonoBehaviourPunCallbacks
     public void Hate() 
     {
         if (getHexUM().Highlight==true)
-        {
+        {/*
             SelectedT().AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, "Hate", false);
             getHexUM().Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, "Hate", false);
             mouseControler.SetCD();
             SetFalse();
+            */
+            photonView.RPC("hate", RpcTarget.All, new object[] { });
         }
     }
+
+    [PunRPC]
+
+    public void hate()
+    {
+        SelectedT().AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Hate", false);
+        getHexUM().Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Hate", false);
+        mouseControler.SetCD();
+        SetFalse();
+    }
+
     public void HateM()
     {
         isTurn = false;
