@@ -808,7 +808,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         List<HexClass> HexesToHighlight = new List<HexClass>();
         if (SelectedToster.teamN==true) // true znaczy ze jest z teamu po lewej stronie
         {
-            for (int i = 1; i < 5- SelectedToster.Hex.C; i++)
+            for (int i = 1; i < 15- SelectedToster.Hex.C; i++)
             {
              
                 

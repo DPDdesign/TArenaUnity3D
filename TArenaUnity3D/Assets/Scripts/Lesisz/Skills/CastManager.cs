@@ -273,39 +273,47 @@ public class CastManager : MonoBehaviourPunCallbacks
     #region Skill 2 - Rush
     public void Rush() //Biegnie przed siebie atakuje pierwszego napotkanego przeciwnika ??? +1 do ataku, traci 8 % jednostek, nie może zostać użyte poniżej 30.
     {
- 
 
+        Debug.Log("this");
         if (getHexUM() != null && getHexUM().Highlight == true)
         {
-            if (getHexUM().Tosters.Count > 0)
+            photonView.RPC("rrush", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R});
+        }
+
+    }
+
+    [PunRPC]
+    public void rrush(int i, int j)
+    {
+
+        if (getHexUM().Tosters.Count > 0)
+        {
+            SelectedT().Amount = Convert.ToInt32(SelectedT().Amount * 0.92);
+            SelectedT().AddNewTimeSpell(1, null, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rush", true);
+            HexClass temp;
+
+            if (SelectedT().teamN == true)
             {
-                SelectedT().Amount = Convert.ToInt32(SelectedT().Amount * 0.92);
-                SelectedT().AddNewTimeSpell(1, null, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rush", true);
-                HexClass temp;
-                if (SelectedT().teamN ==true)
-                {
-                    temp = getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R);
-                }
-                else
-                {
-                  
-                    
-                   temp = getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R);
-                    
-                }
-                Debug.Log("this");
-           //     mouseControler.photonView.RPC.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(temp, getHexUM().Tosters[0]));
-                mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { temp.C, temp.R, getHexUM().C, getHexUM().R });
+                temp = getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R);
             }
             else
             {
 
-                mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R, -5, -5 });
-              //  mouseControler.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(getHexUM(), null));
-                SetFalse();
-            }
-        }
 
+                temp = getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R);
+
+            }
+  
+            //     mouseControler.photonView.RPC.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(temp, getHexUM().Tosters[0]));
+            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { temp.C, temp.R, getHexUM().C, getHexUM().R });
+        }
+        else
+        {
+
+            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R, -5, -5 });
+            //  mouseControler.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(getHexUM(), null));
+            SetFalse();
+        }
     }
     public void RushM()
     {
@@ -938,11 +946,18 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         if(getHexUM().Highlight==true)
         {
-            getHexUM().Tosters[0].AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-20, "Tough_Skin", false);
-            mouseControler.SetCD();
-            SetFalse();
+            photonView.RPC("tough_Skin", RpcTarget.All, new object[] { });
         }
         
+    }
+
+    [PunRPC]
+
+    public void tough_Skin()
+    {
+        getHexUM().Tosters[0].AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -20, "Tough_Skin", false);
+        mouseControler.SetCD();
+        SetFalse();
     }
     public void Tough_SkinM()
     {
@@ -989,21 +1004,29 @@ public class CastManager : MonoBehaviourPunCallbacks
     #region Cleanse  //TODO: 
     public void Cleanse()
     {
-        List<string> SpellsToRemove = new List<string>(new string[] { "Slow", "Insult" });
+        //List<string> SpellsToRemove = new List<string>(new string[] { "Slow", "Insult" });
         if (getHexUM().Tosters.Count > 0 && getHexUM().Highlight == true)
         {
-            foreach (string s in SpellsToRemove)
+            photonView.RPC("cleanse", RpcTarget.All, new object[] { });
+        }
+    }
+
+    [PunRPC]
+
+    public void cleanse()
+    {
+        List<string> SpellsToRemove = new List<string>(new string[] { "Slow", "Insult" });
+        foreach (string s in SpellsToRemove)
+        {
+            TimeSpells.SpellOverTime spell = getHexUM().Tosters[0].AskForSpell(s);
+
+            if (spell != null)
             {
-                TimeSpells.SpellOverTime spell = getHexUM().Tosters[0].AskForSpell(s);
-              
-                if (spell!= null)
-                {
-                    Debug.Log(spell.nameofspell);
-                    getHexUM().Tosters[0].SetOver(spell);
-                    SelectedT().AddNewTimeSpell(spell);
-                  
-                
-                }
+                Debug.Log(spell.nameofspell);
+                getHexUM().Tosters[0].SetOver(spell);
+                SelectedT().AddNewTimeSpell(spell);
+
+
             }
         }
     }
@@ -1188,18 +1211,194 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     #endregion
     #endregion
-    #region StareSkille/Jednostki
-    #region Topornik skills (TIER III)
-
-    #region Topornik_Skill1 - Zadaje 1 dmg per unit wszystkim dookoła
-
 
     #endregion
+
+
+
+    #region Mage/Golems skills:
+    #region Wisp  skills (T1) Trapy...
+    #region Skill 1 - Blind_by_light    
+
+    public void Blind_by_light()
+    {
+
+    }
+    public void Blind_by_lightM()
+    {
+    
+    }
+
     #endregion
+    #region Skill 2 - Unstoppable_Light
+    public void Unstoppable_Light()
+    {
+    
+
+
+    }
+    public void Unstoppable_LightM()
+    {
+    
+    }
+
+    #endregion
+
+    #endregion
+    #region StoneGolem  skills (T2)
+    #region Tough_Skin 
+    public void Stone_Throw()
+    {
+     
+
+    }
+
+    [PunRPC]
+
+    public void stone_ThrowM()
+    {
+
+    }
+    public void Stone_ThrowM()
+    {
+
+    }
+    #endregion
+    #region Defence_Ritual 
+    public void Stone_Skin()
+    {
+   
+    }
+    public void Stone_SkinM()
+    {
+    
+    }
+
+    #endregion
+
+    #region Cleanse  //TODO: 
+    public void Cleanse()
+    {
+        //List<string> SpellsToRemove = new List<string>(new string[] { "Slow", "Insult" });
+        if (getHexUM().Tosters.Count > 0 && getHexUM().Highlight == true)
+        {
+            photonView.RPC("cleanse", RpcTarget.All, new object[] { });
+        }
+    }
+
+    [PunRPC]
+
+    public void cleanse()
+    {
+        List<string> SpellsToRemove = new List<string>(new string[] { "Slow", "Insult" });
+        foreach (string s in SpellsToRemove)
+        {
+            TimeSpells.SpellOverTime spell = getHexUM().Tosters[0].AskForSpell(s);
+
+            if (spell != null)
+            {
+                Debug.Log(spell.nameofspell);
+                getHexUM().Tosters[0].SetOver(spell);
+                SelectedT().AddNewTimeSpell(spell);
+
+
+            }
+        }
+    }
+    public void CleanseM()
+    {
+
+
+        unselectaround = true;
+        Rangeselectingfriend = true;
+        isTurn = true;
+        /*
+         *
+         * 
+         *  może być różnie, narazie dla Ciela
+         * 
+         */
+    }
+    #endregion
+    #endregion
+    #region FireElemental  (T3)
+    #region Fire_Movement  //Cielu
+
+
+
+
+
+    public void Fire_Movement()
+    {
+     
+    }
+    public void Fire_MovementM()
+    {
+
+    }
+    #endregion
+    #region Fire_ball 
+
+    public void Fire_ball()
+    {
+       
+    }
+    public void Fire_ballM()
+    {
+       
+    }
+    #endregion
+    #region Fire_Skin //Lesisz
+
+    public void Fire_Skin()
+    {
+
+    }
+    public void Fire_SkinM()
+    {
+
+    }
+    #endregion
+    #endregion
+    #region FleshGolem  (T4)
+    #region Heavy_Fists  
+
+    public void Heavy_Fists()
+    {
+
+
+    }
+    public void Heavy_FistsM()
+    {
+      
+    }
+    #endregion
+    #region Shapeshift   //Cielu
+
+    public void Terrifying_Presence()
+    {
+      
+    }
+    public void Terrifying_PresenceM()
+    {
+    
+    }
+    #endregion
+    #region Rotting
+
+    public void Rotting()
+    {
+   
+    }
+    public void RottingM()
+    {
+    
+
+    }
     #endregion
     #endregion
 
-
+    #endregion
 
     #region UNIT STRUCUTRE
     /*
