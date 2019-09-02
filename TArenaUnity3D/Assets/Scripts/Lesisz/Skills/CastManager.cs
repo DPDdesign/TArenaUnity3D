@@ -1150,6 +1150,13 @@ public class CastManager : MonoBehaviourPunCallbacks
             }
             else { Debug.Log("No Tosters Hit"); }
         }
+        Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+        if (d != null)
+        {
+            // Debug.Log(mouseControler.SelectedSpellid-1);
+            d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+
+        }
         SetFalse();
     }
     public void Toxic_FumeM()
@@ -1167,7 +1174,15 @@ public class CastManager : MonoBehaviourPunCallbacks
         int temp = SelectedT().MovmentSpeed;
         SelectedT().MovmentSpeed = SelectedT().Initiative;
         SelectedT().Initiative = temp;
+        Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+        if (d != null)
+        {
+            // Debug.Log(mouseControler.SelectedSpellid-1);
+            d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+
+        }
         SetFalse();
+
     }
     public void ShapeshiftM()
     {
@@ -1182,9 +1197,52 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         if (getHexUM().Tosters.Count>0)
         {
+            int tC, tR;
+            TosterHexUnit t = SelectedT();
+            tC = SelectedT().Hex.C - getHexUM().Tosters[0].Hex.C;
+            tR = t.Hex.R - getHexUM().Tosters[0].Hex.R;
+            if (tC == 0 && tR == 1)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
+            }
+            if (tC == 0 && tR == -1)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
+            }
+            if (tC == -1 && tR == 1)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
+
+            }
+            if (tC == 1 && tR == -1)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
+
+            }
+            if (tC == 1 && tR == 0)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
+            }
+            if (tC == -1 && tR == 0)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
+            }
             if (getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2).Tosters.Count == 0)
             {
                 getHexUM().Tosters[0].SetHex(getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2));
+                Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+                if (d != null)
+                {
+                    // Debug.Log(mouseControler.SelectedSpellid-1);
+                    d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+
+                }
                 SetFalse();
                 return;
             }
@@ -1196,6 +1254,13 @@ public class CastManager : MonoBehaviourPunCallbacks
                 if (h!= null && h.Tosters.Count==0)
                 {
                     getHexUM().Tosters[0].SetHex(h);
+                    Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+                    if (d != null)
+                    {
+                        // Debug.Log(mouseControler.SelectedSpellid-1);
+                        d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+
+                    }
                     SetFalse();
                     return;
                 }
@@ -1203,6 +1268,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             }
             Debug.Log("All Hexes full!!");
         }
+
     }
     public void Long_LickM()
     {
