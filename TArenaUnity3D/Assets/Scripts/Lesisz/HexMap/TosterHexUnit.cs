@@ -738,7 +738,9 @@ public class TosterHexUnit : IQPathUnit
 
             t.DealMePURE(Convert.ToInt32(dmgdouble));
 
-             d = this.tosterView.GetComponentInChildren<Animator>();
+            
+            d = this.tosterView.GetComponentInChildren<Animator>();
+
             if (d != null)
             {
                 q = this.tosterView.transform.rotation;
@@ -786,9 +788,11 @@ public class TosterHexUnit : IQPathUnit
        //    this.tosterView.transform.rotation = q;
             }
         }
+      
         d = t.tosterView.GetComponentInChildren<Animator>();
         if (d != null)
         {
+           
             q = this.tosterView.transform.rotation;
             tC = t.Hex.C - this.Hex.C;
             tR = t.Hex.R - this.Hex.R;
