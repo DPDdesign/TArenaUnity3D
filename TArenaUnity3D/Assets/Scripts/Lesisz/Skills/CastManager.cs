@@ -50,6 +50,7 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void SetFalse()
     {
+       
         RangeSelectingenemy = false;
         Rangeselectingfriend = false;
         unselectaround = false;
@@ -521,6 +522,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     public void Cold_BloodM()
     {
+        Debug.Log("Ta umiejętność jest pasywna");
         SetFalse();
     }
     #endregion
@@ -584,6 +586,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     public void MassochismM()
     {
+        Debug.Log("Ta umiejętność jest pasywna");
         SetFalse();
     }
     #endregion
@@ -1222,11 +1225,44 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void Blind_by_light()
     {
+        int myhp = (SelectedT().Amount - 1) * SelectedT().GetHP() + SelectedT().TempHP; 
+
+        foreach ( TosterHexUnit toster in SelectedT().Hex.hexMap.Teams[0].Tosters)
+        {
+            int targethp = (toster.Amount - 1) * toster.GetHP() + toster.TempHP;
+            if (myhp > targethp)
+            { 
+                if(toster!=SelectedT())
+                toster.AddNewTimeSpell(1, toster, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , "Blind", false);
+            }
+        }
+        foreach (TosterHexUnit toster in SelectedT().Hex.hexMap.Teams[1].Tosters)
+        {
+            int targethp = (toster.Amount - 1) * toster.GetHP() + toster.TempHP;
+            if (myhp > targethp)
+            {
+                if (toster != SelectedT())
+                    toster.AddNewTimeSpell(1, toster, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Blind", false);
+            }
+        }
+        Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+        if (d != null)
+        {
+            // Debug.Log(mouseControler.SelectedSpellid-1);
+            d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+
+        }
+
+        SetFalse();
 
     }
     public void Blind_by_lightM()
     {
-    
+        isTurn = true;
+
+        unselectaround = true;
+        Global = true;
+
     }
 
     #endregion
@@ -1236,90 +1272,102 @@ public class CastManager : MonoBehaviourPunCallbacks
     
 
 
-    }
+    } //Passive
     public void Unstoppable_LightM()
     {
-    
+        Debug.Log("Ta umiejętność jest pasywna");
+        SetFalse();
     }
 
     #endregion
 
     #endregion
     #region StoneGolem  skills (T2)
-    #region Tough_Skin 
+    #region Stone_Throw 
     public void Stone_Throw()
     {
-     
+        if (getHexUM().Tosters.Count > 0)
+        {
+            int newamount = SelectedT().Amount / 2;
+          
+            HexClass[] hexes = getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), 1);
+            foreach (HexClass h in hexes)
+            {
 
+                if (h != null && h.Tosters.Count == 0 && h!=getHexUM())
+                {
+
+                    TosterHexUnit newunit = SelectedT().Team.AddNewUnit(SelectedT().Name, newamount);
+                    SelectedT().Amount = SelectedT().Amount - newamount;
+                    SelectedT().SetTextAmount();
+                    getHexUM().Tosters[0].DealMeDMGDef(10, SelectedT());
+                    newunit.teamN = SelectedT().teamN;
+                    newunit.SetTosterPrefab(getHexUM().hexMap);
+                    newunit.SetTextAmount();
+                    getHexUM().hexMap.GenerateToster(h.C, h.R, newunit);
+                    newunit.DealMeDMGDef(10, SelectedT());
+                    SetFalse();
+              
+                }
+
+            }
+        }
+        else
+        {
+            int newamount = SelectedT().Amount / 2;
+            TosterHexUnit newunit = SelectedT().Team.AddNewUnit(SelectedT().Name, newamount);
+            SelectedT().Amount = SelectedT().Amount - newamount;
+            SelectedT().SetTextAmount();
+            newunit.teamN = SelectedT().teamN;
+            newunit.SetTosterPrefab(getHexUM().hexMap);
+            newunit.SetTextAmount();
+            getHexUM().hexMap.GenerateToster(getHexUM().C, getHexUM().R, newunit);
+            newunit.DealMeDMGDef(10, SelectedT());
+            SetFalse();
+        }
+        Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+        if (d != null)
+        {
+            // Debug.Log(mouseControler.SelectedSpellid-1);
+            d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+
+        }
     }
 
     [PunRPC]
 
-    public void stone_ThrowM()
+    public void stone_Throw()
     {
-
     }
     public void Stone_ThrowM()
     {
 
+        if (SelectedT().Amount==1)
+        {
+            Debug.LogError("Nie można użyc tej umiejętności, za mało golemów");
+            SetFalse();
+        }
+        isTurn = true;
+
+        unselectaround = true;
+        Global = true;
+        SingleTarget = true;
     }
     #endregion
     #region Defence_Ritual 
-    public void Stone_Skin()
+    public void Stone_Skin() //passive
     {
    
     }
     public void Stone_SkinM()
     {
-    
+        Debug.Log("Ta umiejętność jest pasywna");
+        SetFalse();
     }
 
     #endregion
 
-    #region Cleanse  //TODO: 
-    public void Cleanse()
-    {
-        //List<string> SpellsToRemove = new List<string>(new string[] { "Slow", "Insult" });
-        if (getHexUM().Tosters.Count > 0 && getHexUM().Highlight == true)
-        {
-            photonView.RPC("cleanse", RpcTarget.All, new object[] { });
-        }
-    }
 
-    [PunRPC]
-
-    public void cleanse()
-    {
-        List<string> SpellsToRemove = new List<string>(new string[] { "Slow", "Insult" });
-        foreach (string s in SpellsToRemove)
-        {
-            TimeSpells.SpellOverTime spell = getHexUM().Tosters[0].AskForSpell(s);
-
-            if (spell != null)
-            {
-                Debug.Log(spell.nameofspell);
-                getHexUM().Tosters[0].SetOver(spell);
-                SelectedT().AddNewTimeSpell(spell);
-
-
-            }
-        }
-    }
-    public void CleanseM()
-    {
-
-
-        unselectaround = true;
-        Rangeselectingfriend = true;
-        isTurn = true;
-        /*
-         *
-         * 
-         *  może być różnie, narazie dla Ciela
-         * 
-         */
-    }
-    #endregion
     #endregion
     #region FireElemental  (T3)
     #region Fire_Movement  //Cielu

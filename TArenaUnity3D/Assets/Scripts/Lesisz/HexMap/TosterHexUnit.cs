@@ -19,6 +19,7 @@ public class TosterHexUnit : IQPathUnit
 
     CastManager cm;
     List<SpellOverTime> SpellsGoingOn;
+    public int FlatDMGReduce = 0;
     public int SpecialHP = 0;
     public int SpecialAtt = 0;
     public int SpecialPUREDMG = 0;
@@ -31,6 +32,7 @@ public class TosterHexUnit : IQPathUnit
     public int SpecialResistance = 0; // +20 oznacza że otrzymany dmg zostanie zmniejszony o 20%
     public int SpecialDMGModificator = 0;// +20 oznacza że zadawany dmg zostanie zmniejszony o 20%
     public bool isRange = false;
+    public double DefensePenetration = 0; 
     ///stats
     [XmlAttribute("Name")]
     public string Name = "NoName";
@@ -286,6 +288,57 @@ public class TosterHexUnit : IQPathUnit
             OnTosterMoved(oldHex, hex);
         }
         this.SetTextAmount();
+        if (this.tosterView != null)
+        {
+            Animator d = this.tosterView.GetComponentInChildren<Animator>();
+            if (d != null)
+            {
+                Debug.Log(d);
+                d.Play("Move");
+
+            }
+        }
+        if (this.tosterView != null)
+        {
+            int tC, tR;
+            tC = oldHex.C - Hex.C;
+            tR = oldHex.R - Hex.R;
+            if (tC == 0 && tR == 1)
+            {
+
+                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
+            }
+            if (tC == 0 && tR == -1)
+            {
+
+                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
+            }
+            if (tC == -1 && tR == 1)
+            {
+
+                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
+
+            }
+            if (tC == 1 && tR == -1)
+            {
+
+                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
+
+            }
+            if (tC == 1 && tR == 0)
+            {
+
+                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
+            }
+            if (tC == -1 && tR == 0)
+            {
+
+                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
+            }
+
+        }
+
+
         this.Team.HexesUnderTeam.Add(Hex);
     }
 
@@ -307,7 +360,7 @@ public class TosterHexUnit : IQPathUnit
     {
         return new Vector3(
             vec.x,
-            vec.y + G.transform.lossyScale.y / 2,
+            vec.y,// + G.transform.lossyScale.y / 2,
             vec.z
             );
     }
@@ -469,7 +522,7 @@ public class TosterHexUnit : IQPathUnit
 
     public void StartAutocast()
     {
-        ListOfAutocasts = new List<string>(new string[] { "Massochism", "Cold_Blood" });
+        ListOfAutocasts = new List<string>(new string[] { "Massochism", "Cold_Blood", "Stone_Skin", "Unstoppable_Light" });
 
 
         foreach (string s in skillstrings)
@@ -557,6 +610,7 @@ public class TosterHexUnit : IQPathUnit
    
         double a = Convert.ToDouble(ai);
         double d = Convert.ToDouble(di);
+        d = d * (1.0 - attacker.DefensePenetration);
         double ADD = a - d;
 
         if (ADD == 0) M = 1;
@@ -578,7 +632,56 @@ public class TosterHexUnit : IQPathUnit
         {
             DMGf += DMGf / 2;
         }
+        DMGf -= FlatDMGReduce * attacker.Amount;
+        if (DMGf < 0)
+        {
+            DMGf = 0;
+        }
+        return Math.Ceiling(DMGf);
 
+    }
+    public double ReCalculateDamageBetweenTosters(TosterHexUnit attacker, TosterHexUnit defender, double modifier, int dmgtodo)
+    {
+
+        bool isReduced = false;
+
+        int ai = attacker.GetAtt();
+        int di = defender.GetDef();
+        double M = 0;
+   
+        double a = Convert.ToDouble(ai);
+        double d = Convert.ToDouble(di);
+        Debug.Log(d);
+        d = d * (1.0-attacker.DefensePenetration);
+        Debug.Log(d);
+        double ADD = a - d;
+
+        if (ADD == 0) M = 1;
+        else if (ADD > 0) M = 0.04;
+        else if (ADD < 0) M = 0.014;
+
+
+        double R5 = isReduced ? 0.5 : 0;
+
+        double DMGb = dmgtodo * attacker.Amount * (1 + (ADD * M)) * (((100.0 - attacker.SpecialDMGModificator) / 100.0)); ;
+
+
+
+        double DMGf = DMGb * (((100.0 - defender.SpecialResistance) / 100.0));
+        //  Debug.Log("Toster name: " + attacker.Name + " attacks for: " + Math.Ceiling(DMGf));
+        DMGf += attacker.SpecialPUREDMG;
+        attacker.SpecialPUREDMG = 0;
+        if (defender == attacker.HATED)
+        {
+            DMGf += DMGf / 2;
+        }
+        Debug.Log(DMGf);
+        DMGf -= FlatDMGReduce * attacker.Amount;
+        if (DMGf<0)
+        {
+            DMGf = 0;
+        }
+          Debug.Log(DMGf);
         return Math.Ceiling(DMGf);
 
     }
@@ -615,9 +718,14 @@ public class TosterHexUnit : IQPathUnit
     }
     public void AttackMe(TosterHexUnit t)
     {
-      //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
-        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-       this.DealMePURE(Convert.ToInt32(dmgdouble));
+          Quaternion _lookRotation;
+     Vector3 _direction;
+    //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
+    double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        int tC, tR;
+
+        Quaternion q;
+        this.DealMePURE(Convert.ToInt32(dmgdouble));
 
         Animator d = null;
         if (CounterAttackAvaible == true)
@@ -633,17 +741,94 @@ public class TosterHexUnit : IQPathUnit
              d = this.tosterView.GetComponentInChildren<Animator>();
             if (d != null)
             {
+                q = this.tosterView.transform.rotation;
+
+                tC = t.Hex.C - this.Hex.C;
+                tR = t.Hex.R - this.Hex.R;
+                if (tC == 0 && tR == 1)
+                {
+
+                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
+                }
+                if (tC == 0 && tR == -1)
+                {
+
+                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
+                }
+                if (tC == -1 && tR == 1)
+                {
+
+                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
+
+                }
+                if (tC == 1 && tR == -1)
+                {
+
+                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
+
+                }
+                if (tC == 1 && tR == 0)
+                {
+
+                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
+                }
+                if (tC == -1 && tR == 0)
+                {
+
+                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
+                }
+
+                Debug.Log("t.C: " + t.Hex.C + "  t.R: " + t.Hex.R);
+                Debug.Log("this.C: " + this.Hex.C + "  this.R: " + this.Hex.R);
                 Debug.Log(d);
                 d.Play("Atak");
 
+       //    this.tosterView.transform.rotation = q;
             }
         }
         d = t.tosterView.GetComponentInChildren<Animator>();
         if (d != null)
         {
+            q = this.tosterView.transform.rotation;
+            tC = t.Hex.C - this.Hex.C;
+            tR = t.Hex.R - this.Hex.R;
+            if (tC == 0 && tR == 1)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
+            }
+            if (tC == 0 && tR == -1)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
+            }
+            if (tC == -1 && tR == 1)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
+
+            }
+            if (tC == 1 && tR == -1)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
+
+            }
+            if (tC == 1 && tR == 0)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
+            }
+            if (tC == -1 && tR == 0)
+            {
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
+            }
+        
             Debug.Log(d);
             d.Play("Atak");
-
+            
+        //    this.tosterView.transform.rotation = q;
         }
     }
 
@@ -659,6 +844,7 @@ public class TosterHexUnit : IQPathUnit
         }
         DealMePURE(Convert.ToInt32(dmgdouble));
         Hex.hexMap.ThrowAxe(this, t);
+   
 
     }
     public void AttackMeS(TosterHexUnit t)
@@ -689,12 +875,14 @@ public class TosterHexUnit : IQPathUnit
        // double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
                                                                        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
         DealMePURE(Convert.ToInt32(dmgdouble));
+    
     }
     public void DealMeDMGS(TosterHexUnit t)
     {
         //double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
                                                                         double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
         DealMePURESim(Convert.ToInt32(dmgdouble));
+
     }
 
 
@@ -704,6 +892,7 @@ public class TosterHexUnit : IQPathUnit
     }
     public bool DealMePURE(int i)
     {
+        this.Blinded = false;
         int newhp = (GetHP() * (Amount - 1) + TempHP) - i;
         Debug.Log("Toster: " + this.Name +" lost " + (Amount - Mathf.FloorToInt(newhp / GetHP())) + " units");
         Amount = Mathf.FloorToInt(newhp / GetHP());
@@ -724,6 +913,13 @@ public class TosterHexUnit : IQPathUnit
             return false;
         }
         else { SetTextAmount(); return true; }
+    }
+    public void DealMeDMGDef(int i, TosterHexUnit t)
+    {
+        Debug.LogError(i);
+        i =Convert.ToInt32(ReCalculateDamageBetweenTosters(t,this,1,i));
+        Debug.LogError(i);
+        DealMePURE(i);
     }
 
     public bool DealMePURESim(int i)
@@ -763,6 +959,10 @@ public class TosterHexUnit : IQPathUnit
 
     public void Died()
     {
+
+            this.tosterView.GetComponentInChildren<Animator>().enabled=false;
+       
+
         tosterView.gameObject.GetComponentInChildren<TextMesh>().text = "";
         isDead = true;
         Moved = true;

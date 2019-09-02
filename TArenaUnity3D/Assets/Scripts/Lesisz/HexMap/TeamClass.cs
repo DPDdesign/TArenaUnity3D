@@ -61,6 +61,18 @@ public class TeamClass
 
     }
 
+    public TosterHexUnit AddNewUnit(string name, int amount)
+    {
+        TosterHexUnit nowytoster = new TosterHexUnit(); // + toster do teamu
+        nowytoster.InitateType(name);                 // Znajdz tostera w xmlu -> wczytaj jego staty
+        nowytoster.SetMyTeam(this);                     // Ustaw tosterowi do którego teamu należy
+        nowytoster.SetAmount(amount);        // Wczytaj ilość jednostki z buildG
+        nowytoster.StartAutocast();
+        AddNewUnit(nowytoster);
+        return nowytoster;// Zapisz naszego tosta do TEGO teamu
+    }
+
+
     public void AddNewUnit(TosterHexUnit t)
     {
         Tosters.Add(t);
@@ -77,18 +89,18 @@ public class TeamClass
             if (t.Moved==false&&t.GetIni()>Initiative)
             {
 
-                if (t.Waited == false)
+                if (t.Waited == false && t.Blinded==false)
                 {
                     T = t;
                     Initiative = t.GetIni();
                 }
             }
         }
-        Initiative = 13;
+        Initiative = 99;
         if (T == null)
             foreach (TosterHexUnit t in Tosters)
             {
-            if (t.Moved == false && t.GetIni() <= Initiative)
+            if (t.Moved == false && t.GetIni() <= Initiative && t.Blinded==false)
             {
                 T = t;
                 Initiative = t.GetIni();

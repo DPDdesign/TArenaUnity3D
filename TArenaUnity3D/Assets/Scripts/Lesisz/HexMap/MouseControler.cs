@@ -35,7 +35,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     Vector3 LastMouseGroundPlanePosition;
     Vector3 cameraTargetOffset;
     TurnManager TM;
-    int SelectedSpellid = 0;
+    public int SelectedSpellid = 0;
     public TosterHexUnit SelectedToster = null;
     TosterHexUnit TempSelectedToster = null;
     TosterHexUnit TempOutlinedToster = null;

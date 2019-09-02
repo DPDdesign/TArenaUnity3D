@@ -152,9 +152,21 @@ namespace TimeSpells
                 SpecialEvents.Add(me.GetHP()*(me.Amount-1)+me.TempHP);
           //      Debug.Log(me.GetHP() * me.Amount + me.TempHP);
             }
+            if(nameofspell=="Stone_Skin")
+            {
+                me.FlatDMGReduce += 2;
+            }
             if (nameofspell == "Hate")
             {
                 me.HATED = target;
+            }
+            if (nameofspell == "Unstoppable_Light")
+            {
+                me.DefensePenetration = 1;
+            }
+            if (nameofspell == "Blind")
+            {
+                me.Blinded = true;
             }
         }
 
@@ -230,6 +242,18 @@ namespace TimeSpells
             if (nameofspell == "Hate")
             {
                 me.HATED = null;
+            }
+            if (nameofspell == "Stone_Skin")
+            {
+                me.FlatDMGReduce -= 2;
+            }
+            if (nameofspell == "Unstoppable_Light")
+            {
+                me.DefensePenetration = 0;
+            }
+            if (nameofspell == "Blind")
+            {
+                me.Blinded = false;
             }
         }
 
