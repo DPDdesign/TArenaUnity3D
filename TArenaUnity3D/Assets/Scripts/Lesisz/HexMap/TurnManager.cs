@@ -42,6 +42,8 @@ public class TurnManager : MonoBehaviour
         Teams = hexMap.Teams;
         Teams[0].NewTurn();
         Teams[1].NewTurn();
+        hexMap.DoTurn();
+
     }
     public TosterHexUnit AskWhosTurn()
     {
@@ -55,6 +57,7 @@ public class TurnManager : MonoBehaviour
         {
             Teams[0].NewTurn();
             Teams[1].NewTurn();
+            hexMap.DoTurn();
             return AskWhosTurn();
         }
 

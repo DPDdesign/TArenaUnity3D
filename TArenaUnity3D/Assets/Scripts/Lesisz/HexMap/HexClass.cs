@@ -19,10 +19,10 @@ public class HexClass : IPathTile {
         ListOfParts = new List<GameObject>();
         ListOfParts = l;
     }
-    public void AddTrap(string name)
+    public void AddTrap(string name, int time)
     {
         isTraped = true;
-        trap = new Traps.Traps(999, name, this);
+        trap = new Traps.Traps(time, name, this);
     }
     public void RemoveTrap()
     {

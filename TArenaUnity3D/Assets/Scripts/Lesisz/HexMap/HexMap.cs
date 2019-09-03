@@ -11,6 +11,7 @@ using System.Linq;
 using Photon.Pun;
 using Photon.Realtime;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
+
 public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
 {
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
@@ -22,6 +23,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     public Material[] HexMaterials;
     // Update is called once per frame
     private HexClass[,] hexes;
+    List<HexClass> allhexes;
     private Dictionary<HexClass, GameObject> hextoGameObjectMap;
     // Start is called before the first frame update
     public bool AnimationIsPlaying = false;
@@ -54,6 +56,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     }
     void Start()
     {
+        
         if (PlayerPrefs.GetInt("Multi") == 1)
         {
             buildG1 = new BuildG();
@@ -235,6 +238,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     }
     public void CreateWorld()
     {
+        allhexes = new List<HexClass>();
         isCreated = true;
         Debug.LogError("this");
         // PlayerP.RefreshInstance(ref LocalPlayer, playerPrefab);
@@ -269,6 +273,24 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
         }
     }
 
+
+    public void DoTurn()
+    {
+        Debug.Log("test");
+        foreach ( HexClass h in allhexes)
+        {
+         if(   h.isTraped)
+            {
+                Debug.Log(h.trap.Time);
+                h.trap.Time--;
+                if (h.trap.Time==0)
+                {
+                    Debug.Log("RemoveTraP");
+                    h.RemoveTrap();
+                }
+            }
+        }
+    }
     private void Awake()
     {
         if(!PhotonNetwork.IsConnected)
@@ -277,8 +299,9 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
             return;
         }
     }
-    public void ThrowAxe(TosterHexUnit target, TosterHexUnit Shooter)
+    public void ThrowSomething(TosterHexUnit target, TosterHexUnit Shooter,GameObject Projectile)
     {
+        
         
         Vector3 m_EulerAngleVelocity = new Vector3(-960, -960, -360);
         bullet = new GameObject();
@@ -364,13 +387,14 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
 
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 gameObjectToHexMap[HexGo] = h;
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count); //{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count); //{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap.Add(h, HexGo);
                 h.MyHex = HexGo;
                 List<GameObject> list = new List<GameObject>();
                 list = h.MyHex.GetComponentInChildren<HexInfo>().GiveMe();
                 h.crealistofparts(list);
+                allhexes.Add(h);
 
             }
 
@@ -392,7 +416,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count);//{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
@@ -400,6 +424,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
                 List<GameObject> list = new List<GameObject>();
                 list = h.MyHex.GetComponentInChildren<HexInfo>().GiveMe();
                 h.crealistofparts(list);
+                allhexes.Add(h);
             }
         }
 
@@ -418,7 +443,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count);//{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
@@ -426,6 +451,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
                 List<GameObject> list = new List<GameObject>();
                 list = h.MyHex.GetComponentInChildren<HexInfo>().GiveMe();
                 h.crealistofparts(list);
+                allhexes.Add(h);
             }
         }
         //StaticBatchingUtility.Combine(this.gameObject.GetComponentInChildren<MeshFilter>().gameObject);
@@ -590,9 +616,10 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
         {
             for (int dy = Mathf.Max(-radius, -dx - radius); dy < Mathf.Min(radius, -dx + radius) + 1; dy++)
             {
-                if (0 <= centerhex.C + dx && 0 <= centerhex.R + dy && 19 >= centerhex.C + dx && 19 >= centerhex.R + dy)
+                if (0 <= centerhex.C + dx && 0 <= centerhex.R + dy && 18 >= centerhex.C + dx && 17 >= centerhex.R + dy)
                 {
 
+                
                     results.Add(hexes[centerhex.C + dx, centerhex.R + dy]);
                 }
             }

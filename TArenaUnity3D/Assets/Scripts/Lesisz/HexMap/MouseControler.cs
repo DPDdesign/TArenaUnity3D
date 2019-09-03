@@ -335,7 +335,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     [PunRPC]
     void Shot(int i, int k)
     {
-        hexMap.GetHexAt(i, k).Tosters[0].ShootME(SelectedToster);
+        hexMap.GetHexAt(i, k).Tosters[0].ShootME(SelectedToster, true);
         SelectedToster.Moved = true;
         CancelUpdateFunc();
 

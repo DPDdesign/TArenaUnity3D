@@ -26,12 +26,18 @@ namespace Traps
         public void ShowTrap()
         {
             if (NameOfTraps=="Spike_Trap")
-            TrapedHex.MyHex.transform.Find("trap1").gameObject.SetActive(true);
+               TrapedHex.MyHex.transform.Find("trap1").gameObject.SetActive(true);
+            if (NameOfTraps == "Fire_Trap")
+                TrapedHex.MyHex.transform.Find("Fire_Trap").gameObject.SetActive(true);
         }
 
         internal void Remove()
         {
             TrapedHex.MyHex.transform.Find("trap1").gameObject.SetActive(false);
+            TrapedHex.MyHex.transform.Find("Fire_Trap").gameObject.SetActive(false);
         }
+
+
+
     }
 }

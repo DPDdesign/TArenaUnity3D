@@ -32,7 +32,8 @@ public class TosterHexUnit : IQPathUnit
     public int SpecialResistance = 0; // +20 oznacza że otrzymany dmg zostanie zmniejszony o 20%
     public int SpecialDMGModificator = 0;// +20 oznacza że zadawany dmg zostanie zmniejszony o 20%
     public bool isRange = false;
-    public double DefensePenetration = 0; 
+    public double DefensePenetration = 0;
+    public GameObject Projectile;
     ///stats
     [XmlAttribute("Name")]
     public string Name = "NoName";
@@ -89,7 +90,7 @@ public class TosterHexUnit : IQPathUnit
     public bool DefenceStance = false;
     public bool isDead = false;
     public bool CounterAttackAvaible = true;
-
+    public bool Fire_movement = false;
     public bool Stuned = false;
     public bool Blinded = false;
     public bool Rooted = false;
@@ -114,8 +115,12 @@ public class TosterHexUnit : IQPathUnit
 
   public  void ResetCounterAttack()
     {
-        CounterAttackAvaible = true;
-        TempCounterAttacks = CounterAttacks;
+        if (CounterAttacks > 0)
+        {
+            CounterAttackAvaible = true;
+            TempCounterAttacks = CounterAttacks;
+            Debug.Log(TempCounterAttacks);
+        }
     }
 
 
@@ -124,7 +129,7 @@ public class TosterHexUnit : IQPathUnit
     {
         //CounterAttackAvaible = true;
         TempCounterAttacks--;
-        if (TempCounterAttacks == 0) CounterAttackAvaible = false;
+        if (TempCounterAttacks < 1) CounterAttackAvaible = false;
     }
 
 
@@ -253,6 +258,7 @@ public class TosterHexUnit : IQPathUnit
             this.Team.HexesUnderTeam.Remove(oldHex);
             this.Hex.RemoveToster(this);
         }
+        
         if (hex.isTraped)
         {
             if (hex.trap.NameOfTraps == "Rope_Trap")
@@ -261,6 +267,12 @@ public class TosterHexUnit : IQPathUnit
                 Pathing_func(hex,true);
                 this.AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, "Rope_Trap", false);
                 hex.RemoveTrap();
+            }
+            if (hex.trap.NameOfTraps == "Fire_Trap")
+            {
+
+                this.DealMePURE(this.Amount);
+              //  hex.RemoveTrap();
             }
             if (hex.trap.NameOfTraps == "Spike_Trap")
             {
@@ -280,6 +292,10 @@ public class TosterHexUnit : IQPathUnit
 
                 hex.RemoveTrap();
             }
+        }
+        if(Fire_movement==true && oldHex!=null)
+        {
+            oldHex.AddTrap("Fire_Trap",2);
         }
         Hex = hex;
         Hex.AddToster(this);
@@ -522,7 +538,7 @@ public class TosterHexUnit : IQPathUnit
 
     public void StartAutocast()
     {
-        ListOfAutocasts = new List<string>(new string[] { "Massochism", "Cold_Blood", "Stone_Skin", "Unstoppable_Light" });
+        ListOfAutocasts = new List<string>(new string[] { "Massochism", "Cold_Blood", "Stone_Skin", "Unstoppable_Light","Fire_Movement","Fire_Skin","Terrifying_Presence", "Rotting"});
 
 
         foreach (string s in skillstrings)
@@ -837,7 +853,7 @@ public class TosterHexUnit : IQPathUnit
     }
 
 
-    public void ShootME(TosterHexUnit t)
+    public void ShootME(TosterHexUnit t, bool sth)
     {
         //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
         double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
@@ -847,7 +863,10 @@ public class TosterHexUnit : IQPathUnit
             dmgdouble -= dmgdouble / 2;
         }
         DealMePURE(Convert.ToInt32(dmgdouble));
-        Hex.hexMap.ThrowAxe(this, t);
+        if (sth == true)
+        {
+            Hex.hexMap.ThrowSomething(this, t, Projectile);
+        }
    
 
     }

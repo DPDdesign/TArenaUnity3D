@@ -28,6 +28,8 @@ public class CastManager : MonoBehaviourPunCallbacks
     public bool rush = false;
     public bool isAvailable = true;
     public bool SlashTarget = false;
+    public List<GameObject> Projectiles;
+    GameObject bullet;
     HexClass hexum;
     void Start()
     {
@@ -338,12 +340,14 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         if(SelectedT().isRange = !SelectedT().isRange)
         {
+            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 20;
             SelectedT().SpecialResistance = 20;
         }
         else
         {
+            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 0;
             SelectedT().SpecialResistance = 0;
@@ -369,8 +373,8 @@ public class CastManager : MonoBehaviourPunCallbacks
         {
             //     SelectedT().AddNewTimeSpell(1, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -40, "Rzutnik_skill1", true);
             SelectedT().SpecialDMGModificator += 60;
-            Rzutnik_Skill1_trgt[0].ShootME(SelectedT());
-            Rzutnik_Skill1_trgt[1].ShootME(SelectedT());
+            Rzutnik_Skill1_trgt[0].ShootME(SelectedT(), true);
+            Rzutnik_Skill1_trgt[1].ShootME(SelectedT(),true);
             SelectedT().SpecialDMGModificator -= 60;
             Rzutnik_Skill1_Counter = 0; SetFalse();
         }
@@ -380,6 +384,7 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void Double_ThrowM()
     {
+        SelectedT().Projectile = Projectiles[0];
         isTurn = true;
         unselectaround = true;
         RangeSelectingenemy = true;
@@ -401,7 +406,7 @@ public class CastManager : MonoBehaviourPunCallbacks
                 if (t == getHexUM() && t.Tosters.Count>0)
                 {
                     SelectedT().SpecialDMGModificator = 20;
-                    t.Tosters[0].ShootME(SelectedT());
+                    t.Tosters[0].ShootME(SelectedT(), true);
                     SelectedT().SpecialDMGModificator = 0;
                 }
                 else
@@ -409,7 +414,7 @@ public class CastManager : MonoBehaviourPunCallbacks
                     if (t.Tosters.Count > 0)
                     {
                         SelectedT().SpecialDMGModificator = 70;
-                        t.Tosters[0].ShootME(SelectedT());
+                        t.Tosters[0].ShootME(SelectedT(), true);
                         SelectedT().SpecialDMGModificator = 0;
                     }
             }
@@ -419,6 +424,8 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     public void Axe_RainM()
     {
+
+        SelectedT().Projectile = Projectiles[0];
         unselectaround = true;
         aoeradius = 1;
         RangeisAoE = true;
@@ -902,7 +909,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         if (getHexUM()!=null)
         {
-            getHexUM().AddTrap("Spike_Trap");
+            getHexUM().AddTrap("Spike_Trap",999);
             mouseControler.SetCD();
             SetFalse();
             
@@ -926,7 +933,7 @@ public class CastManager : MonoBehaviourPunCallbacks
 
         if (getHexUM() != null)
         {
-            getHexUM().AddTrap("Rope_Trap");
+            getHexUM().AddTrap("Rope_Trap",999);
             mouseControler.SetCD();
             SetFalse();
 
@@ -1372,8 +1379,9 @@ public class CastManager : MonoBehaviourPunCallbacks
                     newunit.SetTextAmount();
                     getHexUM().hexMap.GenerateToster(h.C, h.R, newunit);
                     newunit.DealMeDMGDef(10, SelectedT());
+                    newunit.Moved = true;
                     SetFalse();
-              
+                    return;
                 }
 
             }
@@ -1389,6 +1397,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             newunit.SetTextAmount();
             getHexUM().hexMap.GenerateToster(getHexUM().C, getHexUM().R, newunit);
             newunit.DealMeDMGDef(10, SelectedT());
+            newunit.Moved = true;
             SetFalse();
         }
         Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
@@ -1442,25 +1451,63 @@ public class CastManager : MonoBehaviourPunCallbacks
 
 
 
-    public void Fire_Movement()
+    public void Fire_Movement() //passive
     {
-     
     }
     public void Fire_MovementM()
     {
-
+        isTurn = false;
+        SetFalse();
     }
     #endregion
     #region Fire_ball 
 
-    public void Fire_ball()
+    public void FireBall(HexClass target, TosterHexUnit Shooter)
     {
-       
+
+        Vector3 m_EulerAngleVelocity = new Vector3(-960, -960, -360);
+        bullet = new GameObject();
+        bullet = Instantiate(Projectiles[1], Shooter.tosterView.gameObject.transform.position, Quaternion.identity) as GameObject;
+
+        bullet.GetComponent<Rigidbody>().AddForce((target.MyHex.gameObject.transform.position - Shooter.tosterView.gameObject.transform.position) * 50);
+        bullet.GetComponent<Rigidbody>().AddTorque(m_EulerAngleVelocity);
+
     }
-    public void Fire_ballM()
+
+    public void Fire_Ball()
     {
-       
+        Debug.LogError("działam");
+        List<HexClass> hexarea = new List<HexClass>(getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), aoeradius));
+        SelectedT().SpecialDMGModificator = 30;
+        foreach (HexClass t in hexarea)
+        {
+            if (t != null)
+                if (t.Tosters.Count > 0)
+                {
+                    t.Tosters[0].ShootME(SelectedT(),false);
+                }
+        }
+        Debug.Log("C: " + getHexUM().C + "  R: " + getHexUM().R);
+        FireBall(getHexUM(), SelectedT());
+        SelectedT().SpecialDMGModificator = 0;
+        Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+        if (d != null)
+        {
+            // Debug.Log(mouseControler.SelectedSpellid-1);
+            d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+
+        }
+        SetFalse();
     }
+    public void Fire_BallM()
+    {
+        unselectaround = true;
+        aoeradius = 2;
+        RangeisAoE = true;
+        isTurn = true;
+    }
+
+
     #endregion
     #region Fire_Skin //Lesisz
 
@@ -1470,7 +1517,8 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     public void Fire_SkinM()
     {
-
+        isTurn = false;
+        SetFalse();
     }
     #endregion
     #endregion
@@ -1479,12 +1527,163 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void Heavy_Fists()
     {
+        List<TosterHexUnit> tosterstoattack = new List<TosterHexUnit>();
+        int tC, tR;
+        TosterHexUnit t = SelectedT();
+        tC = SelectedT().Hex.C - getHexUM().Tosters[0].Hex.C;
+        tR = t.Hex.R - getHexUM().Tosters[0].Hex.R;
+        Debug.Log("tC: " + tC);
+        Debug.Log("tR: " + tR);
+        if (tC == 0 && tR == 1)
+        {
+            if (isHexA(0, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(-1, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(0, -1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R - 1).Tosters[0]));
+            }
+            if (isHexA(1, -1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R - 1).Tosters[0]));
+            }
+            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
+        }
+        if (tC == 0 && tR == -1)
+        {
+            if (isHexA(0, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(1, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(0, 1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R + 1).Tosters[0]));
+            }
+            if (isHexA(-1, 1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
+            }
+            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
+        }
+        if (tC == -1 && tR == 1)
+        {
+            if (isHexA(0, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(1, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C+1, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(0, -1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R - 1).Tosters[0]));
+            }
+            if (isHexA(1, -1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C +1, getHexUM().R - 1).Tosters[0]));
+            }
+            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
 
+        }
+        if (tC == 1 && tR == -1)
+        {
+            if (isHexA(0, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(0, 1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C , getHexUM().R+1).Tosters[0]));
+            }
+            if (isHexA(-1, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C-1, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(-1, 1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
+            }
 
+            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
+
+        }
+        if (tC == 1 && tR == 0)
+        {
+            if (isHexA(0, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(1, 0))
+            {
+                
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(0, -1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R - 1).Tosters[0]));
+            }
+            if (isHexA(-1, 1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
+            }
+            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
+        }
+        if (tC == -1 && tR == 0)
+        {
+            if (isHexA(0, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(1, 0))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C+1, getHexUM().R).Tosters[0]));
+            }
+            if (isHexA(0, 1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R+1).Tosters[0]));
+            }
+            if (isHexA(1, -1))
+            {
+                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C+1, getHexUM().R - 1).Tosters[0]));
+            }
+            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
+        }
+        SelectedT().SpecialDMGModificator = -30;
+        foreach (TosterHexUnit tost in tosterstoattack)
+        {
+            
+            tost.DealMeDMG(SelectedT());
+        }
+        SelectedT().SpecialDMGModificator = 0;
+        if (SelectedT().GetHP() > 20) SelectedT().SpecialHP -= 20;
+        else SelectedT().SpecialHP = -SelectedT().HP + 1;
+        SetFalse();
+    }
+
+    public bool isHexA(int i , int j)
+    {
+        if (getHexUM().hexMap.GetHexAt(getHexUM().C + i, getHexUM().R + j) != null && getHexUM().hexMap.GetHexAt(getHexUM().C + i, getHexUM().R + j).Tosters.Count > 0)
+        {
+            return true;
+        }
+        return false;
     }
     public void Heavy_FistsM()
     {
-      
+        MeleeisAoE = true;
+        unselectaround = true;
+        aoeradius = 1;
+        isTurn = true;
     }
     #endregion
     #region Shapeshift   //Cielu
@@ -1495,7 +1694,8 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     public void Terrifying_PresenceM()
     {
-    
+       isTurn = false;
+        SetFalse();
     }
     #endregion
     #region Rotting
@@ -1506,7 +1706,8 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     public void RottingM()
     {
-    
+        isTurn = false;
+        SetFalse();
 
     }
     #endregion

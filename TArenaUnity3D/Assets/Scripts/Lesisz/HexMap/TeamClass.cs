@@ -122,7 +122,7 @@ public class TeamClass
             foreach (TosterHexUnit t in Tosters)
             {
 
-                if (t.Moved == true && t.isDead==false)
+                if (t.isDead==false)
                 {
                     
                     t.CheckSpells();

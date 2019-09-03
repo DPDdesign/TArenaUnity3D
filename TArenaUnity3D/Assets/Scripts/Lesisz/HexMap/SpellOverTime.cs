@@ -104,7 +104,7 @@ namespace TimeSpells
         }
         public bool IsOver()
         {
-            if (Time == 0)
+            if (Time <= 0)
             {
                 me.SpecialHP -= hp;
                 if (me.TempHP > me.GetHP())
@@ -121,6 +121,7 @@ namespace TimeSpells
                 me.SpecialResistance -= res;
                 me.SpecialDMGModificator -= SpecialDMGModificator;
                 me.CounterAttacks -= counterattacks;
+                
                 SpecialThingOnEnd();
                 return true;
             }
@@ -167,6 +168,10 @@ namespace TimeSpells
             if (nameofspell == "Blind")
             {
                 me.Blinded = true;
+            }
+            if(nameofspell == "Fire_Movement")
+            {
+                me.Fire_movement = true;
             }
         }
 
@@ -254,6 +259,41 @@ namespace TimeSpells
             if (nameofspell == "Blind")
             {
                 me.Blinded = false;
+            }
+            if (nameofspell == "Fire_Skin")
+            {
+              HexClass[] hexclass =  me.Hex.hexMap.GetHexesWithinRadiusOf(me.Hex, 1);
+
+            foreach(HexClass h in hexclass)
+                {
+                    if(h!=null&&h.Tosters.Count>0 && h.Tosters[0]!=me)
+                    {
+                        h.Tosters[0].AddNewTimeSpell(2, h.Tosters[0], 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, -10, "Fire_skin", false) ;
+                    }
+                }
+            }
+            if (nameofspell == "Terrifying_Presence")
+            {
+                HexClass[] hexclass = me.Hex.hexMap.GetHexesWithinRadiusOf(me.Hex, 1);
+
+                foreach (HexClass h in hexclass)
+                {
+                    if (h!=null&&h.Tosters.Count > 0 && h.Tosters[0] != me)
+                    {
+                        h.Tosters[0].AddNewTimeSpell(2, h.Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 0, 0, "Terrifying", false);
+                        h.Tosters[0].CounterAttackAvaible = false;
+                        Debug.Log(h.Tosters[0].Name);
+                    }
+                }
+            }
+            if (nameofspell == "Rotting")
+            {
+                if (me.GetHP() > 14) me.SpecialHP -= 14;
+                else me.SpecialHP = -me.HP + 1;
+            }
+            if (nameofspell == "Fire_Movement")
+            {
+                me.Fire_movement = false;
             }
         }
 
