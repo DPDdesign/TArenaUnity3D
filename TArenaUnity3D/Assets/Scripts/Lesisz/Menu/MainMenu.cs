@@ -8,7 +8,13 @@ public class MainMenu : MonoBehaviour
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex +1);
     }
+    public void Start()
+    {
+    
 
+
+        //Debug.LogError(PlayFabControler.PFC.storeObjects[0].Id);
+    }
 
     public void GoZestawy()
     {
