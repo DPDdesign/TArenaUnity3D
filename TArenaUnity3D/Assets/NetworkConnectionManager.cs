@@ -16,9 +16,25 @@ public class NetworkConnectionManager : MonoBehaviourPunCallbacks
     public bool TriesToConnectToRoom;
     
 
+public static NetworkConnectionManager NCM; 
+
+
+
     void Start()
     {
-        DontDestroyOnLoad(gameObject);
+        if(NetworkConnectionManager.NCM==null)
+        {
+            NetworkConnectionManager.NCM=this;
+        }
+        else 
+        {
+            if(NetworkConnectionManager.NCM !=this)
+            {Destroy(this.gameObject);}
+
+        }
+        DontDestroyOnLoad(this.gameObject);
+
+
         TriesToConnectToMaster = false;
         TriesToConnectToMaster = false;
     }
@@ -58,7 +74,6 @@ public class NetworkConnectionManager : MonoBehaviourPunCallbacks
         base.OnConnectedToMaster(); 
          TriesToConnectToMaster = false;
         OnClickConnectToRoom();
-        Debug.LogError("Connected to Master2!");
     }
 
 
@@ -70,8 +85,8 @@ public class NetworkConnectionManager : MonoBehaviourPunCallbacks
 
         TriesToConnectToRoom = true;
         //PhotonNetwork.CreateRoom("Peter's Game 1"); //Create a specific Room - Error: OnCreateRoomFailed
-       PhotonNetwork.JoinRoom("test");   //Join a specific Room   - Error: OnJoinRoomFailed  
-       // PhotonNetwork.JoinRandomRoom();               //Join a random Room     - Error: OnJoinRandomRoomFailed  
+      // PhotonNetwork.JoinRoom("test");   //Join a specific Room   - Error: OnJoinRoomFailed  
+        PhotonNetwork.JoinRandomRoom();               //Join a random Room     - Error: OnJoinRandomRoomFailed  
     }
 
     public override void OnJoinRandomFailed(short returnCode, string message)
@@ -86,7 +101,8 @@ public class NetworkConnectionManager : MonoBehaviourPunCallbacks
     {
         base.OnJoinRoomFailed(returnCode, message);
         Debug.LogError("Room not found, create room");
-        PhotonNetwork.CreateRoom("test", new RoomOptions { MaxPlayers = 2 });
+        string NameOfRoom = PlayFabControler.PFC.tosterName;
+        PhotonNetwork.CreateRoom(NameOfRoom, new RoomOptions { MaxPlayers = 2 });
 
     }
 
