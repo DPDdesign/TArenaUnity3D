@@ -26,13 +26,13 @@ public class Shop : MonoBehaviour
         {
             if (shopobj.Type1 == "ArmyBundle")
             {
-                foreach(Button b in Bundles)
+                foreach (Button b in Bundles)
                 {
-                    if (b.name==shopobj.Id)
+                    if (b.name == shopobj.Id)
                     {
                         b.interactable = true;
-                      Text[] texts = b.gameObject.GetComponentsInChildren<Text>();
-                        foreach(Text t in texts)
+                        Text[] texts = b.gameObject.GetComponentsInChildren<Text>();
+                        foreach (Text t in texts)
                         {
                             if (t.name == "Cost")
                             {
@@ -44,10 +44,10 @@ public class Shop : MonoBehaviour
                                 }
                             }
                         }
-                            
+
                     }
                 }
-           
+
                 //bundle
             }
             else if (shopobj.Type1 == "Unit")
@@ -80,18 +80,15 @@ public class Shop : MonoBehaviour
                         }
                     }
                 }
-                
+
             }
 
-
+        }
 
          
     }
 
-    public void BuyBundle()
-    {
 
-    }
 
    public void ShowBuyMenu(Button b)
     {
