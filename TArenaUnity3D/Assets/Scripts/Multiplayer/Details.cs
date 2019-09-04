@@ -18,7 +18,7 @@ public class Details : MonoBehaviour
     void Start()
     {  
        
-         NicknameText.text = PlayFabControler.PFC.tosterName;
+   //      NicknameText.text = PlayFabControler.PFC.tosterName;
          
         
     }

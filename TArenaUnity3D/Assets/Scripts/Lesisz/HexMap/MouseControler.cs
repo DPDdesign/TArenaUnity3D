@@ -202,7 +202,9 @@ public class MouseControler : MonoBehaviourPunCallbacks
     void Taunted()
     {
         Debug.Log("HOW DARE YOU!?");
-        photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R });
+        if (!SelectedToster.whoTauntedMe.isDead)
+            photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R });
+        else SelectedToster.Taunt = false;
       //StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.whoTauntedMe.Hex,SelectedToster.whoTauntedMe));
     }
 
@@ -291,6 +293,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         hexUnderMouse = SelectedToster.Hex;
         if (SelectedToster.Taunt == true)
         {
+
             Update_CurrentFunc = Taunted;
             return;
         }

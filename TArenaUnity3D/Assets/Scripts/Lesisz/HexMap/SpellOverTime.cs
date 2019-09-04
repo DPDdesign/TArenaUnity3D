@@ -288,7 +288,7 @@ namespace TimeSpells
             }
             if (nameofspell == "Rotting")
             {
-                if (me.GetHP() > 14) me.SpecialHP -= 14;
+                if (me.GetHP() > 16) me.SpecialHP -= 16;
                 else me.SpecialHP = -me.HP + 1;
             }
             if (nameofspell == "Fire_Movement")

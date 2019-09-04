@@ -373,10 +373,13 @@ public class CastManager : MonoBehaviourPunCallbacks
         {
             //     SelectedT().AddNewTimeSpell(1, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -40, "Rzutnik_skill1", true);
             SelectedT().SpecialDMGModificator += 60;
-            Rzutnik_Skill1_trgt[0].ShootME(SelectedT(), true);
-            Rzutnik_Skill1_trgt[1].ShootME(SelectedT(),true);
+            Rzutnik_Skill1_trgt[0].ShootME(SelectedT(), false);
+            Rzutnik_Skill1_trgt[1].ShootME(SelectedT(),false);
+            Axe(Rzutnik_Skill1_trgt[0].Hex, SelectedT());
+            Axe(Rzutnik_Skill1_trgt[1].Hex, SelectedT());
             SelectedT().SpecialDMGModificator -= 60;
-            Rzutnik_Skill1_Counter = 0; SetFalse();
+            Rzutnik_Skill1_Counter = 0;
+            SetFalse();
         }
 
        
@@ -406,15 +409,17 @@ public class CastManager : MonoBehaviourPunCallbacks
                 if (t == getHexUM() && t.Tosters.Count>0)
                 {
                     SelectedT().SpecialDMGModificator = 20;
-                    t.Tosters[0].ShootME(SelectedT(), true);
+                    t.Tosters[0].ShootME(SelectedT(), false);
                     SelectedT().SpecialDMGModificator = 0;
+                    Axe(t.Tosters[0].Hex, SelectedT());
                 }
                 else
                 if (t != null)
                     if (t.Tosters.Count > 0)
                     {
                         SelectedT().SpecialDMGModificator = 70;
-                        t.Tosters[0].ShootME(SelectedT(), true);
+                        t.Tosters[0].ShootME(SelectedT(), false);
+                        Axe(t.Tosters[0].Hex, SelectedT());
                         SelectedT().SpecialDMGModificator = 0;
                     }
             }
@@ -1473,6 +1478,17 @@ public class CastManager : MonoBehaviourPunCallbacks
         bullet.GetComponent<Rigidbody>().AddTorque(m_EulerAngleVelocity);
 
     }
+    public void Axe(HexClass target, TosterHexUnit Shooter)
+    {
+
+        Vector3 m_EulerAngleVelocity = new Vector3(-960, -960, -360);
+        bullet = new GameObject();
+        bullet = Instantiate(Projectiles[0], Shooter.tosterView.gameObject.transform.position, Quaternion.identity) as GameObject;
+
+        bullet.GetComponent<Rigidbody>().AddForce((target.MyHex.gameObject.transform.position - Shooter.tosterView.gameObject.transform.position) * 50);
+        bullet.GetComponent<Rigidbody>().AddTorque(m_EulerAngleVelocity);
+
+    }
 
     public void Fire_Ball()
     {
@@ -1502,7 +1518,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     public void Fire_BallM()
     {
         unselectaround = true;
-        aoeradius = 2;
+        aoeradius = 1;
         RangeisAoE = true;
         isTurn = true;
     }

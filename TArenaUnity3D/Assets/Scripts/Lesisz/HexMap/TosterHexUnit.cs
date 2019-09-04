@@ -24,7 +24,7 @@ public class TosterHexUnit : IQPathUnit
     public int SpecialAtt = 0;
     public int SpecialPUREDMG = 0;
     public int SpecialDef = 0;
-    public int SpecialMS = 0;
+    public int SpecialMS = 1;
     public int SpecialI = 0;
     public int SpecialAm = 0;
     public int SpecialmaxDMG = 0;
@@ -648,6 +648,7 @@ public class TosterHexUnit : IQPathUnit
         {
             DMGf += DMGf / 2;
         }
+        Debug.Log("Dmg Before REdu: " + DMGf);
         DMGf -= FlatDMGReduce * attacker.Amount;
         if (DMGf < 0)
         {

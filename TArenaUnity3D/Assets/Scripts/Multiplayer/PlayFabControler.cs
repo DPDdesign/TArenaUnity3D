@@ -80,7 +80,7 @@ public class PlayFabControler : MonoBehaviour
         PlayerPrefs.SetString("USERNAME", tosterName);
         GetStats();
         loginPanel.SetActive(false);
-        SceneManager.LoadScene("PlayerProfile");
+        SceneManager.LoadScene("MainMenu_Scene");
         _playFabPlayerIdCache = result.PlayFabId;
         GetPhoton();
 
