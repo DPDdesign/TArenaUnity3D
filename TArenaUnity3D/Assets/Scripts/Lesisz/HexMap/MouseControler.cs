@@ -59,6 +59,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
     }
     void Start()
     {
+        PlayFabControler.PFC.GetStats();
+
         if (PlayerPrefs.GetInt("AI") == 0)
         {
             isAiOn = false;
@@ -128,12 +130,30 @@ public class MouseControler : MonoBehaviourPunCallbacks
         {
             canvas.EndPanel.SetActive(true);
             canvas.EndText.text = "Left Player Win! ";
+            PlayFabControler.PFC.GetPhoton();
+            if(PhotonNetwork.LocalPlayer.IsMasterClient)
+            {
+                PlayFabControler.PFC.SetStats(1,0,3);
+            }
+            else
+            {
+                PlayFabControler.PFC.SetStats(0,1,1);
+            }
         }
-        else
-        if (TM.isAnyoneAlive() == 1)
+        else if (TM.isAnyoneAlive() == 1)
         {
             canvas.EndPanel.SetActive(true);
             canvas.EndText.text = "Right Player Win! ";
+            PlayFabControler.PFC.GetPhoton();
+              if(PhotonNetwork.LocalPlayer.IsMasterClient)
+            {
+                PlayFabControler.PFC.SetStats(0,1,3);
+            }
+            else
+            {
+                PlayFabControler.PFC.SetStats(1,0,1);
+            }
+           
         }
 
         SelectedToster = TM.AskWhosTurn();
@@ -335,7 +355,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     [PunRPC]
     void Shot(int i, int k)
     {
-        hexMap.GetHexAt(i, k).Tosters[0].ShootME(SelectedToster, true);
+        hexMap.GetHexAt(i, k).Tosters[0].ShootME(SelectedToster);
         SelectedToster.Moved = true;
         CancelUpdateFunc();
 
