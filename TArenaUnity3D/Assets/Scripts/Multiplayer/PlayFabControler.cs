@@ -78,8 +78,8 @@ private void OnEnable()
         PlayerPrefs.SetString("PASSWORD", userPassword);
         PlayerPrefs.SetString("USERNAME", tosterName);
         GetStats();
-        loginPanel.SetActive(false);
-       SceneManager.LoadScene("MainMenu_Scene");
+       loginPanel.SetActive(false);
+       SceneManager.LoadScene("PlayerProfile");
     _playFabPlayerIdCache = result.PlayFabId;
        GetPhoton();
         
@@ -187,25 +187,30 @@ private void OnEnable()
 
 #region PlayerStats
 public int Wins;
-public int Loses;
+public int Losses;
 public int Experience;
 public int Level;
-public float WinRatio;
+public int RankPoints;
+public List<InventoryObjects> inventoryObjects;
+    public List<InventoryObjects> storeObjects;
+    public List<string> ownedBundles;
+    public int tCoins;
+    public int aTokens;
 
 public void SetStats(int win, int lost, int exp){
 
 
         Wins += win;
-        Loses += lost;
+        Losses += lost;
         Experience +=exp;
 
         PlayFabClientAPI.UpdatePlayerStatistics( new UpdatePlayerStatisticsRequest {
             // request.Statistics is a list, so multiple StatisticUpdate objects can be defined if required.
             Statistics = new List<StatisticUpdate> {
                 new StatisticUpdate { StatisticName = "Wins", Value = Wins}, 
-                new StatisticUpdate { StatisticName = "Loses", Value = Loses},
+                new StatisticUpdate { StatisticName = "Loses", Value = Losses},
                 new StatisticUpdate { StatisticName = "Experience", Value = Experience},
-                new StatisticUpdate {StatisticName = "WinRatio", Value = Wins/Loses},
+                new StatisticUpdate {StatisticName = "WinRatio", Value = Wins/Losses},
             }
         },
         result => {  Debug.Log("User statistics updated"); },
@@ -237,7 +242,7 @@ void OnGetStats(GetPlayerStatisticsResult result)
             break;
 
             case "Loses":
-            Loses = eachStat.Value;
+            Losses = eachStat.Value;
             break;
 
             case "Experience":
@@ -249,13 +254,14 @@ void OnGetStats(GetPlayerStatisticsResult result)
             break;
 
             case "WinRatio":
-            WinRatio = eachStat.Value;
+            RankPoints = eachStat.Value;
             break;
+
         }
     }
 }
 
-int[] ExpRequiredForLevel = {1,10,50,150,330,460,790,940,1280,1700};
+public static int[] ExpRequiredForLevel = {1,10,50,150,330,460,790,940,1280,1700};
 void CheckLevel()
 {
     if (Experience >= ExpRequiredForLevel[Level]){
@@ -277,5 +283,145 @@ void CheckLevel()
 
 
 
+    #region Store
+    public void GetCatalog()
+    {
+    
+        var request2 = new GetCatalogItemsRequest
+        {
+          CatalogVersion = "1"
+        };
+
+        PlayFabClientAPI.GetCatalogItems(request2, result =>
+  
+         {
+             storeObjects = new List<InventoryObjects>();
+             foreach (CatalogItem catalogItem in result.Catalog)
+             {
+
+                 InventoryObjects iO = new InventoryObjects(catalogItem.ItemId, catalogItem.ItemClass, catalogItem.VirtualCurrencyPrices["TC"], catalogItem.VirtualCurrencyPrices["AT"]);
+                 storeObjects.Add(iO);
+                 Debug.Log(iO.Id);
+             }
+
+         }, resultCallback => { Debug.LogError("error"); }, null, null);
+     
+
+    }
+
+    
+    public bool BuyItem(string iD, string cost, string VC)
+    {
+        var request = new PurchaseItemRequest
+        {
+            CatalogVersion = "1",
+            ItemId = iD,
+            Price = Int32.Parse(cost),
+            VirtualCurrency = VC
+        };
+        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory(); }, result => { Debug.LogError("Nie udało się kupić " + iD); });
+       
+        return true;
+    }
+
+
+    public bool BuyBundle(string iD, string cost, string VC)
+    {
+        bool toster = true;
+        var request2 = new GetCatalogItemsRequest
+        {
+            CatalogVersion = "1"
+        };
+
+        PlayFabClientAPI.GetCatalogItems(request2, result =>
+        {
+            storeObjects = new List<InventoryObjects>();
+            foreach (CatalogItem catalogItem in result.Catalog)
+            {
+                if (catalogItem.ItemClass == "ArmyBundle" && catalogItem.ItemId == iD)
+                {
+
+                    foreach (string bundleInfo in catalogItem.Bundle.BundledItems)
+                    {
+                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
+                        {
+                            if (inventoryObjects.Id == bundleInfo)
+                            {
+                                toster = false;
+                            }
+                        }
+                    }
+
+                }
+            }
+
+        }, resultCallback => { Debug.LogError("error"); }, null, null);
+
+
+        var request = new PurchaseItemRequest
+        {
+            CatalogVersion = "1",
+            ItemId = iD,
+            Price = Int32.Parse(cost),
+            VirtualCurrency = VC
+        };
+        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory(); }, result => { Debug.LogError("Nie udało się kupić " + iD); });
+
+        return true;
+    }
+    public void GetInventory()
+    {
+
+        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
+        {
+            inventoryObjects = new List<InventoryObjects>();
+
+            foreach (ItemInstance itemInstance in result.Inventory)
+            {
+                InventoryObjects iO = new InventoryObjects(itemInstance.ItemId, itemInstance.ItemClass);
+                inventoryObjects.Add(iO);
+            }
+            result.VirtualCurrency.TryGetValue("TC", out tCoins);
+            result.VirtualCurrency.TryGetValue("AT", out aTokens);
+            Debug.Log("Wczytano dane użytkownika");
+        }, resultCallback => { Debug.LogError("error"); }, null, null);
+    }
+
+    public bool CheckIfPlayerGotBundle(string bundle)
+    {
+        bool toster = true;
+        var request2 = new GetCatalogItemsRequest
+        {
+            CatalogVersion = "1"
+        };
+
+        PlayFabClientAPI.GetCatalogItems(request2, result =>
+
+        {
+            storeObjects = new List<InventoryObjects>();
+            foreach (CatalogItem catalogItem in result.Catalog)
+            {
+                if (catalogItem.ItemClass == "ArmyBundle" && catalogItem.ItemId == bundle)
+                {
+                
+                    foreach (string bundleInfo in catalogItem.Bundle.BundledItems)
+                    {
+                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
+                        {
+                            if (inventoryObjects.Id == bundleInfo)
+                            {
+                                toster= false;
+                            }
+                        }
+                    }
+                    
+                 }
+            }
+
+        }, resultCallback => { Debug.LogError("error"); }, null, null);
+        return toster;
+
+    }
+    #endregion Store
 
 }
