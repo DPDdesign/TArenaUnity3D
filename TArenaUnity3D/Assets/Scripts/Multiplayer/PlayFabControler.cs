@@ -194,6 +194,7 @@ public int Level;
 public float WinRatio;
     public List<InventoryObjects> inventoryObjects;
     public List<InventoryObjects> storeObjects;
+    public List<string> ownedBundles;
     public int tCoins;
     public int aTokens;
     public void SetStats(int win, int lost, int exp){
@@ -319,12 +320,59 @@ void CheckLevel()
        
         return true;
     }
+
+
+    public bool BuyBundle(string iD, string cost, string VC)
+    {
+        bool toster = true;
+        var request2 = new GetCatalogItemsRequest
+        {
+            CatalogVersion = "1"
+        };
+
+        PlayFabClientAPI.GetCatalogItems(request2, result =>
+        {
+            storeObjects = new List<InventoryObjects>();
+            foreach (CatalogItem catalogItem in result.Catalog)
+            {
+                if (catalogItem.ItemClass == "ArmyBundle" && catalogItem.ItemId == iD)
+                {
+
+                    foreach (string bundleInfo in catalogItem.Bundle.BundledItems)
+                    {
+                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
+                        {
+                            if (inventoryObjects.Id == bundleInfo)
+                            {
+                                toster = false;
+                            }
+                        }
+                    }
+
+                }
+            }
+
+        }, resultCallback => { Debug.LogError("error"); }, null, null);
+
+
+        var request = new PurchaseItemRequest
+        {
+            CatalogVersion = "1",
+            ItemId = iD,
+            Price = Int32.Parse(cost),
+            VirtualCurrency = VC
+        };
+        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory(); }, result => { Debug.LogError("Nie udało się kupić " + iD); });
+
+        return true;
+    }
     public void GetInventory()
     {
 
         PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
         {
             inventoryObjects = new List<InventoryObjects>();
+
             foreach (ItemInstance itemInstance in result.Inventory)
             {
                 InventoryObjects iO = new InventoryObjects(itemInstance.ItemId, itemInstance.ItemClass);
