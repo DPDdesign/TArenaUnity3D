@@ -38,6 +38,9 @@ public class PlayFabControler : MonoBehaviour
     public GameObject mainMenuPanel;
     private string _playFabPlayerIdCache;
     private bool isLogged;
+    public GameObject UserNamePanel;
+    public GameObject ConfirmRegister;
+    public Text LogText;
 
     public void Awake()
     {
@@ -55,7 +58,7 @@ public class PlayFabControler : MonoBehaviour
         {
             tosterName = PlayerPrefs.GetString("USERNAME");
             userPassword = PlayerPrefs.GetString("PASSWORD");
-            GameObject.Find("UserName").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("USERNAME");
+           // GameObject.Find("UserName").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("USERNAME");
             userEmail = PlayerPrefs.GetString("EMAIL");
             GameObject.Find("Email").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("EMAIL");
             //var request = new LoginWithEmailAddressRequest { Email = userEmail, Password = userPassword};
@@ -78,7 +81,7 @@ public class PlayFabControler : MonoBehaviour
         Debug.Log("WELCOME TO RETSOT POBIERAM NAZWĘ PHOTON");
         PlayerPrefs.SetString("EMAIL", userEmail);
         PlayerPrefs.SetString("PASSWORD", userPassword);
-        PlayerPrefs.SetString("USERNAME", tosterName);
+       // PlayerPrefs.SetString("USERNAME", tosterName);
         GetStats();
         loginPanel.SetActive(false);
         SceneManager.LoadScene("MainMenu_Scene");
@@ -121,11 +124,49 @@ public class PlayFabControler : MonoBehaviour
 
     private void OnLoginFailure(PlayFabError error)
     {
-        Debug.Log("Sprobuj ponownie!");
+        Debug.LogError(error.GenerateErrorReport());
+        // Recognize and handle the error
+        LogText.color = Color.red;
+        switch (error.Error)
+        {
+
+            case PlayFabErrorCode.InvalidTitleId:
+                LogText.text = "Zły nickname!";
+
+                // Handle invalid title id error
+                break;
+            case PlayFabErrorCode.AccountNotFound:
+                // Handle account not found error
+                LogText.text = "Nie znaleziono konta!";
+                break;
+            case PlayFabErrorCode.InvalidEmailOrPassword:
+                // Handle invalid email or password error
+                LogText.text = "Błędny email lub hasło!";
+                break;
+            case PlayFabErrorCode.RequestViewConstraintParamsNotAllowed:
+                // Handle not allowed view params error
+                break;
+            case PlayFabErrorCode.InvalidEmailAddress:
+                LogText.text = "Błędny email! ";
+                break;
+            default:
+                // Handle unexpected error
+                LogText.text = "Spróbuj ponownie!";
+                Debug.Log("Sprobuj ponownie!");
+                break;
+                //   LogText.text = error.ErrorDetails[0];//.GenerateErrorReport();
+        }
+       
         //var RegisterRequest = new RegisterPlayFabUserRequest { Email = userEmail, Password = userPassword, Username = tosterName };
         //PlayFabClientAPI.RegisterPlayFabUser(RegisterRequest, OnRegisterSuccess, OnRegisterFailure);
         //GameObject.Find("LogIn").GetComponentInChildren<Text>().text ="Register";
-        Debug.LogError(error.GenerateErrorReport());
+       
+    }
+
+    public void RequestRegister()
+    {
+        UserNamePanel.SetActive(true);
+        ConfirmRegister.SetActive(true);
     }
 
     public void OnRegisterClick()
@@ -136,12 +177,16 @@ public class PlayFabControler : MonoBehaviour
 
     public void OnRegisterSuccess(RegisterPlayFabUserResult result)
     {
-        loginPanel.SetActive(false);
+      //  loginPanel.SetActive(false);
 
         PlayerPrefs.SetString("PASSWORD", userPassword);
         PlayerPrefs.SetString("USERNAME", tosterName);
         PlayerPrefs.SetString("EMAIL", userEmail);
+        LogText.text = "Congratulations, you made your Retsot account!";
+        LogText.color = Color.magenta;
         SetNewUserStats();
+        UserNamePanel.SetActive(false);
+        ConfirmRegister.SetActive(false);
 
     }
 
@@ -218,7 +263,7 @@ public class PlayFabControler : MonoBehaviour
                 new StatisticUpdate { StatisticName = "Wins", Value = Wins},
                 new StatisticUpdate { StatisticName = "Loses", Value = Losses},
                 new StatisticUpdate { StatisticName = "Experience", Value = Experience},
-                new StatisticUpdate {StatisticName = "WinRatio", Value = Wins/Losses},
+                new StatisticUpdate {StatisticName = "WinRatio", Value = Wins/(Losses+Wins)},
             }
         },
         result => { Debug.Log("User statistics updated"); },
@@ -235,6 +280,8 @@ public class PlayFabControler : MonoBehaviour
             OnGetStats,
             error => Debug.LogError(error.GenerateErrorReport())
         );
+
+        GetUserName();
     }
 
     void OnGetStats(GetPlayerStatisticsResult result)
@@ -287,6 +334,28 @@ public class PlayFabControler : MonoBehaviour
         }
 
     }
+
+    public string UserName;
+
+    public void GetUserName()
+    {
+
+        var request2 = new GetAccountInfoRequest
+        {
+            Email = PFC.userEmail
+        };
+
+        PlayFabClientAPI.GetAccountInfo(request2, result =>
+
+        {
+            UserName =  result.AccountInfo.Username;
+
+        }, resultCallback => { Debug.LogError("error"); }, null, null);
+
+
+    }
+
+
 
 
     #endregion PlayerStats

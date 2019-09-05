@@ -7,6 +7,8 @@ using UnityEngine.UI;
 
 public class OverlayMainMenu : MonoBehaviour
 {
+    float LevelProgress;
+    public Slider LevelSlider;
     public Text TCn, ATn;
     public GameObject DetailsPanel;
     public GameObject shop;
@@ -68,6 +70,8 @@ public class OverlayMainMenu : MonoBehaviour
         RankPointText.text = PlayFabControler.PFC.RankPoints.ToString();
         MaxExpText.text = PlayFabControler.ExpRequiredForLevel[PlayFabControler.PFC.Level + 1].ToString();
         LevelText.text = PlayFabControler.PFC.Level.ToString();
-        NicknameText.text = PlayFabControler.PFC.tosterName;
+        NicknameText.text = PlayFabControler.PFC.UserName;
+        LevelProgress = (float)(PlayFabControler.PFC.Experience) / (float)PlayFabControler.ExpRequiredForLevel[PlayFabControler.PFC.Level];
+        LevelSlider.value = LevelProgress;
     }
 }
