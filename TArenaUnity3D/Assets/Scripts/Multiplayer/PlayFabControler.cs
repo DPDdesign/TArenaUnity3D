@@ -17,6 +17,7 @@ public class PlayFabControler : MonoBehaviour
 
     private void OnEnable()
     {
+       
         if (PlayFabControler.PFC == null)
         {
             PlayFabControler.PFC = this;

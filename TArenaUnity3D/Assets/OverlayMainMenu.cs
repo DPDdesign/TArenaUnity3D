@@ -23,6 +23,7 @@ public class OverlayMainMenu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        
         if (FindObjectOfType<PlayFabControler>())
         {
             PlayFabControler.PFC.GetCatalog();
@@ -65,8 +66,8 @@ public class OverlayMainMenu : MonoBehaviour
         ExpText.text = PlayFabControler.PFC.Experience.ToString();
         WinText.text = PlayFabControler.PFC.Wins.ToString();
         LossesText.text = PlayFabControler.PFC.Losses.ToString();
-        WinRatio = ((float)PlayFabControler.PFC.Wins / (float)PlayFabControler.PFC.Losses);
-        WinRatioText.text = WinRatio.ToString("0.##");
+        WinRatio = ((float)PlayFabControler.PFC.Wins / ((float)PlayFabControler.PFC.Losses+ (float)PlayFabControler.PFC.Wins))*100;
+        WinRatioText.text = WinRatio.ToString("##")+" %";
         RankPointText.text = PlayFabControler.PFC.RankPoints.ToString();
         MaxExpText.text = PlayFabControler.ExpRequiredForLevel[PlayFabControler.PFC.Level + 1].ToString();
         LevelText.text = PlayFabControler.PFC.Level.ToString();
