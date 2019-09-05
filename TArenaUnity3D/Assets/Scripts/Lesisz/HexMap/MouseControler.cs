@@ -167,7 +167,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
                 return;
             }
         }
-        SYNC = !isMulti;
+        if(!isMulti) SYNC = !isMulti;
         photonView.RPC("SetSync", RpcTarget.Others, new object[] { });
         if (isMulti == true)
         {
