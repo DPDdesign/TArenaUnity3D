@@ -58,6 +58,14 @@ public class UICanvas : MonoBehaviour
     }
 
     // Update is called once per frame
+    public void UseSkill(int i)
+    {
+        SkillButtons[i].image.color= Color.grey;
+    }
+    public void UnUseSkill(int i)
+    {
+        SkillButtons[i].image.color = Color.white;
+    }
     void Update()
     {
         if (MC.activeButtons == true)
@@ -71,10 +79,13 @@ public class UICanvas : MonoBehaviour
             int i = 0;
             foreach (string b in MC.SelectedToster.skillstrings)
             {
+                SkillButtons[i].image.enabled = true;
                 if (MC.SelectedToster.cooldowns[i] == 0)
                 {
+                    
                     SkillButtons[i].interactable = true;
                     SkillT[i].text = (i + 1).ToString() + "\n" + b;
+                    SkillButtons[i].image.sprite=  Resources.Load<Sprite>("Sprites/Skill_Icons/"+b);
                 }
                 else
                 {
@@ -97,6 +108,7 @@ public class UICanvas : MonoBehaviour
             foreach (Button b in SkillButtons)
             {
                 b.interactable = false;
+                b.image.enabled = false;
                 SkillT[i].text = "";
                 i++;
             }

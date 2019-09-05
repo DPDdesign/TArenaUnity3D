@@ -659,6 +659,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     {
         if (castManager.isTurn)
         {
+            canvas.UnUseSkill(SelectedSpellid);
             hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
             SelectedToster.Moved = true;
@@ -667,6 +668,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         }
         else
         {
+            canvas.UnUseSkill(SelectedSpellid);
             hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
 
@@ -686,6 +688,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     {
       if (castManager.isInProgress == false)
         {
+            canvas.UnUseSkill(SelectedSpellid);
             castManager.SetFalse();
             hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
             CancelUpdateFunc();
@@ -949,7 +952,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     {
         SelectedSpellid = SelectedSkill;
         SkillState = true;
-
+        canvas.UseSkill(SelectedSpellid);
         Debug.LogError((SelectedToster.skillstrings[SelectedSpellid]));
         castManager.getMode(SelectedToster.skillstrings[SelectedSpellid]);
         if (castManager.isAvailable == false)
@@ -1019,6 +1022,13 @@ public class MouseControler : MonoBehaviourPunCallbacks
       
     }
 
+
+    public void CastSkill(int i)
+    {
+        photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { i });
+        Update_CurrentFunc = SpellCasting;
+        return;
+    }
     public static bool SkillState = true;
     void CastSkill()
     {

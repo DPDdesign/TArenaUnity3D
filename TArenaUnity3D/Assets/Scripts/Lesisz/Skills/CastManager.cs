@@ -291,7 +291,7 @@ public class CastManager : MonoBehaviourPunCallbacks
 
         if (getHexUM().Tosters.Count > 0)
         {
-            SelectedT().Amount = Convert.ToInt32(SelectedT().Amount * 0.92);
+
             SelectedT().AddNewTimeSpell(1, null, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rush", true);
             HexClass temp;
 
@@ -320,10 +320,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     public void RushM()
     {
-        if (SelectedT().Amount<30)
-        {
-            isAvailable = false;
-        }
+        isTurn = true;
         unselectaround = true;
         rush = true;
     }
@@ -332,13 +329,40 @@ public class CastManager : MonoBehaviourPunCallbacks
     #endregion
     #region Thrower skills (T2)
     #region Range_Stance //TODO: CIELU
-    public void Range_Stance()
+    public void Range_Stance_Barb()
     {
 
     }
-    public void Range_StanceM()
+    public void Range_Stance_BarbM()
     {
-        if(SelectedT().isRange = !SelectedT().isRange)
+        if (SelectedT().isRange = !SelectedT().isRange)
+        {
+            SelectedT().Projectile = Projectiles[0];
+            Debug.Log(SelectedT().isRange);
+            SelectedT().SpecialDMGModificator = 20;
+            SelectedT().SpecialResistance = 20;
+     //       SelectedT().skillstrings[1] = "";
+            SelectedT().skillstrings[mouseControler.SelectedSpellid] = "Melee_Stance_Barb";
+        }
+        else
+        {
+            SelectedT().Projectile = Projectiles[0];
+            Debug.Log(SelectedT().isRange);
+            SelectedT().SpecialDMGModificator = 0;
+            SelectedT().SpecialResistance = 0;
+        }
+        isTurn = false;
+        SetFalse();
+
+
+    }
+    public void Melee_Stance_Barb()
+    {
+
+    }
+    public void Melee_Stance_BarbM()
+    {
+        if (SelectedT().isRange = !SelectedT().isRange)
         {
             SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
@@ -351,10 +375,11 @@ public class CastManager : MonoBehaviourPunCallbacks
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 0;
             SelectedT().SpecialResistance = 0;
+            SelectedT().skillstrings[mouseControler.SelectedSpellid] = "Range_Stance_Barb";
         }
         isTurn = false;
         SetFalse();
-        
+
     }
     #endregion
     #region Double_Throw 
@@ -886,17 +911,18 @@ public class CastManager : MonoBehaviourPunCallbacks
     #region Trapper  skills (T1) Trapy...
     #region Skill 1 - Range_Stance
 
-    public void Range_StanceT() 
+    public void Range_Stance_Lizard() 
     {
      
     }
-    public void Range_StanceTM()
+    public void Range_Stance_LizardM()
     {
         if (SelectedT().isRange = !SelectedT().isRange)
         {
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 20;
             SelectedT().SpecialResistance = 20;
+            SelectedT().skillstrings[mouseControler.SelectedSpellid] = "Melee_Stance_Lizard";
         }
         else
         {
@@ -907,7 +933,31 @@ public class CastManager : MonoBehaviourPunCallbacks
         isTurn = false;
         SetFalse();
     }
+    public void Melee_Stance_Lizard()
+    {
 
+    }
+    public void Melee_Stance_LizardM()
+    {
+        if (SelectedT().isRange = !SelectedT().isRange)
+        {
+            SelectedT().Projectile = Projectiles[0];
+            Debug.Log(SelectedT().isRange);
+            SelectedT().SpecialDMGModificator = 20;
+            SelectedT().SpecialResistance = 20;
+        }
+        else
+        {
+            SelectedT().Projectile = Projectiles[0];
+            Debug.Log(SelectedT().isRange);
+            SelectedT().SpecialDMGModificator = 0;
+            SelectedT().SpecialResistance = 0;
+            SelectedT().skillstrings[mouseControler.SelectedSpellid] = "Range_Stance_Lizard";
+        }
+        isTurn = false;
+        SetFalse();
+
+    }
     #endregion
     #region Skill 2 - Spike_trap
     public void Spike_Trap() 
