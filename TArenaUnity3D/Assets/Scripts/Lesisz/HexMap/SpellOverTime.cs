@@ -268,6 +268,7 @@ namespace TimeSpells
                 {
                     if(h!=null&&h.Tosters.Count>0 && h.Tosters[0]!=me)
                     {
+                        Debug.LogError(h.Tosters[0].Name);
                         h.Tosters[0].AddNewTimeSpell(2, h.Tosters[0], 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, -10, "Fire_skin", false) ;
                     }
                 }
@@ -280,6 +281,7 @@ namespace TimeSpells
                 {
                     if (h!=null&&h.Tosters.Count > 0 && h.Tosters[0] != me)
                     {
+
                         h.Tosters[0].AddNewTimeSpell(2, h.Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 0, 0, "Terrifying", false);
                         h.Tosters[0].CounterAttackAvaible = false;
                         Debug.Log(h.Tosters[0].Name);

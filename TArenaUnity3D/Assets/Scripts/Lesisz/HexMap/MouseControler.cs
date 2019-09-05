@@ -44,7 +44,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     public bool isMulti = true;
     public MostStupidAIEver AI;
     public Camera c;
-
+    public bool SYNC = false;
     public int GetSelectedSpellID()
     {
         return SelectedSpellid;
@@ -167,7 +167,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
                 return;
             }
         }
-
+        SYNC = !isMulti;
+        photonView.RPC("SetSync", RpcTarget.Others, new object[] { });
         if (isMulti == true)
         {
             if (SelectedToster.Team == hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
@@ -182,6 +183,12 @@ public class MouseControler : MonoBehaviourPunCallbacks
                 return;
             }
         }
+      
+        if (SYNC==false)
+        {
+            return;
+        }
+        if (isMulti) { SYNC = false; };
            hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
         //Debug.LogError(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>().bounds);
         // outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
@@ -194,11 +201,17 @@ public class MouseControler : MonoBehaviourPunCallbacks
             Update_CurrentFunc = Taunted;
             return;
         }
+  
         SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
         Update_CurrentFunc = SelectTosterMovement;
         return;
     }
+    [PunRPC]
 
+    void SetSync()
+    {
+        SYNC = true;
+    }
     void Taunted()
     {
         Debug.Log("HOW DARE YOU!?");

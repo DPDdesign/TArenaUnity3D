@@ -648,8 +648,9 @@ public class TosterHexUnit : IQPathUnit
         {
             DMGf += DMGf / 2;
         }
-        Debug.Log("Dmg Before REdu: " + DMGf);
-        DMGf -= FlatDMGReduce * attacker.Amount;
+
+        DMGf -=defender.FlatDMGReduce * attacker.Amount;
+
         if (DMGf < 0)
         {
             DMGf = 0;
@@ -692,8 +693,9 @@ public class TosterHexUnit : IQPathUnit
         {
             DMGf += DMGf / 2;
         }
-        Debug.Log(DMGf);
-        DMGf -= FlatDMGReduce * attacker.Amount;
+
+        DMGf -= defender.FlatDMGReduce * attacker.Amount;
+
         if (DMGf<0)
         {
             DMGf = 0;
@@ -858,7 +860,8 @@ public class TosterHexUnit : IQPathUnit
     {
         //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
         double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        HexClass[] Distance = Pathing(t.Hex);
+        HexClass[] Distance = Pathing(t.Hex,true);
+
         if (Distance.Length>6)
         {
             dmgdouble -= dmgdouble / 2;
@@ -866,7 +869,7 @@ public class TosterHexUnit : IQPathUnit
         DealMePURE(Convert.ToInt32(dmgdouble));
         if (sth == true)
         {
-            Hex.hexMap.ThrowSomething(this, t, Projectile);
+            Hex.hexMap.ThrowSomething(this, t, t.Projectile);
         }
    
 
@@ -992,7 +995,8 @@ public class TosterHexUnit : IQPathUnit
         Moved = true;
         Team.HexesUnderTeam.Remove(this.Hex);
         Hex.RemoveToster(this);
-        tosterView.gameObject.transform.localScale = new Vector3(1f, 0.1f, 1f);
+        //tosterView.Destroy();
+       tosterView.gameObject.transform.localScale = new Vector3(1f, 0.1f, 1f);
     }
 
 

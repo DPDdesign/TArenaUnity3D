@@ -12,7 +12,7 @@ public class EndButton : MonoBehaviour
     }
     public void End()
     {
-        SceneManager.LoadScene(0);
+        SceneManager.LoadScene("MainMenu_Scene");
     }
     // Update is called once per frame
     void Update()

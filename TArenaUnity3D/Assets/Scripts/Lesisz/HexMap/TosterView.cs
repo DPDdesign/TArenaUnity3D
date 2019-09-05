@@ -43,7 +43,10 @@ public class TosterView : MonoBehaviour
       
 
     }
-
+    public void Destroy()
+    {
+        Destroy(this);
+    }
     private void OnMouseUp()
     {
          
