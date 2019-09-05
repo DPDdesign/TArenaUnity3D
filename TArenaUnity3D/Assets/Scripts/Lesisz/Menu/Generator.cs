@@ -23,12 +23,12 @@ public class Generator : MonoBehaviour
     public PanelArmii PanelArmii;
     public List<Text> CostText;
     public List<GameObject> RacePanels;
-
+    public Shop shop;
     public void Start()
     {
 
 
-
+        LoadAll();
     }
 
     public void CallMe()
@@ -62,6 +62,46 @@ public class Generator : MonoBehaviour
             i++;
            
         }
+
+    }
+    private void LateUpdate()
+    {
+        LoadAll();
+    }
+    public   List<Button> butt;
+    public void LoadAll()
+    {
+        foreach (InventoryObjects shopobj in PlayFabControler.PFC.storeObjects)
+        {
+             if (shopobj.Type1 == "Unit")
+            {
+                foreach (Button b in butt)
+                {
+                    if (b.name == shopobj.Id)
+                    {
+
+
+                        //  Text[] texts = b.gameObject.GetComponentsInChildren<Text>();
+                        //  texts[0].gameObject.SetActive(true);
+                        bool inter = false;
+                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
+                        {
+                            if (inventoryObjects.Id == shopobj.Id)
+                            {
+                               // b.interactable = true;
+                                inter = true;
+                        //        texts[0].gameObject.SetActive(false);
+                            }
+                        }
+                        b.interactable = inter;
+                        //b.GetComponentInChildren<Text>().gameObject.SetActive(!inter);
+                    }
+                }
+
+            }
+
+        }
+
 
     }
     public void Wczytaj()
@@ -131,7 +171,7 @@ public class Generator : MonoBehaviour
     }
     private void Update()
     {
-     
+        
     }
 
 

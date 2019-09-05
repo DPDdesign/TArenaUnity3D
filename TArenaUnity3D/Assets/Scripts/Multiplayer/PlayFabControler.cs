@@ -54,6 +54,7 @@ public class PlayFabControler : MonoBehaviour
         else if (PlayerPrefs.HasKey("EMAIL"))
         {
             tosterName = PlayerPrefs.GetString("USERNAME");
+            userPassword = PlayerPrefs.GetString("PASSWORD");
             GameObject.Find("UserName").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("USERNAME");
             userEmail = PlayerPrefs.GetString("EMAIL");
             GameObject.Find("Email").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("EMAIL");
@@ -298,7 +299,7 @@ public class PlayFabControler : MonoBehaviour
 
         var request2 = new GetCatalogItemsRequest
         {
-            CatalogVersion = "1"
+            CatalogVersion = "AllThings"
         };
 
         PlayFabClientAPI.GetCatalogItems(request2, result =>
@@ -323,7 +324,7 @@ public class PlayFabControler : MonoBehaviour
     {
         var request = new PurchaseItemRequest
         {
-            CatalogVersion = "1",
+            CatalogVersion = "AllThings",
             ItemId = iD,
             Price = Int32.Parse(cost),
             VirtualCurrency = VC
@@ -332,49 +333,24 @@ public class PlayFabControler : MonoBehaviour
 
         return true;
     }
-
+    IEnumerator Example()
+    {
+        print(Time.time);
+        yield return new WaitForSeconds(5);
+        print(Time.time);
+    }
 
     public bool BuyBundle(string iD, string cost, string VC)
     {
-        bool toster = true;
-        var request2 = new GetCatalogItemsRequest
-        {
-            CatalogVersion = "1"
-        };
-
-        PlayFabClientAPI.GetCatalogItems(request2, result =>
-        {
-            storeObjects = new List<InventoryObjects>();
-            foreach (CatalogItem catalogItem in result.Catalog)
-            {
-                if (catalogItem.ItemClass == "ArmyBundle" && catalogItem.ItemId == iD)
-                {
-
-                    foreach (string bundleInfo in catalogItem.Bundle.BundledItems)
-                    {
-                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
-                        {
-                            if (inventoryObjects.Id == bundleInfo)
-                            {
-                                toster = false;
-                            }
-                        }
-                    }
-
-                }
-            }
-
-        }, resultCallback => { Debug.LogError("error"); }, null, null);
-
 
         var request = new PurchaseItemRequest
         {
-            CatalogVersion = "1",
+            CatalogVersion = "AllThings",
             ItemId = iD,
             Price = Int32.Parse(cost),
             VirtualCurrency = VC
         };
-        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory(); }, result => { Debug.LogError("Nie udało się kupić " + iD); });
+        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory();}, result => { Debug.LogError("Nie udało się kupić " + iD); });
 
         return true;
     }
@@ -389,19 +365,47 @@ public class PlayFabControler : MonoBehaviour
             {
                 InventoryObjects iO = new InventoryObjects(itemInstance.ItemId, itemInstance.ItemClass);
                 inventoryObjects.Add(iO);
+                Debug.LogError(iO.Id);
+                
             }
             result.VirtualCurrency.TryGetValue("TC", out tCoins);
             result.VirtualCurrency.TryGetValue("AT", out aTokens);
             Debug.Log("Wczytano dane użytkownika");
+
         }, resultCallback => { Debug.LogError("error"); }, null, null);
     }
 
+
+
+  public  IEnumerator GetInventoryI()
+    {
+        bool toster = false;
+        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
+        {
+            inventoryObjects = new List<InventoryObjects>();
+
+            foreach (ItemInstance itemInstance in result.Inventory)
+            {
+                InventoryObjects iO = new InventoryObjects(itemInstance.ItemId, itemInstance.ItemClass);
+                inventoryObjects.Add(iO);
+
+            }
+            result.VirtualCurrency.TryGetValue("TC", out tCoins);
+            result.VirtualCurrency.TryGetValue("AT", out aTokens);
+            Debug.Log("Wczytano dane użytkownika");
+        }, resultCallback => { Debug.LogError("error"); toster = true; }, null, null);
+        while (toster == false)
+        {
+            yield return new WaitForSeconds(5);
+        }
+      
+    }
     public bool CheckIfPlayerGotBundle(string bundle)
     {
         bool toster = true;
         var request2 = new GetCatalogItemsRequest
         {
-            CatalogVersion = "1"
+            CatalogVersion = "AllThings"
         };
 
         PlayFabClientAPI.GetCatalogItems(request2, result =>

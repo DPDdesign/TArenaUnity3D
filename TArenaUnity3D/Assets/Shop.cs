@@ -5,12 +5,13 @@ using UnityEngine.UI;
 
 public class Shop : MonoBehaviour
 {
-    public List<Button> Bundles, Units, Skins;
+    public List<Button> Bundles, Units, Skins, Units2;
     public int Barbarians=0, Lizards=0, Golems=0, Shadows=0;
     public GameObject BuyMenu;
     public Text totalM, totalC, leftM, nameOfObject, Error;
     public string objToBuy, typeOfObject, totalCost, typeOfCurrency;
     public Button BuyButton;
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -20,7 +21,48 @@ public class Shop : MonoBehaviour
     {
         PlayFabControler.PFC.GetInventory();
     }
-    void LoadAll()
+    public void Reload()
+    {
+        //StartCoroutine(PlayFabControler.PFC.GetInventoryI());
+        LoadAll2();
+        LoadAll();
+    }
+    public void LoadAll2()
+    {
+        foreach (InventoryObjects shopobj in PlayFabControler.PFC.storeObjects)
+        {
+            if (shopobj.Type1 == "Unit")
+            {
+                foreach (Button b in Units2)
+                {
+                    if (b.name == shopobj.Id)
+                    {
+
+
+                        //  Text[] texts = b.gameObject.GetComponentsInChildren<Text>();
+                        //  texts[0].gameObject.SetActive(true);
+                        bool inter = false;
+                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
+                        {
+                            if (inventoryObjects.Id == shopobj.Id)
+                            {
+                                // b.interactable = true;
+                                inter = true;
+                                //        texts[0].gameObject.SetActive(false);
+                            }
+                        }
+                        b.interactable = inter;
+                        //b.GetComponentInChildren<Text>().gameObject.SetActive(!inter);
+                    }
+                }
+
+            }
+
+        }
+
+
+    }
+    public void LoadAll()
     {
         foreach (InventoryObjects shopobj in PlayFabControler.PFC.storeObjects)
         {
@@ -57,6 +99,7 @@ public class Shop : MonoBehaviour
                     if (b.name == shopobj.Id)
                     {
                         b.interactable = true;
+                    
                         Text[] texts = b.gameObject.GetComponentsInChildren<Text>();
                         foreach (Text t in texts)
                         {
@@ -76,6 +119,7 @@ public class Shop : MonoBehaviour
                             {
                                 texts[0].text = "OWNED";
                                 b.interactable = false;
+                           
                             }
                         }
                     }
@@ -159,11 +203,13 @@ public class Shop : MonoBehaviour
             PlayFabControler.PFC.GetInventory();
         }
         LoadAll();
+        LoadAll2();
         BuyMenu.SetActive(false);
+   
     }
     // Update is called once per frame
     void Update()
     {
-        LoadAll();
+       Reload();
     }
 }
