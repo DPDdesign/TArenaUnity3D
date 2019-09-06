@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 using Photon.Pun;
 using Photon.Realtime;
 using System;
-
+using PlayFab.Json;
 public class PlayFabControler : MonoBehaviour
 {
 
@@ -249,6 +249,41 @@ public class PlayFabControler : MonoBehaviour
     public int tCoins;
     public int aTokens;
 
+    public void StartCloudSetWin()
+    {
+
+        PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
+        {
+            FunctionName = "SetWin", // Arbitrary function name (must exist in your uploaded cloud.js file)
+            GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
+        }, OnCloudSetShared, OnErrorShared);
+    }
+
+    public void StartCloudSetLoss()
+    {
+
+        PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
+        {
+            FunctionName = "SetLoss", // Arbitrary function name (must exist in your uploaded cloud.js file)
+            GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
+        }, OnCloudSetShared, OnErrorShared);
+    }
+
+
+
+    private void OnCloudSetShared(ExecuteCloudScriptResult result)
+    {
+        // Cloud Script returns arbitrary results, so you have to evaluate them one step and one parameter at a time
+        JsonObject jsonResult = (JsonObject)result.FunctionResult;
+        //object messageValue;
+        //jsonResult.TryGetValue("messageValue", out messageValue); // note how "messageValue" directly corresponds to the JSON values set in Cloud Script
+        //Debug.Log((string)messageValue);
+    }
+
+    private void OnErrorShared(PlayFabError error)
+    {
+        Debug.Log(error.GenerateErrorReport());
+    }
     public void SetStats(int win, int lost, int exp)
     {
 

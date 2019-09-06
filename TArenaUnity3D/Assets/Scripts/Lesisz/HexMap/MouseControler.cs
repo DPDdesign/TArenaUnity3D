@@ -136,11 +136,11 @@ public class MouseControler : MonoBehaviourPunCallbacks
                 PlayFabControler.PFC.GetPhoton();
                 if (PhotonNetwork.LocalPlayer.IsMasterClient)
                 {
-                    PlayFabControler.PFC.SetStats(1, 0, 3);
+                    PlayFabControler.PFC.StartCloudSetWin();
                 }
                 else
                 {
-                    PlayFabControler.PFC.SetStats(0, 1, 1);
+                    PlayFabControler.PFC.StartCloudSetLoss();
                 }
             }
         }
@@ -153,11 +153,11 @@ public class MouseControler : MonoBehaviourPunCallbacks
                 PlayFabControler.PFC.GetPhoton();
                 if (PhotonNetwork.LocalPlayer.IsMasterClient)
                 {
-                    PlayFabControler.PFC.SetStats(0, 1, 3);
+                    PlayFabControler.PFC.StartCloudSetLoss();
                 }
                 else
                 {
-                    PlayFabControler.PFC.SetStats(1, 0, 1);
+                    PlayFabControler.PFC.StartCloudSetWin();
                 }
             }
         }
