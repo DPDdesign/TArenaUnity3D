@@ -379,7 +379,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         }
         isTurn = false;
         SetFalse();
-
+       
     }
     #endregion
     #region Double_Throw 
@@ -917,6 +917,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         if (SelectedT().isRange = !SelectedT().isRange)
         {
+            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 20;
             SelectedT().SpecialResistance = 20;
@@ -924,6 +925,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         }
         else
         {
+            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 0;
             SelectedT().SpecialResistance = 0;
@@ -1160,12 +1162,14 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void Stone_Stance()
     {
-        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -SelectedT().CounterAttacks, 0,-100, "Stone_Stance", false);
+        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -SelectedT().CounterAttacks, 0,100, "Stone_Stance", false);
         SelectedT().CounterAttackAvaible = false;
+        mouseControler.SetCD();
         SetFalse();
     }
     public void Stone_StanceM()
-    { 
+    {
+        cooldown = 4;
         isTurn = true;
         SelfCast = true;
         unselectaround = true;
@@ -1190,7 +1194,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
 
 
-        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -SelectedT().CounterAttacks, 0, 0, "Toxic_Fume", false);
+        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, "Toxic_Fume", false);
         SelectedT().CounterAttackAvaible = false;
         List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, aoeradius));
         foreach (HexClass t in hexarea)
@@ -1520,7 +1524,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         Debug.LogError("działam");
         List<HexClass> hexarea = new List<HexClass>(getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), aoeradius));
-        SelectedT().SpecialDMGModificator = 30;
+        SelectedT().SpecialDMGModificator = 20;
         foreach (HexClass t in hexarea)
         {
             if (t != null)
@@ -1539,10 +1543,12 @@ public class CastManager : MonoBehaviourPunCallbacks
             d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
 
         }
+        mouseControler.SetCD();
         SetFalse();
     }
     public void Fire_BallM()
     {
+        cooldown = 2;
         unselectaround = true;
         aoeradius = 1;
         RangeisAoE = true;

@@ -36,7 +36,7 @@ public class Generator : MonoBehaviour
         Units = new List<string>();
         UnitsAmount = new List<int>();
         Costs = new List<int>();
-        for (int i = 0; i < 7; i++)
+        for (int i = 0; i < 6; i++)
         {
             Units.Add(null);
             UnitsAmount.Add(0);
@@ -208,7 +208,7 @@ public class Generator : MonoBehaviour
 
     public void ReadAllNumbers()
     {
-        for(int i=0; i < 7; i++)
+        for(int i=0; i < 6; i++)
         {
            // Debug.LogError(i);
             if (Units[i] != null)
