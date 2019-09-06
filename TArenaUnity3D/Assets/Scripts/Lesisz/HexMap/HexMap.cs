@@ -86,8 +86,8 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
                 Team.WczytajPlik();
                 Debug.LogError("THIS IS YOUR BUILD - NOW HOW TO SHARE IT?");
                 buildG2 = Team.buildG;
-                photonView.RPC("UnitsAmount", RpcTarget.Others, new object[] { buildG2.NoUnits[0], buildG2.NoUnits[1], buildG2.NoUnits[2], buildG2.NoUnits[3], buildG2.NoUnits[4], buildG2.NoUnits[5], buildG2.NoUnits[6] });
-                photonView.RPC("UnitsNames", RpcTarget.Others, new object[] { buildG2.Units[0], buildG2.Units[1], buildG2.Units[2], buildG2.Units[3], buildG2.Units[4], buildG2.Units[5], buildG2.Units[6] });
+                photonView.RPC("UnitsAmount", RpcTarget.Others, new object[] { buildG2.NoUnits[0], buildG2.NoUnits[1], buildG2.NoUnits[2], buildG2.NoUnits[3], buildG2.NoUnits[4], buildG2.NoUnits[5] });
+                photonView.RPC("UnitsNames", RpcTarget.Others, new object[] { buildG2.Units[0], buildG2.Units[1], buildG2.Units[2], buildG2.Units[3], buildG2.Units[4], buildG2.Units[5] });
 
               //  DidIGetOtherBuild = true;
 
@@ -153,7 +153,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
    
     }
     [PunRPC]
-    void UnitsAmount(int i, int j, int k , int t, int p , int l , int s)
+    void UnitsAmount(int i, int j, int k , int t, int p , int l)
     {
         Debug.LogError(i);
 
@@ -165,12 +165,12 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
         buildG2.NoUnits.Add(t);
         buildG2.NoUnits.Add(p);
         buildG2.NoUnits.Add(l);
-        buildG2.NoUnits.Add(s);
+ 
 
 
     }
     [PunRPC]
-    void UnitsAmount1(int i, int j, int k, int t, int p, int l, int s)
+    void UnitsAmount1(int i, int j, int k, int t, int p, int l)
     {
         Debug.LogError(i);
 
@@ -182,12 +182,11 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
         buildG1.NoUnits.Add(t);
         buildG1.NoUnits.Add(p);
         buildG1.NoUnits.Add(l);
-        buildG1.NoUnits.Add(s);
 
 
     }
     [PunRPC]
-    void UnitsNames(string i, string j, string k, string t, string p, string l, string s)
+    void UnitsNames(string i, string j, string k, string t, string p, string l)
     {
        // Debug.LogError(i);
 
@@ -199,14 +198,14 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
         buildG2.Units.Add(t);
         buildG2.Units.Add(p);
         buildG2.Units.Add(l);
-        buildG2.Units.Add(s);
-        photonView.RPC("UnitsAmount1", RpcTarget.Others, new object[] { buildG1.NoUnits[0], buildG1.NoUnits[1], buildG1.NoUnits[2], buildG1.NoUnits[3], buildG1.NoUnits[4], buildG1.NoUnits[5], buildG1.NoUnits[6] });
-        photonView.RPC("UnitsNames1", RpcTarget.Others, new object[] { buildG1.Units[0], buildG1.Units[1], buildG1.Units[2], buildG1.Units[3], buildG1.Units[4], buildG1.Units[5], buildG1.Units[6] });
+  
+        photonView.RPC("UnitsAmount1", RpcTarget.Others, new object[] { buildG1.NoUnits[0], buildG1.NoUnits[1], buildG1.NoUnits[2], buildG1.NoUnits[3], buildG1.NoUnits[4], buildG1.NoUnits[5] });
+        photonView.RPC("UnitsNames1", RpcTarget.Others, new object[] { buildG1.Units[0], buildG1.Units[1], buildG1.Units[2], buildG1.Units[3], buildG1.Units[4], buildG1.Units[5] });
         DidIGetOtherBuild = true;
 
     }
     [PunRPC]
-    void UnitsNames1(string i, string j, string k, string t, string p, string l, string s)
+    void UnitsNames1(string i, string j, string k, string t, string p, string l)
     {
         // Debug.LogError(i);
 
@@ -218,7 +217,6 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
         buildG1.Units.Add(t);
         buildG1.Units.Add(p);
         buildG1.Units.Add(l);
-        buildG1.Units.Add(s);
         DidIGetOtherBuild = true;
 
     }
@@ -390,7 +388,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
        //         HexGo.AddComponent<Outline>();
         //        HexGo.GetComponent<Outline>().color = 0;
                 gameObjectToHexMap[HexGo] = h;
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count); //{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count); //{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap.Add(h, HexGo);
                 h.MyHex = HexGo;
@@ -421,7 +419,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
          //       HexGo.GetComponent<Outline>().color = 2;
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count);//{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;
@@ -450,7 +448,7 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
           //      HexGo.GetComponent<Outline>().color = 1;
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0}, {1}", col, row, h.Tosters.Count);//{0}, {1}\n {2}
+                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
                 hexes[col, row] = h;
                 hextoGameObjectMap[h] = HexGo;
                 gameObjectToHexMap[HexGo] = h;

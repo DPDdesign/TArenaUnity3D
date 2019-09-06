@@ -1,4 +1,5 @@
 ﻿using Photon.Pun;
+using Photon.Realtime;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -81,8 +82,22 @@ public class MouseControler : MonoBehaviourPunCallbacks
         Debug.Log("Camera");
     }
 
+    /*
+    public override void OnPlayerLeftRoom(Player otherPlayer)
+    {
+        base.OnPlayerLeftRoom(otherPlayer);
+        canvas.EndPanel.SetActive(true);
+        canvas.EndText.text = "Other Player Disconnected. WIN!";
+        if (isMulti)
+        {
+            PlayFabControler.PFC.GetPhoton();
 
+                PlayFabControler.PFC.StartCloudSetWin();
+            
 
+        }
+    }
+    */
     /// // TODO : CZEKAC NA NASTEPNA TURE DO KONCA ANIMACJI!!!  - > ZOBACZ NA:     StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
     public bool isCamera()
     {
@@ -286,6 +301,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
 
         SelectedToster = TM.AskWhosTurn();
         SelectedToster.isSelected = true;
+        outlineM.SetHexSelectedToster(SelectedToster.Hex);
         if (isAiOn == true)
         {
             if (SelectedToster.Team == hexMap.Teams[1])
@@ -312,7 +328,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
         //Debug.LogError(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>().bounds);
         // outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
-        outlineM.SetHexSelectedToster(SelectedToster.Hex);
+
 
         hexUnderMouse = SelectedToster.Hex;
         if (SelectedToster.Taunt == true)
@@ -676,6 +692,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
     [PunRPC]
     void EndSkillss()
     {
+       
+       
         if (castManager.isTurn)
         {
             canvas.UnUseSkill(SelectedSpellid);
@@ -794,8 +812,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         {
             if (Input.GetMouseButtonDown(0))
             {
-                if (EventSystem.current.IsPointerOverGameObject())
-                    return;
+
                 photonView.RPC("startSpell", RpcTarget.All, new object[] { hexUnderMouse.C,hexUnderMouse.R});
                // castManager.startSpell(SelectedToster.skillstrings[SelectedSpellid]);
 
@@ -815,6 +832,18 @@ public class MouseControler : MonoBehaviourPunCallbacks
     [PunRPC]
     void startSpell(int i, int j)
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+            return;
+        SelectedToster.TextToSend = "";
+        SelectedToster.TextToSend += SelectedToster.Name + " używa " + SelectedToster.skillstrings[SelectedSpellid] + ".";
+        if (SelectedToster.teamN == true)
+        {
+            Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Master);
+        }
+        else
+        {
+            Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
+        }
         castManager.startSpell(SelectedToster.skillstrings[SelectedSpellid],hexMap.GetHexAt(i,j));
 
     }
@@ -1048,6 +1077,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
         Update_CurrentFunc = SpellCasting;
         return;
     }
+
+
     public static bool SkillState = true;
     void CastSkill()
     {
@@ -1247,6 +1278,16 @@ public class MouseControler : MonoBehaviourPunCallbacks
         {
             if (SelectedToster.Waited == false)
             {
+                SelectedToster.TextToSend = "";
+                SelectedToster.TextToSend += SelectedToster.Name + " czeka.";
+                if (SelectedToster.teamN == true)
+                {
+                    Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Master);
+                }
+                else
+                {
+                    Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
+                }
                 SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
                 photonView.RPC("Waitt", RpcTarget.All, new object[] { });
             }
@@ -1287,6 +1328,16 @@ public class MouseControler : MonoBehaviourPunCallbacks
     {
         if (Input.GetKeyUp(KeyCode.Space))
         {
+            SelectedToster.TextToSend = "";
+            SelectedToster.TextToSend += SelectedToster.Name + " broni się.";
+            if (SelectedToster.teamN == true)
+            {
+                Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Master);
+            }
+            else
+            {
+                Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
+            }
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
             photonView.RPC("Defensee", RpcTarget.All, new object[] { });
           
@@ -1496,26 +1547,42 @@ public class MouseControler : MonoBehaviourPunCallbacks
 
     public void WaitB()
     {
-      
-                if (SelectedToster.Waited == false)
-                {
-                    SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-                    SelectedToster.Waited = true;
-                    CancelUpdateFunc();
-                }
-       
+
+        if (SelectedToster.Waited == false)
+        {
+            SelectedToster.TextToSend = "";
+            SelectedToster.TextToSend += SelectedToster.Name + " czeka.";
+            if (SelectedToster.teamN == true)
+            {
+                Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Master);
+            }
+            else
+            {
+                Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
+            }
+            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+            photonView.RPC("Waitt", RpcTarget.All, new object[] { });
+        }
+
     }
 
 
    public  void DefenseB()
     {
 
-                SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-                SelectedToster.Moved = true;
-                SelectedToster.DefenceStance = true;
-                SelectedToster.SpecialDef += 5;
-                CancelUpdateFunc();
-  
+        SelectedToster.TextToSend = "";
+        SelectedToster.TextToSend += SelectedToster.Name + " broni się.";
+        if (SelectedToster.teamN == true)
+        {
+            Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Master);
+        }
+        else
+        {
+            Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
+        }
+        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+        photonView.RPC("Defensee", RpcTarget.All, new object[] { });
+
     }
 
     public void CastSkill1B()

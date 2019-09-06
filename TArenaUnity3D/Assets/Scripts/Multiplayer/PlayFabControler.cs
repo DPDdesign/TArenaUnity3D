@@ -178,14 +178,14 @@ public class PlayFabControler : MonoBehaviour
 
     public void OnRegisterSuccess(RegisterPlayFabUserResult result)
     {
-      //  loginPanel.SetActive(false);
-
+        //  loginPanel.SetActive(false);
+        StartCloudWipeAccount();
         PlayerPrefs.SetString("PASSWORD", userPassword);
         PlayerPrefs.SetString("USERNAME", tosterName);
         PlayerPrefs.SetString("EMAIL", userEmail);
         LogText.text = "Congratulations, you made your Retsot account!";
         LogText.color = Color.magenta;
-        SetNewUserStats();
+      
         UserNamePanel.SetActive(false);
         ConfirmRegister.SetActive(false);
 
@@ -248,7 +248,15 @@ public class PlayFabControler : MonoBehaviour
     public List<string> ownedBundles;
     public int tCoins;
     public int aTokens;
+    public void StartCloudWipeAccount()
+    {
 
+        PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
+        {
+            FunctionName = "WipeAccount", // Arbitrary function name (must exist in your uploaded cloud.js file)
+            GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
+        }, OnCloudSetShared, OnErrorShared);
+    }
     public void StartCloudSetWin()
     {
 

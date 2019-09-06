@@ -31,6 +31,16 @@ public class PlayButton : MonoBehaviour
             else
                 ThisButton.interactable = false;
         }
+        else
+        {
+            if (PlayerPrefs.HasKey("YourArmy"))
+            {
+                ThisButton.interactable = true;
+
+            }
+            else
+                ThisButton.interactable = false;
+        }
     }
 
     public void PlayGame()
@@ -51,11 +61,33 @@ public class PlayButton : MonoBehaviour
 
     public void QuickGame()
     {
+        if (AI.isOn)
+            PlayerPrefs.SetInt("AI", 1);
+        else
+            PlayerPrefs.SetInt("AI", 0);
+        if (MultiPlayer.isOn)
+        {
+            PlayerPrefs.SetInt("Multi", 1);
+
+        }
+        else
+            PlayerPrefs.SetInt("Multi", 0);
         NetworkConnectionManager.OnClickConnectToMaster();
 
     }
     public void JoinFriend()
     {
+        if (AI.isOn)
+            PlayerPrefs.SetInt("AI", 1);
+        else
+            PlayerPrefs.SetInt("AI", 0);
+        if (MultiPlayer.isOn)
+        {
+            PlayerPrefs.SetInt("Multi", 1);
+
+        }
+        else
+            PlayerPrefs.SetInt("Multi", 0);
         NetworkConnectionManager.OnClickConnectToMasterCustom(inputField.text);
 
     }

@@ -248,9 +248,9 @@ public class Generator : MonoBehaviour
     }
     public void SaveUnit(string t)
     {
-
+        
         Units[NumberOfUnit] = t;
-
+        
 
     }
     public void SaveCost(int t)

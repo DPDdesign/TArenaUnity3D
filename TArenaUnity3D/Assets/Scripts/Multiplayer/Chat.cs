@@ -13,6 +13,24 @@ public Color Master,Client,Info;
     [SerializeField]
     public List<Msg> messageList = new List<Msg>();
 
+
+    public static Chat  chat;
+
+    private void OnEnable()
+    {
+      
+        if (Chat.chat == null)
+        {
+            Chat.chat = this;
+        }
+        else
+        {
+            if (Chat.chat != this)
+            { Destroy(this.gameObject); }
+
+        }
+       
+    }
     // Start is called before the first frame update
     void Start()
     {
@@ -22,20 +40,7 @@ public Color Master,Client,Info;
     // Update is called once per frame
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Space)){
-            SendMessageToChat("Your pressed space", Msg.MessageType.Client);
-        }
-
-        if(Input.GetKeyDown(KeyCode.N)){
-            SendMessageToChat("A BB CCC DDD EEEE FFFFF GGGGGG HHHHHHH IIIIIIII JJJJJJJJJ", Msg.MessageType.Master);
-        }
-
-
-
-        if(Input.GetKeyDown(KeyCode.B)){
-            SendMessageToChat("Info", Msg.MessageType.Info);
-        }
-
+   
     }
 
     public void SendMessageToChat(string text, Msg.MessageType messageType)

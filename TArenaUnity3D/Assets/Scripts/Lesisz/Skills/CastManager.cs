@@ -600,7 +600,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         if (getHexUM() == SelectedT().Hex)
         {
-            SelectedT().AddNewTimeSpell(2, SelectedT(), 0, SelectedT().GetDef(), -SelectedT().GetDef(), 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rage", false);
+            SelectedT().AddNewTimeSpell(2, SelectedT(), 0, SelectedT().GetDef()/2, -SelectedT().GetDef(), 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rage", false);
             mouseControler.SetCD();
             SetFalse();
         }
@@ -1413,7 +1413,8 @@ public class CastManager : MonoBehaviourPunCallbacks
                     newunit.SetTosterPrefab(getHexUM().hexMap);
                     newunit.SetTextAmount();
                     getHexUM().hexMap.GenerateToster(h.C, h.R, newunit);
-                    newunit.DealMeDMGDef(16, SelectedT());
+                    newunit.DealMeDMGDef(8, SelectedT());
+                    newunit.skillstrings.Remove("Stone_Throw");
                     newunit.Moved = true;
                     SetFalse();
                     return;
@@ -1431,7 +1432,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             newunit.SetTosterPrefab(getHexUM().hexMap);
             newunit.SetTextAmount();
             getHexUM().hexMap.GenerateToster(getHexUM().C, getHexUM().R, newunit);
-            newunit.DealMeDMGDef(10, SelectedT());
+            newunit.DealMeDMGDef(8, SelectedT());
             newunit.Moved = true;
             SetFalse();
         }

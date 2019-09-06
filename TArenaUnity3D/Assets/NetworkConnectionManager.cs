@@ -55,7 +55,7 @@ public static NetworkConnectionManager NCM;
         CustomGame = false;
         PhotonNetwork.NickName = "Toster";
  //       PhotonNetwork.AutomaticallySyncScene = true;
-        PhotonNetwork.GameVersion = "v1";
+        PhotonNetwork.GameVersion = "v2";
         PlayerPrefs.SetString("CustomGameName", "");
         PlayerPrefs.SetInt("customGame", 0);
         PhotonNetwork.ConnectUsingSettings();

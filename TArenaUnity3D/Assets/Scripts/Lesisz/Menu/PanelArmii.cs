@@ -18,7 +18,7 @@ public class PanelArmii : MonoBehaviour
     public List<string> ListOfImages;// = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2", "Sprites/Szaman1" });
     public List<string> ListOfUnits;// = new List<string>(new string[] { "TosterDPS", "TosterTANK", "TosterHEAL", "Szaman", "zodyn"});
     public BuildG LoadedBuild;
-
+    public Sprite sprite;
     [System.Serializable]
     public class BuildG
     {
@@ -85,7 +85,7 @@ public class PanelArmii : MonoBehaviour
         for (int i = 0; i < 10; i++)
         {
             path = Application.persistentDataPath + "/build" + i.ToString() + ".d";
-
+            Debug.Log(path);
             if (File.Exists(path))
             {
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -98,8 +98,8 @@ public class PanelArmii : MonoBehaviour
                 {
                     if (ListOfHeroes[j] == buildG.NazwaBohatera)
                     {
-                
-                        Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
+
+                        Sprite hero = sprite;
                         Imagess[i].sprite = hero;
              
 

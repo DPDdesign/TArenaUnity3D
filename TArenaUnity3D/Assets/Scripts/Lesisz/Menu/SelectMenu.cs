@@ -150,6 +150,7 @@ public class SelectMenu : MonoBehaviour
         }
 
     }
+    public Sprite sprite;
     public void PickArmyYours(int i)
     {
         string path = Application.persistentDataPath + "/build" + i.ToString() + ".d";
@@ -166,7 +167,7 @@ public class SelectMenu : MonoBehaviour
                 {
                     PlayerPrefs.SetInt("YourArmy", i);
                     Debug.Log("tutaj");
-                    Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
+                    Sprite hero = sprite;
                     BigImagess[0].sprite = hero;
                     BigImagess[0].GetComponentInChildren<Text>().text = "";
                     RemoveButtons[0].gameObject.SetActive(true);
@@ -202,7 +203,8 @@ public class SelectMenu : MonoBehaviour
                 {
                     PlayerPrefs.SetInt("EnemyArmy", i);
                     Debug.Log("tutaj");
-                    Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
+                    Sprite hero = sprite;
+                    //Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
                     BigImagess[1].sprite = hero;
                     BigImagess[1].GetComponentInChildren<Text>().text = "";
                     Debug.Log(Application.persistentDataPath + ListOfImages[j]);

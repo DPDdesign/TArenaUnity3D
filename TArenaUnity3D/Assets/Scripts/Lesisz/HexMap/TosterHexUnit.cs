@@ -34,6 +34,7 @@ public class TosterHexUnit : IQPathUnit
     public bool isRange = false;
     public double DefensePenetration = 0;
     public GameObject Projectile;
+    public string TextToSend;
     ///stats
     [XmlAttribute("Name")]
     public string Name = "NoName";
@@ -270,7 +271,17 @@ public class TosterHexUnit : IQPathUnit
             }
             if (hex.trap.NameOfTraps == "Fire_Trap")
             {
-
+                TextToSend = "";
+                TextToSend += "Fire_Trap zadał " + this.Amount + " obrażeń " + this.Name;
+                Quaternion q;
+                if (this.teamN == true)
+                {
+                    Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
+                }
+                else
+                {
+                    Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
+                }
                 this.DealMePURE(this.Amount);
               //  hex.RemoveTrap();
             }
@@ -737,15 +748,26 @@ public class TosterHexUnit : IQPathUnit
     }
     public void AttackMe(TosterHexUnit t)
     {
+       
           Quaternion _lookRotation;
      Vector3 _direction;
     //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
     double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
         int tC, tR;
-
-        Quaternion q;
+        TextToSend = "";
+        TextToSend +=  t.Name + " zadał " + Convert.ToInt32(dmgdouble) + " obrażeń " + this.Name;
+            Quaternion q;
+        if (t.teamN == true)
+        {
+            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
+        }
+        else
+        {
+            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
+        }
         this.DealMePURE(Convert.ToInt32(dmgdouble));
 
+        
         Animator d = null;
         if (CounterAttackAvaible == true)
         {
@@ -754,10 +776,19 @@ public class TosterHexUnit : IQPathUnit
             // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
 
             dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
-
+            TextToSend = "";
+            TextToSend +=  this.Name + " zadał " + Convert.ToInt32(dmgdouble) + " obrażeń " + t.Name;
+            if (t.teamN == false)
+            {
+                Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
+            }
+            else
+            {
+                Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
+            }
             t.DealMePURE(Convert.ToInt32(dmgdouble));
+          
 
-            
             d = this.tosterView.GetComponentInChildren<Animator>();
 
             if (d != null)
@@ -866,6 +897,17 @@ public class TosterHexUnit : IQPathUnit
         {
             dmgdouble -= dmgdouble / 2;
         }
+        TextToSend = "";
+        TextToSend += t.Name + " zadał " + Convert.ToInt32(dmgdouble) + " obrażeń " + this.Name;
+        Quaternion q;
+        if (t.teamN == true)
+        {
+            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
+        }
+        else
+        {
+            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
+        }
         DealMePURE(Convert.ToInt32(dmgdouble));
         if (sth == true)
         {
@@ -901,6 +943,17 @@ public class TosterHexUnit : IQPathUnit
     {
        // double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
                                                                        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        TextToSend = "";
+        TextToSend += t.Name + " zadał " + Convert.ToInt32(dmgdouble) + " obrażeń " + this.Name;
+        Quaternion q;
+        if (t.teamN == true)
+        {
+            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
+        }
+        else
+        {
+            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
+        }
         DealMePURE(Convert.ToInt32(dmgdouble));
     
     }
@@ -919,9 +972,12 @@ public class TosterHexUnit : IQPathUnit
     }
     public bool DealMePURE(int i)
     {
+        
+ 
         this.Blinded = false;
         int newhp = (GetHP() * (Amount - 1) + TempHP) - i;
-        Debug.Log("Toster: " + this.Name +" lost " + (Amount - Mathf.FloorToInt(newhp / GetHP())) + " units");
+        Debug.Log(this.Name +" lost " + (Amount - Mathf.FloorToInt(newhp / GetHP())-1) + " units");
+        int tempamout = Amount;
         Amount = Mathf.FloorToInt(newhp / GetHP());
 
         TempHP = (newhp - Amount * GetHP());
@@ -933,7 +989,16 @@ public class TosterHexUnit : IQPathUnit
 
         }
         else TempHP = GetHP();
-
+        TextToSend = "";
+        TextToSend += this.Name + " stracił " +(tempamout-Amount) + " jednostek";
+        if (this.teamN != false)
+        {
+            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
+        }
+        else
+        {
+            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
+        }
         if (Amount < 1)
         {
             Died();
@@ -943,10 +1008,22 @@ public class TosterHexUnit : IQPathUnit
     }
     public void DealMeDMGDef(int i, TosterHexUnit t)
     {
+
         Debug.LogError(i);
         i =Convert.ToInt32(ReCalculateDamageBetweenTosters(t,this,1,i));
-        Debug.LogError(i);
-        DealMePURE(i);
+        TextToSend = "";
+        TextToSend += t.Name + " zadał " + Convert.ToInt32(i) + " obrażeń " + this.Name;
+        Quaternion q;
+        if (t.teamN == true)
+        {
+            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
+        }
+        else
+        {
+            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
+        }
+        this.DealMePURE(Convert.ToInt32(i));
+
     }
 
     public bool DealMePURESim(int i)

@@ -241,8 +241,8 @@ namespace TimeSpells
             if (nameofspell == "Massochism")
             {
                 puredmg = (SpecialEvents[0] - (me.GetHP() * (me.Amount-1) + me.TempHP));
-                Debug.Log(puredmg/2);
-                me.SpecialPUREDMG = puredmg/2;
+                Debug.Log(puredmg/5);
+                me.SpecialPUREDMG = puredmg/5;
             }
             if (nameofspell == "Hate")
             {
@@ -250,7 +250,7 @@ namespace TimeSpells
             }
             if (nameofspell == "Stone_Skin")
             {
-                me.FlatDMGReduce -= 2;
+                me.FlatDMGReduce -= 1;
             }
             if (nameofspell == "Unstoppable_Light")
             {
