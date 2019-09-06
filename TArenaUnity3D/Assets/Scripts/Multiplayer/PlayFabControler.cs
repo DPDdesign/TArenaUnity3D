@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 using Photon.Pun;
 using Photon.Realtime;
 using System;
+using PlayFab.Json;
 
 public class PlayFabControler : MonoBehaviour
 {
@@ -17,7 +18,6 @@ public class PlayFabControler : MonoBehaviour
 
     private void OnEnable()
     {
-       
         if (PlayFabControler.PFC == null)
         {
             PlayFabControler.PFC = this;
@@ -39,9 +39,6 @@ public class PlayFabControler : MonoBehaviour
     public GameObject mainMenuPanel;
     private string _playFabPlayerIdCache;
     private bool isLogged;
-    public GameObject UserNamePanel;
-    public GameObject ConfirmRegister;
-    public Text LogText;
 
     public void Awake()
     {
@@ -58,9 +55,9 @@ public class PlayFabControler : MonoBehaviour
         else if (PlayerPrefs.HasKey("EMAIL"))
         {
             tosterName = PlayerPrefs.GetString("USERNAME");
-            userPassword = PlayerPrefs.GetString("PASSWORD");
-           // GameObject.Find("UserName").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("USERNAME");
+            GameObject.Find("UserName").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("USERNAME");
             userEmail = PlayerPrefs.GetString("EMAIL");
+            userPassword = PlayerPrefs.GetString("PASSWORD");
             GameObject.Find("Email").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("EMAIL");
             //var request = new LoginWithEmailAddressRequest { Email = userEmail, Password = userPassword};
             //PlayFabClientAPI.LoginWithEmailAddress(request, OnLoginSuccess, OnLoginFailure);
@@ -82,7 +79,7 @@ public class PlayFabControler : MonoBehaviour
         Debug.Log("WELCOME TO RETSOT POBIERAM NAZWĘ PHOTON");
         PlayerPrefs.SetString("EMAIL", userEmail);
         PlayerPrefs.SetString("PASSWORD", userPassword);
-       // PlayerPrefs.SetString("USERNAME", tosterName);
+        PlayerPrefs.SetString("USERNAME", tosterName);
         GetStats();
         loginPanel.SetActive(false);
         SceneManager.LoadScene("MainMenu_Scene");
@@ -125,49 +122,11 @@ public class PlayFabControler : MonoBehaviour
 
     private void OnLoginFailure(PlayFabError error)
     {
-        Debug.LogError(error.GenerateErrorReport());
-        // Recognize and handle the error
-        LogText.color = Color.red;
-        switch (error.Error)
-        {
-
-            case PlayFabErrorCode.InvalidTitleId:
-                LogText.text = "Zły nickname!";
-
-                // Handle invalid title id error
-                break;
-            case PlayFabErrorCode.AccountNotFound:
-                // Handle account not found error
-                LogText.text = "Nie znaleziono konta!";
-                break;
-            case PlayFabErrorCode.InvalidEmailOrPassword:
-                // Handle invalid email or password error
-                LogText.text = "Błędny email lub hasło!";
-                break;
-            case PlayFabErrorCode.RequestViewConstraintParamsNotAllowed:
-                // Handle not allowed view params error
-                break;
-            case PlayFabErrorCode.InvalidEmailAddress:
-                LogText.text = "Błędny email! ";
-                break;
-            default:
-                // Handle unexpected error
-                LogText.text = "Spróbuj ponownie!";
-                Debug.Log("Sprobuj ponownie!");
-                break;
-                //   LogText.text = error.ErrorDetails[0];//.GenerateErrorReport();
-        }
-       
+        Debug.Log("Sprobuj ponownie!");
         //var RegisterRequest = new RegisterPlayFabUserRequest { Email = userEmail, Password = userPassword, Username = tosterName };
         //PlayFabClientAPI.RegisterPlayFabUser(RegisterRequest, OnRegisterSuccess, OnRegisterFailure);
         //GameObject.Find("LogIn").GetComponentInChildren<Text>().text ="Register";
-       
-    }
-
-    public void RequestRegister()
-    {
-        UserNamePanel.SetActive(true);
-        ConfirmRegister.SetActive(true);
+        Debug.LogError(error.GenerateErrorReport());
     }
 
     public void OnRegisterClick()
@@ -178,16 +137,12 @@ public class PlayFabControler : MonoBehaviour
 
     public void OnRegisterSuccess(RegisterPlayFabUserResult result)
     {
-      //  loginPanel.SetActive(false);
+        loginPanel.SetActive(false);
 
         PlayerPrefs.SetString("PASSWORD", userPassword);
         PlayerPrefs.SetString("USERNAME", tosterName);
         PlayerPrefs.SetString("EMAIL", userEmail);
-        LogText.text = "Congratulations, you made your Retsot account!";
-        LogText.color = Color.magenta;
         SetNewUserStats();
-        UserNamePanel.SetActive(false);
-        ConfirmRegister.SetActive(false);
 
     }
 
@@ -264,7 +219,7 @@ public class PlayFabControler : MonoBehaviour
                 new StatisticUpdate { StatisticName = "Wins", Value = Wins},
                 new StatisticUpdate { StatisticName = "Loses", Value = Losses},
                 new StatisticUpdate { StatisticName = "Experience", Value = Experience},
-                new StatisticUpdate {StatisticName = "WinRatio", Value = Wins/(Losses+Wins)},
+                new StatisticUpdate {StatisticName = "WinRatio", Value = Wins/Losses},
             }
         },
         result => { Debug.Log("User statistics updated"); },
@@ -281,8 +236,6 @@ public class PlayFabControler : MonoBehaviour
             OnGetStats,
             error => Debug.LogError(error.GenerateErrorReport())
         );
-
-        GetUserName();
     }
 
     void OnGetStats(GetPlayerStatisticsResult result)
@@ -336,28 +289,41 @@ public class PlayFabControler : MonoBehaviour
 
     }
 
-    public string UserName;
 
-    public void GetUserName()
+public  void StartCloudSetWin()
+{
+
+    PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
     {
+        FunctionName = "SetWin", // Arbitrary function name (must exist in your uploaded cloud.js file)
+        GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
+    }, OnCloudSetWin, OnErrorShared);
+}
 
-        var request2 = new GetAccountInfoRequest
-        {
-            Email = PFC.userEmail
-        };
+public  void StartCloudSetLoss()
+{
 
-        PlayFabClientAPI.GetAccountInfo(request2, result =>
-
-        {
-            UserName =  result.AccountInfo.Username;
-
-        }, resultCallback => { Debug.LogError("error"); }, null, null);
-
-
-    }
-
+    PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
+    {
+        FunctionName = "SetLoss", // Arbitrary function name (must exist in your uploaded cloud.js file)
+        GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
+    }, OnCloudSetWin, OnErrorShared);
+}
 
 
+
+private  void OnCloudSetWin(ExecuteCloudScriptResult result) {
+    // Cloud Script returns arbitrary results, so you have to evaluate them one step and one parameter at a time
+    JsonObject jsonResult = (JsonObject)result.FunctionResult;
+    //object messageValue;
+    //jsonResult.TryGetValue("messageValue", out messageValue); // note how "messageValue" directly corresponds to the JSON values set in Cloud Script
+    //Debug.Log((string)messageValue);
+}
+
+private  void OnErrorShared(PlayFabError error)
+{
+    Debug.Log(error.GenerateErrorReport());
+}
 
     #endregion PlayerStats
 
@@ -369,7 +335,7 @@ public class PlayFabControler : MonoBehaviour
 
         var request2 = new GetCatalogItemsRequest
         {
-            CatalogVersion = "AllThings"
+            CatalogVersion = "1"
         };
 
         PlayFabClientAPI.GetCatalogItems(request2, result =>
@@ -394,7 +360,7 @@ public class PlayFabControler : MonoBehaviour
     {
         var request = new PurchaseItemRequest
         {
-            CatalogVersion = "AllThings",
+            CatalogVersion = "1",
             ItemId = iD,
             Price = Int32.Parse(cost),
             VirtualCurrency = VC
@@ -403,24 +369,49 @@ public class PlayFabControler : MonoBehaviour
 
         return true;
     }
-    IEnumerator Example()
-    {
-        print(Time.time);
-        yield return new WaitForSeconds(5);
-        print(Time.time);
-    }
+
 
     public bool BuyBundle(string iD, string cost, string VC)
     {
+        bool toster = true;
+        var request2 = new GetCatalogItemsRequest
+        {
+            CatalogVersion = "1"
+        };
+
+        PlayFabClientAPI.GetCatalogItems(request2, result =>
+        {
+            storeObjects = new List<InventoryObjects>();
+            foreach (CatalogItem catalogItem in result.Catalog)
+            {
+                if (catalogItem.ItemClass == "ArmyBundle" && catalogItem.ItemId == iD)
+                {
+
+                    foreach (string bundleInfo in catalogItem.Bundle.BundledItems)
+                    {
+                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
+                        {
+                            if (inventoryObjects.Id == bundleInfo)
+                            {
+                                toster = false;
+                            }
+                        }
+                    }
+
+                }
+            }
+
+        }, resultCallback => { Debug.LogError("error"); }, null, null);
+
 
         var request = new PurchaseItemRequest
         {
-            CatalogVersion = "AllThings",
+            CatalogVersion = "1",
             ItemId = iD,
             Price = Int32.Parse(cost),
             VirtualCurrency = VC
         };
-        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory();}, result => { Debug.LogError("Nie udało się kupić " + iD); });
+        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory(); }, result => { Debug.LogError("Nie udało się kupić " + iD); });
 
         return true;
     }
@@ -435,47 +426,19 @@ public class PlayFabControler : MonoBehaviour
             {
                 InventoryObjects iO = new InventoryObjects(itemInstance.ItemId, itemInstance.ItemClass);
                 inventoryObjects.Add(iO);
-                Debug.LogError(iO.Id);
-                
             }
             result.VirtualCurrency.TryGetValue("TC", out tCoins);
             result.VirtualCurrency.TryGetValue("AT", out aTokens);
             Debug.Log("Wczytano dane użytkownika");
-
         }, resultCallback => { Debug.LogError("error"); }, null, null);
     }
 
-
-
-  public  IEnumerator GetInventoryI()
-    {
-        bool toster = false;
-        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
-        {
-            inventoryObjects = new List<InventoryObjects>();
-
-            foreach (ItemInstance itemInstance in result.Inventory)
-            {
-                InventoryObjects iO = new InventoryObjects(itemInstance.ItemId, itemInstance.ItemClass);
-                inventoryObjects.Add(iO);
-
-            }
-            result.VirtualCurrency.TryGetValue("TC", out tCoins);
-            result.VirtualCurrency.TryGetValue("AT", out aTokens);
-            Debug.Log("Wczytano dane użytkownika");
-        }, resultCallback => { Debug.LogError("error"); toster = true; }, null, null);
-        while (toster == false)
-        {
-            yield return new WaitForSeconds(5);
-        }
-      
-    }
     public bool CheckIfPlayerGotBundle(string bundle)
     {
         bool toster = true;
         var request2 = new GetCatalogItemsRequest
         {
-            CatalogVersion = "AllThings"
+            CatalogVersion = "1"
         };
 
         PlayFabClientAPI.GetCatalogItems(request2, result =>
