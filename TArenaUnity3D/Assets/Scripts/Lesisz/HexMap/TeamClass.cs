@@ -207,6 +207,8 @@ public class TeamClass
                 int ktory = 1;
                 foreach (TosterHexUnit t in Tosters)
                 {
+
+                    Debug.Log(t.Name);
                     if (ktory == 3 && t != null)
                     {
                         h.GenerateToster(1, 7, t);
@@ -216,7 +218,7 @@ public class TeamClass
                     if (ktory == 4 && t != null)
                     {
                         h.GenerateToster(2, 5, t);
-                        i--;
+                      //  i--;
                     }
                     else
                     if (t != null)
@@ -224,6 +226,7 @@ public class TeamClass
                         h.GenerateToster(0 + i, 10 - 2 * i, t);
 
                     }
+                    Debug.Log(t.Hex.C + "   " + t.Hex.R);
                     ktory++;
                     i++;
                 }
@@ -290,7 +293,7 @@ public class TeamClass
                     if (ktory == 4)
                     {
                         h.GenerateToster(14, 5, t);
-                        i--;
+                        //i--;
                     }
                     else
                     if (t != null)

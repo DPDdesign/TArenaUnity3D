@@ -9,6 +9,8 @@ public class PlayButton : MonoBehaviour
     public Button ThisButton;
     public Toggle AI, MultiPlayer;
     public NetworkConnectionManager NetworkConnectionManager;
+    public InputField inputField;
+    public bool nomulti;
     // Start is called before the first frame update
     void Start()
     {
@@ -18,17 +20,17 @@ public class PlayButton : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyUp(KeyCode.Space) && ThisButton.IsInteractable())
+        if (nomulti == true)
         {
-            this.PlayGame();
+         
+            if (PlayerPrefs.HasKey("YourArmy") && PlayerPrefs.HasKey("EnemyArmy"))
+            {
+                ThisButton.interactable = true;
+
+            }
+            else
+                ThisButton.interactable = false;
         }
-        if (PlayerPrefs.HasKey("YourArmy") && PlayerPrefs.HasKey("EnemyArmy"))
-        {
-            ThisButton.interactable = true;
-    
-        }
-        else
-            ThisButton.interactable = false;
     }
 
     public void PlayGame()
@@ -47,4 +49,14 @@ public class PlayButton : MonoBehaviour
  
     }
 
+    public void QuickGame()
+    {
+        NetworkConnectionManager.OnClickConnectToMaster();
+
+    }
+    public void JoinFriend()
+    {
+        NetworkConnectionManager.OnClickConnectToMasterCustom(inputField.text);
+
+    }
 }

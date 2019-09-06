@@ -175,6 +175,14 @@ public class MouseControler : MonoBehaviourPunCallbacks
         }
         if(!isMulti) SYNC = !isMulti;
         photonView.RPC("SetSync", RpcTarget.Others, new object[] { });
+        hexUnderMouse = SelectedToster.Hex;
+
+        outlineM.SetHexSelectedToster(SelectedToster.Hex);
+        if (SelectedToster.Taunt == true)
+        {
+            Update_CurrentFunc = Taunted;
+            return;
+        }
         if (isMulti == true)
         {
             if (SelectedToster.Team == hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
@@ -192,7 +200,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
       
         if (SYNC==false)
         {
-            return;
+          //  return;
         }
         if (isMulti) { SYNC = false; };
            hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
@@ -201,13 +209,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
         // outlineManagerMainToster.ChangeObj(hexMap.GetObjectFromHex(SelectedToster.Hex).GetComponentInChildren<Renderer>());//SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());
         // outlineManagerMainToster.AddMainOutlineWithReset();
         outlineM.SetHexSelectedToster(SelectedToster.Hex);
-        hexUnderMouse = SelectedToster.Hex;
-        if (SelectedToster.Taunt==true)
-        {
-            Update_CurrentFunc = Taunted;
-            return;
-        }
-  
+
+
         SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
         Update_CurrentFunc = SelectTosterMovement;
         return;
@@ -222,7 +225,9 @@ public class MouseControler : MonoBehaviourPunCallbacks
     {
         Debug.Log("HOW DARE YOU!?");
         if (!SelectedToster.whoTauntedMe.isDead)
-            photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R });
+
+            StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.Hex, SelectedToster.whoTauntedMe));
+       // photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R });
         else SelectedToster.Taunt = false;
       //StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.whoTauntedMe.Hex,SelectedToster.whoTauntedMe));
     }

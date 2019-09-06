@@ -14,7 +14,8 @@ public class NetworkConnectionManager : MonoBehaviourPunCallbacks
     public Toggle isMulti;
     public bool TriesToConnectToMaster;
     public bool TriesToConnectToRoom;
-    
+    public bool CustomGame;
+    public string customGameString;
 
 public static NetworkConnectionManager NCM; 
 
@@ -51,13 +52,30 @@ public static NetworkConnectionManager NCM;
     {
         
         PhotonNetwork.OfflineMode = !isMulti.isOn;
+        CustomGame = false;
         PhotonNetwork.NickName = "Toster";
  //       PhotonNetwork.AutomaticallySyncScene = true;
         PhotonNetwork.GameVersion = "v1";
-
+        PlayerPrefs.SetString("CustomGameName", "");
+        PlayerPrefs.SetInt("customGame", 0);
         PhotonNetwork.ConnectUsingSettings();
         TriesToConnectToMaster = true;
     }
+    public void OnClickConnectToMasterCustom(string custom)
+    {
+        Debug.Log(custom);
+        customGameString = custom;
+        CustomGame = true;
+        PhotonNetwork.OfflineMode = !isMulti.isOn;
+        PhotonNetwork.NickName = "Toster";
+        //       PhotonNetwork.AutomaticallySyncScene = true;
+        PhotonNetwork.GameVersion = "v1";
+        PlayerPrefs.SetString("CustomGameName",customGameString);
+        PlayerPrefs.SetInt("customGame", 1);
+        PhotonNetwork.ConnectUsingSettings();
+        TriesToConnectToMaster = true;
+    }
+
 
 
     public override void OnDisconnected(DisconnectCause cause)
@@ -73,8 +91,11 @@ public static NetworkConnectionManager NCM;
         Debug.LogError("Connected to Master!");
         base.OnConnectedToMaster(); 
          TriesToConnectToMaster = false;
+       
         OnClickConnectToRoom();
     }
+
+ 
 
 
 
@@ -82,11 +103,21 @@ public static NetworkConnectionManager NCM;
     {
         if (!PhotonNetwork.IsConnected)
             return;
-
+        Debug.Log(customGameString);
         TriesToConnectToRoom = true;
         //PhotonNetwork.CreateRoom("Peter's Game 1"); //Create a specific Room - Error: OnCreateRoomFailed
       // PhotonNetwork.JoinRoom("test");   //Join a specific Room   - Error: OnJoinRoomFailed  
-        PhotonNetwork.JoinRandomRoom();               //Join a random Room     - Error: OnJoinRandomRoomFailed  
+                      //Join a random Room     - Error: OnJoinRandomRoomFailed  
+
+        if (PlayerPrefs.GetInt("customGame")==0)
+        {
+            Debug.Log(customGameString);
+            PhotonNetwork.JoinRandomRoom();
+        }
+        else
+        {
+            PhotonNetwork.JoinRoom(PlayerPrefs.GetString("CustomGameName"));
+        }
     }
 
     public override void OnJoinRandomFailed(short returnCode, string message)
@@ -102,6 +133,12 @@ public static NetworkConnectionManager NCM;
         base.OnJoinRoomFailed(returnCode, message);
         Debug.LogError("Room not found, create room");
         string NameOfRoom = PlayFabControler.PFC.tosterName;
+        if (PlayerPrefs.GetInt("customGame") == 1)
+        {
+            Debug.Log(PlayerPrefs.GetString("CustomGameName"));
+            PhotonNetwork.CreateRoom(PlayerPrefs.GetString("CustomGameName"), new RoomOptions { MaxPlayers = 2 });
+        }
+        else
         PhotonNetwork.CreateRoom(NameOfRoom, new RoomOptions { MaxPlayers = 2 });
 
     }

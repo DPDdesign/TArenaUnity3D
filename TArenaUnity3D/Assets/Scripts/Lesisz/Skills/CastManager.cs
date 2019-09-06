@@ -1255,16 +1255,43 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void Long_Lick()
     {
-        if (getHexUM().Tosters.Count>0)
+        if (getHexUM().Tosters.Count > 0 && getHexUM().Highlight == true )
         {
-            int tC, tR;
-            TosterHexUnit t = SelectedT();
-            tC = SelectedT().Hex.C - getHexUM().Tosters[0].Hex.C;
-            tR = t.Hex.R - getHexUM().Tosters[0].Hex.R;
-           
-            if (getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2).Tosters.Count == 0)
+            mouseControler.photonView.RPC("long_Lick", RpcTarget.All, new object[] {  });
+        }
+
+    }
+    [PunRPC]
+
+    public void long_Lick()
+    {
+
+        int tC, tR;
+        TosterHexUnit t = SelectedT();
+        tC = SelectedT().Hex.C - getHexUM().Tosters[0].Hex.C;
+        tR = t.Hex.R - getHexUM().Tosters[0].Hex.R;
+
+        if (getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2).Tosters.Count == 0)
+        {
+            getHexUM().Tosters[0].SetHex(getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2));
+            Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+            if (d != null)
             {
-                getHexUM().Tosters[0].SetHex(getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2));
+                // Debug.Log(mouseControler.SelectedSpellid-1);
+                d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+
+            }
+            SetFalse();
+            return;
+        }
+        HexClass[] hexes = getHexUM().hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, 1);
+
+        foreach (HexClass h in hexes)
+        {
+
+            if (h != null && h.Tosters.Count == 0)
+            {
+                getHexUM().Tosters[0].SetHex(h);
                 Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
                 if (d != null)
                 {
@@ -1275,35 +1302,17 @@ public class CastManager : MonoBehaviourPunCallbacks
                 SetFalse();
                 return;
             }
-            HexClass[] hexes = getHexUM().hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, 1);
 
-            foreach(HexClass h in hexes)
-            {
-                            
-                if (h!= null && h.Tosters.Count==0)
-                {
-                    getHexUM().Tosters[0].SetHex(h);
-                    Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-                    if (d != null)
-                    {
-                        // Debug.Log(mouseControler.SelectedSpellid-1);
-                        d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
-
-                    }
-                    SetFalse();
-                    return;
-                }
-
-            }
-            Debug.Log("All Hexes full!!");
         }
-
+        Debug.Log("All Hexes full!!");
     }
+
+
     public void Long_LickM()
     {
         unselectaround = true;
         MeleeisAoEOnlyRadius = true;
-        aoeradius = 3;
+        aoeradius = 2;
         isTurn = true;
 
     }
@@ -1400,7 +1409,7 @@ public class CastManager : MonoBehaviourPunCallbacks
                     newunit.SetTosterPrefab(getHexUM().hexMap);
                     newunit.SetTextAmount();
                     getHexUM().hexMap.GenerateToster(h.C, h.R, newunit);
-                    newunit.DealMeDMGDef(15, SelectedT());
+                    newunit.DealMeDMGDef(16, SelectedT());
                     newunit.Moved = true;
                     SetFalse();
                     return;
@@ -1418,7 +1427,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             newunit.SetTosterPrefab(getHexUM().hexMap);
             newunit.SetTextAmount();
             getHexUM().hexMap.GenerateToster(getHexUM().C, getHexUM().R, newunit);
-            newunit.DealMeDMGDef(15, SelectedT());
+            newunit.DealMeDMGDef(10, SelectedT());
             newunit.Moved = true;
             SetFalse();
         }
