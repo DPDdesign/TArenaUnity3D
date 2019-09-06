@@ -481,7 +481,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         HexClass[] hexarray = getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), 1);
        // SelectedT().SpecialDMGModificator = 60;
         Debug.LogError(SelectedT().Name);
-        if (SelectedT().Team == getHexUM().hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
+        /*if (SelectedT().Team == getHexUM().hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
         {
 
         }
@@ -489,12 +489,12 @@ public class CastManager : MonoBehaviourPunCallbacks
                 if (SelectedT().Team == getHexUM().hexMap.Teams[0] && !PhotonNetwork.LocalPlayer.IsMasterClient)
         {
             return;
-        }
-        else
+        }*/
+       
         foreach (HexClass h in hexarray)
         {
 
-            if (h.Highlight == true)
+            if (h!=null && h.Highlight == true)
             {
                 if (h.Tosters.Count > 0 && h.Tosters[0] != SelectedT())
                 {
@@ -505,8 +505,6 @@ public class CastManager : MonoBehaviourPunCallbacks
             }
         }
      //   SelectedT().SpecialDMGModificator = 0;
-        SelectedT().CounterAttackAvaible = false;
-        SelectedT().CounterAttacks = 0;
         SetFalse();
     }
     public void SlashM()
@@ -1263,38 +1261,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             TosterHexUnit t = SelectedT();
             tC = SelectedT().Hex.C - getHexUM().Tosters[0].Hex.C;
             tR = t.Hex.R - getHexUM().Tosters[0].Hex.R;
-            if (tC == 0 && tR == 1)
-            {
-
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
-            }
-            if (tC == 0 && tR == -1)
-            {
-
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
-            }
-            if (tC == -1 && tR == 1)
-            {
-
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
-
-            }
-            if (tC == 1 && tR == -1)
-            {
-
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
-
-            }
-            if (tC == 1 && tR == 0)
-            {
-
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
-            }
-            if (tC == -1 && tR == 0)
-            {
-
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
-            }
+           
             if (getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2).Tosters.Count == 0)
             {
                 getHexUM().Tosters[0].SetHex(getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2));
@@ -1336,7 +1303,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         unselectaround = true;
         MeleeisAoEOnlyRadius = true;
-        aoeradius = 2;
+        aoeradius = 3;
         isTurn = true;
 
     }
@@ -1433,7 +1400,7 @@ public class CastManager : MonoBehaviourPunCallbacks
                     newunit.SetTosterPrefab(getHexUM().hexMap);
                     newunit.SetTextAmount();
                     getHexUM().hexMap.GenerateToster(h.C, h.R, newunit);
-                    newunit.DealMeDMGDef(10, SelectedT());
+                    newunit.DealMeDMGDef(15, SelectedT());
                     newunit.Moved = true;
                     SetFalse();
                     return;
@@ -1451,7 +1418,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             newunit.SetTosterPrefab(getHexUM().hexMap);
             newunit.SetTextAmount();
             getHexUM().hexMap.GenerateToster(getHexUM().C, getHexUM().R, newunit);
-            newunit.DealMeDMGDef(10, SelectedT());
+            newunit.DealMeDMGDef(15, SelectedT());
             newunit.Moved = true;
             SetFalse();
         }

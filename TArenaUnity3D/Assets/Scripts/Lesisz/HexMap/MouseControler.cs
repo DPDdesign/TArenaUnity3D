@@ -8,7 +8,7 @@ using Xenu.Game;
 public class MouseControler : MonoBehaviourPunCallbacks
 {
 
-
+    public OutlineM outlineM;
     HexMap hexMap;
     public HexClass hexUnderMouse;
     public CastManager castManager;
@@ -123,37 +123,43 @@ public class MouseControler : MonoBehaviourPunCallbacks
         if (SelectedToster != null)
         {
             //Debug.LogError(SelectedToster.Name);
-            outlineManagerMainToster.RemoveOutline();
+            //outlineManagerMainToster.RemoveOutline();
+            outlineM.unSetHexSelectedToster();
         }
 
         if (TM.isAnyoneAlive() == 2)
         {
             canvas.EndPanel.SetActive(true);
             canvas.EndText.text = "Left Player Win! ";
-            PlayFabControler.PFC.GetPhoton();
-            if(PhotonNetwork.LocalPlayer.IsMasterClient)
+            if (isMulti)
             {
-                PlayFabControler.PFC.SetStats(1,0,3);
-            }
-            else
-            {
-                PlayFabControler.PFC.SetStats(0,1,1);
+                PlayFabControler.PFC.GetPhoton();
+                if (PhotonNetwork.LocalPlayer.IsMasterClient)
+                {
+                    PlayFabControler.PFC.SetStats(1, 0, 3);
+                }
+                else
+                {
+                    PlayFabControler.PFC.SetStats(0, 1, 1);
+                }
             }
         }
         else if (TM.isAnyoneAlive() == 1)
         {
             canvas.EndPanel.SetActive(true);
             canvas.EndText.text = "Right Player Win! ";
-            PlayFabControler.PFC.GetPhoton();
-              if(PhotonNetwork.LocalPlayer.IsMasterClient)
+            if (isMulti)
             {
-                PlayFabControler.PFC.SetStats(0,1,3);
+                PlayFabControler.PFC.GetPhoton();
+                if (PhotonNetwork.LocalPlayer.IsMasterClient)
+                {
+                    PlayFabControler.PFC.SetStats(0, 1, 3);
+                }
+                else
+                {
+                    PlayFabControler.PFC.SetStats(1, 0, 1);
+                }
             }
-            else
-            {
-                PlayFabControler.PFC.SetStats(1,0,1);
-            }
-           
         }
 
         SelectedToster = TM.AskWhosTurn();
@@ -192,9 +198,9 @@ public class MouseControler : MonoBehaviourPunCallbacks
            hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
         //Debug.LogError(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>().bounds);
         // outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
-        outlineManagerMainToster.ChangeObj(hexMap.GetObjectFromHex(SelectedToster.Hex).GetComponentInChildren<Renderer>());//SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());
-        outlineManagerMainToster.AddMainOutlineWithReset();
-
+        // outlineManagerMainToster.ChangeObj(hexMap.GetObjectFromHex(SelectedToster.Hex).GetComponentInChildren<Renderer>());//SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());
+        // outlineManagerMainToster.AddMainOutlineWithReset();
+        outlineM.SetHexSelectedToster(SelectedToster.Hex);
         hexUnderMouse = SelectedToster.Hex;
         if (SelectedToster.Taunt==true)
         {
@@ -257,7 +263,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
         if (SelectedToster != null)
         {
             //Debug.LogError(SelectedToster.Name);
-            outlineManagerMainToster.RemoveOutline();
+           // outlineManagerMainToster.RemoveOutline();
+            outlineM.unSetHexSelectedToster();
         }
 
         if (TM.isAnyoneAlive() == 2)
@@ -300,8 +307,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
         //Debug.LogError(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>().bounds);
         // outlineManagerMainToster.ChangeObj(SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());      ///Odpowiadają za otoczke wybranego tostera
-        outlineManagerMainToster.ChangeObj(hexMap.GetObjectFromHex(SelectedToster.Hex).GetComponentInChildren<Renderer>());//SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());
-        outlineManagerMainToster.AddMainOutlineWithReset();
+        outlineM.SetHexSelectedToster(SelectedToster.Hex);
 
         hexUnderMouse = SelectedToster.Hex;
         if (SelectedToster.Taunt == true)
@@ -421,7 +427,10 @@ public class MouseControler : MonoBehaviourPunCallbacks
                   //  outlineManagerMainToster.ChangeObj(hexMap.GetObjectFromHex(SelectedToster.Hex).GetComponentInChildren<Renderer>());//SelectedToster.tosterView.gameObject.GetComponentInChildren<Renderer>());
 
                     Ren.Add((hexMap.GetObjectFromHex(hexUnderMouse).GetComponentInChildren<Renderer>()));
-                    outlineManager.ChangeObjects(Ren);
+                    //    outlineManager.ChangeObjects(Ren);
+                    if(TempOutlinedToster.Team!=SelectedToster.Team)
+                    outlineM.SetHexEnemyToster(hexUnderMouse);
+                    else outlineM.SetHexWhiteToster(hexUnderMouse);
                 }
                 else if (TempOutlinedToster != hexUnderMouse.Tosters[0])
                 {
@@ -430,13 +439,17 @@ public class MouseControler : MonoBehaviourPunCallbacks
                     TempOutlinedToster = hexUnderMouse.Tosters[0];
                     List<Renderer> Ren = new List<Renderer>(); Ren.Add((hexMap.GetObjectFromHex(hexUnderMouse).GetComponentInChildren<Renderer>()));
 
-                    outlineManager.ChangeObjects(Ren);
+                    if (TempOutlinedToster.Team != SelectedToster.Team)
+                        outlineM.SetHexEnemyToster(hexUnderMouse);
+                    else outlineM.SetHexWhiteToster(hexUnderMouse);
                 }
             }
             else if (TempOutlinedToster != null && hexUnderMouse.Tosters.Count == 0)
             {
 
-                outlineManager.RemoveAllButMain();
+                //  outlineManager.RemoveAllButMain();
+                outlineM.unSetHexEnemyToster();
+                outlineM.unSetHexWhiteToster();
                 TempOutlinedToster = null;
             }
         }
@@ -451,6 +464,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     IEnumerator DoMoves(HexClass hex)
     {
         outlineManagerMainToster.RemoveOutline();
+        outlineM.unSetHexSelectedToster();
         activeButtons = false;
         SelectedToster.move = true;
         SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());

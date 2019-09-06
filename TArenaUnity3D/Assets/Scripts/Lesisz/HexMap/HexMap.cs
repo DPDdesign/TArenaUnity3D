@@ -11,6 +11,7 @@ using System.Linq;
 using Photon.Pun;
 using Photon.Realtime;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
+using cakeslice;
 
 public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
 {
@@ -386,6 +387,8 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
 
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
+       //         HexGo.AddComponent<Outline>();
+        //        HexGo.GetComponent<Outline>().color = 0;
                 gameObjectToHexMap[HexGo] = h;
                 HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count); //{0}, {1}\n {2}
                 hexes[col, row] = h;
@@ -414,6 +417,8 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
                     this.transform
                     );
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
+          //      HexGo.AddComponent<Outline>();
+         //       HexGo.GetComponent<Outline>().color = 2;
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
                 HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
@@ -441,6 +446,8 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
                     this.transform
                     );
                 HexGo.name = string.Format("HEX: {0}, {1}", col, row);
+         //       HexGo.AddComponent<Outline>();
+          //      HexGo.GetComponent<Outline>().color = 1;
                 MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
                 mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
                 HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}

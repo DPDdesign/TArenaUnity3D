@@ -1,6 +1,7 @@
 ﻿using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
+using System.Xml;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,6 +16,8 @@ public class UICanvas : MonoBehaviour
     public GameObject EndPanel;
     public Text EndText;
     public MouseControler MC;
+    public List<Text> TypeT;
+    public List<Text> Cooldowns;
     // Start is called before the first frame update
     void Start()
     {
@@ -60,12 +63,46 @@ public class UICanvas : MonoBehaviour
     // Update is called once per frame
     public void UseSkill(int i)
     {
+
         SkillButtons[i].image.color= Color.grey;
     }
     public void UnUseSkill(int i)
     {
+        if (TypeT[i].text!="Passive")
         SkillButtons[i].image.color = Color.white;
     }
+
+
+    public string GetTypeOfSkill(string name) //XML DATA LOAD
+    {
+        //TODO: VALIDATE SCHEMA/XML
+        TextAsset textAsset = (TextAsset)Resources.Load("data/skills");
+        XmlDocument xmldoc = new XmlDocument();
+        xmldoc.LoadXml(textAsset.text);
+        XmlNodeList nodes = xmldoc.SelectNodes("Skills/Skill/Name");
+        int NumberOfNode = 0;
+        bool found = false;
+        int i = 0;
+        foreach (XmlNode node in nodes)
+        {
+            if (node.InnerText == name && found == false)
+            {
+                found = true;
+                NumberOfNode = i;
+            }
+            i++;
+        }
+        nodes = xmldoc.SelectNodes("Skills/Skill");
+        //  
+        if (found == true)
+        {
+            return nodes[NumberOfNode].ChildNodes[1].InnerText;
+        }
+        else return "brak takiego skilla!";
+    }
+
+
+ 
     void Update()
     {
         if (MC.activeButtons == true)
@@ -82,15 +119,33 @@ public class UICanvas : MonoBehaviour
                 SkillButtons[i].image.enabled = true;
                 if (MC.SelectedToster.cooldowns[i] == 0)
                 {
-                    
+                    Cooldowns[i].gameObject.SetActive(false);
                     SkillButtons[i].interactable = true;
-                    SkillT[i].text = (i + 1).ToString() + "\n" + b;
+                    SkillT[i].text =b;
                     SkillButtons[i].image.sprite=  Resources.Load<Sprite>("Sprites/Skill_Icons/"+b);
+
+
+
+
+                    if ("Passive" == GetTypeOfSkill(b))
+
+                    {
+                        SkillButtons[i].interactable = false;
+                        SkillButtons[i].image.color = Color.grey;
+                    }
+                    else
+                    {
+                        SkillButtons[i].image.color = Color.white;
+                    }
                 }
                 else
                 {
                     SkillButtons[i].interactable = false;
-                    SkillT[i].text = "Wait: " + MC.SelectedToster.cooldowns[i].ToString() + " Turns";
+
+                    SkillT[i].text = b;
+                    SkillButtons[i].image.sprite = Resources.Load<Sprite>("Sprites/Skill_Icons/" + b);
+                    Cooldowns[i].gameObject.SetActive(true);
+                    Cooldowns[i].text = MC.SelectedToster.cooldowns[i].ToString();
                 }
                 i++;
 
