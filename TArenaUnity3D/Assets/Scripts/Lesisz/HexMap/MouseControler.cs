@@ -142,7 +142,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
             //Debug.LogError(SelectedToster.Name);
             //outlineManagerMainToster.RemoveOutline();
             outlineM.unSetHexSelectedToster();
-        }
+        }   
 
         if (TM.isAnyoneAlive() == 2)
         {
@@ -192,6 +192,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
         }
         if(!isMulti) SYNC = !isMulti;
         photonView.RPC("SetSync", RpcTarget.Others, new object[] { });
+        if (SelectedToster.C != STC && SelectedToster.R != STR)
+            return;
         StartCoroutine(AskSync());
         hexUnderMouse = SelectedToster.Hex;
 
