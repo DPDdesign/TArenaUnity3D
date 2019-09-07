@@ -69,7 +69,7 @@ public static NetworkConnectionManager NCM;
         PhotonNetwork.OfflineMode = !isMulti.isOn;
         PhotonNetwork.NickName = "Toster";
         //       PhotonNetwork.AutomaticallySyncScene = true;
-        PhotonNetwork.GameVersion = "v1";
+        PhotonNetwork.GameVersion = "v2";
         PlayerPrefs.SetString("CustomGameName",customGameString);
         PlayerPrefs.SetInt("customGame", 1);
         PhotonNetwork.ConnectUsingSettings();

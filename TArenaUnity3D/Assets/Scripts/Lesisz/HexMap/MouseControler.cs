@@ -46,6 +46,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
     public MostStupidAIEver AI;
     public Camera c;
     public bool SYNC = false;
+
+    public int STC, STR;
     public int GetSelectedSpellID()
     {
         return SelectedSpellid;
@@ -190,6 +192,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         }
         if(!isMulti) SYNC = !isMulti;
         photonView.RPC("SetSync", RpcTarget.Others, new object[] { });
+        StartCoroutine(AskSync());
         hexUnderMouse = SelectedToster.Hex;
 
         outlineM.SetHexSelectedToster(SelectedToster.Hex);
@@ -236,6 +239,27 @@ public class MouseControler : MonoBehaviourPunCallbacks
     {
         SYNC = true;
     }
+
+    [PunRPC]
+
+    void WaitForSync()
+    {
+        photonView.RPC("SendSync", RpcTarget.Others, new object[] { });
+     
+    }
+    [PunRPC]
+
+    void SendSync()
+    {
+        STC = SelectedToster.C;
+        STR = SelectedToster.R;
+        
+    }
+    IEnumerator AskSync()
+    {
+        yield return new WaitUntil(() => (SelectedToster.C == STC && SelectedToster.R == STR));
+    }
+
     void Taunted()
     {
         Debug.Log("HOW DARE YOU!?");
