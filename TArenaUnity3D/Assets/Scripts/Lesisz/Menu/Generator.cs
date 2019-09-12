@@ -8,6 +8,11 @@ using System.IO;
 
 public class Generator : MonoBehaviour
 {
+
+    public List<GameObject> GeneratorPanels = new List<GameObject>();
+    public List<GameObject> GeneratorButtons = new List<GameObject>();
+    public List<Color> GeneratorButtonColorsOn = new List<Color>();
+    public List<Color> GeneratorButtonColorsOff = new List<Color>();
     public bool ButtonOn = false;
     public GameObject PanelA;
     public Text NazwaBohatera;
@@ -31,8 +36,53 @@ public class Generator : MonoBehaviour
         LoadAll();
     }
 
+
+public void ToggleGeneratorPanel(int PanelNumber)
+{
+     GeneratorPanels[PanelNumber].SetActive(!GeneratorPanels[PanelNumber].activeSelf);
+
+     if(GeneratorPanels[PanelNumber].activeSelf==true)
+     {
+        GeneratorButtons[PanelNumber].GetComponent<Image>().color = GeneratorButtonColorsOn[PanelNumber];
+        GeneratorButtons[PanelNumber].GetComponentInChildren<Text>().color = Color.white;
+     }
+
+     else
+     {
+        GeneratorButtons[PanelNumber].GetComponent<Image>().color = GeneratorButtonColorsOff[PanelNumber];
+        GeneratorButtons[PanelNumber].GetComponentInChildren<Text>().color = Color.black;
+     }
+}
+
+
+public void ShowGeneratorPanelOnly(int PanelNumber)
+{
+     GeneratorPanels[PanelNumber].SetActive(true);
+     GeneratorButtons[PanelNumber].GetComponent<Image>().color = GeneratorButtonColorsOn[PanelNumber];
+      GeneratorButtons[PanelNumber].GetComponentInChildren<Text>().color = Color.white;
+        int i = 0;
+    foreach (var GameObject in GeneratorPanels)
+    {
+        if(i!=PanelNumber)
+        {
+         GeneratorPanels[i].SetActive(false);   
+          GeneratorButtons[i].GetComponent<Image>().color = GeneratorButtonColorsOff[i];
+          GeneratorButtons[i].GetComponentInChildren<Text>().color = Color.black;
+           
+        }
+        i++;
+    }
+}
+
+
+
+
+
+
+
     public void CallMe()
     {
+        Debug.Log("CALL ME :P");
         Units = new List<string>();
         UnitsAmount = new List<int>();
         Costs = new List<int>();
@@ -46,7 +96,7 @@ public class Generator : MonoBehaviour
     }
     public void Nowy()
     {
-
+Debug.Log("NOWY :PP");
         NazwaBohatera.text = "";
         foreach ( InputField inputField in inputFields)
         {
@@ -66,7 +116,7 @@ public class Generator : MonoBehaviour
     }
     private void LateUpdate()
     {
-        LoadAll();
+       // LoadAll();
     }
     public   List<Button> butt;
     public void LoadAll()
@@ -106,6 +156,8 @@ public class Generator : MonoBehaviour
     }
     public void Wczytaj()
     {
+
+Debug.Log("WCZYTAJ :PPP");
 
         NazwaBohatera.text = PanelArmii.LoadedBuild.NazwaBohatera;// PlayerPrefs.GetString("NazwaBohatera");
         if (NazwaBohatera.text == "Biały Toster")
@@ -174,15 +226,15 @@ public class Generator : MonoBehaviour
         
     }
 
-
+#region oldselector
     public void selectW()
     {
         PlayerPrefs.SetInt("which", 1);
         PlayerPrefs.SetString("NazwaBohatera", "Biały Toster");
 
-        RacePanels[0].SetActive(true);
-        RacePanels[1].SetActive(false);
-        RacePanels[2].SetActive(false);
+        RacePanels[0].SetActive(!RacePanels[0].activeSelf);
+      //  RacePanels[1].SetActive(false);
+      //  RacePanels[2].SetActive(false);
         NazwaBohatera.text = "Biały Toster";
         
     }
@@ -190,21 +242,21 @@ public class Generator : MonoBehaviour
     {
         PlayerPrefs.SetInt("which", 2);
         PlayerPrefs.SetString("NazwaBohatera", "Czerwony Toster");
-        RacePanels[0].SetActive(false);
-        RacePanels[1].SetActive(true);
-        RacePanels[2].SetActive(false);
+      //  RacePanels[0].SetActive(false);
+        RacePanels[1].SetActive(!RacePanels[1].activeSelf);
+      //  RacePanels[2].SetActive(false);
         NazwaBohatera.text = "Czerwony Toster";
     }
     public void selectN()
     {
         PlayerPrefs.SetInt("which", 3);
         PlayerPrefs.SetString("NazwaBohatera", "Zielony Toster");
-        RacePanels[0].SetActive(false);
-        RacePanels[1].SetActive(false);
-        RacePanels[2].SetActive(true);
+     //   RacePanels[0].SetActive(false);
+     //   RacePanels[1].SetActive(false);
+        RacePanels[2].SetActive(!RacePanels[2].activeSelf);
         NazwaBohatera.text = "Zielony Toster";
     }
-    
+ #endregion oldselector   
 
     public void ReadAllNumbers()
     {
@@ -243,7 +295,7 @@ public class Generator : MonoBehaviour
         ColorBlock cb = bt.colors;
         ButtonPanelA.colors = cb;
         ButtonPanelA.GetComponentInChildren<Text>().text = "";
-        PanelA.SetActive(false);
+      //  PanelA.SetActive(false);
 
     }
     public void SaveUnit(string t)

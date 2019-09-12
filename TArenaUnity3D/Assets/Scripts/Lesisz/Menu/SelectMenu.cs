@@ -19,7 +19,8 @@ public class SelectMenu : MonoBehaviour
     public List<Image> BigImagess;
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
     public List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2" });
-    // Start is called before the first frame update
+    public GameObject PanelBuilds,ThisPanel;
+    public Button ButtonBuilds, ThisButton;
     void Start()
     {
        test = BigImagess[0].sprite;
@@ -104,15 +105,25 @@ public class SelectMenu : MonoBehaviour
                     }
                 }
                 YourButtons[i].gameObject.SetActive(true);
+                YourButtons[i].GetComponentInChildren<Text>().text=" ";
                 Imagess[i].gameObject.SetActive(true);
+                Imagess[i].color = Color.white;
             }
             else
             {
-                YourButtons[i].gameObject.SetActive(false);
-                Imagess[i].gameObject.SetActive(false);
+                YourButtons[i].GetComponent<Button>().onClick.AddListener(AddBuild);
+                //Imagess[i].gameObject.SetActive(false);
             }
         }
 
+    }
+
+    public void AddBuild()
+    {
+        ThisPanel.SetActive(false);
+        PanelBuilds.SetActive(true);
+        ButtonBuilds.GetComponentInChildren<Text>().color = Color.white;
+        ThisButton.GetComponentInChildren<Text>().color = Color.black;
     }
 
     public void CheckEnemy()
@@ -140,12 +151,14 @@ public class SelectMenu : MonoBehaviour
                     }
                 }
                 EnemyButtons[i].gameObject.SetActive(true);
+                EnemyButtons[i].GetComponentInChildren<Text>().text=" ";
                 EImagess[i].gameObject.SetActive(true);
+                EImagess[i].color = Color.white;
             }
             else
             {
-                EnemyButtons[i].gameObject.SetActive(false);
-                EImagess[i].gameObject.SetActive(false);
+                EnemyButtons[i].GetComponent<Button>().onClick.AddListener(AddBuild);
+                //EImagess[i].gameObject.SetActive(false);
             }
         }
 
