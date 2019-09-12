@@ -8,7 +8,7 @@ using UnityEngine.UI;
  
 public class PanelArmii : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public string Buildnr;
     public Generator generator;
     public List<Button> AdditionalButtons;
     public List<Text> texts;
@@ -40,6 +40,7 @@ public class PanelArmii : MonoBehaviour
       
 
     }
+
 
 
 
@@ -94,6 +95,8 @@ public class PanelArmii : MonoBehaviour
 
                 file.Close();
 
+
+                Debug.Log("Jest build " + i);
                 for (int j=0; j < ListOfHeroes.Count; j++)
                 {
                     if (ListOfHeroes[j] == buildG.NazwaBohatera)
@@ -107,29 +110,54 @@ public class PanelArmii : MonoBehaviour
                     }
                 }
                
-                AdditionalButtons[i*3].gameObject.SetActive(false);
-                    AdditionalButtons[i*3+1].gameObject.SetActive(true);
-                    AdditionalButtons[i*3+2].gameObject.SetActive(true);
+             //   AdditionalButtons[i*2].gameObject.SetActive(false);
+           //        AdditionalButtons[i*2+1].gameObject.SetActive(true);
+//                    AdditionalButtons[i*2+2].gameObject.SetActive(true);
                
                     Imagess[i].gameObject.SetActive(true);
+                    AdditionalButtons[i].onClick.RemoveListener(AddBuild);
+                    AdditionalButtons[i].onClick.AddListener(EditBuild);
+                    
               
                 
 
             }
             else
             {
-                AdditionalButtons[i * 3].gameObject.SetActive(true);
-                AdditionalButtons[i * 3 + 1].gameObject.SetActive(false);
-                AdditionalButtons[i * 3 + 2].gameObject.SetActive(false);
+                Debug.Log("nie ma buildu nr " + i);
+            //    AdditionalButtons[i * 2].gameObject.SetActive(true);
+            //    AdditionalButtons[i * 2 + 1].gameObject.SetActive(false);
+            //    AdditionalButtons[i * 2 + 2].gameObject.SetActive(false);
                 Imagess[i].gameObject.SetActive(false);
+                AdditionalButtons[i].onClick.RemoveListener(EditBuild);
+                AdditionalButtons[i].onClick.AddListener(AddBuild);
+                
             }
         }
     
     }
 
-    public void RemoveBuild(string i)
+
+public void Test()
+{Debug.Log("TEST");}
+    //onClick.AddListener(Function);
+
+public void EditBuild()
+{
+    generator.CallMe();
+    generator.Wczytaj();
+}
+
+
+public void AddBuild()
+{
+    generator.CallMe();
+    generator.Nowy();
+}
+
+    public void RemoveBuild()
     {
-        string path = Application.persistentDataPath + "/build"+i+".d";
+        string path = Application.persistentDataPath + "/build"+Buildnr+".d";
         if (File.Exists(path))
         {
             File.Delete(path);
@@ -146,8 +174,16 @@ public class PanelArmii : MonoBehaviour
     {
         PlayerPrefs.SetString("BuildNumber", i);
         WczytajPlik(i);
-        
+        Debug.Log("XDDDDDDDDDDDDDDDDDDDDDDDD:  " + i);
+        Buildnr = i;
     }
+
+public void SetBuildnr(string x)
+{
+    Buildnr = x;
+}
+
+
     public void WczytajPlik(string i)
     {
         string path = Application.persistentDataPath + "/build" + i + ".d";
