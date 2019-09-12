@@ -952,6 +952,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
             }
             foreach (HexClass h in HexesToHighlight)
             {
+                if (h!=null)
                 h.Highlight = true;
             }
         }

@@ -29,11 +29,13 @@ public class Generator : MonoBehaviour
     public List<Text> CostText;
     public List<GameObject> RacePanels;
     public Shop shop;
-    public void Start()
+    public Button b;
+    public void OnEnable()
     {
 
-
+        FindObjectOfType<OverlayMainMenu>().back = b;
         LoadAll();
+
     }
 
 
@@ -96,8 +98,9 @@ public void ShowGeneratorPanelOnly(int PanelNumber)
     }
     public void Nowy()
     {
-Debug.Log("NOWY :PP");
-        NazwaBohatera.text = "";
+        Debug.Log("NOWY :PP");
+      
+      
         foreach ( InputField inputField in inputFields)
         {
             inputField.text = "";
@@ -159,25 +162,7 @@ Debug.Log("NOWY :PP");
 
 Debug.Log("WCZYTAJ :PPP");
 
-        NazwaBohatera.text = PanelArmii.LoadedBuild.NazwaBohatera;// PlayerPrefs.GetString("NazwaBohatera");
-        if (NazwaBohatera.text == "Biały Toster")
-        {
-            RacePanels[0].SetActive(true);
-            RacePanels[1].SetActive(false);
-            RacePanels[2].SetActive(false);
-        }
-        if (NazwaBohatera.text == "Czerwony Toster")
-        {
-            RacePanels[0].SetActive(false);
-            RacePanels[1].SetActive(true);
-            RacePanels[2].SetActive(false);
-        }
-        if (NazwaBohatera.text == "Zielony Toster")
-        {
-            RacePanels[0].SetActive(false);
-            RacePanels[1].SetActive(false);
-            RacePanels[2].SetActive(true);
-        }
+
         int i = 0;
         foreach (int t in PanelArmii.LoadedBuild.NoUnits)
         {

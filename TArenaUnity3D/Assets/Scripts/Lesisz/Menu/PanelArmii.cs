@@ -166,6 +166,7 @@ public void AddBuild()
     }
     private void OnEnable()
     {
+        FindObjectOfType<OverlayMainMenu>().back = back;
         LoadListOfUnits();
         LoadListOfImages();
         sprawdz();
@@ -224,9 +225,6 @@ public void SetBuildnr(string x)
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            back.onClick.Invoke();
-        }
+
     }
 }

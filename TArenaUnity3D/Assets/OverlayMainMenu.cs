@@ -24,6 +24,7 @@ public class OverlayMainMenu : MonoBehaviour
     public Text RankPointText;
     public Text NicknameText;
     public Text MaxExpText;
+    public Button back;
     // Start is called before the first frame update
     void Start()
     {
@@ -35,14 +36,18 @@ public class OverlayMainMenu : MonoBehaviour
             PlayFabControler.PFC.GetStats();
         }
 
-        else Debug.Log("OFFLINE");
-       // else SceneManager.LoadScene("LogIn");
+      //  else Debug.Log("OFFLINE");
+        else SceneManager.LoadScene("LogIn");
     }
 
     // Update is called once per frame
     void Update()
     {
-       // ShowStats();
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            back.onClick.Invoke();
+        }
+        ShowStats();
     }
 
     // Start is called before the first frame update

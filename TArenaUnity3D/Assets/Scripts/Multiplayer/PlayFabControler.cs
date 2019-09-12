@@ -433,7 +433,7 @@ public class PlayFabControler : MonoBehaviour
     }
 
 
-    public bool BuyItem(string iD, string cost, string VC)
+    public bool BuyItem(string iD, string cost, string VC, Shop shop )
     {
         var request = new PurchaseItemRequest
         {
@@ -442,7 +442,7 @@ public class PlayFabControler : MonoBehaviour
             Price = Int32.Parse(cost),
             VirtualCurrency = VC
         };
-        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory(); }, result => { Debug.LogError("Nie udało się kupić " + iD); });
+        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory(shop); }, result => { Debug.LogError("Nie udało się kupić " + iD); });
 
         return true;
     }
@@ -489,8 +489,29 @@ public class PlayFabControler : MonoBehaviour
     }
 
 
+    public void GetInventory(Shop shop)
+    {
 
-  public  IEnumerator GetInventoryI()
+        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
+        {
+            inventoryObjects = new List<InventoryObjects>();
+
+            foreach (ItemInstance itemInstance in result.Inventory)
+            {
+                InventoryObjects iO = new InventoryObjects(itemInstance.ItemId, itemInstance.ItemClass);
+                inventoryObjects.Add(iO);
+                Debug.LogError(iO.Id);
+
+            }
+            result.VirtualCurrency.TryGetValue("TC", out tCoins);
+            result.VirtualCurrency.TryGetValue("AT", out aTokens);
+            Debug.Log("Wczytano dane użytkownika");
+            shop.Reload();
+        }, resultCallback => { Debug.LogError("error"); }, null, null);
+    }
+
+
+    public IEnumerator GetInventoryI()
     {
         bool toster = false;
         PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>

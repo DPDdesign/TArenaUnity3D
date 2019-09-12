@@ -19,7 +19,10 @@ public class Shop : MonoBehaviour
     }
     private void OnEnable()
     {
-        PlayFabControler.PFC.GetInventory();
+        Debug.Log("OnEnable");
+
+        PlayFabControler.PFC.GetInventory(this);
+
     }
     public void Reload()
     {
@@ -38,7 +41,7 @@ public class Shop : MonoBehaviour
                     if (b.name == shopobj.Id)
                     {
 
-
+                        Debug.Log("test");
                         //  Text[] texts = b.gameObject.GetComponentsInChildren<Text>();
                         //  texts[0].gameObject.SetActive(true);
                         bool inter = false;
@@ -198,18 +201,18 @@ public class Shop : MonoBehaviour
 
     public void Buy()
     {
-        if (PlayFabControler.PFC.BuyItem(objToBuy, totalCost, typeOfCurrency))
+        if (PlayFabControler.PFC.BuyItem(objToBuy, totalCost, typeOfCurrency,this))
         {
-            PlayFabControler.PFC.GetInventory();
+           // Debug.Log("dasda");
+         //   PlayFabControler.PFC.GetInventory(this);
         }
-        LoadAll();
-        LoadAll2();
+       
         BuyMenu.SetActive(false);
    
     }
     // Update is called once per frame
     void Update()
     {
-       Reload();
+
     }
 }
