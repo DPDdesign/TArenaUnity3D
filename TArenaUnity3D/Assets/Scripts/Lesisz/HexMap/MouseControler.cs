@@ -528,6 +528,26 @@ public class MouseControler : MonoBehaviourPunCallbacks
         // CancelUpdateFunc();
 
     }
+    IEnumerator DoMovesWithoutEnd(HexClass hex)
+    {
+        outlineManagerMainToster.RemoveOutline();
+        outlineM.unSetHexSelectedToster();
+        activeButtons = false;
+        SelectedToster.move = true;
+        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+        SelectedToster.Pathing_func(hex, false);
+
+        // Debug.LogError(SelectedToster.HexPathList.Count);
+        SelectedToster.Moved = true;
+        Update_CurrentFunc = BeforeNextTurn;
+        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
+        CancelUpdateFunc();
+        shiftmode = false;
+        // CancelUpdateFunc();
+
+    }
 
     public IEnumerator DoMovesPath(List<HexClass> h)
     {
@@ -787,17 +807,35 @@ public class MouseControler : MonoBehaviourPunCallbacks
 
         if (castManager.SlashTarget == true)
         {
-            if ((hexUnderMouse.Tosters.Count != 0 && hexUnderMouse != SelectedToster.Hex) || hexUnderMouse.Tosters.Count == 0)
+            if ((hexUnderMouse.Tosters.Count != 0 && hexUnderMouse != castManager.tempHex) || hexUnderMouse.Tosters.Count == 0)
             {
                 
-                hexMap.unHighlightAroundHex(SelectedToster.Hex, 1);
+                hexMap.unHighlightAroundHex(castManager.tempHex, 1);
 
-                hexMap.HighlightSlash(SelectedToster, hexUnderMouse);//hexUnderMouse.Tosters[0]);
+                hexMap.HighlightSlash(castManager.tempHex, hexUnderMouse);//hexUnderMouse.Tosters[0]);
 
             }
             
     
 
+        }/*
+        if (castManager.SlashTarget == true)
+        {
+            if ((hexUnderMouse.Tosters.Count != 0 && hexUnderMouse != SelectedToster.Hex) || hexUnderMouse.Tosters.Count == 0)
+            {
+
+                hexMap.unHighlightAroundHex(SelectedToster.Hex, 1);
+
+                hexMap.HighlightSlash(SelectedToster, hexUnderMouse);//hexUnderMouse.Tosters[0]);
+
+            }
+
+
+
+        }*/
+        if (castManager.isMove == true)
+        {
+            Pathing();
         }
 
         if (castManager.MeleeisAoE == true)

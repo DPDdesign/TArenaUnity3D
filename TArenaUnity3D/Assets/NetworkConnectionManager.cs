@@ -51,8 +51,9 @@ public static NetworkConnectionManager NCM;
     public void OnClickConnectToMaster()
     {
         
-        PhotonNetwork.OfflineMode = !isMulti.isOn;
+        PhotonNetwork.OfflineMode = isMulti.isOn;
         CustomGame = false;
+        Debug.LogError(isMulti.isOn);
         PhotonNetwork.NickName = "Toster";
  //       PhotonNetwork.AutomaticallySyncScene = true;
         PhotonNetwork.GameVersion = "v1";
@@ -72,6 +73,7 @@ public static NetworkConnectionManager NCM;
         PhotonNetwork.GameVersion = "v1";
         PlayerPrefs.SetString("CustomGameName",customGameString);
         PlayerPrefs.SetInt("customGame", 1);
+     //   PhotonNetwork.ConnectToRegion
         PhotonNetwork.ConnectUsingSettings();
         TriesToConnectToMaster = true;
     }

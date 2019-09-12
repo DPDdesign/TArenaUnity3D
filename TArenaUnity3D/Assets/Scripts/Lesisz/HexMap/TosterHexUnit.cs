@@ -1197,4 +1197,16 @@ public class TosterHexUnit : IQPathUnit
      
         SpellsGoingOn.Add(spelll);
     }
+
+    public void SendMsg(string s)
+    {
+        if (this.teamN == true)
+        {
+            Chat.chat.SendMessageToChat(s, Msg.MessageType.Master);
+        }
+        else
+        {
+            Chat.chat.SendMessageToChat(s, Msg.MessageType.Client);
+        }
+    }
 }

@@ -133,6 +133,8 @@ namespace TimeSpells
         {
             if (nameofspell == "Cold_Blood")
             {
+           //     SpecialEvents.Add(me.GetHP() * (me.Amount - 1) + me.TempHP);
+
                 SpecialEvents.Add(me.GetHP());
                 SpecialEvents.Add(me.TempHP);
                 SpecialEvents.Add(me.Amount);
@@ -226,9 +228,32 @@ namespace TimeSpells
                 int TargetStartHP = (SpecialEvents[0] * (SpecialEvents[2] - 1) + SpecialEvents[1]);
                 int TargetActualHP = me.GetHP() * (me.Amount - 1) + me.TempHP;
                 int dmgdone = TargetStartHP - TargetActualHP;
+                Debug.Log(dmgdone);
+                List<HexClass> hexarea = new List<HexClass>(me.Hex.hexMap.GetHexesWithinRadiusOf(me.Hex, 1));
+                me.SendMsg("Wrząca krew z ran Axeman'a rozbryzguje dookoła (ColdBlood)");
+                foreach (HexClass t in hexarea)
+                {
 
-                me.DealMePURE(Mathf.RoundToInt(dmgdone*0.2f));
-                Debug.Log(Mathf.RoundToInt(dmgdone * 0.2f));
+                    if (t != null)
+                    {
+                        if (t.Tosters.Count > 0)
+                        {
+
+                            if (t.Tosters.Count > 0 && !t.Tosters.Contains(me))
+                            {
+
+                                t.Tosters[0].DealMeDMGDef(Mathf.RoundToInt(dmgdone * 0.2f), me);
+
+                            }
+
+                        }
+                    }
+                    else { Debug.Log("No Tosters Hit"); }
+                }
+
+
+
+       
             }
             if (nameofspell == "Taunt")
             {

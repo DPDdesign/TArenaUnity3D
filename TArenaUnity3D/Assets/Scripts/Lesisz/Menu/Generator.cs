@@ -117,6 +117,18 @@ public void ShowGeneratorPanelOnly(int PanelNumber)
         }
 
     }
+    public void DeleteUnitB(Button UnitButton)
+    {
+        SetButtonNew(UnitButton);
+    }
+    public void DeleteUnitN(int i)
+    {
+        UnitsAmount[i] = 0;
+        Units[i] = null;
+        Costs[i] = 0;
+        inputFields[i].text = "0";
+    }
+
     private void LateUpdate()
     {
        // LoadAll();

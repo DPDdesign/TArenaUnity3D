@@ -28,9 +28,11 @@ public class CastManager : MonoBehaviourPunCallbacks
     public bool rush = false;
     public bool isAvailable = true;
     public bool SlashTarget = false;
+    public bool isMove = false;
     public List<GameObject> Projectiles;
     GameObject bullet;
     HexClass hexum;
+    public HexClass tempHex;
     void Start()
     {
         mouseControler = FindObjectOfType<MouseControler>();
@@ -51,9 +53,9 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
 
     public void SetFalse()
-    {
-       
-        RangeSelectingenemy = false;
+    {     isMove = false;
+    tempHex = null; 
+         RangeSelectingenemy = false;
         Rangeselectingfriend = false;
         unselectaround = false;
         RangeisAoE = false;
@@ -412,7 +414,14 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void Double_ThrowM()
     {
-        SelectedT().Projectile = Projectiles[0];
+        if (SelectedT().isRange==false)
+        {
+            isTurn = false;
+            SetFalse();
+            Chat.chat.SendMessageToChat("Nie jesteś w trybie Range", Msg.MessageType.Info);
+        }
+
+     SelectedT().Projectile = Projectiles[0];
         isTurn = true;
         unselectaround = true;
         RangeSelectingenemy = true;
@@ -434,7 +443,7 @@ public class CastManager : MonoBehaviourPunCallbacks
                 if (t == getHexUM() && t.Tosters.Count>0)
                 {
                     SelectedT().SpecialDMGModificator = 20;
-                    t.Tosters[0].ShootME(SelectedT(), false);
+                    t.Tosters[0].DealMeDMG(SelectedT());
                     SelectedT().SpecialDMGModificator = 0;
                     Axe(t.Tosters[0].Hex, SelectedT());
                 }
@@ -443,7 +452,8 @@ public class CastManager : MonoBehaviourPunCallbacks
                     if (t.Tosters.Count > 0)
                     {
                         SelectedT().SpecialDMGModificator = 70;
-                        t.Tosters[0].ShootME(SelectedT(), false);
+                        t.Tosters[0].DealMeDMG(SelectedT());
+                        
                         Axe(t.Tosters[0].Hex, SelectedT());
                         SelectedT().SpecialDMGModificator = 0;
                     }
@@ -468,10 +478,24 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void Slash()
     {
-        if (getHexUM().Highlight==true)
+        if (getHexUM().Highlight == true && SlashTarget == true)
         {
+            isTurn = true;
+          
             photonView.RPC("slash", RpcTarget.All, new object[] { });
+          
         }
+        if (isMove == true&& hexum.Highlight && SelectedT().IsPathAvaible(hexum) && hexum.Tosters.Count==0)
+        {
+          
+            tempHex = getHexUM();
+            SlashTarget = true;
+            isMove = false;
+            unselectaround = true;
+            SelectedT().Hex.hexMap.unHighlight(SelectedT().Hex.C, SelectedT().Hex.R, SelectedT().GetMS());
+        }
+
+      
     }
     [PunRPC]
 
@@ -479,18 +503,11 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
 
         HexClass[] hexarray = getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), 1);
-       // SelectedT().SpecialDMGModificator = 60;
-        Debug.LogError(SelectedT().Name);
-        /*if (SelectedT().Team == getHexUM().hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
-        {
 
-        }
-        else
-                if (SelectedT().Team == getHexUM().hexMap.Teams[0] && !PhotonNetwork.LocalPlayer.IsMasterClient)
-        {
-            return;
-        }*/
-       
+
+        Debug.LogError(SelectedT().Name);
+
+
         foreach (HexClass h in hexarray)
         {
 
@@ -504,15 +521,18 @@ public class CastManager : MonoBehaviourPunCallbacks
                 }
             }
         }
-     //   SelectedT().SpecialDMGModificator = 0;
+        //   SelectedT().SpecialDMGModificator = 0;
+        mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { tempHex.C, tempHex.R });
         SetFalse();
     }
     public void SlashM()
     {
-        unselectaround = true;
+
+
+        isMove = true;
         
-        SlashTarget = true;
-        isTurn = true;
+       // SlashTarget = true;
+       // isTurn = true;
 
     }
     #endregion

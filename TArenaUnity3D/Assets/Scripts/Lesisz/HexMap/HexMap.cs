@@ -632,9 +632,9 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
         return results.ToArray();
     }
 
-    public void HighlightSlash(TosterHexUnit This, HexClass target)
+    public void HighlightSlash(HexClass centerHex, HexClass target)
     {
-        HexClass centerHex = This.Hex;
+        //HexClass centerHex = This.Hex;
 
         HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex,1);
         HexClass[] targetHexes = GetHexesWithinRadiusOf(target, 1);
