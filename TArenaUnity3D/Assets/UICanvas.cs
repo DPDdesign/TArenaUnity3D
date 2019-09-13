@@ -4,12 +4,13 @@ using System.Collections.Generic;
 using System.Xml;
 using UnityEngine;
 using UnityEngine.UI;
+using TimeSpells;
 
 public class UICanvas : MonoBehaviour
 {
     public List<Text> InfoTextsList;
     public List<Button> ActionButtons;
-
+    public List<GameObject> SpellImages;
     public List<Button> SkillButtons;
     public List<Text> SkillT;
     public GameObject StatsPanel;
@@ -47,6 +48,32 @@ public class UICanvas : MonoBehaviour
         InfoTextsList[6].text = INT.ToString();
         InfoTextsList[7].text = N;
     }
+
+public void GetSpellsOnToster(TosterHexUnit toster)
+{
+
+int i = 0;
+    
+     List<SpellOverTime> SpellsOnToster = new List<SpellOverTime>();
+    SpellsOnToster.AddRange(toster.SpellsGoingOn);
+
+foreach (GameObject gameobject in SpellImages)
+{
+gameobject.SetActive(false);
+}
+
+    foreach(SpellOverTime spell in SpellsOnToster)
+    {
+       Debug.Log(("Sprites/Skill_Icons/"+SpellsOnToster[i].nameofspell));
+         SpellImages[i].GetComponent<Image>().sprite=  Resources.Load<Sprite>("Sprites/Skill_Icons/"+SpellsOnToster[i].nameofspell);
+       SpellImages[i].SetActive(true);
+       i++;
+
+    }
+
+}
+
+
 
     public void UpdateAllStats(TosterHexUnit toster)
     {
