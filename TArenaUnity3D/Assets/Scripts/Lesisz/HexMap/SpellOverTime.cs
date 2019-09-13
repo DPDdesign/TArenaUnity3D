@@ -157,7 +157,7 @@ namespace TimeSpells
             }
             if(nameofspell=="Stone_Skin")
             {
-                me.FlatDMGReduce += 2;
+                me.FlatDMGReduce += 1;
             }
             if (nameofspell == "Hate")
             {
@@ -165,7 +165,7 @@ namespace TimeSpells
             }
             if (nameofspell == "Unstoppable_Light")
             {
-                me.DefensePenetration = 1;
+                me.DefensePenetration = 0.7;
             }
             if (nameofspell == "Blind")
             {
@@ -245,7 +245,7 @@ namespace TimeSpells
                             if (t.Tosters.Count > 0 && !t.Tosters.Contains(me))
                             {
 
-                                t.Tosters[0].DealMeDMGDef(Mathf.RoundToInt((float)dmgdone * 0.2f), me, false);
+                                t.Tosters[0].DealMeDMGDef(Mathf.RoundToInt((float)dmgdone * 0.05f), me, false);
 
                             }
 
@@ -278,7 +278,7 @@ namespace TimeSpells
             }
             if (nameofspell == "Stone_Skin")
             {
-                me.FlatDMGReduce -= 1;
+                me.FlatDMGReduce--;
             }
             if (nameofspell == "Unstoppable_Light")
             {
@@ -318,7 +318,7 @@ namespace TimeSpells
             }
             if (nameofspell == "Rotting")
             {
-                if (me.GetHP() > 16) me.SpecialHP -= 16;
+                if (me.GetHP() > 30) me.SpecialHP -= 30;
                 else me.SpecialHP = -me.HP + 1;
             }
             if (nameofspell == "Fire_Movement")

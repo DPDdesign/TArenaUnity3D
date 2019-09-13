@@ -671,9 +671,23 @@ public class TosterHexUnit : IQPathUnit
         {
             DMGf += DMGf / 2;
         }
+        Debug.Log("Przed redukcją :  " + DMGf);
+        Debug.Log("defender.FlatDMGReduce:  " + defender.FlatDMGReduce);
+        Debug.Log("attacker.Amount  " + attacker.Amount);
+        double dmgft = DMGf;
+        dmgft -= defender.FlatDMGReduce * attacker.Amount;
+        if (dmgft<DMGf*0.7f)
+        {
+            DMGf = DMGf * 0.7f;
+        }
+        else
+        {
+            DMGf = dmgft;
+        }
 
-        DMGf -=defender.FlatDMGReduce * attacker.Amount;
 
+     
+        Debug.Log("Po redukcji :  " + DMGf);
         if (DMGf < 0)
         {
             DMGf = 0;

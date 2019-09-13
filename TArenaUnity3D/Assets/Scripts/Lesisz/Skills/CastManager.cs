@@ -1375,7 +1375,7 @@ public class CastManager : MonoBehaviourPunCallbacks
 
 
     #region Mage/Golems skills:
-    #region Wisp  skills (T1) Trapy...
+    #region Wisp  skills (T1) 
     #region Skill 1 - Blind_by_light    
 
     public void Blind_by_light()
@@ -1388,7 +1388,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             if (myhp > targethp)
             { 
                 if(toster!=SelectedT())
-                toster.AddNewTimeSpell(1, toster, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , "Blind", false);
+                toster.AddNewTimeSpell(2, toster, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , "Blind", false);
             }
         }
         foreach (TosterHexUnit toster in SelectedT().Hex.hexMap.Teams[1].Tosters)
@@ -1397,7 +1397,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             if (myhp > targethp)
             {
                 if (toster != SelectedT())
-                    toster.AddNewTimeSpell(1, toster, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Blind", false);
+                    toster.AddNewTimeSpell(2, toster, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Blind", false);
             }
         }
         Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
@@ -1414,7 +1414,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     public void Blind_by_lightM()
     {
         isTurn = true;
-
+        cooldown = 2;
         unselectaround = true;
         Global = true;
 
@@ -1623,11 +1623,17 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void Heavy_Fists()
     {
-        List<TosterHexUnit> tosterstoattack = new List<TosterHexUnit>();
+        if (getHexUM().Highlight == true && SlashTarget == true && hexum != tempHex)
+        {
+            MeleeisAoE = true;
+            unselectaround = true;
+            aoeradius = 1;
+            isTurn = true;
+            List<TosterHexUnit> tosterstoattack = new List<TosterHexUnit>();
         int tC, tR;
         TosterHexUnit t = SelectedT();
-        tC = SelectedT().Hex.C - getHexUM().Tosters[0].Hex.C;
-        tR = t.Hex.R - getHexUM().Tosters[0].Hex.R;
+        tC = tempHex.C - getHexUM().Tosters[0].Hex.C;
+        tR = tempHex.R - getHexUM().Tosters[0].Hex.R;
         Debug.Log("tC: " + tC);
         Debug.Log("tR: " + tR);
         if (tC == 0 && tR == 1)
@@ -1763,7 +1769,18 @@ public class CastManager : MonoBehaviourPunCallbacks
         SelectedT().SpecialDMGModificator = 0;
         if (SelectedT().GetHP() > 20) SelectedT().SpecialHP -= 20;
         else SelectedT().SpecialHP = -SelectedT().HP + 1;
-        SetFalse();
+            mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { tempHex.C, tempHex.R });
+            SetFalse();
+        }
+        if (isMove == true && hexum.Highlight && SelectedT().IsPathAvaible(hexum) && (hexum.Tosters.Count == 0 || hexum.Tosters.Contains(SelectedT())))
+        {
+
+            tempHex = getHexUM();
+            SlashTarget = true;
+            isMove = false;
+            unselectaround = true;
+            SelectedT().Hex.hexMap.unHighlight(SelectedT().Hex.C, SelectedT().Hex.R, SelectedT().GetMS());
+        }
     }
 
     public bool isHexA(int i , int j)
@@ -1776,11 +1793,11 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     public void Heavy_FistsM()
     {
-        MeleeisAoE = true;
-        unselectaround = true;
-        aoeradius = 1;
-        isTurn = true;
+        isMove = true;
+
     }
+
+    
     #endregion
     #region Shapeshift   //Cielu
 
