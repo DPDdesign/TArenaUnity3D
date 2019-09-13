@@ -3,14 +3,13 @@
   <Skill>
 <Name>Chope</Name>
 <Typ>Active</Typ>
-<Info>Kręci się dookoła i zadaje 40% obrażeń wszystkim jednostkom dookoła.
-Traci kontratak. </Info>
+<Info>Kręci się dookoła i zadaje 40% obrażeń wszystkim jednostkom dookoła. </Info>
 </Skill>
 
   <Skill>
 <Name>Rush</Name>
 <Typ>Active</Typ>
-<Info>Zamyka oczy i biegnie. Otrzymuje +1 ataku do końca tury, może biec do końca mapy w linii prostej.
+<Info>Zamyka oczy i biegnie. (buguje się)
  </Info>
 </Skill>
 
@@ -29,7 +28,7 @@ Traci kontratak. </Info>
 <Skill>
 <Name>Double_Throw</Name>
 <Typ>Active</Typ>   
-<Info>Rzuca dwa razy pod rząd, każdy rzut za 40% obrażeń.</Info>
+<Info>Rzuca dwa razy pod rząd, każdy rzut zadaje 40% obrażeń.</Info>
 </Skill>
 
   <Skill>
@@ -43,42 +42,42 @@ Traci kontratak. </Info>
   <Skill>
 <Name>Slash</Name>
 <Typ>Active</Typ>
-<Info>Zamachuje się toporem i atakuje 3 jednostki przed sobą, każda za 40% obrażeń.</Info>
+<Info>Po ruchu zamachuje się toporem i atakuje 3 jednostki przed sobą, każda za 40% obrażeń. (CD 2)
+</Info>
 </Skill>
   
   
   <Skill>
 <Name>Hate</Name>
 <Typ>Active</Typ>
-<Info>Wyzywa wybrany cel. Zadają sobie wzajemnie +50% obrażeń. Na dwie tury.  (NI)
+<Info>Wyzywa wybrany cel. Zadają sobie wzajemnie +50% obrażeń. Na dwie tury.  (NI) (CD 2)
 </Info>
 </Skill>
   
   <Skill>
 <Name>Cold_Blood</Name>
 <Typ>Passive</Typ>
-<Info>Zaciska zęby i 20% wszystkich obrażeń z całej tury jest zadawane na początku następnej. (Passive)
+<Info>Pod koniec tury zadaje wszystkim jednostkom 5% odniesionych obrażeń z całej tury. (Passive)
 </Info>
 </Skill>
   
   <Skill>
 <Name>Insult</Name>
 <Typ>Active</Typ>
-<Info>Poniża przeciwników, zmniejsza inicjatywę o 1 na 1 turę.
-(NI) (CD 3).</Info>
+<Info>Poniża przeciwników, zmniejsza inicjatywę o 1 na 1 turę.(NI) (CD 3).</Info>
 </Skill>
   
   <Skill>
 <Name>Rage</Name>
 <Typ>Active</Typ>
-<Info>Odrzuca pancerz. Zamienia obronę w atak na dwie tury. W stosunku 2 = 1 Att. (NI)
+<Info>Odrzuca pancerz. Zamienia obronę w atak na dwie tury. W stosunku 3 Def = 1 Att. (NI) (CD 3)
 </Info>
 </Skill>
   
   <Skill>
 <Name>Massochism</Name>
 <Typ>Passive</Typ>
-<Info>Oddaje 20% odniesionych obrażeń z tury w następnej turze przy ataku.(Passive)</Info>
+<Info>Przy ataku oddaje 20% obrażeń odniesionych w poprzedniej tureze.(Passive)</Info>
 </Skill>
   
   <Skill>
@@ -96,20 +95,28 @@ Traci kontratak. </Info>
   <Skill>
 <Name>Spike_Trap</Name>
 <Typ>Active</Typ>
-<Info>ustawia drewnianą pułapkę z kolcami z kości. Widoczna dla przeciwnika – spowalnia 2ms na 2 tury.</Info>
+<Info>Ustawia drewnianą pułapkę z kolcami z kości. Widoczna dla przeciwnika. Spowalnia o 2ms na 2 Tury, w ciągu których zadaje łącznie 200% dmg. (CD 3)</Info>
 </Skill>
   
-  <Skill>
+<Skill>
 <Name>Rope_Trap</Name>
 <Typ>Active</Typ>
-<Info>Ustawia niewidzialną dla przeciwnika pułapkę, która go unieruchamia. Cel otrzymuje 30% obrażeń do końca tury.</Info>
+<Info>Ustawia niewidzialną dla przeciwnika pułapkę, która go unieruchamia. Cel otrzymuje 30% obrażeń do końca tury. (CD 2)</Info>
 </Skill>
   
-  
-  
-  
-  
-  <Skill>
+<Skill>
+<Name>Tough_Skin</Name>
+<Typ>Active</Typ>
+<Info>Wzmacniająca mikstura zapewnia  do końca tury 25% redukcji obrażeń wybranemu lizardowi, 15% innym rasom. (CD 2).</Info>
+</Skill>
+
+<Skill>
+<Name>Defence_Ritual</Name>
+<Typ>Active</Typ>
+<Info>Odprawia grupowy rytuał. Zapewnia wszystkim +2 do obrony na 2 tury (CD 3).</Info>
+</Skill>
+
+<Skill>
 <Name>Force_Pull</Name>
 <Typ>Active</Typ>
 <Info>Teleportuje sojuszniczą jednostkę na miejsce w promieniu 2 pól od siebie.
@@ -119,13 +126,13 @@ Traci kontratak. </Info>
   <Skill>
 <Name>Stone_Stance</Name>
 <Typ>Active</Typ>
-<Info>Zamienia się w skałę i otrzymuje całkowitą niewrażliwość do końca następnej tury. CD 3, traci możliwość kontr. </Info>
+<Info>Zamienia się w skałę i otrzymuje całkowitą niewrażliwość do końca następnej tury, podczas której może się ruszać. Traci możliwość kontr. (CD 5) </Info>
 </Skill>
   
   <Skill>
 <Name>Toxic_Fume</Name>
 <Typ>Active</Typ>
-<Info>Wydziela odrażające opary, które prowokują wszystkich przeciwników wokół niego do ataku. Zyskuje 3 dodatkowe kontry</Info>
+<Info>Idzie w punkt, w którym wydziela odrażające opary, które prowokują wszystkich przeciwników wokół niego do ataku. Zyskuje 3 dodatkowe kontry. (CD 2)</Info>
 </Skill>
   
   <Skill>
@@ -137,69 +144,71 @@ Traci kontratak. </Info>
   <Skill>
 <Name>Long_Lick</Name>
 <Typ>Active</Typ>
-<Info>Wyrzuca język i przyciąga najbliższą jednostkę w promieniu 3 pól od siebie.
+<Info>Wyrzuca język i przyciąga i tauntuje wrogą jednostkę w odległości trzech pól na losowe miejsce obok siebie.
 </Info>
 </Skill>
   
   <Skill>
 <Name>Blind_by_light</Name>
 <Typ>Active</Typ>
-<Info>Oślepia każdą jednostkę na mapie o ilości życia mniejszej niż łączna ilość HP świetlików  do końca tury. W przeciwnym razie nie skutkuje żadnym efektem</Info>
+<Info>Oślepia każdą jednostkę na mapie o ilości życia mniejszej niż łączna ilość HP świetlików  do końca następnej tury. W przeciwnym razie nie skutkuje żadnym efektem. (CD 3)</Info>
 </Skill>
   
   <Skill>
 <Name>Unstoppable_Light</Name>
 <Typ>Passive</Typ>
-<Info>Jego ataki przenikają wrogi pancerz.(Passive)</Info>
+<Info>Jego ataki przenikają 70% wrogiego pancerza.(Passive)</Info>
 </Skill>
   <Skill>
 <Name>Stone_Throw</Name>
 <Typ>Active</Typ>
-<Info>Rzuca swoją połową (50% ilości jednostek ) w zaznaczony punkt. Po upadku w pobliżu celu pojawia się jednostka Stone Golema z 50% ilości początkowej. Upadek powoduje zadanie 15 DMG na rzuconą jednostkę celowi w zaznaczonym punkcie oraz nowej grupie.</Info>
+<Info>Rzuca swoją połową (50% ilości jednostek ) w zaznaczony punkt. Po upadku w pobliżu celu pojawia się jednostka Stone Golema z 50% ilości początkowej. Upadek powoduje zadanie sobie 12 DMG na rzuconą jednostkę. Cel otrzymuje 10 DMG za każdego nowego golema. (CD 3)</Info>
 </Skill>
   
   <Skill>
 <Name>Stone_Skin</Name>
 <Typ>Passive</Typ>
-<Info>Twarda skóra nie jest łatwa przebicia. Na stałe otrzymuje 2* redukcji obrażeń. *(otrzymany_dmg = dmg_przed_redukcją - 2*ilość atakujących jednostek</Info>
+<Info>Twarda skóra nie jest łatwa przebicia. Na stałe otrzymuje 1* redukcji obrażeń. (Redukuje otrzymane obrażenia o 1 za każdą atakującą jednostkę, maksymalnie 70% redukcji)</Info>
 </Skill>
   
   <Skill>
 <Name>Fire_Movement</Name>
 <Typ>Passive</Typ>
-<Info>Na polach po których stąpa przez następne 2 tury płonie ogień, zadaje 1DMG/ilość jednostek stworzenia stojącego w ogniu.(Passive)</Info>
+<Info>Na polach po których stąpa przez następne 2 tury płonie ogień. Po wejściu w który, cel otrzmyje 100% obrażeń w ciągu 5 tur (Stackuje się).  (Passive)</Info>
 </Skill>
   
   <Skill>
 <Name>Fire_Ball</Name>
 <Typ>Active</Typ>
-<Info>Rzuca kule ognia w oznaczone pole (Promień 2 hexy). Zadaje obrażenia zredukowane o 20% podstawowego ataku. CD 1 
+<Info>Rzuca kule ognia w oznaczone pole (Promień 2 hexy). Zadaje obrażenia zredukowane o 20% podstawowego ataku. (CD 2) 
 </Info>
 </Skill>
   
-  <Skill>
+<Skill>
 <Name>Fire_Skin</Name>
 <Typ>Passive</Typ>
 <Info>Jednostki przebywające w okolicy Żywiołaka Ognia przez 1 turę mają zredukowane statystyki o 1 INT/MS oraz tracą 10% Def. (Passive)
 </Info>
 </Skill>
   
-  <Skill>
+<Skill>
 <Name>Heavy_Fists</Name>
 <Typ>Active</Typ>
-<Info>Swoimi potężnymi pięściami atakuje dany obszar bez opamiętania.
+<Info>Idzie w punkt, a następnie swoimi potężnymi pięściami atakuje dany obszar bez opamiętania.
 Zadaje 130% podstawowych obrażeń wszystkim w stożku przed nim, zasięg 2. Traci przy tym 10% maksymalnego życia.
 </Info>
 </Skill>
-  <Skill>
+
+<Skill>
 <Name>Terrifying_Presence</Name>
 <Typ>Passive</Typ>
 <Info>Ta abominacja przeraża wszystkich. Każdy znajdujący się w odległości 1 hex na początku tury traci możliwość kontrataku. </Info>
 </Skill>
-  <Skill>
+
+<Skill>
 <Name>Rotting</Name>
 <Typ>Passive</Typ>
-<Info>Ciało golema rozkłada się, traci 8% maksymalnego HP na turę. Nie może spaść poniżej 1 hp.</Info>
+<Info>Ciało golema rozkłada się, traci 15% maksymalnego HP na turę. Nie może spaść poniżej 1 hp.</Info>
 </Skill>
   
   
