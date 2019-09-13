@@ -672,7 +672,19 @@ public class TosterHexUnit : IQPathUnit
             DMGf += DMGf / 2;
         }
 
-        DMGf -=defender.FlatDMGReduce * attacker.Amount;
+        Debug.Log("Przed redukcją :  " + DMGf);
+        Debug.Log("defender.FlatDMGReduce:  " + defender.FlatDMGReduce);
+        Debug.Log("attacker.Amount  " + attacker.Amount);
+        double dmgft = DMGf;
+        dmgft -= defender.FlatDMGReduce * attacker.Amount;
+        if (dmgft < DMGf * 0.7f)
+        {
+            DMGf = DMGf * 0.7f;
+        }
+        else
+        {
+            DMGf = dmgft;
+        }
 
         if (DMGf < 0)
         {
@@ -717,8 +729,19 @@ public class TosterHexUnit : IQPathUnit
             DMGf += DMGf / 2;
         }
 
-        DMGf -= defender.FlatDMGReduce * attacker.Amount;
-
+        Debug.Log("Przed redukcją :  " + DMGf);
+        Debug.Log("defender.FlatDMGReduce:  " + defender.FlatDMGReduce);
+        Debug.Log("attacker.Amount  " + attacker.Amount);
+        double dmgft = DMGf;
+        dmgft -= defender.FlatDMGReduce * attacker.Amount;
+        if (dmgft < DMGf * 0.7f)
+        {
+            DMGf = DMGf * 0.7f;
+        }
+        else
+        {
+            DMGf = dmgft;
+        }
         if (DMGf<0)
         {
             DMGf = 0;

@@ -267,8 +267,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             else { Debug.Log("No Tosters Hit"); }
         }
         SelectedT().SpecialDMGModificator = 0;
-        SelectedT().CounterAttackAvaible = false;
-        SelectedT().CounterAttacks = 0;
+ 
         SetFalse();
     }
     public void ChopeM()
