@@ -191,11 +191,15 @@ public class MouseControler : MonoBehaviourPunCallbacks
                 return;
             }
         }
-        if(!isMulti) SYNC = !isMulti;
-        photonView.RPC("SetSync", RpcTarget.Others, new object[] { });
-        if (SelectedToster.C != STC && SelectedToster.R != STR)
+        photonView.RPC("SendSync", RpcTarget.Others, new object[] { SelectedToster.C, SelectedToster.R }) ;
+
+        if (STC != SelectedToster.C || STR != SelectedToster.R)
+        {
+          
+            Update_CurrentFunc = WaitForSyncc;
             return;
-        StartCoroutine(AskSync());
+        }
+ 
         hexUnderMouse = SelectedToster.Hex;
 
         outlineM.SetHexSelectedToster(SelectedToster.Hex);
@@ -252,11 +256,26 @@ public class MouseControler : MonoBehaviourPunCallbacks
     }
     [PunRPC]
 
-    void SendSync()
+    void SendSync(int c, int r)
     {
-        STC = SelectedToster.C;
-        STR = SelectedToster.R;
-        
+        if (SelectedToster != null)
+        {
+            STC = c;
+            STR = r;
+
+        }
+    }
+
+
+    void WaitForSyncc()
+    {
+        SYNC = false;
+        if (STC == SelectedToster.C && STR == SelectedToster.R)
+        {
+            SYNC = true;
+            Update_CurrentFunc = Update_DetectModeStart;
+            return;
+        }
     }
     IEnumerator AskSync()
     {
@@ -267,12 +286,13 @@ public class MouseControler : MonoBehaviourPunCallbacks
     {
         Debug.Log("HOW DARE YOU!?");
         if (!SelectedToster.whoTauntedMe.isDead)
-
-            StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.Hex, SelectedToster.whoTauntedMe));
-       // photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R });
-        else SelectedToster.Taunt = false;
-      //StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.whoTauntedMe.Hex,SelectedToster.whoTauntedMe));
-    }
+        {
+            StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.whoTauntedMe.Hex, SelectedToster.whoTauntedMe));
+        }
+        // photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R });
+        else { SelectedToster.Taunt = false; CancelUpdateFunc(); return; }
+            //StartCoroutine(DoMoveAndAttackWithoutCheck(SelectedToster.whoTauntedMe.Hex,SelectedToster.whoTauntedMe));
+        }
 
     [PunRPC]
     void StartCoroutineDoMoveAndAttackWithoutCheck(int i, int k, int r, int f)
@@ -702,7 +722,6 @@ public class MouseControler : MonoBehaviourPunCallbacks
   public  IEnumerator DoMoveAndAttackWithoutCheck(HexClass temp, TosterHexUnit toster)
     {
 
-        outlineManagerMainToster.RemoveOutline();
         SelectedToster.move = true;
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
 
@@ -714,7 +733,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
             SelectedToster.Pathing_func(temp, false);
             SelectedToster.Moved = true;
 
-            Update_CurrentFunc = BeforeNextTurn;
+        Update_CurrentFunc = BeforeNextTurn;
             StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
             yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
         if (toster != null)

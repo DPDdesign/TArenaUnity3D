@@ -1247,7 +1247,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
 
 
-        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, "Tank_Skill1", false);
+        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, "Toxic_Fume", false);
         List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(hexum, aoeradius));
         foreach (HexClass t in hexarea)
         {
@@ -1430,7 +1430,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     public void Blind_by_lightM()
     {
         isTurn = true;
-        cooldown = 2;
+        cooldown =3;
         unselectaround = true;
         Global = true;
 
@@ -1476,7 +1476,7 @@ public class CastManager : MonoBehaviourPunCallbacks
                     newunit.SetTosterPrefab(getHexUM().hexMap);
                     newunit.SetTextAmount();
                     getHexUM().hexMap.GenerateToster(h.C, h.R, newunit);
-                    newunit.DealMeDMGDef(8, SelectedT(),true);
+                    newunit.DealMeDMGDef(12, SelectedT(),true);
                     newunit.skillstrings.Remove("Stone_Throw");
                     newunit.Moved = true;
                     SetFalse();
@@ -1495,7 +1495,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             newunit.SetTosterPrefab(getHexUM().hexMap);
             newunit.SetTextAmount();
             getHexUM().hexMap.GenerateToster(getHexUM().C, getHexUM().R, newunit);
-            newunit.DealMeDMGDef(8, SelectedT(),true);
+            newunit.DealMeDMGDef(12, SelectedT(),true);
             newunit.Moved = true;
             SetFalse();
         }
@@ -1522,7 +1522,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             SetFalse();
         }
         isTurn = true;
-
+        cooldown = 3;
         unselectaround = true;
         Global = true;
         SingleTarget = true;

@@ -232,7 +232,7 @@ public class TosterHexUnit : IQPathUnit
     }
     public float TurnsToGetToHex(HexClass hex, TosterHexUnit tosterWhoAsk, float MovesToDate)
     {
-        float baseMovesToEnterHex = MovementCostToEnterHex(hex) / GetMS();
+        float baseMovesToEnterHex = MovementCostToEnterHex(hex) / (GetMS()!=0 ? GetMS():1);
         float MoveRemaining = GetMS();
         float MovestoDateWhole = Mathf.Floor(MovesToDate);
         float MovesToDateFraction = MovesToDate - MovestoDateWhole;

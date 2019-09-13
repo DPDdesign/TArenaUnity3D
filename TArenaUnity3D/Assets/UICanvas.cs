@@ -49,29 +49,29 @@ public class UICanvas : MonoBehaviour
         InfoTextsList[7].text = N;
     }
 
-public void GetSpellsOnToster(TosterHexUnit toster)
-{
-
-int i = 0;
-    
-     List<SpellOverTime> SpellsOnToster = new List<SpellOverTime>();
-    SpellsOnToster.AddRange(toster.SpellsGoingOn);
-
-foreach (GameObject gameobject in SpellImages)
-{
-gameobject.SetActive(false);
-}
-
-    foreach(SpellOverTime spell in SpellsOnToster)
+    public void GetSpellsOnToster(TosterHexUnit toster)
     {
-       Debug.Log(("Sprites/Skill_Icons/"+SpellsOnToster[i].nameofspell));
-         SpellImages[i].GetComponent<Image>().sprite=  Resources.Load<Sprite>("Sprites/Skill_Icons/"+SpellsOnToster[i].nameofspell);
-       SpellImages[i].SetActive(true);
-       i++;
+
+        int i = 0;
+
+        List<SpellOverTime> SpellsOnToster = new List<SpellOverTime>();
+        SpellsOnToster.AddRange(toster.SpellsGoingOn);
+
+        foreach (GameObject gameobject in SpellImages)
+        {
+            gameobject.SetActive(false);
+        }
+
+        foreach (SpellOverTime spell in SpellsOnToster)
+        {
+            Debug.Log(("Sprites/Skill_Icons/" + SpellsOnToster[i].nameofspell));
+            SpellImages[i].GetComponent<Image>().sprite = Resources.Load<Sprite>("Sprites/Skill_Icons/" + SpellsOnToster[i].nameofspell);
+            SpellImages[i].SetActive(true);
+            i++;
+
+        }
 
     }
-
-}
 
 
 
