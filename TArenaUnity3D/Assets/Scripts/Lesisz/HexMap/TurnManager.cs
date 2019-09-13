@@ -14,7 +14,7 @@ public class TurnManager : MonoBehaviour
     public GameObject obracacz; 
     public List<Text> turns;
     public List<TosterHexUnit> TostersQue;
-        public List<TosterHexUnit> TostersQuep;
+    public List<TosterHexUnit> TostersQuep;
     public List<GameObject> QueImages;
     public GameObject pauza;
    
@@ -57,6 +57,12 @@ public void SetNewTurn()
         Tura++;
         rotating = false;
     }
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////
+
+
 
 
 public void GetTostersQueue()
@@ -137,6 +143,7 @@ parentobject.SetActive(true);
     parentobject.transform.Find("TQAmount").gameObject.GetComponent<Text>().text = toster.Amount.ToString(); 
 
 }
+
 
 
   public int isAnyoneAlive()

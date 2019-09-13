@@ -1370,8 +1370,9 @@ public class MouseControler : MonoBehaviourPunCallbacks
         {
             TosterHexUnit t = hexUnderMouse.Tosters[0];
             canvas.UpdateAllStats(t);
+             canvas.GetSpellsOnToster(t);
             canvas.StatsPanel.SetActive(true);
-           
+          
         }
         if (Input.GetMouseButtonUp(1))
         {
