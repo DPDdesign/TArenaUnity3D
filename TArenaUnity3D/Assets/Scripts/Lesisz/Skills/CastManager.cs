@@ -490,7 +490,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             photonView.RPC("slash", RpcTarget.All, new object[] { });
           
         }
-        if (isMove == true&& hexum.Highlight && SelectedT().IsPathAvaible(hexum) && hexum.Tosters.Count==0)
+        if (isMove == true&& hexum.Highlight && SelectedT().IsPathAvaible(hexum) && (hexum.Tosters.Count==0 || hexum.Tosters.Contains(SelectedT())))
         {
           
             tempHex = getHexUM();
@@ -1045,7 +1045,12 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void tough_Skin()
     {
-        getHexUM().Tosters[0].AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -20, "Tough_Skin", false);
+        if (getHexUM().Tosters[0].Name == "Tank" || getHexUM().Tosters[0].Name == "Healer" || getHexUM().Tosters[0].Name == "Specialist" || getHexUM().Tosters[0].Name == "Trapper")
+        {
+            getHexUM().Tosters[0].AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, "Tough_Skin", false);
+        }
+        else
+        getHexUM().Tosters[0].AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, "Tough_Skin", false);
         mouseControler.SetCD();
         SetFalse();
     }
@@ -1065,8 +1070,12 @@ public class CastManager : MonoBehaviourPunCallbacks
         {
             foreach (TosterHexUnit tost in getHexUM().hexMap.Teams[0].Tosters)
             {
-
-                tost.AddNewTimeSpell(2, tost, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Insult", false);
+                if (tost.Name == "Tank" || tost.Name == "Healer" || tost.Name == "Specialist" || tost.Name == "Trapper")
+                {
+                    tost.AddNewTimeSpell(2, tost, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Defence_Ritual", false);
+                }
+                else
+                    tost.AddNewTimeSpell(2, tost, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Defence_Ritual", false);
             }
         }
         else
@@ -1074,7 +1083,12 @@ public class CastManager : MonoBehaviourPunCallbacks
             foreach (TosterHexUnit tost in getHexUM().hexMap.Teams[1].Tosters)
             {
 
-                tost.AddNewTimeSpell(2, tost, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Insult", false);
+                if (tost.Name == "Tank" || tost.Name == "Healer" || tost.Name == "Specialist" || tost.Name == "Trapper")
+                {
+                    tost.AddNewTimeSpell(2, tost, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Defence_Ritual", false);
+                }
+                else
+                    tost.AddNewTimeSpell(2, tost, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Defence_Ritual", false);
             }
         }
         mouseControler.SetCD();
@@ -1190,11 +1204,19 @@ public class CastManager : MonoBehaviourPunCallbacks
         SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -SelectedT().CounterAttacks, 0,100, "Stone_Stance", false);
         SelectedT().CounterAttackAvaible = false;
         mouseControler.SetCD();
+        var d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+        if (d != null)
+        {
+            Debug.Log(d);
+            d.Play("Skill2");
+
+        }
         SetFalse();
+
     }
     public void Stone_StanceM()
     {
-        cooldown = 4;
+        cooldown = 5;
         isTurn = true;
         SelfCast = true;
         unselectaround = true;

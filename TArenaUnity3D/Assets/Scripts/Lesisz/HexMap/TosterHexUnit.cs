@@ -16,7 +16,7 @@ public class TosterHexUnit : IQPathUnit
 {
     public readonly int C; public readonly int R; public readonly int S; // column.row
     public Vector3 vec;
-
+    public string TosterSpriteName;
     CastManager cm;
     List<SpellOverTime> SpellsGoingOn;
     public int FlatDMGReduce = 0;
@@ -518,6 +518,8 @@ public class TosterHexUnit : IQPathUnit
                 sp,
                 int.Parse(UnitNodes[6].InnerText),
                 int.Parse(UnitNodes[7].InnerText));
+            nodes = xmldoc.SelectNodes("Units/Unit/Sprite");
+            TosterSpriteName = nodes[NumberOfNode].InnerText;
         }
     } 
     public void SetTosterPrefab(HexMap h)

@@ -29,7 +29,7 @@ public class TurnManager : MonoBehaviour
 public void SetNewTurn()
 {
     StartCoroutine(RotateElement(obracacz,new Vector3(0,0,-60f), duration));
-    GetTostersQueue();
+
 }
 
    IEnumerator RotateElement(GameObject ElementToRotate, Vector3 EulerAngles, float Duration)
@@ -160,6 +160,7 @@ parentobject.SetActive(true);
         Teams = hexMap.Teams;
         Teams[0].NewTurn();
         Teams[1].NewTurn();
+
         hexMap.DoTurn();
 
     }
@@ -180,7 +181,8 @@ parentobject.SetActive(true);
             Teams[1].NewTurn();
             hexMap.DoTurn();
             Tura++;
-            StartCoroutine(RotateElement(obracacz,new Vector3(0,0,-60f), duration));
+            SetNewTurn();
+         
             return AskWhosTurn();
         }
 

@@ -180,6 +180,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         }
 
         SelectedToster = TM.AskWhosTurn();
+        TM.GetTostersQueue();
         SelectedToster.isSelected = true;
         if (isAiOn==true)
         {

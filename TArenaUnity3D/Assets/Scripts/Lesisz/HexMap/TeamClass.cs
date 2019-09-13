@@ -118,7 +118,7 @@ public class TeamClass
         foreach (TosterHexUnit t in Tosters)
         {
 
-            if (t.GetIni()>Initiative)
+            if (t.GetIni() > Initiative && t.isDead == false)
             {
 
                 if (t.Blinded==false)
@@ -132,7 +132,7 @@ public class TeamClass
         if (T == null)
             foreach (TosterHexUnit t in Tosters)
             {
-            if (t.GetIni() <= Initiative && t.Blinded==false)
+            if (t.GetIni() <= Initiative && t.Blinded==false && t.isDead == false)
             {
                 T = t;
                 Initiative = t.GetIni();
