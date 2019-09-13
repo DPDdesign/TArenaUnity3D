@@ -32,6 +32,7 @@ public class TosterHexUnit : IQPathUnit
     public int SpecialResistance = 0; // +20 oznacza że otrzymany dmg zostanie zmniejszony o 20%
     public int SpecialDMGModificator = 0;// +20 oznacza że zadawany dmg zostanie zmniejszony o 20%
     public bool isRange = false;
+    public string TosterSpriteName;
     public double DefensePenetration = 0;
     public GameObject Projectile;
     public string TextToSend;
@@ -251,13 +252,6 @@ public class TosterHexUnit : IQPathUnit
     {
         return 1;
     }
-    private IEnumerator WaitForAnimation(Animation animation)
-    {
-        do
-        {
-            yield return null;
-        } while (animation.isPlaying);
-    }
     public void SetHex(HexClass hex)
     {
         HexClass oldHex = Hex;
@@ -271,47 +265,32 @@ public class TosterHexUnit : IQPathUnit
         {
             if (hex.trap.NameOfTraps == "Rope_Trap")
             {
-                TextToSend = "";
-                TextToSend += "Wszedłeś w Rope_Trap";
-                SendMsg(TextToSend);
+
                 Pathing_func(hex,true);
                 this.AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, "Rope_Trap", false);
-                Animator d = hex.MyHex.GetComponent<Animator>();
-                if (d != null)
-                {
-                    Debug.Log(d);
-                    d.Play("trap1Active");
-             //       d.GetCurrentAnimatorStateInfo().
-                }
                 hex.RemoveTrap();
             }
             if (hex.trap.NameOfTraps == "Fire_Trap")
             {
-
-                if (this != hex.trap.TosterWhoSetupThisTrap)
+                TextToSend = "";
+                TextToSend += "Fire_Trap zadał " + this.Amount + " obrażeń " + this.Name;
+                Quaternion q;
+                if (this.teamN == true)
                 {
-                    this.AddNewTimeSpell(5, hex.trap.TosterWhoSetupThisTrap, 0, 0, 0, 0, 0, 0, 0, Convert.ToInt32(CalculateDamageBetweenTosters(hex.trap.TosterWhoSetupThisTrap, this, 1)) / 5, 0, 0, 0, 0, "Fire_Trap", false);
-                    TextToSend = "";
-                    TextToSend += "Wszedłeś w Fire_Trap";
-                    Animator d = hex.MyHex.GetComponent<Animator>();
-                    if (d != null)
-                    {
-                        Debug.Log(d);
-                        d.Play("firetrapActive");
-                        //       d.GetCurrentAnimatorStateInfo().
-                    }
-                    SendMsg(TextToSend);
+                    Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
                 }
-                //   this.DealMePURE(this.Amount);
-                //  hex.RemoveTrap();
+                else
+                {
+                    Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
+                }
+                this.DealMePURE(this.Amount);
+              //  hex.RemoveTrap();
             }
             if (hex.trap.NameOfTraps == "Spike_Trap")
             {
 
-                TextToSend = "";
-                TextToSend += "Wszedłeś w Spike_Trap";
-                SendMsg(TextToSend);
-                this.AddNewTimeSpell(2, hex.trap.TosterWhoSetupThisTrap, 0, 0, 0, -2, 0, 0, 0,Convert.ToInt32( CalculateDamageBetweenTosters(hex.trap.TosterWhoSetupThisTrap,this,1)), 0, 0, 0, 0, "Spike_Trap", false);
+              
+                this.AddNewTimeSpell(2, this, 0, 0, 0, -2, 0, 0, 0, 0, 0, 0, 0, 0, "Spike_Trap", false);
                 if (hexPath.Count>1)
                 {
                     hexPath.RemoveAt(hexPath.Count - 1);
@@ -322,19 +301,13 @@ public class TosterHexUnit : IQPathUnit
                     hexPath.RemoveAt(hexPath.Count - 1);
 
                 }
-                Animator d = hex.MyHex.GetComponent<Animator>();
-                if (d != null)
-                {
-                    Debug.Log(d);
-                    d.Play("trap1Active");
-                    //       d.GetCurrentAnimatorStateInfo().
-                }
+
                 hex.RemoveTrap();
             }
         }
         if(Fire_movement==true && oldHex!=null)
         {
-            oldHex.AddTrap("Fire_Trap",2, this);
+            oldHex.AddTrap("Fire_Trap",2);
         }
         Hex = hex;
         Hex.AddToster(this);
@@ -536,6 +509,9 @@ public class TosterHexUnit : IQPathUnit
                 sp,
                 int.Parse(UnitNodes[6].InnerText),
                 int.Parse(UnitNodes[7].InnerText));
+
+            nodes = xmldoc.SelectNodes("Units/Unit/Sprite");
+            TosterSpriteName = nodes[NumberOfNode].InnerText;
         }
     } 
     public void SetTosterPrefab(HexMap h)
@@ -697,7 +673,7 @@ public class TosterHexUnit : IQPathUnit
         return Math.Ceiling(DMGf);
 
     }
-    public double ReCalculateDamageBetweenTosters(TosterHexUnit attacker, TosterHexUnit defender, double modifier, int dmgtodo, bool isStackable)
+    public double ReCalculateDamageBetweenTosters(TosterHexUnit attacker, TosterHexUnit defender, double modifier, int dmgtodo)
     {
 
         bool isReduced = false;
@@ -720,7 +696,7 @@ public class TosterHexUnit : IQPathUnit
 
         double R5 = isReduced ? 0.5 : 0;
 
-        double DMGb = dmgtodo * (isStackable ? attacker.Amount : 1)* (1 + (ADD * M)) * (((100.0 - attacker.SpecialDMGModificator) / 100.0)); ;
+        double DMGb = dmgtodo * attacker.Amount * (1 + (ADD * M)) * (((100.0 - attacker.SpecialDMGModificator) / 100.0)); ;
 
 
 
@@ -1034,11 +1010,11 @@ public class TosterHexUnit : IQPathUnit
         }
         else { SetTextAmount(); return true; }
     }
-    public void DealMeDMGDef(int i, TosterHexUnit t, bool isStackable)
+    public void DealMeDMGDef(int i, TosterHexUnit t)
     {
 
         Debug.LogError(i);
-        i =Convert.ToInt32(ReCalculateDamageBetweenTosters(t,this,1,i, isStackable));
+        i =Convert.ToInt32(ReCalculateDamageBetweenTosters(t,this,1,i));
         TextToSend = "";
         TextToSend += t.Name + " zadał " + Convert.ToInt32(i) + " obrażeń " + this.Name;
         Quaternion q;
@@ -1224,17 +1200,5 @@ public class TosterHexUnit : IQPathUnit
         SpellOverTime spelll = new SpellOverTime(spell);
      
         SpellsGoingOn.Add(spelll);
-    }
-
-    public void SendMsg(string s)
-    {
-        if (this.teamN == true)
-        {
-            Chat.chat.SendMessageToChat(s, Msg.MessageType.Master);
-        }
-        else
-        {
-            Chat.chat.SendMessageToChat(s, Msg.MessageType.Client);
-        }
     }
 }
