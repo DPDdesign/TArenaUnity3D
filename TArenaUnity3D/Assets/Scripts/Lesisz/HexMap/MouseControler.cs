@@ -898,16 +898,9 @@ public class MouseControler : MonoBehaviourPunCallbacks
     {
         if (EventSystem.current.IsPointerOverGameObject())
             return;
-        SelectedToster.TextToSend = "";
-        SelectedToster.TextToSend += SelectedToster.Name + " używa " + SelectedToster.skillstrings[SelectedSpellid] + ".";
-        if (SelectedToster.teamN == true)
-        {
-            Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Master);
-        }
-        else
-        {
-            Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
-        }
+
+  
+    
         castManager.startSpell(SelectedToster.skillstrings[SelectedSpellid],hexMap.GetHexAt(i,j));
 
     }

@@ -19,10 +19,10 @@ public class HexClass : IPathTile {
         ListOfParts = new List<GameObject>();
         ListOfParts = l;
     }
-    public void AddTrap(string name, int time)
+    public void AddTrap(string name, int time, TosterHexUnit toster)
     {
         isTraped = true;
-        trap = new Traps.Traps(time, name, this);
+        trap = new Traps.Traps(time, name, this, toster);
     }
     public void RemoveTrap()
     {

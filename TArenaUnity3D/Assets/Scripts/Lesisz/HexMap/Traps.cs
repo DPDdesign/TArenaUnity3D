@@ -9,13 +9,15 @@ namespace Traps
       public  int Time = 0;
      public   string NameOfTraps = "";
     public    HexClass TrapedHex = null;
+        public TosterHexUnit TosterWhoSetupThisTrap;
 
 
-    public    Traps(int time, string not, HexClass h)
+    public    Traps(int time, string not, HexClass h, TosterHexUnit toster)
         {
             Time = time;
             NameOfTraps = not;
             TrapedHex = h;
+            TosterWhoSetupThisTrap = toster;
             ShowTrap();
         }
 
@@ -32,9 +34,20 @@ namespace Traps
         }
 
         internal void Remove()
-        {
-            TrapedHex.MyHex.transform.Find("trap1").gameObject.SetActive(false);
-            TrapedHex.MyHex.transform.Find("Fire_Trap").gameObject.SetActive(false);
+        { 
+          
+            if (NameOfTraps == "Fire_Trap")
+            {
+            
+
+                
+                TrapedHex.MyHex.transform.Find("Fire_Trap").gameObject.SetActive(false);
+            }
+            else
+            {
+ 
+                TrapedHex.MyHex.transform.Find("trap1").gameObject.SetActive(false);
+            }
         }
 
 

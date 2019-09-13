@@ -226,7 +226,10 @@ namespace TimeSpells
             if (nameofspell == "Cold_Blood")
             {
                 int TargetStartHP = (SpecialEvents[0] * (SpecialEvents[2] - 1) + SpecialEvents[1]);
+                Debug.Log("TargetStartHP : " + TargetStartHP);
+                Debug.Log("me.GetHP() : " + me.GetHP());
                 int TargetActualHP = me.GetHP() * (me.Amount - 1) + me.TempHP;
+                Debug.Log("TargetActualHP : " + TargetActualHP);
                 int dmgdone = TargetStartHP - TargetActualHP;
                 Debug.Log(dmgdone);
                 List<HexClass> hexarea = new List<HexClass>(me.Hex.hexMap.GetHexesWithinRadiusOf(me.Hex, 1));
@@ -242,7 +245,7 @@ namespace TimeSpells
                             if (t.Tosters.Count > 0 && !t.Tosters.Contains(me))
                             {
 
-                                t.Tosters[0].DealMeDMGDef(Mathf.RoundToInt(dmgdone * 0.2f), me);
+                                t.Tosters[0].DealMeDMGDef(Mathf.RoundToInt((float)dmgdone * 0.2f), me, false);
 
                             }
 

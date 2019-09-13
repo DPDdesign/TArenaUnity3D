@@ -50,31 +50,38 @@ public static NetworkConnectionManager NCM;
     }
     public void OnClickConnectToMaster()
     {
+
+        PhotonNetwork.OfflineMode = (PlayerPrefs.GetInt("Multi") == 0);
         
-        PhotonNetwork.OfflineMode = isMulti.isOn;
-        CustomGame = false;
+            CustomGame = false;
         Debug.LogError(isMulti.isOn);
         PhotonNetwork.NickName = "Toster";
  //       PhotonNetwork.AutomaticallySyncScene = true;
         PhotonNetwork.GameVersion = "v1";
         PlayerPrefs.SetString("CustomGameName", "");
         PlayerPrefs.SetInt("customGame", 0);
-        PhotonNetwork.ConnectUsingSettings();
-        TriesToConnectToMaster = true;
+        if (PhotonNetwork.OfflineMode == false)
+        {
+            PhotonNetwork.ConnectUsingSettings();
+        }
+
     }
     public void OnClickConnectToMasterCustom(string custom)
     {
         Debug.Log(custom);
         customGameString = custom;
         CustomGame = true;
-        PhotonNetwork.OfflineMode = !isMulti.isOn;
+        PhotonNetwork.OfflineMode = (PlayerPrefs.GetInt("Multi") == 0);
         PhotonNetwork.NickName = "Toster";
         //       PhotonNetwork.AutomaticallySyncScene = true;
         PhotonNetwork.GameVersion = "v1";
         PlayerPrefs.SetString("CustomGameName",customGameString);
         PlayerPrefs.SetInt("customGame", 1);
-     //   PhotonNetwork.ConnectToRegion
-        PhotonNetwork.ConnectUsingSettings();
+        //   PhotonNetwork.ConnectToRegion
+        if (PhotonNetwork.OfflineMode == false)
+        {
+            PhotonNetwork.ConnectUsingSettings();
+        }
         TriesToConnectToMaster = true;
     }
 
