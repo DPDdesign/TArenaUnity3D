@@ -109,6 +109,38 @@ public class TeamClass
         return T;
     }
 
+
+
+    public TosterHexUnit AskForUnitSimulator()
+    {
+        int Initiative = 0;
+        TosterHexUnit T = null;
+        foreach (TosterHexUnit t in Tosters)
+        {
+
+            if (t.GetIni()>Initiative)
+            {
+
+                if (t.Blinded==false)
+                {
+                    T = t;
+                    Initiative = t.GetIni();
+                }
+            }
+        }
+        Initiative = 99;
+        if (T == null)
+            foreach (TosterHexUnit t in Tosters)
+            {
+            if (t.GetIni() <= Initiative && t.Blinded==false)
+            {
+                T = t;
+                Initiative = t.GetIni();
+            }
+        }
+        return T;
+    }
+
     
     public void DidMove(TosterHexUnit t)
     {
