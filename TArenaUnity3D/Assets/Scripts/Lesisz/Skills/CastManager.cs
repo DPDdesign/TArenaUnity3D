@@ -864,8 +864,9 @@ public class CastManager : MonoBehaviourPunCallbacks
     #region Tank_Skill1 - Tauntuje wszystkich w odległości 1 oraz dodaje +2 CounterAttacks do końca następnej tury
     public void Tank_Skill1() //Taunt
     {
+      
         SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0,0, "Tank_Skill1", false);
-        List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, aoeradius));
+        List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(hexum, aoeradius));
         foreach (HexClass t in hexarea)
         {
 
@@ -883,15 +884,17 @@ public class CastManager : MonoBehaviourPunCallbacks
             }
             else { Debug.Log("No Tosters Hit"); }
         }
+        mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { hexum.C, hexum.R });
         SetFalse();
     }
 
     public void Tank_Skill1M()
     {
+        isMove = true;
         isTurn = true;
-        unselectaround = true;
+
         aoeradius = 1;
-        MeleeisAoE = true;
+
     }
 
 
@@ -1241,9 +1244,8 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
 
 
-        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, "Toxic_Fume", false);
-        SelectedT().CounterAttackAvaible = false;
-        List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, aoeradius));
+        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, "Tank_Skill1", false);
+        List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(hexum, aoeradius));
         foreach (HexClass t in hexarea)
         {
 
@@ -1252,7 +1254,7 @@ public class CastManager : MonoBehaviourPunCallbacks
                 if (t.Tosters.Count > 0)
                 {
 
-                    if (t.Tosters.Count > 0 && !t.Tosters.Contains(SelectedT())&& t.Tosters[0].Team!=SelectedT().Team)
+                    if (t.Tosters.Count > 0 && !t.Tosters.Contains(SelectedT()))
                     {
                         t.Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
                     }
@@ -1261,6 +1263,8 @@ public class CastManager : MonoBehaviourPunCallbacks
             }
             else { Debug.Log("No Tosters Hit"); }
         }
+        mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { hexum.C, hexum.R });
+    
         Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
         if (d != null)
         {
@@ -1272,11 +1276,14 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     public void Toxic_FumeM()
     {
+        isMove = true;
         isTurn = true;
-        unselectaround = true;
+        cooldown = 2;
         aoeradius = 1;
-        MeleeisAoE = true;
     }
+
+    
+
     #endregion
     #region Shapeshift   //Cielu
 
@@ -1306,9 +1313,14 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void Long_Lick()
     {
+
         if (getHexUM().Tosters.Count > 0 && getHexUM().Highlight == true )
         {
-            mouseControler.photonView.RPC("long_Lick", RpcTarget.All, new object[] {  });
+            Debug.Log("Tsoter");
+            hexum = getHexUM();
+            
+            photonView.RPC("long_Lick", RpcTarget.All, new object[] {  });
+
         }
 
     }
@@ -1318,31 +1330,32 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
 
         int tC, tR;
-        TosterHexUnit t = SelectedT();
-        tC = SelectedT().Hex.C - getHexUM().Tosters[0].Hex.C;
-        tR = t.Hex.R - getHexUM().Tosters[0].Hex.R;
+      /*  TosterHexUnit t = SelectedT();
 
-        if (getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2).Tosters.Count == 0)
-        {
-            getHexUM().Tosters[0].SetHex(getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2));
-            Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-            if (d != null)
-            {
-                // Debug.Log(mouseControler.SelectedSpellid-1);
-                d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+                if (hexum.hexMap.GetHexAt((SelectedT().Hex.C + hexum.C) / 2, (SelectedT().Hex.R + hexum.R) / 2).Tosters.Count == 0)
+                {
+            hexum.Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
+            hexum.Tosters[0].SetHex(getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2));
+                    Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+                    if (d != null)
+                    {
+                        // Debug.Log(mouseControler.SelectedSpellid-1);
+                        d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
 
-            }
-            SetFalse();
-            return;
-        }
-        HexClass[] hexes = getHexUM().hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, 1);
+                    }
+                    SetFalse();
+                    return;
+                }
+        Debug.Log("Tsoter");*/
+        HexClass[] hexes = hexum.hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, 1);
 
         foreach (HexClass h in hexes)
         {
 
             if (h != null && h.Tosters.Count == 0)
             {
-                getHexUM().Tosters[0].SetHex(h);
+                hexum.Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
+                hexum.Tosters[0].SetHex(h); 
                 Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
                 if (d != null)
                 {
