@@ -276,13 +276,7 @@ public class TosterHexUnit : IQPathUnit
                 SendMsg(TextToSend);
                 Pathing_func(hex,true);
                 this.AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, "Rope_Trap", false);
-                Animator d = hex.MyHex.GetComponent<Animator>();
-                if (d != null)
-                {
-                    Debug.Log(d);
-                    d.Play("trap1Active");
-             //       d.GetCurrentAnimatorStateInfo().
-                }
+ 
                 hex.RemoveTrap();
             }
             if (hex.trap.NameOfTraps == "Fire_Trap")
@@ -293,13 +287,7 @@ public class TosterHexUnit : IQPathUnit
                     this.AddNewTimeSpell(5, hex.trap.TosterWhoSetupThisTrap, 0, 0, 0, 0, 0, 0, 0, Convert.ToInt32(CalculateDamageBetweenTosters(hex.trap.TosterWhoSetupThisTrap, this, 1)) / 5, 0, 0, 0, 0, "Fire_Trap", false);
                     TextToSend = "";
                     TextToSend += "Wszedłeś w Fire_Trap";
-                    Animator d = hex.MyHex.GetComponent<Animator>();
-                    if (d != null)
-                    {
-                        Debug.Log(d);
-                        d.Play("firetrapActive");
-                        //       d.GetCurrentAnimatorStateInfo().
-                    }
+                
                     SendMsg(TextToSend);
                 }
                 //   this.DealMePURE(this.Amount);
@@ -322,13 +310,7 @@ public class TosterHexUnit : IQPathUnit
                     hexPath.RemoveAt(hexPath.Count - 1);
 
                 }
-                Animator d = hex.MyHex.GetComponent<Animator>();
-                if (d != null)
-                {
-                    Debug.Log(d);
-                    d.Play("trap1Active");
-                    //       d.GetCurrentAnimatorStateInfo().
-                }
+
                 hex.RemoveTrap();
             }
         }
