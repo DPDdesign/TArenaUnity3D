@@ -532,7 +532,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     public void SlashM()
     {
 
-
+        cooldown = 2;
         isMove = true;
         
        // SlashTarget = true;
@@ -1379,7 +1379,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         unselectaround = true;
         MeleeisAoEOnlyRadius = true;
-        aoeradius = 2;
+        aoeradius = 3;
         isTurn = true;
 
     }
