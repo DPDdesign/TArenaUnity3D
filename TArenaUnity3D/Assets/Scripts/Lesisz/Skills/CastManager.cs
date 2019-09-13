@@ -562,6 +562,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         SelectedT().AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Hate", false);
         getHexUM().Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Hate", false);
+        SelectedT().SendMsg("Axeman rzucił hate na " + getHexUM().Tosters[0].Name);
         mouseControler.SetCD();
         SetFalse();
     }
@@ -1054,6 +1055,9 @@ public class CastManager : MonoBehaviourPunCallbacks
         }
         else
         getHexUM().Tosters[0].AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, "Tough_Skin", false);
+
+        SelectedT().SendMsg("Healer rzucił Tough_Skin na " + getHexUM().Tosters[0].Name);
+
         mouseControler.SetCD();
         SetFalse();
     }
