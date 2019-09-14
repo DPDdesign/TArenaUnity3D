@@ -1266,8 +1266,6 @@ public class CastManager : MonoBehaviourPunCallbacks
             }
             else { Debug.Log("No Tosters Hit"); }
         }
-        mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { hexum.C, hexum.R });
-    
         Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
         if (d != null)
         {
@@ -1276,6 +1274,10 @@ public class CastManager : MonoBehaviourPunCallbacks
 
         }
         SetFalse();
+        mouseControler.photonView.RPC("StartCoroutineDoMovesWithoutMoved", RpcTarget.All, new object[] { hexum.C, hexum.R });
+        
+
+    //    SetFalse();
     }
     public void Toxic_FumeM()
     {

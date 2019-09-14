@@ -216,6 +216,12 @@ public class TosterHexUnit : IQPathUnit
         HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate, false);
         return p;
     }
+
+    public HexClass[] Pathing2(HexClass celhex)
+    {
+        HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate, true);
+        return p;
+    }
     public HexClass[] Pathing(HexClass celhex,bool ignore)
     {
         HexClass[] p = HPath.HPath.FindPath<HexClass>(Hex.hexMap, this, Hex, celhex, HexClass.CostEstimate, ignore);
