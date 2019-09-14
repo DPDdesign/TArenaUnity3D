@@ -24,46 +24,75 @@ public class MostStupidAIEver : MonoBehaviour
     public void AskAIwhattodo()
     {
         
-        MC.getSelectedToster();
-
-        //      List<HexClass> hexarea = new List<HexClass>(mouseControler.getHexUnderMouse().hexMap.GetHexesWithinRadiusOf(mouseControler.getHexUnderMouse(), aoeradius);
+        TosterHexUnit AIToster = MC.getSelectedToster();
         List<HexClass> EnemyHexes = MC.GetEnemy();
-        HexClass tempCel = null;
+
+        List<TosterHexUnit> EnemyTosters = new List<TosterHexUnit>();
+       
         foreach (HexClass h in EnemyHexes)
         {
+            EnemyTosters.Add(h.Tosters[0]);
+        }
 
-            if (h.Tosters[0].isDead == false)
-            {/*
-                for (int i = 0; i < 6; i++)
+
+        HexClass tempCel = null;
+
+
+
+        #region firegolem
+        
+                Debug.Log("toster o najmniejszym hp: " + TosterWithLeastHP(EnemyTosters).Name);
+                List<TosterHexUnit> PDamageList = ListOfDamageFromPlayer(EnemyTosters,AIToster);
+                List<TosterHexUnit> AIDamageList = ListOfDamageToPlayer(EnemyTosters,AIToster);
+                Debug.Log(AIToster.Name + "MYSLI: ");
+
+                foreach(TosterHexUnit unit in PDamageList)
                 {
-                    if (i == 0) { tempCel = h.hexMap.GetHexAt(h.C, h.R + 1); }
-                    if (i == 1) { tempCel = h.hexMap.GetHexAt(h.C+1, h.R); }
-                    if (i == 2) { tempCel = h.hexMap.GetHexAt(h.C+1, h.R - 1); }
-                    if (i == 3) { tempCel = h.hexMap.GetHexAt(h.C, h.R - 1); }
-                    if (i == 4) { tempCel = h.hexMap.GetHexAt(h.C-1, h.R ); }
-                    if (i == 5) { tempCel = h.hexMap.GetHexAt(h.C-1, h.R + 1); }
-                    */
-             //  h.hexMap.GetHexesWithinRadiusOf(h, 2);
+                    Debug.Log(unit.Name + " zada mi " + AIToster.CalculateDamageBetweenTosters(unit,AIToster,0));
+                }
+
+                  foreach(TosterHexUnit unit in AIDamageList)
+                {
+                    Debug.Log(unit.Name + " zadam mu " + AIToster.CalculateDamageBetweenTosters(AIToster,unit,0));
+                }
+
+        
+        #endregion firegolem
+
+
+
+
+
+        #region Stupid attack
+        foreach (HexClass h in EnemyHexes)
+        {
+               
+            if (h.Tosters[0].isDead == false)
+            {
                 List<HexClass> hexarea = new List<HexClass>(h.hexMap.GetHexesWithinRadiusOf(h, 1));
                 hexarea.Remove(h);
+                            
                 foreach (HexClass hex in hexarea)
                 {
                     if (hex != null && hex.Tosters.Count==0)
-                    {
-                        
-                        //  tempCel = h.hexMap.GetHexAt(h.C, h.R - 1);
-                      
+                    { 
+                       
+                         Debug.Log("Toster o nazwie: " + h.Tosters[0].Name+ "Stoi na hex ( " + h.C + " , " + h.R + " )");
+
                         if (MC.getSelectedToster().IsPathAvaible(hex))
                         {
-                           
                             MC.StartCoroutine(MC.DoMoveAndAttackWithoutCheck(hex, h.Tosters[0]));
                             return;
                         }
                     }
+                    
                 }
                 
             }
         }
+        #endregion Stupid attack
+
+        #region Stupid movement
         int count = 999;
         int hNo = 0;
         int tempi = 0;
@@ -82,7 +111,7 @@ public class MostStupidAIEver : MonoBehaviour
                 }
             }
             tempi++;
-      }
+        }
 
         hexpath = new List<HexClass>(MC.getSelectedToster().Pathing(EnemyHexes[hNo], true));
         hexmaxpath = new List<HexClass>();
@@ -91,7 +120,201 @@ public class MostStupidAIEver : MonoBehaviour
      
         StartCoroutine(MC.DoMovesPath(hexmaxpath));
         return;
-
-
+        #endregion Stupid movement
+ 
     }
+
+    TosterHexUnit TosterWithLeastHP(List<TosterHexUnit> tosters)
+    {
+        TosterHexUnit target = null;
+        foreach (TosterHexUnit t in tosters){         
+            if (target == null){
+                target = t;
+            }
+            else if ((t.Amount-1)*t.GetHP()+t.TempHP < (target.Amount-1)*target.GetHP()+target.TempHP){
+                target =t;
+            }           
+        }
+        return target;
+    }
+
+ /// Sortuje malejąco jednostki przeciwnika względem zadawanego przez nie damage jednostce.
+     List<TosterHexUnit> ListOfDamageFromPlayer(List<TosterHexUnit> tosters, TosterHexUnit ai)
+    {
+        List<TosterHexUnit> target = new List<TosterHexUnit>();   
+        
+        foreach (TosterHexUnit t in tosters){
+            // pierwszy toster
+            if (target.Count == 0){
+                target.Add(t);
+            }
+            
+            // Jezeli zadaje wiecej - daj go na poczatek
+            else if( ai.CalculateDamageBetweenTosters(t,ai,0) > ai.CalculateDamageBetweenTosters(target[0],ai,0)){
+                target.Insert(0,t);
+            }
+            
+            // Jezeli zadaje mniej - sortuj
+            else{ 
+                    bool sorting = true;
+                    int i = target.Count-1;
+                    while(sorting){
+                        if ( ai.CalculateDamageBetweenTosters(t,ai,0) <= ai.CalculateDamageBetweenTosters(target[i],ai,0) ) {
+                            target.Insert(i+1,t);
+                            sorting = false;
+                        }
+                        i--;
+                   }
+            }
+        }
+        return target;
+    }
+
+    double MaxDamageToGet(List<TosterHexUnit> tosters, TosterHexUnit ai)
+    {
+        double i = ai.CalculateDamageBetweenTosters(ListOfDamageFromPlayer(tosters, ai)[0],ai,0);
+        return i;
+    }
+
+ /// Sortuje malejąco jednostki przeciwnika względem otrzymane przez nie damage od jednostki.
+    List<TosterHexUnit> ListOfDamageToPlayer(List<TosterHexUnit> tosters, TosterHexUnit ai) //Tworzy liste To
+    {
+        List<TosterHexUnit> target = new List<TosterHexUnit>();   
+        
+        foreach (TosterHexUnit t in tosters){
+            // pierwszy toster
+            if (target.Count == 0){
+                target.Add(t);
+            }
+            
+            // Jezeli otrzyma wiecej - daj go na poczatek
+            else if( ai.CalculateDamageBetweenTosters(ai,t,0) > ai.CalculateDamageBetweenTosters(ai,target[0],0)){
+                target.Insert(0,t);
+            }
+            
+            // Jezeli otrzyma mniej - sortuj
+            else{ 
+                    bool sorting = true;
+                    int i = target.Count-1;
+                    while(sorting){
+                        if ( ai.CalculateDamageBetweenTosters(ai,t,0) <= ai.CalculateDamageBetweenTosters(ai,target[i],0) ) {
+                            target.Insert(i+1,t);
+                            sorting = false;
+                        }
+                        i--;
+                   }
+            }
+        }
+        return target;
+    }
+
+    double MaxDamageToDeal(List<TosterHexUnit> tosters, TosterHexUnit ai)
+    {
+        double i = ai.CalculateDamageBetweenTosters(ai,ListOfDamageToPlayer(tosters, ai)[0],0);
+        return i;
+    }
+
+/// Wylicza wartosc oszczedzonych obrazen
+     List<TosterHexUnit> ListOfTradeValues(List<TosterHexUnit> tosters, TosterHexUnit ai)
+    {
+          
+        
+        // 1. POLICZ ILE KAZDY TOSTER ZADA CI DMG
+        // 2. POLICZ ILE DMG ZADASZ TEMU TOSTEROWI
+        // 3. POLICZ ILE ZGINIE TOSTERÓW W WYNIKU ATAKU
+        // 4. POLICZ ILE ZADZADZĄ CI DMG PO TWOIM ATAKU
+        // 5. OBLICZ RÓŻNICĘ MIĘDZY 4 a 1
+
+        // 1.
+        List<TosterHexUnit> PDamageList = ListOfDamageFromPlayer(tosters,ai);
+
+        // 2. 
+        List<TosterHexUnit> DamageToTargets = new List<TosterHexUnit>();
+
+        return DamageToTargets;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 }
