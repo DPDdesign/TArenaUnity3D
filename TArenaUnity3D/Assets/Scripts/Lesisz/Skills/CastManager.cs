@@ -1648,147 +1648,149 @@ public class CastManager : MonoBehaviourPunCallbacks
             aoeradius = 1;
             isTurn = true;
             List<TosterHexUnit> tosterstoattack = new List<TosterHexUnit>();
-        int tC, tR;
-        TosterHexUnit t = SelectedT();
-        tC = tempHex.C - getHexUM().Tosters[0].Hex.C;
-        tR = tempHex.R - getHexUM().Tosters[0].Hex.R;
-        Debug.Log("tC: " + tC);
-        Debug.Log("tR: " + tR);
-        if (tC == 0 && tR == 1)
-        {
-            if (isHexA(0, 0))
+            int tC, tR;
+            TosterHexUnit t = SelectedT();
+            tC = tempHex.C - getHexUM().Tosters[0].Hex.C;
+            tR = tempHex.R - getHexUM().Tosters[0].Hex.R;
+            Debug.Log("tC: " + tC);
+            Debug.Log("tR: " + tR);
+            if (tC == 0 && tR == 1)
             {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+                if (isHexA(0, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(-1, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(0, -1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R - 1).Tosters[0]));
+                }
+                if (isHexA(1, -1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R - 1).Tosters[0]));
+                }
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
             }
-            if (isHexA(-1, 0))
+            if (tC == 0 && tR == -1)
             {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R).Tosters[0]));
+                if (isHexA(0, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(1, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(0, 1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R + 1).Tosters[0]));
+                }
+                if (isHexA(-1, 1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
+                }
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
             }
-            if (isHexA(0, -1))
+            if (tC == -1 && tR == 1)
             {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R - 1).Tosters[0]));
-            }
-            if (isHexA(1, -1))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R - 1).Tosters[0]));
-            }
-            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
-        }
-        if (tC == 0 && tR == -1)
-        {
-            if (isHexA(0, 0))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
-            }
-            if (isHexA(1, 0))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R).Tosters[0]));
-            }
-            if (isHexA(0, 1))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R + 1).Tosters[0]));
-            }
-            if (isHexA(-1, 1))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
-            }
-            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
-        }
-        if (tC == -1 && tR == 1)
-        {
-            if (isHexA(0, 0))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
-            }
-            if (isHexA(1, 0))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C+1, getHexUM().R).Tosters[0]));
-            }
-            if (isHexA(0, -1))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R - 1).Tosters[0]));
-            }
-            if (isHexA(1, -1))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C +1, getHexUM().R - 1).Tosters[0]));
-            }
-            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
+                if (isHexA(0, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(1, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(0, -1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R - 1).Tosters[0]));
+                }
+                if (isHexA(1, -1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R - 1).Tosters[0]));
+                }
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
 
-        }
-        if (tC == 1 && tR == -1)
-        {
-            if (isHexA(0, 0))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
             }
-            if (isHexA(0, 1))
+            if (tC == 1 && tR == -1)
             {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C , getHexUM().R+1).Tosters[0]));
+                if (isHexA(0, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(0, 1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R + 1).Tosters[0]));
+                }
+                if (isHexA(-1, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(-1, 1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
+                }
+
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
+
             }
-            if (isHexA(-1, 0))
+            if (tC == 1 && tR == 0)
             {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C-1, getHexUM().R).Tosters[0]));
+                if (isHexA(0, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(1, 0))
+                {
+
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(0, -1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R - 1).Tosters[0]));
+                }
+                if (isHexA(-1, 1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
+                }
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
             }
-            if (isHexA(-1, 1))
+            if (tC == -1 && tR == 0)
             {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
+                if (isHexA(0, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(1, 0))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R).Tosters[0]));
+                }
+                if (isHexA(0, 1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R + 1).Tosters[0]));
+                }
+                if (isHexA(1, -1))
+                {
+                    tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R - 1).Tosters[0]));
+                }
+                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
             }
 
-            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
 
-        }
-        if (tC == 1 && tR == 0)
-        {
-            if (isHexA(0, 0))
+
+            // SelectedT().SpecialDMGModificator = -30;
+            foreach (TosterHexUnit tost in tosterstoattack)
             {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
+                if(tost!=SelectedT())
+                mouseControler.photonView.RPC("JustDmg", RpcTarget.All, new object[] { tost.Hex.C, tost.Hex.R,-30 });
+                //tost.DealMeDMG(SelectedT());
             }
-            if (isHexA(1, 0))
-            {
-                
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R).Tosters[0]));
-            }
-            if (isHexA(0, -1))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R - 1).Tosters[0]));
-            }
-            if (isHexA(-1, 1))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
-            }
-            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
-        }
-        if (tC == -1 && tR == 0)
-        {
-            if (isHexA(0, 0))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R).Tosters[0]));
-            }
-            if (isHexA(1, 0))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C+1, getHexUM().R).Tosters[0]));
-            }
-            if (isHexA(0, 1))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C, getHexUM().R+1).Tosters[0]));
-            }
-            if (isHexA(1, -1))
-            {
-                tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C+1, getHexUM().R - 1).Tosters[0]));
-            }
-            t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
-        }
-        SelectedT().SpecialDMGModificator = -30;
-        foreach (TosterHexUnit tost in tosterstoattack)
-        {
-            
-            tost.DealMeDMG(SelectedT());
-        }
-        SelectedT().SpecialDMGModificator = 0;
-        if (SelectedT().GetHP() > 20) SelectedT().SpecialHP -= 20;
-        else SelectedT().SpecialHP = -SelectedT().HP + 1;
-            mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { tempHex.C, tempHex.R });
-            SetFalse();
+            //SelectedT().SpecialDMGModificator = 0;
+            photonView.RPC("heavy_fists", RpcTarget.All, new object[] { tempHex.C , tempHex.R, SelectedT().Hex.C, SelectedT().Hex.R});
+
         }
         if (isMove == true && hexum.Highlight && SelectedT().IsPathAvaible(hexum) && (hexum.Tosters.Count == 0 || hexum.Tosters.Contains(SelectedT())))
         {
@@ -1800,6 +1802,27 @@ public class CastManager : MonoBehaviourPunCallbacks
             SelectedT().Hex.hexMap.unHighlight(SelectedT().Hex.C, SelectedT().Hex.R, SelectedT().GetMS());
         }
     }
+
+
+
+
+
+
+
+    [PunRPC]
+
+    public void heavy_fists(int c, int r, int sc, int sr)
+    {
+       TosterHexUnit user =  hexum.hexMap.GetHexAt(sc, sr).Tosters[0];
+        if (user.GetHP() > 20) user.SpecialHP -= 20;
+        else user.SpecialHP = -user.HP + 1;
+        StartCoroutine(mouseControler.DoMovesST(hexum.hexMap.GetHexAt(c, r), user));
+     //   mouseControler.photonView.RPC("StartCoroutineDoMovesST", RpcTarget.Others, new object[] { c, r, sc, sr });
+        SetFalse();
+        //   SelectedT().SpecialDMGModificator = 0;
+
+    }
+
 
     public bool isHexA(int i , int j)
     {

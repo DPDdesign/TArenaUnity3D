@@ -481,9 +481,15 @@ public class MouseControler : MonoBehaviourPunCallbacks
     [PunRPC]
     void JustDmg(int i, int k, int mod  )
     {
-
+        Debug.LogError(i +"   " +k);
+        Debug.LogError(hexMap);
+  
+          Debug.LogError(hexMap.GetHexAt(i, k).C + "   " + hexMap.GetHexAt(i, k).R);
         SelectedToster.SpecialDMGModificator = mod;
-        hexMap.GetHexAt(i, k).Tosters[0].DealMeDMG(SelectedToster);
+        if (hexMap.GetHexAt(i,k)!=null ? hexMap.GetHexAt(i, k).Tosters.Count > 0 : false)
+        {
+            hexMap.GetHexAt(i, k).Tosters[0].DealMeDMG(SelectedToster);
+        }
         SelectedToster.SpecialDMGModificator = 0;
     }
     [PunRPC]
@@ -509,7 +515,13 @@ public class MouseControler : MonoBehaviourPunCallbacks
 
     }
 
+    [PunRPC]
+    void StartCoroutineDoMovesST(int si, int sr ,int i, int k)
+    {
+        Debug.Log("happen");
+        StartCoroutine(DoMovesST(hexMap.GetHexAt(i, k), hexMap.GetHexAt(sr,sr).Tosters[0]));
 
+    }
     [PunRPC]
     void StartCoroutineDoMovesWithoutMoved(int i, int k)
     {
@@ -579,6 +591,27 @@ public class MouseControler : MonoBehaviourPunCallbacks
         Update_CurrentFunc = BeforeNextTurn;
         StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
         yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
+        CancelUpdateFunc();
+        shiftmode = false;
+        // CancelUpdateFunc();
+
+    }
+
+public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
+    {
+        outlineManagerMainToster.RemoveOutline();
+        outlineM.unSetHexSelectedToster();
+        activeButtons = false;
+        ST.move = true;
+        ST.Hex.hexMap.unHighlight(ST.Hex.C, ST.Hex.R, ST.GetMS());
+        ST.Pathing_func(hex, false);
+
+        // Debug.LogError(SelectedToster.HexPathList.Count);
+        ST.Moved = true;
+        Update_CurrentFunc = BeforeNextTurn;
+        StartCoroutine(hexMap.DoUnitMoves(ST));
+        yield return new WaitUntil(() => ST.tosterView.AnimationIsPlaying == false);
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
         CancelUpdateFunc();
         shiftmode = false;
