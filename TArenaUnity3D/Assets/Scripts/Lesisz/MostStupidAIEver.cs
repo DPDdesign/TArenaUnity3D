@@ -41,19 +41,20 @@ public class MostStupidAIEver : MonoBehaviour
 
         #region firegolem
         
-                Debug.Log("toster o najmniejszym hp: " + TosterWithLeastHP(EnemyTosters).Name);
+               // Debug.Log("toster o najmniejszym hp: " + TosterWithLeastHP(EnemyTosters).Name);
                 List<TosterHexUnit> PDamageList = ListOfDamageFromPlayer(EnemyTosters,AIToster);
                 List<TosterHexUnit> AIDamageList = ListOfDamageToPlayer(EnemyTosters,AIToster);
-                Debug.Log(AIToster.Name + "MYSLI: ");
+                List<TosterHexUnit> PriorityList = ListOfTradeValues(EnemyTosters,AIToster);
+                //Debug.Log(AIToster.Name + "MYSLI: ");
 
                 foreach(TosterHexUnit unit in PDamageList)
                 {
-                    Debug.Log(unit.Name + " zada mi " + AIToster.CalculateDamageBetweenTosters(unit,AIToster,0));
+                   // Debug.Log(unit.Name + " zada mi " + AIToster.CalculateDamageBetweenTosters(unit,AIToster,0));
                 }
 
                   foreach(TosterHexUnit unit in AIDamageList)
                 {
-                    Debug.Log(unit.Name + " zadam mu " + AIToster.CalculateDamageBetweenTosters(AIToster,unit,0));
+                  //  Debug.Log(unit.Name + " zadam mu " + AIToster.CalculateDamageBetweenTosters(AIToster,unit,0));
                 }
 
         
@@ -217,21 +218,67 @@ public class MostStupidAIEver : MonoBehaviour
 /// Wylicza wartosc oszczedzonych obrazen
      List<TosterHexUnit> ListOfTradeValues(List<TosterHexUnit> tosters, TosterHexUnit ai)
     {
-          
+
+        Debug.Log("**********************************************************");
+        Debug.Log(ai.Name + "  MOWI: OBLICZAM WARTOSCI TRADE OF");
+        List<TosterHexUnit> target = new List<TosterHexUnit>();   
         
         // 1. POLICZ ILE KAZDY TOSTER ZADA CI DMG
         // 2. POLICZ ILE DMG ZADASZ TEMU TOSTEROWI
-        // 3. POLICZ ILE ZGINIE TOSTERÓW W WYNIKU ATAKU
-        // 4. POLICZ ILE ZADZADZĄ CI DMG PO TWOIM ATAKU
-        // 5. OBLICZ RÓŻNICĘ MIĘDZY 4 a 1
+        // 2.1 POLICZ ILE ZGINIE TOSTERÓW W WYNIKU ATAKU
+        // 3. POLICZ ILE ZADZADZĄ CI DMG PO TWOIM ATAKU
+        // 4. OBLICZ RÓŻNICĘ MIĘDZY 4 a 1
 
         // 1.
         List<TosterHexUnit> PDamageList = ListOfDamageFromPlayer(tosters,ai);
 
-        // 2. 
-        List<TosterHexUnit> DamageToTargets = new List<TosterHexUnit>();
+        List<int> NewQuantieties = new List<int>();
+        int i=0;
+        double damagedifftemp=0;
+        double damagediff;
 
-        return DamageToTargets;
+        foreach (TosterHexUnit toster in PDamageList)
+        {
+
+            double damage = ai.CalculateDamageBetweenTosters(toster,ai,0);
+            Debug.Log(toster.Name + " zada mi " + damage);
+
+
+            // ZJEBANE BO ZLE LICZY ILOSC
+            double cdamage = ai.CalculateDamageBetweenTosters(ai,toster,0);
+            Debug.Log("Zadam " + cdamage + " " + toster.Name);
+            NewQuantieties.Add( toster.Amount - Mathf.FloorToInt( (float)cdamage/toster.GetHP() ) );
+
+
+            double damage2 = ai.CalculateDamageBetweenTostersWithQ(toster,ai,0,NewQuantieties[i]);
+            i++;
+            Debug.Log("Teraz " + toster.Name + " Zada mi "+ damage2.ToString());
+            damagediff = damage-damage2;
+
+            Debug.Log("dzieki temu oszczedze " + damagediff);
+
+            if (target.Count == 0){
+                target.Add(toster);
+                damagedifftemp = damagediff;
+            }
+
+            else if (damagediff > damagedifftemp)
+            {
+              target.Insert(0,toster);
+              damagedifftemp = damagediff;
+            }
+
+            // ZJEBANE BO NIE SORTUJE :X
+            else 
+            {
+                target.Add(toster);
+            }
+
+        }
+//Amount = Mathf.FloorToInt(newhp / GetHP());
+        Debug.Log("**********************************************************");
+        Debug.Log(ai.Name + "  WYCIAGA WNIOSEK: Powinienem focusowac" + target[0].Name);
+        return target;
     }
 
 
