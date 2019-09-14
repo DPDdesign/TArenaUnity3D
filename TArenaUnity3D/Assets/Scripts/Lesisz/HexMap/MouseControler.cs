@@ -520,7 +520,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     {
         Debug.Log("happen");
         StartCoroutine(DoMovesST(hexMap.GetHexAt(i, k), hexMap.GetHexAt(sr,sr).Tosters[0]));
-
+         
     }
     [PunRPC]
     void StartCoroutineDoMovesWithoutMoved(int i, int k)
