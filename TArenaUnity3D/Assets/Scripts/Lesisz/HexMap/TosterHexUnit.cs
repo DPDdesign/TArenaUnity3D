@@ -385,7 +385,10 @@ public class TosterHexUnit : IQPathUnit
         this.Team.HexesUnderTeam.Add(Hex);
     }
 
-
+    internal double CalculateDamageBetweenTostersWithQ(TosterHexUnit toster, TosterHexUnit ai, int v1, int v2)
+    {
+        throw new NotImplementedException();
+    }
 
     public void FindTosterPath()
     {

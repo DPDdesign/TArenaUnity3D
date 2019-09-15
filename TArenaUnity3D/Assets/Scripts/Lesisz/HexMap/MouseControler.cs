@@ -1,5 +1,6 @@
 ﻿using Photon.Pun;
 using Photon.Realtime;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -84,6 +85,11 @@ public class MouseControler : MonoBehaviourPunCallbacks
         Debug.Log("Camera");
     }
 
+    internal IEnumerator DoMoveAndAttackWithoutCheck(HexClass hex, TosterHexUnit tosterHexUnit)
+    {
+        throw new NotImplementedException();
+    }
+
     /*
     public override void OnPlayerLeftRoom(Player otherPlayer)
     {
@@ -129,7 +135,10 @@ public class MouseControler : MonoBehaviourPunCallbacks
         GOLastUnderMouse = GOUnderMouse;
     }
 
-
+    internal IEnumerator DoMovesPath(List<HexClass> hexmaxpath)
+    {
+        throw new NotImplementedException();
+    }
 
     void Update_DetectModeStart()
     {
@@ -284,7 +293,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         Debug.Log("HOW DARE YOU!?");
         if (!SelectedToster.whoTauntedMe.isDead)
         {
-            photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R });
+            photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R, SelectedToster.Hex.C, SelectedToster.Hex.R});
         }
         // photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.whoTauntedMe.Hex.C, SelectedToster.whoTauntedMe.Hex.R });
         else { SelectedToster.Taunt = false; CancelUpdateFunc(); return; }
@@ -292,30 +301,30 @@ public class MouseControler : MonoBehaviourPunCallbacks
         }
 
     [PunRPC]
-    void StartCoroutineDoMoveAndAttackWithoutCheck(int i, int k, int r, int f)
+    void StartCoroutineDoMoveAndAttackWithoutCheck(int i, int k, int r, int f, int SelectedTosterC, int SelectedTosterR)
     {
         if (r == -5 && f == -5)
         {
-            StartCoroutine(DoMoveAndAttackWithoutCheck(hexMap.GetHexAt(i, k), null));
+            StartCoroutine(DoMoveAndAttackWithoutCheck(hexMap.GetHexAt(i, k), null, hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0]));
         }
         else
         {
             Debug.LogError("i" + i + "k" + k + "r" + r + "f" + f);
-            StartCoroutine(DoMoveAndAttackWithoutCheck(hexMap.GetHexAt(i, k), hexMap.GetHexAt(r, f).Tosters[0]));
+            StartCoroutine(DoMoveAndAttackWithoutCheck(hexMap.GetHexAt(i, k), hexMap.GetHexAt(r, f).Tosters[0], hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0]));
         }
     }
 
     [PunRPC]
-    void StartCoroutineDoMoveAndAttackWithoutCheck2(int i, int k, int r, int f)
+    void StartCoroutineDoMoveAndAttackWithoutCheck2(int i, int k, int r, int f, int SelectedTosterC, int SelectedTosterR)
     {
         if (r == -5 && f == -5)
         {
-            StartCoroutine(DoMoveAndAttackWithoutCheck2(hexMap.GetHexAt(i, k), null));
+            StartCoroutine(DoMoveAndAttackWithoutCheck2(hexMap.GetHexAt(i, k), null, hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0]));
         }
         else
         {
             Debug.LogError("i" + i + "k" + k + "r" + r + "f" + f);
-            StartCoroutine(DoMoveAndAttackWithoutCheck2(hexMap.GetHexAt(i, k), hexMap.GetHexAt(r, f).Tosters[0]));
+            StartCoroutine(DoMoveAndAttackWithoutCheck2(hexMap.GetHexAt(i, k), hexMap.GetHexAt(r, f).Tosters[0], hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0]));
         }
     }
     // TRYB RUCHU JEDNOSTKI
@@ -449,48 +458,50 @@ public class MouseControler : MonoBehaviourPunCallbacks
                     if (SelectedToster.IsPathAvaible(hexUnderMouse))
                     {
                         var temp = MouseToPart();
-                        DoMoveAndAttack(hexUnderMouse.Tosters[0], hexMap.GetHexAt(temp.C, temp.R));
+                        DoMoveAndAttack(hexUnderMouse.Tosters[0], hexMap.GetHexAt(temp.C, temp.R), SelectedToster);
                        // photonView.RPC("StartCoroutineDoMoveAndAttack", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R, temp.C, temp.R });
                     }                 //   StartCoroutineDoMoveAndAttack(hexUnderMouse.C, hexUnderMouse.R);
                      //   StartCoroutine(DoMoveAndAttack(hexUnderMouse.Tosters[0]));
                 }
                 else if (hexUnderMouse.Highlight == true)
                 {
-                    photonView.RPC("Shot", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R });
+                    photonView.RPC("Shot", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R , SelectedToster.Hex.C, SelectedToster.Hex.R});
                 }
             }
             else if (hexUnderMouse.Tosters.Count == 0 && SelectedToster.Taunt==false)
             {
 
                 Debug.Log(RpcTarget.All);
-               photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R });
+               photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R, SelectedToster.Hex.C, SelectedToster.Hex.R });
             }
             // CancelUpdateFunc();
             return;
         } //DoMove 
     }
     [PunRPC]
-    void Shot(int i, int k)
+    void Shot(int i, int k, int SelectedTosterC, int SelectedTosterR)
     {
-        hexMap.GetHexAt(i, k).Tosters[0].ShootME(SelectedToster,true);
-        SelectedToster.Moved = true;
+       TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
+        hexMap.GetHexAt(i, k).Tosters[0].ShootME(ST, true);
+        ST.Moved = true;
         CancelUpdateFunc();
 
     }
 
     [PunRPC]
-    void JustDmg(int i, int k, int mod  )
+    void JustDmg(int i, int k, int mod, int SelectedTosterC, int SelectedTosterR)
     {
+        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
         Debug.LogError(i +"   " +k);
         Debug.LogError(hexMap);
   
           Debug.LogError(hexMap.GetHexAt(i, k).C + "   " + hexMap.GetHexAt(i, k).R);
-        SelectedToster.SpecialDMGModificator = mod;
+        ST.SpecialDMGModificator = mod;
         if (hexMap.GetHexAt(i,k)!=null ? hexMap.GetHexAt(i, k).Tosters.Count > 0 : false)
         {
-            hexMap.GetHexAt(i, k).Tosters[0].DealMeDMG(SelectedToster);
+            hexMap.GetHexAt(i, k).Tosters[0].DealMeDMG(ST);
         }
-        SelectedToster.SpecialDMGModificator = 0;
+        ST.SpecialDMGModificator = 0;
     }
     [PunRPC]
     void JustSetFalse()
@@ -508,10 +519,11 @@ public class MouseControler : MonoBehaviourPunCallbacks
 
 
     [PunRPC]
-    void StartCoroutineDoMoves(int i, int k)
+    void StartCoroutineDoMoves(int i, int k, int SelectedTosterC, int SelectedTosterR)
     {
+        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
         Debug.Log("happen");
-        StartCoroutine(DoMoves(hexMap.GetHexAt(i, k)));
+        StartCoroutine(DoMoves(hexMap.GetHexAt(i, k), ST));
 
     }
 
@@ -523,10 +535,11 @@ public class MouseControler : MonoBehaviourPunCallbacks
          
     }
     [PunRPC]
-    void StartCoroutineDoMovesWithoutMoved(int i, int k)
+    void StartCoroutineDoMovesWithoutMoved(int i, int k, int SelectedTosterC, int SelectedTosterR)
     {
+        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
         Debug.Log("happen");
-        StartCoroutine(DoMovesWithoutMoved(hexMap.GetHexAt(i, k)));
+        StartCoroutine(DoMovesWithoutMoved(hexMap.GetHexAt(i, k), ST));
 
     }
     public void Outlining()
@@ -577,7 +590,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         //  shiftctrlmode();
         // ScrollLook();
     }
-    IEnumerator DoMoves(HexClass hex)
+    IEnumerator DoMoves(HexClass hex, TosterHexUnit SelectedToster)
     {
         outlineManagerMainToster.RemoveOutline();
         outlineM.unSetHexSelectedToster();
@@ -619,7 +632,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     }
 
-    IEnumerator DoMovesWithoutMoved(HexClass hex)
+    IEnumerator DoMovesWithoutMoved(HexClass hex, TosterHexUnit SelectedToster)
     {
         outlineManagerMainToster.RemoveOutline();
         outlineM.unSetHexSelectedToster();
@@ -638,7 +651,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         // CancelUpdateFunc();
 
     }
-    IEnumerator DoMovesWithoutEnd(HexClass hex)
+    IEnumerator DoMovesWithoutEnd(HexClass hex, TosterHexUnit SelectedToster)
     {
         outlineManagerMainToster.RemoveOutline();
         outlineM.unSetHexSelectedToster();
@@ -659,7 +672,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     }
 
-    public IEnumerator DoMovesPath(List<HexClass> h)
+    public IEnumerator DoMovesPath(List<HexClass> h, TosterHexUnit SelectedToster)
     {
         activeButtons = false;
         SelectedToster.SetHexPath(h.ToArray());
@@ -681,12 +694,13 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
 
     [PunRPC]
-    void DoMoveAndAttackA(int i, int k, int r, int f)
+    void DoMoveAndAttackA(int i, int k, int r, int f, int SelectedTosterC, int SelectedTosterR)
     {
-        StartCoroutine(StartCoroutineDoMoveAndAttackA(i, k, r, f));
+        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
+        StartCoroutine(StartCoroutineDoMoveAndAttackA(i, k, r, f,ST));
 
     }
-    IEnumerator StartCoroutineDoMoveAndAttackA(int i, int k, int r, int f)
+    IEnumerator StartCoroutineDoMoveAndAttackA(int i, int k, int r, int f, TosterHexUnit SelectedToster)
     {
         outlineManagerMainToster.RemoveOutline();
         activeButtons = false;
@@ -712,14 +726,15 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     }
 
     [PunRPC]
-    void DoMoveAndAttackB(int i, int k, int r, int f)
+    void DoMoveAndAttackB(int i, int k, int r, int f, int SelectedTosterC, int SelectedTosterR)
     {
-        StartCoroutine(StartCoroutineDoMoveAndAttackB(i,k,r,f));
+        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
+        StartCoroutine(StartCoroutineDoMoveAndAttackB(i,k,r,f,ST));
 
     }
 
 
-    IEnumerator StartCoroutineDoMoveAndAttackB(int i, int k, int r, int f)
+    IEnumerator StartCoroutineDoMoveAndAttackB(int i, int k, int r, int f, TosterHexUnit SelectedToster)
     {
         outlineManagerMainToster.RemoveOutline();
         activeButtons = false;
@@ -743,7 +758,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         shiftmode = false;
     }
 
-    void DoMoveAndAttack(TosterHexUnit toster, HexClass temp)
+    void DoMoveAndAttack(TosterHexUnit toster, HexClass temp, TosterHexUnit SelectedToster)
     {
 
         
@@ -751,7 +766,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         {
             if (temp != null && temp.Highlight == true)
             {
-                photonView.RPC("DoMoveAndAttackA", RpcTarget.All, new object[] { toster.Hex.C, toster.Hex.R, temp.C, temp.R });
+                photonView.RPC("DoMoveAndAttackA", RpcTarget.All, new object[] { toster.Hex.C, toster.Hex.R, temp.C, temp.R , SelectedToster.Hex.C, SelectedToster.Hex.R });
                 /*
                 outlineManagerMainToster.RemoveOutline();
                 activeButtons = false;
@@ -779,7 +794,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         {
             if (temp != null && temp.Highlight == true)
             {
-                photonView.RPC("DoMoveAndAttackB", RpcTarget.All, new object[] { toster.Hex.C, toster.Hex.R, temp.C, temp.R });
+                photonView.RPC("DoMoveAndAttackB", RpcTarget.All, new object[] { toster.Hex.C, toster.Hex.R, temp.C, temp.R , SelectedToster.Hex.C, SelectedToster.Hex.R });
                 /*
                 outlineManagerMainToster.RemoveOutline();
                 activeButtons = false;
@@ -808,35 +823,35 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     }
 
 
-  public  IEnumerator DoMoveAndAttackWithoutCheck(HexClass temp, TosterHexUnit toster)
+    public IEnumerator DoMoveAndAttackWithoutCheck(HexClass temp, TosterHexUnit toster, TosterHexUnit SelectedToster)
     {
 
         SelectedToster.move = true;
-            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+        SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
 
 
-            //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
-            //   hexPath = SelectedToster.Pathing(temp);
+        //Debug.LogError("C: " + temp.C + "  R:" + temp.R);
+        //   hexPath = SelectedToster.Pathing(temp);
 
 
-            SelectedToster.Pathing_func(temp, false);
-            SelectedToster.Moved = true;
+        SelectedToster.Pathing_func(temp, false);
+        SelectedToster.Moved = true;
 
         Update_CurrentFunc = BeforeNextTurn;
-            StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-            yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
         if (toster != null)
         {
             Debug.LogError(toster.Name);
 
-            if (SelectedToster.Hex == temp) { toster.AttackMe(SelectedToster);   Debug.LogError(toster.Name); }
-            }
-            CancelUpdateFunc();
-            shiftmode = false;
-        
+            if (SelectedToster.Hex == temp) { toster.AttackMe(SelectedToster); Debug.LogError(toster.Name); }
+        }
+        CancelUpdateFunc();
+        shiftmode = false;
+
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
     }
-    public IEnumerator DoMoveAndAttackWithoutCheck2(HexClass temp, TosterHexUnit toster)
+    public IEnumerator DoMoveAndAttackWithoutCheck2(HexClass temp, TosterHexUnit toster, TosterHexUnit SelectedToster)
     {
 
         SelectedToster.move = true;
@@ -869,20 +884,21 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     public void EndSkills()
     {
-        photonView.RPC("EndSkillss", RpcTarget.All, new object[] { });
+        photonView.RPC("EndSkillss", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R });
     }
 
     [PunRPC]
-    void EndSkillss()
+    void EndSkillss(int SelectedTosterC, int SelectedTosterR)
     {
-       
-       
+        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
+
+
         if (castManager.isTurn)
         {
             canvas.UnUseSkill(SelectedSpellid);
             hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
-            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-            SelectedToster.Moved = true;
+            ST.Hex.hexMap.unHighlight(ST.Hex.C, ST.Hex.R, ST.GetMS());
+            ST.Moved = true;
             CancelUpdateFunc();
             shiftmode = false;
         }
@@ -890,7 +906,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         {
             canvas.UnUseSkill(SelectedSpellid);
             hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
-            SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
+            ST.Hex.hexMap.unHighlight(ST.Hex.C, ST.Hex.R, ST.GetMS());
 
             CancelUpdateFunc();
             shiftmode = false;
@@ -915,7 +931,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
             return;
         }
     }
-    public void SetCD()
+    public void SetCD(TosterHexUnit SelectedToster)
     {
         SelectedToster.cooldowns[SelectedSpellid] = castManager.cooldown;
         Debug.LogError(SelectedSpellid);
@@ -1014,7 +1030,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
             if (Input.GetMouseButtonDown(0))
             {
 
-                photonView.RPC("startSpell", RpcTarget.All, new object[] { hexUnderMouse.C,hexUnderMouse.R});
+                photonView.RPC("startSpell", RpcTarget.All, new object[] { hexUnderMouse.C,hexUnderMouse.R, SelectedToster.Hex.C, SelectedToster.Hex.R });
                // castManager.startSpell(SelectedToster.skillstrings[SelectedSpellid]);
 
             }
@@ -1031,14 +1047,16 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     }
 
     [PunRPC]
-    void startSpell(int i, int j)
+    void startSpell(int i, int j, int SelectedTosterC, int SelectedTosterR)
     {
+        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
+
         if (EventSystem.current.IsPointerOverGameObject())
             return;
 
   
     
-        castManager.startSpell(SelectedToster.skillstrings[SelectedSpellid],hexMap.GetHexAt(i,j));
+        castManager.startSpell(ST.skillstrings[SelectedSpellid],hexMap.GetHexAt(i,j));
 
     }
 
@@ -1191,13 +1209,13 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         else return hexMap.Teams[0].HexesUnderTeam;
     } 
 
-    public void CastSkillBooleans(int SelectedSkill)
+    public void CastSkillBooleans(int SelectedSkill,TosterHexUnit SelectedToster)
     {
         SelectedSpellid = SelectedSkill;
         SkillState = true;
         canvas.UseSkill(SelectedSpellid);
         Debug.LogError((SelectedToster.skillstrings[SelectedSpellid]));
-        castManager.getMode(SelectedToster.skillstrings[SelectedSpellid]);
+        castManager.getMode(SelectedToster.skillstrings[SelectedSpellid], SelectedToster);
         if (castManager.isAvailable == false)
         {
             Debug.LogError("Umiejetnosc niedostepna");
@@ -1230,13 +1248,15 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
       
     }
     [PunRPC]
-    void CastSkillBooleanss(int SelectedSkill)
+    void CastSkillBooleanss(int SelectedSkill, int SelectedTosterC, int SelectedTosterR)
     {
-        CastSkillBooleans(SelectedSkill);
+        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
+
+        CastSkillBooleans(SelectedSkill, ST);
 
     }
 
-    public void CastSkillOnlyBooleans()
+    public void CastSkillOnlyBooleans(TosterHexUnit SelectedToster)
     {
         if (castManager.isAvailable == false)
         {
@@ -1268,7 +1288,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     public void CastSkill(int i)
     {
-        photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { i });
+        photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { i,SelectedToster.Hex.C,SelectedToster.Hex.R });
         Update_CurrentFunc = SpellCasting;
         return;
     }
@@ -1282,7 +1302,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         {
             if (SelectedToster.skillstrings.Count >= 1 && SelectedToster.cooldowns[0]==0)
             {
-                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 0});
+                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 0, SelectedToster.Hex.C, SelectedToster.Hex.R });
                 Update_CurrentFunc = SpellCasting;
                 return;
             }
@@ -1291,7 +1311,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         {
             if (SelectedToster.skillstrings.Count >= 2 && SelectedToster.cooldowns[1] == 0)
             {
-                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 1 });
+                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 1, SelectedToster.Hex.C, SelectedToster.Hex.R });
                 Update_CurrentFunc = SpellCasting;
                 return;
             }
@@ -1300,7 +1320,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         {
             if (SelectedToster.skillstrings.Count >= 3 && SelectedToster.cooldowns[2] == 0)
             {
-                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 2 });
+                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 2, SelectedToster.Hex.C, SelectedToster.Hex.R });
                 Update_CurrentFunc = SpellCasting;
                 return;
             }
@@ -1309,7 +1329,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         {
             if (SelectedToster.skillstrings.Count >= 4 && SelectedToster.cooldowns[3] == 0)
             {
-                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 3 });
+                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 3, SelectedToster.Hex.C, SelectedToster.Hex.R });
                 Update_CurrentFunc = SpellCasting;
                 return;
             }
@@ -1484,15 +1504,16 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
                     Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
                 }
                 SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-                photonView.RPC("Waitt", RpcTarget.All, new object[] { });
+                photonView.RPC("Waitt", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R });
             }
         }
     }
 
     [PunRPC]
-    void Waitt()
+    void Waitt(  int SelectedTosterC, int SelectedTosterR)
     {
-        SelectedToster.Waited = true;
+        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
+        ST.Waited = true;
         CancelUpdateFunc();
 
     }
@@ -1535,7 +1556,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
                 Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
             }
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-            photonView.RPC("Defensee", RpcTarget.All, new object[] { });
+            photonView.RPC("Defensee", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R });
           
             
         }
@@ -1543,9 +1564,10 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
 
     [PunRPC]
-    void Defensee()
+    void Defensee(int SelectedTosterC, int SelectedTosterR)
     {
-        var d = SelectedToster.tosterView.GetComponentInChildren<Animator>();
+        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
+        var d = ST.tosterView.GetComponentInChildren<Animator>();
         if (d != null)
         {
             Debug.Log(d);
@@ -1554,9 +1576,9 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         }
 
 
-        SelectedToster.Moved = true;
-        SelectedToster.DefenceStance = true;
-        SelectedToster.SpecialDef += 5;
+        ST.Moved = true;
+        ST.DefenceStance = true;
+        ST.SpecialDef += 5;
         CancelUpdateFunc();
 
     }
@@ -1757,7 +1779,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
                 Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
             }
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-            photonView.RPC("Waitt", RpcTarget.All, new object[] { });
+            photonView.RPC("Waitt", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R });
         }
 
     }
@@ -1777,7 +1799,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
             Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
         }
         SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
-        photonView.RPC("Defensee", RpcTarget.All, new object[] { });
+        photonView.RPC("Defensee", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R });
 
     }
 
@@ -1785,21 +1807,21 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     {
         
         CancelSpellCasting();
-        CastSkillBooleans(0);
+        CastSkillBooleans(0 , SelectedToster);
     }
     public void CastSkill2B()
     {
         CancelSpellCasting();
-        CastSkillBooleans(1);
+        CastSkillBooleans(1, SelectedToster);
     }
     public void CastSkill3B()
     {
         CancelSpellCasting();
-        CastSkillBooleans(2);
+        CastSkillBooleans(2, SelectedToster);
     }
     public void CastSkill4B()
     {
         CancelSpellCasting();
-        CastSkillBooleans(3);
+        CastSkillBooleans(3, SelectedToster);
     }
 }

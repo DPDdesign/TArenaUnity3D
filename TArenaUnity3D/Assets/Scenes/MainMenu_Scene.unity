@@ -3091,11 +3091,11 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 120
+    m_FontSize: 100
     m_FontStyle: 0
-    m_BestFit: 0
-    m_MinSize: 1
-    m_MaxSize: 300
+    m_BestFit: 1
+    m_MinSize: 100
+    m_MaxSize: 150
     m_Alignment: 0
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -12465,7 +12465,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 4887990137764914147}
-  m_RootOrder: 11
+  m_RootOrder: 10
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -12950,7 +12950,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 4887990137764914147}
-  m_RootOrder: 10
+  m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -16661,7 +16661,7 @@ RectTransform:
   - {fileID: 1626487225}
   - {fileID: 313685789}
   m_Father: {fileID: 4887990137764914147}
-  m_RootOrder: 12
+  m_RootOrder: 11
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -26334,11 +26334,11 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 120
+    m_FontSize: 100
     m_FontStyle: 0
-    m_BestFit: 0
-    m_MinSize: 1
-    m_MaxSize: 300
+    m_BestFit: 1
+    m_MinSize: 100
+    m_MaxSize: 150
     m_Alignment: 0
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -35495,7 +35495,7 @@ GameObject:
   - component: {fileID: 969095276}
   - component: {fileID: 969095275}
   m_Layer: 5
-  m_Name: Canvas
+  m_Name: Canvas_old
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -49159,11 +49159,11 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 120
+    m_FontSize: 100
     m_FontStyle: 0
-    m_BestFit: 0
-    m_MinSize: 1
-    m_MaxSize: 300
+    m_BestFit: 1
+    m_MinSize: 100
+    m_MaxSize: 150
     m_Alignment: 0
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -73979,10 +73979,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
 --- !u!1 &4887990135851002153
 GameObject:
   m_ObjectHideFlags: 0
@@ -73996,6 +74008,7 @@ GameObject:
   - component: {fileID: 4887990135851002156}
   - component: {fileID: 4887990135851002159}
   - component: {fileID: 4887990135851002066}
+  - component: {fileID: 4887990135851002154}
   m_Layer: 5
   m_Name: StoneGolem
   m_TagString: Untagged
@@ -74003,6 +74016,31 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &4887990135851002154
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990135851002153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: StoneGolem
+  g: {fileID: 4887990136384754407}
 --- !u!114 &4887990135851002156
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75527,6 +75565,7 @@ GameObject:
   - component: {fileID: 4887990135961444568}
   - component: {fileID: 4887990135961444571}
   - component: {fileID: 4887990135961444574}
+  - component: {fileID: 4887990135961444566}
   m_Layer: 5
   m_Name: Axeman
   m_TagString: Untagged
@@ -75534,6 +75573,31 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &4887990135961444566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990135961444565}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: Axeman
+  g: {fileID: 4887990136384754407}
 --- !u!114 &4887990135961444568
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75663,10 +75727,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
 --- !u!1 &4887990135962021336
 GameObject:
   m_ObjectHideFlags: 0
@@ -75959,10 +76035,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
 --- !u!1 &4887990135972033977
 GameObject:
   m_ObjectHideFlags: 0
@@ -75976,6 +76064,7 @@ GameObject:
   - component: {fileID: 4887990135972033980}
   - component: {fileID: 4887990135972033983}
   - component: {fileID: 4887990135972033954}
+  - component: {fileID: 4887990135972033978}
   m_Layer: 5
   m_Name: Trapper
   m_TagString: Untagged
@@ -75983,6 +76072,31 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &4887990135972033978
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990135972033977}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: Trapper
+  g: {fileID: 4887990136384754407}
 --- !u!114 &4887990135972033980
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77444,6 +77558,7 @@ GameObject:
   - component: {fileID: 4887990136096704969}
   - component: {fileID: 4887990136096704968}
   - component: {fileID: 4887990136096704975}
+  - component: {fileID: 4887990136096704972}
   m_Layer: 5
   m_Name: FireElemental
   m_TagString: Untagged
@@ -77472,6 +77587,31 @@ RectTransform:
   m_AnchoredPosition: {x: 83, y: -1.4000053}
   m_SizeDelta: {x: 164.7, y: 154.9}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &4887990136096704972
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990136096704970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: FireElemental
+  g: {fileID: 4887990136384754407}
 --- !u!222 &4887990136096704974
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -77494,10 +77634,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
 --- !u!114 &4887990136097875524
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -79133,6 +79285,7 @@ GameObject:
   - component: {fileID: 4887990136202367280}
   - component: {fileID: 4887990136202367284}
   - component: {fileID: 4887990136202367287}
+  - component: {fileID: 4887990136202367285}
   m_Layer: 5
   m_Name: Rusher
   m_TagString: Untagged
@@ -79175,10 +79328,47 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+--- !u!114 &4887990136202367285
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990136202367282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: Rusher
+  g: {fileID: 4887990136384754407}
 --- !u!222 &4887990136202367286
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -81189,6 +81379,7 @@ RectTransform:
   - {fileID: 4887990137733443118}
   - {fileID: 4887990135840559141}
   - {fileID: 4887990136247157780}
+  - {fileID: 8095873989648211466}
   - {fileID: 4887990136696098483}
   - {fileID: 4887990137981441303}
   - {fileID: 4887990137747409198}
@@ -82179,10 +82370,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
 --- !u!1 &4887990136413845741
 GameObject:
   m_ObjectHideFlags: 0
@@ -82196,6 +82399,7 @@ GameObject:
   - component: {fileID: 4887990136413845648}
   - component: {fileID: 4887990136413845651}
   - component: {fileID: 4887990136413845654}
+  - component: {fileID: 4887990136413845742}
   m_Layer: 5
   m_Name: Specialist
   m_TagString: Untagged
@@ -82203,6 +82407,31 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &4887990136413845742
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990136413845741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: Specialist
+  g: {fileID: 4887990136384754407}
 --- !u!114 &4887990136430563648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82217,10 +82446,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
 --- !u!114 &4887990136430563650
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82349,6 +82590,7 @@ GameObject:
   - component: {fileID: 4887990136430563650}
   - component: {fileID: 4887990136430563677}
   - component: {fileID: 4887990136430563648}
+  - component: {fileID: 4887990136430563680}
   m_Layer: 5
   m_Name: Thrower
   m_TagString: Untagged
@@ -82356,6 +82598,31 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &4887990136430563680
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990136430563679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: Thrower
+  g: {fileID: 4887990136384754407}
 --- !u!114 &4887990136433249260
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -85780,7 +86047,7 @@ RectTransform:
   - {fileID: 4887990136928903266}
   - {fileID: 214614881}
   m_Father: {fileID: 4887990136331354254}
-  m_RootOrder: 7
+  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -85877,6 +86144,7 @@ GameObject:
   - component: {fileID: 4887990136697105998}
   - component: {fileID: 4887990136697105993}
   - component: {fileID: 4887990136697105996}
+  - component: {fileID: 4887990136697105997}
   m_Layer: 5
   m_Name: Wisp
   m_TagString: Untagged
@@ -85898,10 +86166,47 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+--- !u!114 &4887990136697105997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990136697105995}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: Wisp
+  g: {fileID: 4887990136384754407}
 --- !u!114 &4887990136697105998
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -87512,8 +87817,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4887990136825257425}
+  - component: {fileID: 4887990136825257427}
+  - component: {fileID: 4887990136825257426}
   m_Layer: 5
-  m_Name: Units
+  m_Name: __Units
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -87541,6 +87848,43 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 64}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &4887990136825257426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990136825257424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c15993618b025248a707d7f8c0db0e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Buttons:
+  - {fileID: 4887990136697105997}
+  - {fileID: 4887990135851002154}
+  - {fileID: 4887990136096704972}
+  - {fileID: 4887990136863093540}
+  - {fileID: 4887990135972033978}
+  - {fileID: 4887990137195449369}
+  - {fileID: 4887990136413845742}
+  - {fileID: 4887990137639062536}
+  - {fileID: 4887990136202367285}
+  - {fileID: 4887990136430563680}
+  - {fileID: 4887990135961444566}
+  - {fileID: 4887990136854534933}
+--- !u!114 &4887990136825257427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990136825257424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac1860109a11f2743a1defa4e2130b8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4887990136828185568
 GameObject:
   m_ObjectHideFlags: 0
@@ -87952,6 +88296,7 @@ GameObject:
   - component: {fileID: 4887990136854534934}
   - component: {fileID: 4887990136854534929}
   - component: {fileID: 4887990136854534932}
+  - component: {fileID: 4887990136854534933}
   m_Layer: 5
   m_Name: HeavyHitter
   m_TagString: Untagged
@@ -87973,10 +88318,47 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+--- !u!114 &4887990136854534933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990136854534931}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: HeavyHitter
+  g: {fileID: 4887990136384754407}
 --- !u!114 &4887990136854534934
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -88114,6 +88496,7 @@ GameObject:
   - component: {fileID: 4887990136863093537}
   - component: {fileID: 4887990136863093536}
   - component: {fileID: 4887990136863093543}
+  - component: {fileID: 4887990136863093540}
   m_Layer: 5
   m_Name: FleshGolem
   m_TagString: Untagged
@@ -88143,6 +88526,31 @@ RectTransform:
   m_AnchoredPosition: {x: 255.4, y: -1.4000053}
   m_SizeDelta: {x: 164.7, y: 154.9}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &4887990136863093540
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990136863093538}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: FleshGolem
+  g: {fileID: 4887990136384754407}
 --- !u!222 &4887990136863093542
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -88165,10 +88573,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
 --- !u!222 &4887990136869489440
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -92005,6 +92425,7 @@ GameObject:
   - component: {fileID: 4887990137195449370}
   - component: {fileID: 4887990137195449365}
   - component: {fileID: 4887990137195449368}
+  - component: {fileID: 4887990137195449369}
   m_Layer: 5
   m_Name: Healer
   m_TagString: Untagged
@@ -92026,10 +92447,47 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+--- !u!114 &4887990137195449369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990137195449367}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: Healer
+  g: {fileID: 4887990136384754407}
 --- !u!114 &4887990137195449370
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -96213,7 +96671,7 @@ Transform:
   m_LocalScale: {x: 2.2119818, y: 2.2119818, z: 2.2119818}
   m_Children: []
   m_Father: {fileID: 4887990136331354254}
-  m_RootOrder: 10
+  m_RootOrder: 11
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4887990137473043730
 MonoBehaviour:
@@ -97942,6 +98400,7 @@ GameObject:
   - component: {fileID: 4887990137639062533}
   - component: {fileID: 4887990137639062532}
   - component: {fileID: 4887990137639062539}
+  - component: {fileID: 4887990137639062536}
   m_Layer: 5
   m_Name: Tank
   m_TagString: Untagged
@@ -97971,6 +98430,31 @@ RectTransform:
   m_AnchoredPosition: {x: 255.4, y: -1.4000053}
   m_SizeDelta: {x: 164.7, y: 154.9}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &4887990137639062536
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4887990137639062534}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79685cfa77365bd468bc3660cc68c930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StatsPanel: {fileID: 8095873989648211467}
+  StatsText:
+  - {fileID: 8095873988924576090}
+  - {fileID: 8095873989407660095}
+  - {fileID: 8095873989200925921}
+  - {fileID: 8095873988080508636}
+  - {fileID: 8095873989748773111}
+  - {fileID: 8095873989401665008}
+  - {fileID: 8095873988823179129}
+  - {fileID: 8095873988361399438}
+  - {fileID: 8095873989656619828}
+  Name: Tank
+  g: {fileID: 4887990136384754407}
 --- !u!222 &4887990137639062538
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -97993,10 +98477,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   infopanel: {fileID: 4887990136696098482}
   infoImage: {fileID: 4887990136928903267}
-  SNameOfSkill: []
-  InfoSkill: []
-  TypeSkill: []
-  NameOfSkill: []
+  SNameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
+  InfoSkill:
+  - {fileID: 786343222}
+  - {fileID: 1404249122}
+  - {fileID: 111911499}
+  TypeSkill:
+  - {fileID: 534531737}
+  - {fileID: 114776240}
+  - {fileID: 2141422304}
+  NameOfSkill:
+  - {fileID: 117023339}
+  - {fileID: 577808348}
+  - {fileID: 1458209439}
 --- !u!1 &4887990137648773745
 GameObject:
   m_ObjectHideFlags: 0
@@ -99844,7 +100340,7 @@ Transform:
   m_LocalScale: {x: 2.2119818, y: 2.2119818, z: 2.2119818}
   m_Children: []
   m_Father: {fileID: 4887990136331354254}
-  m_RootOrder: 9
+  m_RootOrder: 10
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4887990137749962508
 GameObject:
@@ -99997,7 +100493,6 @@ RectTransform:
   - {fileID: 4887990136850631683}
   - {fileID: 8095873989502720078}
   - {fileID: 8095873987928450773}
-  - {fileID: 8095873989648211466}
   - {fileID: 419292040}
   - {fileID: 411600130}
   - {fileID: 519180641}
@@ -103928,7 +104423,7 @@ Transform:
   m_LocalScale: {x: 2.2119818, y: 2.2119818, z: 2.2119818}
   m_Children: []
   m_Father: {fileID: 4887990136331354254}
-  m_RootOrder: 8
+  m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8095873987713726792
 GameObject:
@@ -115345,8 +115840,8 @@ RectTransform:
   - {fileID: 8095873988823179130}
   - {fileID: 8095873988361399439}
   - {fileID: 8095873989656619829}
-  m_Father: {fileID: 4887990137764914147}
-  m_RootOrder: 9
+  m_Father: {fileID: 4887990136331354254}
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -115370,7 +115865,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!222 &8095873989656619787
 CanvasRenderer:
   m_ObjectHideFlags: 0
