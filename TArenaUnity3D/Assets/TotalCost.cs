@@ -24,16 +24,16 @@ public class TotalCost : MonoBehaviour
             TotalCost += int.Parse(i.text);
      
         }
-        if (TotalCost > 25000)
+        if (TotalCost > 20000)
         {
-            This.text = TotalCost.ToString() + "   (MAX: 25000)";
+            This.text = TotalCost.ToString() + "   (MAX: 20000)";
             This.color = Color.red;
             SafeAndExit.gameObject.SetActive(false);
 
         }
         else
         {
-            This.text = TotalCost.ToString() + "   (MAX: 25000)";
+            This.text = TotalCost.ToString() + "   (MAX: 20000)";
             This.color = Color.white;
             SafeAndExit.gameObject.SetActive(true);
         }

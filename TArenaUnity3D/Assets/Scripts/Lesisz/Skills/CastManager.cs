@@ -289,6 +289,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         Debug.Log("this");
         if (getHexUM() != null && getHexUM().Highlight == true)
         {
+            
             photonView.RPC("rrush", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R});
         }
 
@@ -298,10 +299,11 @@ public class CastManager : MonoBehaviourPunCallbacks
     public void rrush(int i, int j)
     {
 
+        getHexUM().hexMap.unHighlight(5, 5, 20);
         if (getHexUM().Tosters.Count > 0)
         {
 
-            SelectedT().AddNewTimeSpell(1, null, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rush", true);
+            SelectedT().AddNewTimeSpell(1, null, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rush", true);
             HexClass temp;
 
             if (SelectedT().teamN == true)
@@ -317,12 +319,12 @@ public class CastManager : MonoBehaviourPunCallbacks
             }
   
             //     mouseControler.photonView.RPC.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(temp, getHexUM().Tosters[0]));
-            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { temp.C, temp.R, getHexUM().C, getHexUM().R, SelectedT().C, SelectedT().R });
+            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { temp.C, temp.R, getHexUM().C, getHexUM().R, SelectedT().Hex.C, SelectedT().Hex.R });
         }
         else
         {
 
-            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R, -5, -5, SelectedT().C, SelectedT().R });
+            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R, -5, -5, SelectedT().Hex.C, SelectedT().Hex.R });
             //  mouseControler.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(getHexUM(), null));
             SetFalse();
         }
@@ -609,7 +611,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             foreach (TosterHexUnit tost in getHexUM().hexMap.Teams[0].Tosters)
             {
 
-                tost.AddNewTimeSpell(2, tost, 0, 0, 0, -3, -1, 0, 0, 0, 0, 0, 0,0, "Insult", false);
+                tost.AddNewTimeSpell(2, tost, 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0,0, "Insult", false);
             }
         }
         mouseControler.SetCD(SelectedT());
