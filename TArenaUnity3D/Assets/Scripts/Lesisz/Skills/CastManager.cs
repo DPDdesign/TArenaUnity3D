@@ -11,6 +11,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     int kochamizabelke = 0;
   public  int cooldown = 0;
     TosterHexUnit tempToster;
+    TosterHexUnit ST;
     public bool RangeSelectingenemy = false;
     public bool Rangeselectingfriend = false;
     public bool unselectaround = false;
@@ -40,13 +41,15 @@ public class CastManager : MonoBehaviourPunCallbacks
     public void startSpell(string spellID, HexClass hex)
     {
         hexum = hex;
+
         Type type = this.GetType();
         MethodInfo method = type.GetMethod(spellID);
         method.Invoke(this, null);
 
     }
-    public void getMode(string spellID)
+    public void getMode(string spellID, TosterHexUnit ST)
     {
+        this.ST = ST;
         Type type = this.GetType();
         MethodInfo method = type.GetMethod(spellID + "M");
         method.Invoke(this, null);
@@ -84,7 +87,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     }
     public TosterHexUnit SelectedT()
     {
-        return mouseControler.getSelectedToster();
+        return ST;
     }
 
 
@@ -204,7 +207,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             SingleTarget = true;
             RangeSelectingenemy = false;
             Rangeselectingfriend = false;
-            mouseControler.CastSkillOnlyBooleans();
+            mouseControler.CastSkillOnlyBooleans(SelectedT());
         }
         else
         if (Global == true && SingleTarget == true && tempToster != null)
@@ -314,12 +317,12 @@ public class CastManager : MonoBehaviourPunCallbacks
             }
   
             //     mouseControler.photonView.RPC.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(temp, getHexUM().Tosters[0]));
-            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { temp.C, temp.R, getHexUM().C, getHexUM().R });
+            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { temp.C, temp.R, getHexUM().C, getHexUM().R, SelectedT().C, SelectedT().R });
         }
         else
         {
 
-            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R, -5, -5 });
+            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R, -5, -5, SelectedT().C, SelectedT().R });
             //  mouseControler.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(getHexUM(), null));
             SetFalse();
         }
@@ -446,7 +449,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             {
                 if (t == getHexUM() && t.Tosters.Count>0)
                 {
-                    SelectedT().SpecialDMGModificator = 20;
+                    SelectedT().SpecialDMGModificator = 0;
                     t.Tosters[0].DealMeDMG(SelectedT());
                     SelectedT().SpecialDMGModificator = 0;
                     Axe(t.Tosters[0].Hex, SelectedT());
@@ -455,7 +458,7 @@ public class CastManager : MonoBehaviourPunCallbacks
                 if (t != null)
                     if (t.Tosters.Count > 0)
                     {
-                        SelectedT().SpecialDMGModificator = 70;
+                        SelectedT().SpecialDMGModificator = 50;
                         t.Tosters[0].DealMeDMG(SelectedT());
                         
                         Axe(t.Tosters[0].Hex, SelectedT());
@@ -463,7 +466,7 @@ public class CastManager : MonoBehaviourPunCallbacks
                     }
             }
         }
-
+        mouseControler.SetCD(SelectedT());
         SetFalse();
     }
     public void Axe_RainM()
@@ -472,6 +475,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         SelectedT().Projectile = Projectiles[0];
         unselectaround = true;
         aoeradius = 1;
+        cooldown = 2;
         RangeisAoE = true;
         isTurn = true;
     }
@@ -519,14 +523,14 @@ public class CastManager : MonoBehaviourPunCallbacks
             {
                 if (h.Tosters.Count > 0 && h.Tosters[0] != SelectedT())
                 {
-                    mouseControler.photonView.RPC("JustDmg", RpcTarget.All, new object[] { h.C, h.R, 60 });
+                    mouseControler.photonView.RPC("JustDmg", RpcTarget.All, new object[] { h.C, h.R, 60, SelectedT().Hex.C, SelectedT().Hex.R });
 
 
                 }
             }
         }
         //   SelectedT().SpecialDMGModificator = 0;
-        mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { tempHex.C, tempHex.R });
+        mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { tempHex.C, tempHex.R, SelectedT().Hex.C, SelectedT().Hex.R });
         SetFalse();
     }
     public void SlashM()
@@ -562,7 +566,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         SelectedT().AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Hate", false);
         getHexUM().Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Hate", false);
         SelectedT().SendMsg("Axeman rzucił hate na " + getHexUM().Tosters[0].Name);
-        mouseControler.SetCD();
+        mouseControler.SetCD(SelectedT());
         SetFalse();
     }
 
@@ -605,15 +609,15 @@ public class CastManager : MonoBehaviourPunCallbacks
             foreach (TosterHexUnit tost in getHexUM().hexMap.Teams[0].Tosters)
             {
 
-                tost.AddNewTimeSpell(2, tost, 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0,0, "Insult", false);
+                tost.AddNewTimeSpell(2, tost, 0, 0, 0, -3, -1, 0, 0, 0, 0, 0, 0,0, "Insult", false);
             }
         }
-        mouseControler.SetCD();
+        mouseControler.SetCD(SelectedT());
         SetFalse();
     }
     public void InsultM()
     {
-        cooldown = 3;
+        cooldown = 4;
         isTurn = false;
         unselectaround = true;
         RangeSelectingenemy = true;
@@ -626,7 +630,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         if (getHexUM() == SelectedT().Hex)
         {
             SelectedT().AddNewTimeSpell(2, SelectedT(), 0, SelectedT().GetDef()/2, -SelectedT().GetDef(), 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rage", false);
-            mouseControler.SetCD();
+            mouseControler.SetCD(SelectedT());
             SetFalse();
         }
     }
@@ -698,7 +702,7 @@ public class CastManager : MonoBehaviourPunCallbacks
 
         trgt.DealMePURE(Convert.ToInt16(dmg));
         trgt.AddNewTimeSpell(2, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80,0, "Topornik_Skill2", true);
-        mouseControler.SetCD();
+        mouseControler.SetCD(SelectedT());
         SetFalse();
     }
 
@@ -808,7 +812,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         double dmg = Convert.ToDouble(trgt.HP) * 0.1;
         trgt.DealMePURE(Convert.ToInt16(dmg));
             trgt.AddNewTimeSpell(2, trgt, 0, 25, -10, 0, 0, 0, 0, 0, 0, 0,8,0, "Rzutnik_Skill2", true);
-        mouseControler.SetCD();
+        mouseControler.SetCD(SelectedT());
         SetFalse();
     }
 
@@ -884,7 +888,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             }
             else { Debug.Log("No Tosters Hit"); }
         }
-        mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { hexum.C, hexum.R });
+        mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { hexum.C, hexum.R, SelectedT().Hex.C, SelectedT().Hex.R });
         SetFalse();
     }
 
@@ -993,7 +997,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         if (getHexUM()!=null)
         {
             getHexUM().AddTrap("Spike_Trap",999, SelectedT());
-            mouseControler.SetCD();
+            mouseControler.SetCD(SelectedT());
             SetFalse();
             
         }
@@ -1017,7 +1021,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         if (getHexUM() != null)
         {
             getHexUM().AddTrap("Rope_Trap",999, SelectedT());
-            mouseControler.SetCD();
+            mouseControler.SetCD(SelectedT());
             SetFalse();
 
         }
@@ -1057,7 +1061,7 @@ public class CastManager : MonoBehaviourPunCallbacks
 
         SelectedT().SendMsg("Healer rzucił Tough_Skin na " + getHexUM().Tosters[0].Name);
 
-        mouseControler.SetCD();
+        mouseControler.SetCD(SelectedT());
         SetFalse();
     }
     public void Tough_SkinM()
@@ -1097,7 +1101,7 @@ public class CastManager : MonoBehaviourPunCallbacks
                     tost.AddNewTimeSpell(2, tost, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Defence_Ritual", false);
             }
         }
-        mouseControler.SetCD();
+        mouseControler.SetCD(SelectedT());
         SetFalse();
     }
     public void Defence_RitualM()
@@ -1175,7 +1179,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             Rangeselectingfriend = false;
             MeleeisAoE = true;
             aoeradius = 2;
-            mouseControler.CastSkillOnlyBooleans();
+            mouseControler.CastSkillOnlyBooleans(SelectedT());
         }
         else
      if (MeleeisAoE == true && SingleTarget == true && tempToster != null)
@@ -1209,7 +1213,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -SelectedT().CounterAttacks, 0,100, "Stone_Stance", false);
         SelectedT().CounterAttackAvaible = false;
-        mouseControler.SetCD();
+        mouseControler.SetCD(SelectedT());
         var d = SelectedT().tosterView.GetComponentInChildren<Animator>();
         if (d != null)
         {
@@ -1247,7 +1251,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
 
 
-        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, "Toxic_Fume", false);
+        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, -SelectedT().GetMS(), 0, 0, 0, 0, 0, 2, 0, 0, "Toxic_Fume", false);
         List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(hexum, aoeradius));
         foreach (HexClass t in hexarea)
         {
@@ -1273,11 +1277,12 @@ public class CastManager : MonoBehaviourPunCallbacks
             d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
 
         }
-        SetFalse();
-        mouseControler.photonView.RPC("StartCoroutineDoMovesWithoutMoved", RpcTarget.All, new object[] { hexum.C, hexum.R });
+        mouseControler.SetCD(SelectedT());
         
+        mouseControler.photonView.RPC("StartCoroutineDoMovesWithoutMoved", RpcTarget.All, new object[] { hexum.C, hexum.R, SelectedT().Hex.C, SelectedT().Hex.R });
+        SetFalse();
 
-    //    SetFalse();
+        //    SetFalse();
     }
     public void Toxic_FumeM()
     {
@@ -1398,6 +1403,7 @@ public class CastManager : MonoBehaviourPunCallbacks
 
     public void Blind_by_light()
     {
+        /*
         int myhp = (SelectedT().Amount - 1) * SelectedT().GetHP() + SelectedT().TempHP; 
 
         foreach ( TosterHexUnit toster in SelectedT().Hex.hexMap.Teams[0].Tosters)
@@ -1418,15 +1424,24 @@ public class CastManager : MonoBehaviourPunCallbacks
                     toster.AddNewTimeSpell(2, toster, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Blind", false);
             }
         }
-        Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-        if (d != null)
+        */
+        if (hexum!=null && hexum.Tosters.Count>0)
         {
-            // Debug.Log(mouseControler.SelectedSpellid-1);
-            d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+            hexum.Tosters[0].AddNewTimeSpell(2, hexum.Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Blind", false);
+            Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
+            if (d != null)
+            {
+                // Debug.Log(mouseControler.SelectedSpellid-1);
+                d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+
+            }
+            mouseControler.SetCD(SelectedT());
+            SetFalse();
 
         }
 
-        SetFalse();
+
+
 
     }
     public void Blind_by_lightM()
@@ -1434,7 +1449,7 @@ public class CastManager : MonoBehaviourPunCallbacks
         isTurn = true;
         cooldown =3;
         unselectaround = true;
-        Global = true;
+        RangeSelectingenemy = true;
 
     }
 
@@ -1481,7 +1496,9 @@ public class CastManager : MonoBehaviourPunCallbacks
                     newunit.DealMeDMGDef(12, SelectedT(),true);
                     newunit.skillstrings.Remove("Stone_Throw");
                     newunit.Moved = true;
+                    mouseControler.SetCD(SelectedT());
                     SetFalse();
+
                     return;
                 }
 
@@ -1499,6 +1516,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             getHexUM().hexMap.GenerateToster(getHexUM().C, getHexUM().R, newunit);
             newunit.DealMeDMGDef(12, SelectedT(),true);
             newunit.Moved = true;
+            mouseControler.SetCD(SelectedT());
             SetFalse();
         }
         Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
@@ -1538,6 +1556,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     public void Stone_SkinM()
     {
         Debug.Log("Ta umiejętność jest pasywna");
+        isTurn = false;
         SetFalse();
     }
 
@@ -1590,7 +1609,7 @@ public class CastManager : MonoBehaviourPunCallbacks
     {
         Debug.LogError("działam");
         List<HexClass> hexarea = new List<HexClass>(getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), aoeradius));
-        SelectedT().SpecialDMGModificator = 20;
+        SelectedT().SpecialDMGModificator = 40;
         foreach (HexClass t in hexarea)
         {
             if (t != null)
@@ -1609,7 +1628,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
 
         }
-        mouseControler.SetCD();
+        mouseControler.SetCD(SelectedT());
         SetFalse();
     }
     public void Fire_BallM()
@@ -1785,7 +1804,7 @@ public class CastManager : MonoBehaviourPunCallbacks
             foreach (TosterHexUnit tost in tosterstoattack)
             {
                 if(tost!=SelectedT())
-                mouseControler.photonView.RPC("JustDmg", RpcTarget.All, new object[] { tost.Hex.C, tost.Hex.R,-30 });
+                mouseControler.photonView.RPC("JustDmg", RpcTarget.All, new object[] { tost.Hex.C, tost.Hex.R,-30, SelectedT().Hex.C, SelectedT().Hex.R });
                 //tost.DealMeDMG(SelectedT());
             }
             //SelectedT().SpecialDMGModificator = 0;

@@ -129,9 +129,14 @@ public class UICanvas : MonoBehaviour
     }
 
 
- 
+   public Button escbutton;
+    public GameObject menu;
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            menu.SetActive(!menu.activeSelf);
+        }
         if (MC.activeButtons == true)
         {
 

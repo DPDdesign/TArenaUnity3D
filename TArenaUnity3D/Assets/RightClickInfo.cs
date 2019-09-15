@@ -62,6 +62,13 @@ public class RightClickInfo : MonoBehaviour, IPointerDownHandler, IPointerUpHand
             }
             j++;
         }
+        Debug.LogError(j);
+        if (j<3)
+        {
+            SNameOfSkill[j].text = "";
+            TypeSkill[j].text = "";
+            InfoSkill[j].text = "";
+        }
 
     }
     // Start is called before the first frame update

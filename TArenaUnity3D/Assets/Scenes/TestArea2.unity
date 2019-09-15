@@ -1542,41 +1542,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 286408226}
   m_PrefabAsset: {fileID: 0}
---- !u!84 &92233470
-RenderTexture:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_ImageContentsHash:
-    serializedVersion: 2
-    Hash: 00000000000000000000000000000000
-  m_ForcedFallbackFormat: 4
-  m_DownscaleFallback: 0
-  serializedVersion: 3
-  m_Width: 1148
-  m_Height: 646
-  m_AntiAliasing: 1
-  m_MipCount: -1
-  m_DepthFormat: 1
-  m_ColorFormat: 8
-  m_MipMap: 0
-  m_GenerateMips: 1
-  m_SRGB: 0
-  m_UseDynamicScale: 0
-  m_BindMS: 0
-  m_EnableCompatibleFormat: 1
-  m_TextureSettings:
-    serializedVersion: 2
-    m_FilterMode: 1
-    m_Aniso: 1
-    m_MipBias: 0
-    m_WrapU: 1
-    m_WrapV: 1
-    m_WrapW: 1
-  m_Dimension: 2
-  m_VolumeDepth: 1
 --- !u!4 &92401934 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4844902911259396, guid: 01bdef6597b249b44a9530ab656246fc,
@@ -1950,6 +1915,41 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 01bdef6597b249b44a9530ab656246fc, type: 3}
+--- !u!84 &116385299
+RenderTexture:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_ImageContentsHash:
+    serializedVersion: 2
+    Hash: 00000000000000000000000000000000
+  m_ForcedFallbackFormat: 4
+  m_DownscaleFallback: 0
+  serializedVersion: 3
+  m_Width: 1148
+  m_Height: 646
+  m_AntiAliasing: 1
+  m_MipCount: -1
+  m_DepthFormat: 1
+  m_ColorFormat: 8
+  m_MipMap: 0
+  m_GenerateMips: 1
+  m_SRGB: 0
+  m_UseDynamicScale: 0
+  m_BindMS: 0
+  m_EnableCompatibleFormat: 1
+  m_TextureSettings:
+    serializedVersion: 2
+    m_FilterMode: 1
+    m_Aniso: 1
+    m_MipBias: 0
+    m_WrapU: 1
+    m_WrapV: 1
+    m_WrapW: 1
+  m_Dimension: 2
+  m_VolumeDepth: 1
 --- !u!1001 &121709752
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5730,7 +5730,7 @@ Camera:
     serializedVersion: 2
     m_Bits: 0
   m_RenderingPath: 1
-  m_TargetTexture: {fileID: 92233470}
+  m_TargetTexture: {fileID: 116385299}
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 0
@@ -13676,7 +13676,7 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 976847525}
   m_PrefabAsset: {fileID: 0}
---- !u!84 &1328841430
+--- !u!84 &1321082848
 RenderTexture:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -14854,8 +14854,8 @@ MonoBehaviour:
   sourceCamera: {fileID: 1459915186}
   outlineCamera: {fileID: 485618086}
   outlineShaderMaterial: {fileID: 0}
-  renderTexture: {fileID: 92233470}
-  extraRenderTexture: {fileID: 1328841430}
+  renderTexture: {fileID: 116385299}
+  extraRenderTexture: {fileID: 1321082848}
 --- !u!114 &1459915183
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23774,9 +23774,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_MethodName: CastSkill
-        m_Mode: 3
+      - m_Target: {fileID: 1506819735}
+        m_MethodName: CastSkill3B
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -31977,9 +31977,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_MethodName: CastSkill
-        m_Mode: 3
+      - m_Target: {fileID: 1506819735}
+        m_MethodName: CastSkill2B
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -33028,7 +33028,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1506819735}
         m_MethodName: DefenseB
         m_Mode: 1
         m_Arguments:
@@ -35643,6 +35643,8 @@ MonoBehaviour:
   - {fileID: 1879517735377072717}
   - {fileID: 1879517735728317864}
   - {fileID: 1879517735937323638}
+  escbutton: {fileID: 1879517736356404853}
+  menu: {fileID: 1879517736694538628}
 --- !u!224 &1879517736058674652
 RectTransform:
   m_ObjectHideFlags: 0
@@ -42171,7 +42173,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1506819735}
         m_MethodName: WaitB
         m_Mode: 1
         m_Arguments:
@@ -46475,9 +46477,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_MethodName: CastSkill
-        m_Mode: 3
+      - m_Target: {fileID: 1506819735}
+        m_MethodName: CastSkill4B
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -47545,9 +47547,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_MethodName: CastSkill
-        m_Mode: 3
+      - m_Target: {fileID: 1506819735}
+        m_MethodName: CastSkill1B
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine

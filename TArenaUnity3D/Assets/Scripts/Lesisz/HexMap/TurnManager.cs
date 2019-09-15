@@ -54,7 +54,7 @@ public void SetNewTurn()
         temp.text =  (Tura+5).ToString();
         turns.Remove(temp);
         turns.Add(temp);
-        Tura++;
+
         rotating = false;
     }
 
