@@ -97,24 +97,15 @@ public class PanelArmii : MonoBehaviour
 
 
                 Debug.Log("Jest build " + i);
-                for (int j=0; j < ListOfHeroes.Count; j++)
-                {
-                    if (ListOfHeroes[j] == buildG.NazwaBohatera)
-                    {
+                Sprite hero = sprite;
+                Imagess[i].sprite = hero;
 
-                        Sprite hero = sprite;
-                        Imagess[i].sprite = hero;
-             
 
-                        j = 100;
-                    }
-                }
-               
-             //   AdditionalButtons[i*2].gameObject.SetActive(false);
-           //        AdditionalButtons[i*2+1].gameObject.SetActive(true);
-//                    AdditionalButtons[i*2+2].gameObject.SetActive(true);
-               
-                    Imagess[i].gameObject.SetActive(true);
+                //   AdditionalButtons[i*2].gameObject.SetActive(false);
+                //        AdditionalButtons[i*2+1].gameObject.SetActive(true);
+                //                    AdditionalButtons[i*2+2].gameObject.SetActive(true);
+
+                Imagess[i].gameObject.SetActive(true);
                     AdditionalButtons[i].onClick.RemoveListener(AddBuild);
                     AdditionalButtons[i].onClick.AddListener(EditBuild);
                     
@@ -205,10 +196,9 @@ public void SetBuildnr(string x)
 
         BuildG Build = new BuildG();
 
-        if (PlayerPrefs.HasKey("which"))
-        {
-            Build.hero = PlayerPrefs.GetInt("which");
-            Build.NazwaBohatera = PlayerPrefs.GetString("NazwaBohatera");
+
+          //  Build.hero = PlayerPrefs.GetInt("which");
+         //   Build.NazwaBohatera = PlayerPrefs.GetString("NazwaBohatera");
             Build.Units = generator.Units;
           
             Build.NoUnits = generator.UnitsAmount;
@@ -220,7 +210,7 @@ public void SetBuildnr(string x)
             file.Close();
            // Debug.Log(path);
             sprawdz();
-        }
+        
     }
     // Update is called once per frame
     void Update()
