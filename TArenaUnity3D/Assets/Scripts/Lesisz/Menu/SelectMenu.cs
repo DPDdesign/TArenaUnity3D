@@ -21,7 +21,7 @@ public class SelectMenu : MonoBehaviour
     public List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2" });
     public GameObject PanelBuilds,ThisPanel;
     public Button ButtonBuilds, ThisButton;
-    void Start()
+    void OnEnable()
     {
        test = BigImagess[0].sprite;
 
@@ -33,19 +33,11 @@ public class SelectMenu : MonoBehaviour
                 FileStream file = File.OpenRead(path);
                 BuildG buildG = (BuildG)formatter.Deserialize(file);
                 file.Close();
-                for (int j = 0; j < ListOfHeroes.Count; j++)
-                {
-                    if (ListOfHeroes[j] == buildG.NazwaBohatera)
-                    {
-
-                      
-                        Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
-                        BigImagess[0].sprite = hero;
-                        BigImagess[0].GetComponentInChildren<Text>().text = "";
-                        RemoveButtons[0].gameObject.SetActive(true);
-                        j = 100;
-                    }
-                }
+           
+                Sprite hero = sprite;
+                BigImagess[0].sprite = hero;
+                BigImagess[0].GetComponentInChildren<Text>().text = "";
+                RemoveButtons[0].gameObject.SetActive(true);
 
             }
             else PlayerPrefs.DeleteKey("YourArmy");
@@ -59,20 +51,11 @@ public class SelectMenu : MonoBehaviour
                 FileStream file = File.OpenRead(path);
                 BuildG buildG = (BuildG)formatter.Deserialize(file);
                 file.Close();
-                for (int j = 0; j < ListOfHeroes.Count; j++)
-                {
-                    if (ListOfHeroes[j] == buildG.NazwaBohatera)
-                    {
-                
-                  
-                        Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
-                        BigImagess[1].sprite = hero;
-                        BigImagess[1].GetComponentInChildren<Text>().text = "";
-                        j = 100;
-                        RemoveButtons[1].gameObject.SetActive(true);
-                    }
-                }
-               
+                BigImagess[1].sprite = sprite;
+                BigImagess[1].GetComponentInChildren<Text>().text = "";
+         
+                RemoveButtons[1].gameObject.SetActive(true);
+
             }
             else PlayerPrefs.DeleteKey("EnemyArmy");
         }
@@ -93,17 +76,8 @@ public class SelectMenu : MonoBehaviour
                 FileStream file = File.OpenRead(path);
                 BuildG buildG = (BuildG)formatter.Deserialize(file);
                 file.Close();
-                for (int j = 0; j < ListOfHeroes.Count; j++)
-                {
-                    if (ListOfHeroes[j] == buildG.NazwaBohatera)
-                    {
-
-                        Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
-                        Imagess[i].sprite = hero;
-                        j = 100;
-                       
-                    }
-                }
+                Imagess[i].sprite = sprite;
+             
                 YourButtons[i].gameObject.SetActive(true);
                 YourButtons[i].GetComponentInChildren<Text>().text=" ";
                 Imagess[i].gameObject.SetActive(true);
@@ -140,16 +114,7 @@ public class SelectMenu : MonoBehaviour
                 FileStream file = File.OpenRead(path);
                 BuildG buildG = (BuildG)formatter.Deserialize(file);
                 file.Close();
-                for (int j = 0; j < ListOfHeroes.Count; j++)
-                {
-                    if (ListOfHeroes[j] == buildG.NazwaBohatera)
-                    {
-                     
-                        Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
-                        EImagess[i].sprite = hero;
-                        j = 100;
-                    }
-                }
+                EImagess[i].sprite = sprite;
                 EnemyButtons[i].gameObject.SetActive(true);
                 EnemyButtons[i].GetComponentInChildren<Text>().text=" ";
                 EImagess[i].gameObject.SetActive(true);
@@ -174,21 +139,13 @@ public class SelectMenu : MonoBehaviour
             FileStream file = File.OpenRead(path);
             BuildG buildG = (BuildG)formatter.Deserialize(file);
             file.Close();
-            for (int j = 0; j < ListOfHeroes.Count; j++)
-            {
-                if (ListOfHeroes[j] == buildG.NazwaBohatera)
-                {
-                    PlayerPrefs.SetInt("YourArmy", i);
-                    Debug.Log("tutaj");
-                    Sprite hero = sprite;
-                    BigImagess[0].sprite = hero;
-                    BigImagess[0].GetComponentInChildren<Text>().text = "";
-                    RemoveButtons[0].gameObject.SetActive(true);
-                    Debug.Log(Application.persistentDataPath + ListOfImages[j]);
-                    j = 100;
-                }
-            }
-            
+            PlayerPrefs.SetInt("YourArmy", i);
+            Debug.Log("tutaj");
+            Sprite hero = sprite;
+            BigImagess[0].sprite = hero;
+            BigImagess[0].GetComponentInChildren<Text>().text = "";
+            RemoveButtons[0].gameObject.SetActive(true);
+
         }
        
     }
@@ -210,21 +167,14 @@ public class SelectMenu : MonoBehaviour
             FileStream file = File.OpenRead(path);
             BuildG buildG = (BuildG)formatter.Deserialize(file);
             file.Close();
-            for (int j = 0; j < ListOfHeroes.Count; j++)
-            {
-                if (ListOfHeroes[j] == buildG.NazwaBohatera)
-                {
-                    PlayerPrefs.SetInt("EnemyArmy", i);
-                    Debug.Log("tutaj");
-                    Sprite hero = sprite;
-                    //Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
-                    BigImagess[1].sprite = hero;
-                    BigImagess[1].GetComponentInChildren<Text>().text = "";
-                    Debug.Log(Application.persistentDataPath + ListOfImages[j]);
-                    j = 100;
-                    RemoveButtons[1].gameObject.SetActive(true);
-                }
-            }
+            PlayerPrefs.SetInt("EnemyArmy", i);
+            Debug.Log("tutaj");
+            Sprite hero = sprite;
+            //Sprite hero = Resources.Load<Sprite>(ListOfImages[j]);
+            BigImagess[1].sprite = hero;
+            BigImagess[1].GetComponentInChildren<Text>().text = "";
+     
+            RemoveButtons[1].gameObject.SetActive(true);
 
         }
 
