@@ -137,7 +137,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
 
     internal IEnumerator DoMovesPath(List<HexClass> hexmaxpath)
     {
-        throw new NotImplementedException();
+          throw new NotImplementedException();
+
     }
 
     void Update_DetectModeStart()
@@ -590,7 +591,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
         //  shiftctrlmode();
         // ScrollLook();
     }
-    IEnumerator DoMoves(HexClass hex, TosterHexUnit SelectedToster)
+ public   IEnumerator DoMoves(HexClass hex, TosterHexUnit SelectedToster)
     {
         outlineManagerMainToster.RemoveOutline();
         outlineM.unSetHexSelectedToster();
