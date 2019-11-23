@@ -80,7 +80,7 @@ public class MostStupidAIEver : MonoBehaviour
                        
                          Debug.Log("Toster o nazwie: " + h.Tosters[0].Name+ "Stoi na hex ( " + h.C + " , " + h.R + " )");
 
-                        if (MC.getSelectedToster().IsPathAvaible(hex))
+                        if (AIToster.IsPathAvaible(hex))
                         {
                             MC.StartCoroutine(MC.DoMoveAndAttackWithoutCheck(hex, h.Tosters[0]));
                             return;
@@ -104,7 +104,7 @@ public class MostStupidAIEver : MonoBehaviour
            
             if (h.Tosters[0].isDead == false)
             {
-                 hexpath = new List<HexClass>(MC.getSelectedToster().Pathing(h, true));
+                 hexpath = new List<HexClass>(AIToster.Pathing(h, true));
                 if (hexpath.Count<count)
                 {
                     count = hexpath.Count;
@@ -114,7 +114,7 @@ public class MostStupidAIEver : MonoBehaviour
             tempi++;
         }
 
-        hexpath = new List<HexClass>(MC.getSelectedToster().Pathing(EnemyHexes[hNo], true));
+        hexpath = new List<HexClass>(AIToster.Pathing(EnemyHexes[hNo], true));
         hexmaxpath = new List<HexClass>();
         for (int i = 0; i < MC.getSelectedToster().GetMS(); i++)
             hexmaxpath.Add(hexpath[i]);
@@ -280,84 +280,6 @@ public class MostStupidAIEver : MonoBehaviour
         Debug.Log(ai.Name + "  WYCIAGA WNIOSEK: Powinienem focusowac" + target[0].Name);
         return target;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
