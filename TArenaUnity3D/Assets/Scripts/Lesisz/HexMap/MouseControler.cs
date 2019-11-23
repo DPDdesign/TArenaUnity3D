@@ -1110,12 +1110,14 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         {
             for (int i = 1; i < 20- SelectedToster.Hex.C; i++)
             {
-             
-                
-                HexesToHighlight.Add(hexMap.GetHexAt(SelectedToster.Hex.C + i, SelectedToster.Hex.R));
-                if (hexMap.GetHexAt(SelectedToster.Hex.C + i, SelectedToster.Hex.R).Tosters.Count > 0)
+
+                if (hexMap.GetHexAt(SelectedToster.Hex.C + i, SelectedToster.Hex.R) != null)
                 {
-                    i = 20;
+                    HexesToHighlight.Add(hexMap.GetHexAt(SelectedToster.Hex.C + i, SelectedToster.Hex.R));
+                    if (hexMap.GetHexAt(SelectedToster.Hex.C + i, SelectedToster.Hex.R).Tosters.Count > 0)
+                    {
+                        i = 20;
+                    }
                 }
             }
             foreach( HexClass h in HexesToHighlight)
