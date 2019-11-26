@@ -376,7 +376,7 @@ public class PlayFabControler : MonoBehaviour
            error => { Debug.LogError(error.GenerateErrorReport()); });
 
         }
-
+        
     }
 
     public string UserName;
