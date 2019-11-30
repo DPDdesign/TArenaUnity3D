@@ -1,6 +1,6 @@
 # TArenaUnity3D
 Strona: 
-https://piotrmusielski.wixsite.com/retsot?fbclid=IwAR17YnMqen-bgc9P66_h-L9x1kciadNx3MliL8NP4QQA0OXtzhy3ch4AYLk
+https://retsot.com/
 
 Discord:
 https://discord.gg/24KyEwu
