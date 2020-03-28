@@ -1,6 +1,4 @@
 # TArenaUnity3D
-Strona: 
-https://retsot.com/
 
 Discord:
 https://discord.gg/24KyEwu
