@@ -4,16 +4,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using static PanelArmii;
 using HPath;
 using System.Linq;
-using Photon.Pun;
-using Photon.Realtime;
-using Hashtable = ExitGames.Client.Photon.Hashtable;
-using cakeslice;
 
-public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
+public class HexMap : LocalNetworkBehaviour, IQPathWorld
 {
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
     public GameObject HexPrefab;
@@ -57,66 +52,16 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     }
     void Start()
     {
-        
-        if (PlayerPrefs.GetInt("Multi") == 1)
-        {
-            buildG1 = new BuildG();
-            buildG2 = new BuildG();
-            if (PhotonNetwork.LocalPlayer.IsMasterClient)
-            {
+        TeamClass Team = new TeamClass();
+        Team.ThisTeamNO = PlayerPrefs.GetInt("YourArmy");
+        Team.WczytajPlik();
 
-                TeamClass Team = new TeamClass();
-                Hashtable t = new Hashtable();
-                Team.ThisTeamNO = PlayerPrefs.GetInt("YourArmy");
-                Team.WczytajPlik();
+        buildG1 = Team.buildG;
+        Team.ThisTeamNO = PlayerPrefs.GetInt("EnemyArmy");
+        Team.WczytajPlik();
 
-                buildG1 = Team.buildG;
-                //        Team.ThisTeamNO = PlayerPrefs.GetInt("EnemyArmy");
-                //       Team.WczytajPlik();
-
-                //                buildG2 = Team.buildG;
-                //   PhotonNetwork.CurrentRoom.GetPlayer(1).SetCustomProperties(t);
-            }
-            else  //(PhotonNetwork.LocalPlayer == PhotonNetwork.CurrentRoom.GetPlayer(2))
-            {
-                TeamClass Team = new TeamClass();
-                //ASK MASTER FOR HIS BUILD + SEND HIM  YOUR BUILD
-                Team.ThisTeamNO = PlayerPrefs.GetInt("YourArmy");/// THIS IS YOUR BUILD - NOW HOW TO SHARE IT?
-
-                Team.WczytajPlik();
-                Debug.LogError("THIS IS YOUR BUILD - NOW HOW TO SHARE IT?");
-                buildG2 = Team.buildG;
-                photonView.RPC("UnitsAmount", RpcTarget.Others, new object[] { buildG2.NoUnits[0], buildG2.NoUnits[1], buildG2.NoUnits[2], buildG2.NoUnits[3], buildG2.NoUnits[4], buildG2.NoUnits[5] });
-                photonView.RPC("UnitsNames", RpcTarget.Others, new object[] { buildG2.Units[0], buildG2.Units[1], buildG2.Units[2], buildG2.Units[3], buildG2.Units[4], buildG2.Units[5] });
-
-              //  DidIGetOtherBuild = true;
-
-            }
-            if (PhotonNetwork.CurrentRoom.PlayerCount > 1)
-            {
-                if (DidIGetOtherBuild == false)
-                {
-                    photonView.RPC("IntToSend", RpcTarget.Others, new object[] { 5 });
-                    // DO NOTHING / WAIT FOR IT -> GO TO UPDATE()
-                }
-               // DO I HAVE ALL BUILDS READY? BOOL DID I GET OTHERS BUILD
-            }
-
-        }
-        else
-        {
-            Debug.LogError("here");
-            TeamClass Team = new TeamClass();
-            Team.ThisTeamNO = PlayerPrefs.GetInt("YourArmy");
-            Team.WczytajPlik();
-
-            buildG1 = Team.buildG;
-            Team.ThisTeamNO = PlayerPrefs.GetInt("EnemyArmy");
-            Team.WczytajPlik();
-
-            buildG2 = Team.buildG;
-            CreateWorld();
-        }
+        buildG2 = Team.buildG;
+        CreateWorld();
 
     }
     [PunRPC]
@@ -260,16 +205,6 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     }
     private void Update()
     {
-        if (PlayerPrefs.GetInt("Multi") == 1)
-        {
-
-            if (PhotonNetwork.CurrentRoom.PlayerCount > 1 && DidIGetOtherBuild == true) /// When can I get OtherBuild - when new player joins, he send it to us. If I am new player, I Ask for build.
-            {
-          //      Debug.LogError("here");
-                if (isCreated == false) CreateWorld();
-            }
-
-        }
     }
 
 
@@ -292,11 +227,6 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
     }
     private void Awake()
     {
-        if(!PhotonNetwork.IsConnected)
-        {
-            SceneManager.LoadScene("MainMenu_Scene");
-            return;
-        }
     }
     public void ThrowSomething(TosterHexUnit target, TosterHexUnit Shooter,GameObject Projectile)
     {
@@ -960,14 +890,9 @@ public class HexMap : MonoBehaviourPunCallbacks, IQPathWorld
         }
     }
 
-    public override void OnPlayerEnteredRoom(Player newPlayer)
+    public void OnPlayerEnteredRoom()
     {
-        
         Debug.LogError("test");
-       if(PhotonNetwork.CurrentRoom.PlayerCount >1)
-        {
-           // Instance.CreateWorld();
-        }     
     }
    
 

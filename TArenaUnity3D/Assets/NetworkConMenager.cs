@@ -1,95 +1,75 @@
-﻿using Photon.Pun;
-using Photon.Realtime;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class NetworkConne22ctionManager : MonoBehaviourPunCallbacks
+public class NetworkConne22ctionManager : MonoBehaviour
 {
     public Button BtnConnectMaster;
     public Button BtnConnectRoom;
-
-
     public bool TriesToConnectToMaster;
     public bool TriesToConnectToRoom;
-
 
     void Start()
     {
         TriesToConnectToMaster = false;
-        TriesToConnectToMaster = false;
+        TriesToConnectToRoom = false;
     }
-
 
     void Update()
     {
-        BtnConnectMaster.gameObject.SetActive(!PhotonNetwork.IsConnected && !TriesToConnectToMaster);
-        BtnConnectRoom.gameObject.SetActive(PhotonNetwork.IsConnected && !TriesToConnectToMaster & !TriesToConnectToRoom);
+        if (BtnConnectMaster != null)
+        {
+            BtnConnectMaster.gameObject.SetActive(!TriesToConnectToMaster);
+        }
+
+        if (BtnConnectRoom != null)
+        {
+            BtnConnectRoom.gameObject.SetActive(false);
+        }
     }
+
     public void OnClickConnectToMaster()
     {
-        PhotonNetwork.OfflineMode = false;
-        PhotonNetwork.NickName = "PlayerName";
-        PhotonNetwork.AutomaticallySyncScene = true;
-        PhotonNetwork.GameVersion = "v2";
-        
-        PhotonNetwork.ConnectUsingSettings();
-        TriesToConnectToMaster = true;
+        LoadBattleScene();
     }
 
-
-    public override void OnDisconnected(DisconnectCause cause)
+    public void OnDisconnected(string cause)
     {
-        base.OnDisconnected(cause);
         TriesToConnectToMaster = false;
         TriesToConnectToRoom = false;
         Debug.Log(cause);
     }
 
-    public override void OnConnectedToMaster()
+    public void OnConnectedToMaster()
     {
-        base.OnConnectedToMaster();
         TriesToConnectToMaster = false;
-        Debug.Log("Connected to Master!");
+        Debug.Log("Local mode selected.");
     }
-
-
 
     public void OnClickConnectToRoom()
     {
-        if (!PhotonNetwork.IsConnected)
-            return;
-
-        TriesToConnectToRoom = true;
-        //PhotonNetwork.CreateRoom("Peter's Game 1"); //Create a specific Room - Error: OnCreateRoomFailed
-        //PhotonNetwork.JoinRoom("Peter's Game 1");   //Join a specific Room   - Error: OnJoinRoomFailed  
-        PhotonNetwork.JoinRandomRoom();               //Join a random Room     - Error: OnJoinRandomRoomFailed  
+        LoadBattleScene();
     }
 
-    public override void OnJoinRandomFailed(short returnCode, string message)
+    public void OnJoinRandomFailed(short returnCode, string message)
     {
-        base.OnJoinRandomFailed(returnCode, message);
-        //no room available
-        //create a room (null as a name means "does not matter")
-        PhotonNetwork.CreateRoom(null, new RoomOptions { MaxPlayers = 20 });
+        LoadBattleScene();
     }
 
-    public override void OnCreateRoomFailed(short returnCode, string message)
+    public void OnCreateRoomFailed(short returnCode, string message)
     {
-        Debug.LogError("OnCreateRoomFailed");
-        base.OnCreateRoomFailed(returnCode, message);
         Debug.Log(message);
-        base.OnCreateRoomFailed(returnCode, message);
         TriesToConnectToRoom = false;
     }
 
-    public override void OnJoinedRoom()
+    public void OnJoinedRoom()
     {
-        base.OnJoinedRoom();
         TriesToConnectToRoom = false;
-        Debug.Log("Master: " + PhotonNetwork.IsMasterClient + " | Players In Room: " + PhotonNetwork.CurrentRoom.PlayerCount + " | RoomName: " + PhotonNetwork.CurrentRoom.Name);
-       // SceneManager.LoadScene("TestArea");
+        Debug.Log("Local room ready.");
+    }
+
+    private void LoadBattleScene()
+    {
+        SceneManager.LoadScene("TestArea2");
     }
 }

@@ -136,7 +136,8 @@ public void ShowGeneratorPanelOnly(int PanelNumber)
     public   List<Button> butt;
     public void LoadAll()
     {
-        foreach (InventoryObjects shopobj in PlayFabControler.PFC.storeObjects)
+        PlayFabControler localBackend = PlayFabControler.EnsureInstance();
+        foreach (InventoryObjects shopobj in localBackend.storeObjects)
         {
              if (shopobj.Type1 == "Unit")
             {
@@ -149,7 +150,7 @@ public void ShowGeneratorPanelOnly(int PanelNumber)
                         //  Text[] texts = b.gameObject.GetComponentsInChildren<Text>();
                         //  texts[0].gameObject.SetActive(true);
                         bool inter = false;
-                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
+                        foreach (InventoryObjects inventoryObjects in localBackend.inventoryObjects)
                         {
                             if (inventoryObjects.Id == shopobj.Id)
                             {

@@ -21,7 +21,7 @@ public class Shop : MonoBehaviour
     {
         Debug.Log("OnEnable");
 
-        PlayFabControler.PFC.GetInventory(this);
+        PlayFabControler.EnsureInstance().GetInventory(this);
 
     }
     public void Reload()
@@ -32,7 +32,8 @@ public class Shop : MonoBehaviour
     }
     public void LoadAll2()
     {
-        foreach (InventoryObjects shopobj in PlayFabControler.PFC.storeObjects)
+        PlayFabControler localBackend = PlayFabControler.EnsureInstance();
+        foreach (InventoryObjects shopobj in localBackend.storeObjects)
         {
             if (shopobj.Type1 == "Unit")
             {
@@ -45,7 +46,7 @@ public class Shop : MonoBehaviour
                         //  Text[] texts = b.gameObject.GetComponentsInChildren<Text>();
                         //  texts[0].gameObject.SetActive(true);
                         bool inter = false;
-                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
+                        foreach (InventoryObjects inventoryObjects in localBackend.inventoryObjects)
                         {
                             if (inventoryObjects.Id == shopobj.Id)
                             {
@@ -67,7 +68,8 @@ public class Shop : MonoBehaviour
     }
     public void LoadAll()
     {
-        foreach (InventoryObjects shopobj in PlayFabControler.PFC.storeObjects)
+        PlayFabControler localBackend = PlayFabControler.EnsureInstance();
+        foreach (InventoryObjects shopobj in localBackend.storeObjects)
         {
             if (shopobj.Type1 == "ArmyBundle")
             {
@@ -82,7 +84,7 @@ public class Shop : MonoBehaviour
                             if (t.name == "Cost")
                             {
                                 t.text = shopobj.ATprice1.ToString();
-                                if (shopobj.ATprice1 > PlayFabControler.PFC.aTokens)
+                                if (shopobj.ATprice1 > localBackend.aTokens)
                                 {
                                     texts[0].text = "Too Expensive";
                                     b.interactable = false;
@@ -109,14 +111,14 @@ public class Shop : MonoBehaviour
                             if (t.name == "Cost")
                             {
                                 t.text = shopobj.TCprice1.ToString();
-                                if (shopobj.TCprice1 > PlayFabControler.PFC.tCoins)
+                                if (shopobj.TCprice1 > localBackend.tCoins)
                                 {
                                     texts[0].text = "Too Expensive";
                                     b.interactable = false;
                                 }
                             }
                         }
-                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
+                        foreach (InventoryObjects inventoryObjects in localBackend.inventoryObjects)
                         {
                             if (inventoryObjects.Id == shopobj.Id)
                             {
@@ -139,6 +141,7 @@ public class Shop : MonoBehaviour
 
    public void ShowBuyMenu(Button b)
     {
+        PlayFabControler localBackend = PlayFabControler.EnsureInstance();
         BuyMenu.SetActive(true);
         objToBuy = b.name;
         nameOfObject.text = objToBuy;
@@ -168,7 +171,7 @@ public class Shop : MonoBehaviour
         if (typeOfObject == "ArmyBundle")
         {
             Debug.LogError("here");
-           if (PlayFabControler.PFC.CheckIfPlayerGotBundle(objToBuy))
+           if (localBackend.CheckIfPlayerGotBundle(objToBuy))
             {
                 Error.gameObject.SetActive(false);
                 BuyButton.interactable = true;
@@ -179,8 +182,8 @@ public class Shop : MonoBehaviour
                 BuyButton.interactable = false;
             }
 
-            totalM.text = PlayFabControler.PFC.aTokens.ToString();
-            leftM.text =( PlayFabControler.PFC.aTokens - System.Convert.ToInt32(totalCost)).ToString();
+            totalM.text = localBackend.aTokens.ToString();
+            leftM.text =( localBackend.aTokens - System.Convert.ToInt32(totalCost)).ToString();
             
            
 
@@ -189,8 +192,8 @@ public class Shop : MonoBehaviour
         {
             Error.gameObject.SetActive(false);
             BuyButton.interactable = true;
-            totalM.text = PlayFabControler.PFC.tCoins.ToString();
-            leftM.text = (PlayFabControler.PFC.tCoins - System.Convert.ToInt32(totalCost)).ToString();
+            totalM.text = localBackend.tCoins.ToString();
+            leftM.text = (localBackend.tCoins - System.Convert.ToInt32(totalCost)).ToString();
 
         }
 
@@ -201,7 +204,7 @@ public class Shop : MonoBehaviour
 
     public void Buy()
     {
-        if (PlayFabControler.PFC.BuyItem(objToBuy, totalCost, typeOfCurrency,this))
+        if (PlayFabControler.EnsureInstance().BuyItem(objToBuy, totalCost, typeOfCurrency,this))
         {
            // Debug.Log("dasda");
          //   PlayFabControler.PFC.GetInventory(this);

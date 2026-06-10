@@ -1,222 +1,154 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using PlayFab;
-using PlayFab.ClientModels;
-using UnityEngine.UI;
-using UnityEngine.SceneManagement;
-using Photon.Pun;
-using Photon.Realtime;
 using System;
-using PlayFab.Json;
+using System.Collections;
+using System.Collections.Generic;
+using System.Xml;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
 public class PlayFabControler : MonoBehaviour
 {
-
-
     public static PlayFabControler PFC;
+    public static int[] ExpRequiredForLevel = { 1, 10, 50, 150, 330, 460, 790, 940, 1280, 1700 };
 
-    private void OnEnable()
-    {
-       
-        if (PlayFabControler.PFC == null)
-        {
-            PlayFabControler.PFC = this;
-        }
-        else
-        {
-            if (PlayFabControler.PFC != this)
-            { Destroy(this.gameObject); }
-
-        }
-        DontDestroyOnLoad(this.gameObject);
-    }
-
-    #region login
     private string userEmail;
     private string userPassword;
-    public string tosterName;
+    public string tosterName = "Local Player";
     public GameObject loginPanel;
     public GameObject mainMenuPanel;
-    private string _playFabPlayerIdCache;
-    private bool isLogged;
     public GameObject UserNamePanel;
     public GameObject ConfirmRegister;
     public Text LogText;
 
-    public void Awake()
+    public int Wins;
+    public int Losses;
+    public int Experience;
+    public int Level = 1;
+    public int RankPoints;
+    public List<InventoryObjects> inventoryObjects = new List<InventoryObjects>();
+    public List<InventoryObjects> storeObjects = new List<InventoryObjects>();
+    public List<string> ownedBundles = new List<string>();
+    public int tCoins = 999999;
+    public int aTokens = 999999;
+    public string UserName = "Local Player";
+
+    public static PlayFabControler EnsureInstance()
     {
-
-
-
-        //PlayerPrefs.DeleteAll();
-        if (string.IsNullOrEmpty(PlayFabSettings.TitleId))
+        if (PFC != null)
         {
-            PlayFabSettings.TitleId = "E66F5"; // Please change this value to your own titleId from PlayFab Game Manager
+            PFC.EnsureLocalData();
+            return PFC;
         }
 
+        PlayFabControler existing = FindObjectOfType<PlayFabControler>();
+        if (existing != null)
+        {
+            existing.RegisterSingleton();
+            existing.EnsureLocalData();
+            return existing;
+        }
 
-        else if (PlayerPrefs.HasKey("EMAIL"))
+        GameObject go = new GameObject("LocalPlayFabControler");
+        PlayFabControler created = go.AddComponent<PlayFabControler>();
+        created.RegisterSingleton();
+        created.EnsureLocalData();
+        return created;
+    }
+
+    private void Awake()
+    {
+        RegisterSingleton();
+        LoadSavedIdentity();
+        EnsureLocalData();
+    }
+
+    private void OnEnable()
+    {
+        RegisterSingleton();
+        EnsureLocalData();
+    }
+
+    private void RegisterSingleton()
+    {
+        if (PFC == null)
+        {
+            PFC = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else if (PFC != this)
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private void LoadSavedIdentity()
+    {
+        if (PlayerPrefs.HasKey("USERNAME"))
         {
             tosterName = PlayerPrefs.GetString("USERNAME");
-            userPassword = PlayerPrefs.GetString("PASSWORD");
-           // GameObject.Find("UserName").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("USERNAME");
-            userEmail = PlayerPrefs.GetString("EMAIL");
-            GameObject.Find("Email").GetComponentInChildren<Text>().text = PlayerPrefs.GetString("EMAIL");
-            //var request = new LoginWithEmailAddressRequest { Email = userEmail, Password = userPassword};
-            //PlayFabClientAPI.LoginWithEmailAddress(request, OnLoginSuccess, OnLoginFailure);
+            UserName = tosterName;
         }
 
+        if (PlayerPrefs.HasKey("EMAIL"))
+        {
+            userEmail = PlayerPrefs.GetString("EMAIL");
+        }
 
+        if (PlayerPrefs.HasKey("PASSWORD"))
+        {
+            userPassword = PlayerPrefs.GetString("PASSWORD");
+        }
     }
 
     public void OnLoginClick()
     {
-        var request = new LoginWithEmailAddressRequest { Email = userEmail, Password = userPassword };
-        PlayFabClientAPI.LoginWithEmailAddress(request, OnLoginSuccess, OnLoginFailure);
-    }
-
-
-    private void OnLoginSuccess(LoginResult result)
-    {
-
-        Debug.Log("WELCOME TO RETSOT POBIERAM NAZWĘ PHOTON");
-        PlayerPrefs.SetString("EMAIL", userEmail);
-        PlayerPrefs.SetString("PASSWORD", userPassword);
-       // PlayerPrefs.SetString("USERNAME", tosterName);
+        SaveIdentity();
         GetStats();
-        loginPanel.SetActive(false);
-        SceneManager.LoadScene("MainMenu_Scene");
-        _playFabPlayerIdCache = result.PlayFabId;
-        GetPhoton();
-
-    }
-
-
-    public void GetPhoton()
-    {
-
-        PlayFabClientAPI.GetPhotonAuthenticationToken(new GetPhotonAuthenticationTokenRequest()
+        if (loginPanel != null)
         {
-            PhotonApplicationId = PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime
-        }, AuthenticateWithPhoton, OnPlayFabError);
-    }
-    /*
-     * Step 3
-     * This is the final and the simplest step. We create new AuthenticationValues instance.
-     * This class describes how to authenticate a players inside Photon environment.
-     */
-    private void AuthenticateWithPhoton(GetPhotonAuthenticationTokenResult obj)
-    {
-        Debug.Log("Photon token acquired: " + obj.PhotonCustomAuthenticationToken + "  Authentication complete.");
-
-        //We set AuthType to custom, meaning we bring our own, PlayFab authentication procedure.
-        var customAuth = new AuthenticationValues { AuthType = CustomAuthenticationType.Custom };
-
-        //We add "username" parameter. Do not let it confuse you: PlayFab is expecting this parameter to contain player PlayFab ID (!) and not username.
-        customAuth.AddAuthParameter("username", _playFabPlayerIdCache);    // expected by PlayFab custom auth service
-
-        //We add "token" parameter. PlayFab expects it to contain Photon Authentication Token issues to your during previous step.
-        customAuth.AddAuthParameter("token", obj.PhotonCustomAuthenticationToken);
-
-        //We finally tell Photon to use this authentication parameters throughout the entire application.
-        PhotonNetwork.AuthValues = customAuth;
-    }
-
-
-    private void OnLoginFailure(PlayFabError error)
-    {
-        Debug.LogError(error.GenerateErrorReport());
-        // Recognize and handle the error
-        LogText.color = Color.red;
-        switch (error.Error)
-        {
-
-            case PlayFabErrorCode.InvalidTitleId:
-                LogText.text = "Zły nickname!";
-
-                // Handle invalid title id error
-                break;
-            case PlayFabErrorCode.AccountNotFound:
-                // Handle account not found error
-                LogText.text = "Nie znaleziono konta!";
-                break;
-            case PlayFabErrorCode.InvalidEmailOrPassword:
-                // Handle invalid email or password error
-                LogText.text = "Błędny email lub hasło!";
-                break;
-            case PlayFabErrorCode.RequestViewConstraintParamsNotAllowed:
-                // Handle not allowed view params error
-                break;
-            case PlayFabErrorCode.InvalidEmailAddress:
-                LogText.text = "Błędny email! ";
-                break;
-            default:
-                // Handle unexpected error
-                LogText.text = "Spróbuj ponownie!";
-                Debug.Log("Sprobuj ponownie!");
-                break;
-                //   LogText.text = error.ErrorDetails[0];//.GenerateErrorReport();
+            loginPanel.SetActive(false);
         }
-       
-        //var RegisterRequest = new RegisterPlayFabUserRequest { Email = userEmail, Password = userPassword, Username = tosterName };
-        //PlayFabClientAPI.RegisterPlayFabUser(RegisterRequest, OnRegisterSuccess, OnRegisterFailure);
-        //GameObject.Find("LogIn").GetComponentInChildren<Text>().text ="Register";
-       
+
+        SceneManager.LoadScene("MainMenu_Scene");
     }
 
     public void RequestRegister()
     {
-        UserNamePanel.SetActive(true);
-        ConfirmRegister.SetActive(true);
+        if (UserNamePanel != null)
+        {
+            UserNamePanel.SetActive(true);
+        }
+
+        if (ConfirmRegister != null)
+        {
+            ConfirmRegister.SetActive(true);
+        }
     }
 
     public void OnRegisterClick()
     {
-        var RegisterRequest = new RegisterPlayFabUserRequest { Email = userEmail, Password = userPassword, Username = tosterName };
-        PlayFabClientAPI.RegisterPlayFabUser(RegisterRequest, OnRegisterSuccess, OnRegisterFailure);
-    }
+        SaveIdentity();
+        EnsureLocalData();
 
-    public void OnRegisterSuccess(RegisterPlayFabUserResult result)
-    {
-        //  loginPanel.SetActive(false);
-        StartCloudWipeAccount();
-        PlayerPrefs.SetString("PASSWORD", userPassword);
-        PlayerPrefs.SetString("USERNAME", tosterName);
-        PlayerPrefs.SetString("EMAIL", userEmail);
-        LogText.text = "Congratulations, you made your Retsot account!";
-        LogText.color = Color.magenta;
-      
-        UserNamePanel.SetActive(false);
-        ConfirmRegister.SetActive(false);
-
-    }
-
-    private void SetNewUserStats()
-    {
-        PlayFabClientAPI.UpdatePlayerStatistics(new UpdatePlayerStatisticsRequest
+        if (LogText != null)
         {
-            // request.Statistics is a list, so multiple StatisticUpdate objects can be defined if required.
-            Statistics = new List<StatisticUpdate> {
-                new StatisticUpdate { StatisticName = "Wins", Value = 0},
-                new StatisticUpdate { StatisticName = "Loses", Value = 0},
-                new StatisticUpdate { StatisticName = "Experience", Value = 0},
-                new StatisticUpdate { StatisticName = "Level", Value = 1},
-                new StatisticUpdate { StatisticName = "WinRatio", Value = 1},
-            }
-        },
-  result => { Debug.Log("Congratulations, you made your Toster account!"); },
-  error => { Debug.LogError(error.GenerateErrorReport()); });
+            LogText.text = "Local profile ready.";
+            LogText.color = Color.magenta;
+        }
 
+        if (UserNamePanel != null)
+        {
+            UserNamePanel.SetActive(false);
+        }
+
+        if (ConfirmRegister != null)
+        {
+            ConfirmRegister.SetActive(false);
+        }
     }
 
-    private void OnRegisterFailure(PlayFabError error)
+    public void GetPhoton()
     {
-        Debug.LogError(error.GenerateErrorReport());
-    }
-
-    private void OnPlayFabError(PlayFabError obj)
-    {
-        Debug.LogError(obj.GenerateErrorReport());
     }
 
     public void GetuserEmail(string emailIn)
@@ -232,343 +164,221 @@ public class PlayFabControler : MonoBehaviour
     public void GetuserName(string usernameIn)
     {
         tosterName = usernameIn;
+        UserName = usernameIn;
     }
 
-
-    #endregion login
-
-    #region PlayerStats
-    public int Wins;
-    public int Losses;
-    public int Experience;
-    public int Level;
-    public int RankPoints;
-    public List<InventoryObjects> inventoryObjects;
-    public List<InventoryObjects> storeObjects;
-    public List<string> ownedBundles;
-    public int tCoins;
-    public int aTokens;
     public void StartCloudWipeAccount()
     {
-
-        PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
-        {
-            FunctionName = "WipeAccount", // Arbitrary function name (must exist in your uploaded cloud.js file)
-            GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
-        }, OnCloudSetShared, OnErrorShared);
+        Wins = 0;
+        Losses = 0;
+        Experience = 0;
+        RankPoints = 0;
+        Level = 1;
     }
+
     public void StartCloudSetWin()
     {
-
-        PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
-        {
-            FunctionName = "SetWin", // Arbitrary function name (must exist in your uploaded cloud.js file)
-            GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
-        }, OnCloudSetShared, OnErrorShared);
+        SetStats(1, 0, 10);
     }
 
     public void StartCloudSetLoss()
     {
-
-        PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
-        {
-            FunctionName = "SetLoss", // Arbitrary function name (must exist in your uploaded cloud.js file)
-            GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
-        }, OnCloudSetShared, OnErrorShared);
+        SetStats(0, 1, 3);
     }
 
-
-
-    private void OnCloudSetShared(ExecuteCloudScriptResult result)
-    {
-        // Cloud Script returns arbitrary results, so you have to evaluate them one step and one parameter at a time
-        JsonObject jsonResult = (JsonObject)result.FunctionResult;
-        //object messageValue;
-        //jsonResult.TryGetValue("messageValue", out messageValue); // note how "messageValue" directly corresponds to the JSON values set in Cloud Script
-        //Debug.Log((string)messageValue);
-    }
-
-    private void OnErrorShared(PlayFabError error)
-    {
-        Debug.Log(error.GenerateErrorReport());
-    }
     public void SetStats(int win, int lost, int exp)
     {
-
-
         Wins += win;
         Losses += lost;
         Experience += exp;
-
-        PlayFabClientAPI.UpdatePlayerStatistics(new UpdatePlayerStatisticsRequest
-        {
-            // request.Statistics is a list, so multiple StatisticUpdate objects can be defined if required.
-            Statistics = new List<StatisticUpdate> {
-                new StatisticUpdate { StatisticName = "Wins", Value = Wins},
-                new StatisticUpdate { StatisticName = "Loses", Value = Losses},
-                new StatisticUpdate { StatisticName = "Experience", Value = Experience},
-                new StatisticUpdate {StatisticName = "WinRatio", Value = Wins/(Losses+Wins)},
-            }
-        },
-        result => { Debug.Log("User statistics updated"); },
-        error => { Debug.LogError(error.GenerateErrorReport()); });
-
         CheckLevel();
-
     }
 
     public void GetStats()
     {
-        PlayFabClientAPI.GetPlayerStatistics(
-            new GetPlayerStatisticsRequest(),
-            OnGetStats,
-            error => Debug.LogError(error.GenerateErrorReport())
-        );
-
+        EnsureLocalData();
         GetUserName();
     }
 
-    void OnGetStats(GetPlayerStatisticsResult result)
-    {
-        Debug.Log("Received the following Statistics:");
-        foreach (var eachStat in result.Statistics)
-        {
-            Debug.Log("Statistic (" + eachStat.StatisticName + "): " + eachStat.Value);
-            switch (eachStat.StatisticName)
-            {
-                case "Wins":
-                    Wins = eachStat.Value;
-                    break;
-
-                case "Loses":
-                    Losses = eachStat.Value;
-                    break;
-
-                case "Experience":
-                    Experience = eachStat.Value;
-                    break;
-
-                case "Level":
-                    Level = eachStat.Value;
-                    break;
-
-                case "WinRatio":
-                    RankPoints = eachStat.Value;
-                    break;
-
-            }
-        }
-    }
-
-    public static int[] ExpRequiredForLevel = { 1, 10, 50, 150, 330, 460, 790, 940, 1280, 1700 };
-    void CheckLevel()
-    {
-        if (Experience >= ExpRequiredForLevel[Level])
-        {
-            PlayFabClientAPI.UpdatePlayerStatistics(new UpdatePlayerStatisticsRequest
-            {
-                // request.Statistics is a list, so multiple StatisticUpdate objects can be defined if required.
-                Statistics = new List<StatisticUpdate> {
-                new StatisticUpdate { StatisticName = "Level", Value = Level + 1 },
-            }
-            },
-           result => { Level += 1; Debug.Log("Level Up! New level: " + Level); },
-           error => { Debug.LogError(error.GenerateErrorReport()); });
-
-        }
-        
-    }
-
-    public string UserName;
-
     public void GetUserName()
     {
-
-        var request2 = new GetAccountInfoRequest
+        if (string.IsNullOrEmpty(UserName))
         {
-            Email = PFC.userEmail
-        };
-
-        PlayFabClientAPI.GetAccountInfo(request2, result =>
-
-        {
-            UserName =  result.AccountInfo.Username;
-
-        }, resultCallback => { Debug.LogError("error"); }, null, null);
-
-
+            UserName = string.IsNullOrEmpty(tosterName) ? "Local Player" : tosterName;
+        }
     }
 
-
-
-
-    #endregion PlayerStats
-
-
-
-    #region Store
     public void GetCatalog()
     {
-
-        var request2 = new GetCatalogItemsRequest
-        {
-            CatalogVersion = "AllThings"
-        };
-
-        PlayFabClientAPI.GetCatalogItems(request2, result =>
-
-        {
-            storeObjects = new List<InventoryObjects>();
-            foreach (CatalogItem catalogItem in result.Catalog)
-            {
-
-                InventoryObjects iO = new InventoryObjects(catalogItem.ItemId, catalogItem.ItemClass, catalogItem.VirtualCurrencyPrices["TC"], catalogItem.VirtualCurrencyPrices["AT"]);
-                storeObjects.Add(iO);
-                Debug.Log(iO.Id);
-            }
-
-        }, resultCallback => { Debug.LogError("error"); }, null, null);
-
-
+        EnsureLocalData();
     }
 
-
-    public bool BuyItem(string iD, string cost, string VC, Shop shop )
+    public bool BuyItem(string iD, string cost, string VC, Shop shop)
     {
-        var request = new PurchaseItemRequest
+        int parsedCost;
+        int.TryParse(cost, out parsedCost);
+
+        if (VC == "AT")
         {
-            CatalogVersion = "AllThings",
-            ItemId = iD,
-            Price = Int32.Parse(cost),
-            VirtualCurrency = VC
-        };
-        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory(shop); }, result => { Debug.LogError("Nie udało się kupić " + iD); });
+            aTokens = Mathf.Max(0, aTokens - parsedCost);
+        }
+        else
+        {
+            tCoins = Mathf.Max(0, tCoins - parsedCost);
+        }
+
+        AddInventoryItem(iD, VC == "AT" ? "ArmyBundle" : "Unit");
+        if (shop != null)
+        {
+            shop.Reload();
+        }
 
         return true;
-    }
-    IEnumerator Example()
-    {
-        print(Time.time);
-        yield return new WaitForSeconds(5);
-        print(Time.time);
     }
 
     public bool BuyBundle(string iD, string cost, string VC)
     {
-
-        var request = new PurchaseItemRequest
-        {
-            CatalogVersion = "AllThings",
-            ItemId = iD,
-            Price = Int32.Parse(cost),
-            VirtualCurrency = VC
-        };
-        PlayFabClientAPI.PurchaseItem(request, result => { Debug.LogError("Kupiłeś " + iD); PlayFabControler.PFC.GetInventory();}, result => { Debug.LogError("Nie udało się kupić " + iD); });
-
-        return true;
+        return BuyItem(iD, cost, VC, null);
     }
+
     public void GetInventory()
     {
-
-        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
-        {
-            inventoryObjects = new List<InventoryObjects>();
-
-            foreach (ItemInstance itemInstance in result.Inventory)
-            {
-                InventoryObjects iO = new InventoryObjects(itemInstance.ItemId, itemInstance.ItemClass);
-                inventoryObjects.Add(iO);
-                Debug.LogError(iO.Id);
-                
-            }
-            result.VirtualCurrency.TryGetValue("TC", out tCoins);
-            result.VirtualCurrency.TryGetValue("AT", out aTokens);
-            Debug.Log("Wczytano dane użytkownika");
-
-        }, resultCallback => { Debug.LogError("error"); }, null, null);
+        EnsureLocalData();
     }
-
 
     public void GetInventory(Shop shop)
     {
-
-        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
+        EnsureLocalData();
+        if (shop != null)
         {
-            inventoryObjects = new List<InventoryObjects>();
-
-            foreach (ItemInstance itemInstance in result.Inventory)
-            {
-                InventoryObjects iO = new InventoryObjects(itemInstance.ItemId, itemInstance.ItemClass);
-                inventoryObjects.Add(iO);
-                Debug.LogError(iO.Id);
-
-            }
-            result.VirtualCurrency.TryGetValue("TC", out tCoins);
-            result.VirtualCurrency.TryGetValue("AT", out aTokens);
-            Debug.Log("Wczytano dane użytkownika");
             shop.Reload();
-        }, resultCallback => { Debug.LogError("error"); }, null, null);
+        }
     }
-
 
     public IEnumerator GetInventoryI()
     {
-        bool toster = false;
-        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
-        {
-            inventoryObjects = new List<InventoryObjects>();
-
-            foreach (ItemInstance itemInstance in result.Inventory)
-            {
-                InventoryObjects iO = new InventoryObjects(itemInstance.ItemId, itemInstance.ItemClass);
-                inventoryObjects.Add(iO);
-
-            }
-            result.VirtualCurrency.TryGetValue("TC", out tCoins);
-            result.VirtualCurrency.TryGetValue("AT", out aTokens);
-            Debug.Log("Wczytano dane użytkownika");
-        }, resultCallback => { Debug.LogError("error"); toster = true; }, null, null);
-        while (toster == false)
-        {
-            yield return new WaitForSeconds(5);
-        }
-      
+        EnsureLocalData();
+        yield break;
     }
+
     public bool CheckIfPlayerGotBundle(string bundle)
     {
-        bool toster = true;
-        var request2 = new GetCatalogItemsRequest
-        {
-            CatalogVersion = "AllThings"
-        };
+        EnsureLocalData();
+        return true;
+    }
 
-        PlayFabClientAPI.GetCatalogItems(request2, result =>
-
+    private void SaveIdentity()
+    {
+        if (!string.IsNullOrEmpty(userEmail))
         {
-            storeObjects = new List<InventoryObjects>();
-            foreach (CatalogItem catalogItem in result.Catalog)
+            PlayerPrefs.SetString("EMAIL", userEmail);
+        }
+
+        if (!string.IsNullOrEmpty(userPassword))
+        {
+            PlayerPrefs.SetString("PASSWORD", userPassword);
+        }
+
+        if (!string.IsNullOrEmpty(tosterName))
+        {
+            PlayerPrefs.SetString("USERNAME", tosterName);
+            UserName = tosterName;
+        }
+    }
+
+    private void CheckLevel()
+    {
+        while (Level < ExpRequiredForLevel.Length - 1 && Experience >= ExpRequiredForLevel[Level])
+        {
+            Level++;
+        }
+    }
+
+    private void EnsureLocalData()
+    {
+        if (Level <= 0)
+        {
+            Level = 1;
+        }
+
+        if (tCoins <= 0)
+        {
+            tCoins = 999999;
+        }
+
+        if (aTokens <= 0)
+        {
+            aTokens = 999999;
+        }
+
+        EnsureBundles();
+        EnsureUnitsFromResources();
+    }
+
+    private void EnsureBundles()
+    {
+        string[] bundles = { "Barbarians", "Lizards", "Golems", "Shadows" };
+        foreach (string bundle in bundles)
+        {
+            if (!ownedBundles.Contains(bundle))
             {
-                if (catalogItem.ItemClass == "ArmyBundle" && catalogItem.ItemId == bundle)
-                {
-
-                    foreach (string bundleInfo in catalogItem.Bundle.BundledItems)
-                    {
-                        foreach (InventoryObjects inventoryObjects in PlayFabControler.PFC.inventoryObjects)
-                        {
-                            if (inventoryObjects.Id == bundleInfo)
-                            {
-                                toster = false;
-                            }
-                        }
-                    }
-
-                }
+                ownedBundles.Add(bundle);
             }
 
-        }, resultCallback => { Debug.LogError("error"); }, null, null);
-        return toster;
-
+            AddStoreItem(bundle, "ArmyBundle", 0, 0);
+            AddInventoryItem(bundle, "ArmyBundle");
+        }
     }
-    #endregion Store
 
+    private void EnsureUnitsFromResources()
+    {
+        TextAsset unitData = Resources.Load<TextAsset>("Data/Units");
+        if (unitData == null)
+        {
+            return;
+        }
+
+        XmlDocument doc = new XmlDocument();
+        doc.LoadXml(unitData.text);
+        XmlNodeList units = doc.SelectNodes("Units/Unit");
+        foreach (XmlNode unit in units)
+        {
+            string id = ReadChildText(unit, "Name");
+            if (string.IsNullOrEmpty(id))
+            {
+                continue;
+            }
+
+            uint cost = 0;
+            uint.TryParse(ReadChildText(unit, "Cost"), out cost);
+            AddStoreItem(id, "Unit", cost, 0);
+            AddInventoryItem(id, "Unit");
+        }
+    }
+
+    private static string ReadChildText(XmlNode node, string childName)
+    {
+        XmlNode child = node.SelectSingleNode(childName);
+        return child == null ? string.Empty : child.InnerText;
+    }
+
+    private void AddStoreItem(string id, string type, uint tcost, uint acost)
+    {
+        if (storeObjects.Exists(item => item.Id == id && item.Type1 == type))
+        {
+            return;
+        }
+
+        storeObjects.Add(new InventoryObjects(id, type, tcost, acost));
+    }
+
+    private void AddInventoryItem(string id, string type)
+    {
+        if (inventoryObjects.Exists(item => item.Id == id && item.Type1 == type))
+        {
+            return;
+        }
+
+        inventoryObjects.Add(new InventoryObjects(id, type));
+    }
 }

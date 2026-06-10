@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class OverlayMainMenu : MonoBehaviour
@@ -28,16 +27,10 @@ public class OverlayMainMenu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
-        if (FindObjectOfType<PlayFabControler>())
-        {
-            PlayFabControler.PFC.GetCatalog();
-            PlayFabControler.PFC.GetInventory();
-            PlayFabControler.PFC.GetStats();
-        }
-
-      //  else Debug.Log("OFFLINE");
-        else SceneManager.LoadScene("LogIn");
+        PlayFabControler localBackend = PlayFabControler.EnsureInstance();
+        localBackend.GetCatalog();
+        localBackend.GetInventory();
+        localBackend.GetStats();
     }
 
     // Update is called once per frame
@@ -93,20 +86,24 @@ public void ShowPanelOnly(int PanelNumber)
     float WinRatio;
     void ShowStats()
     {
+        PlayFabControler localBackend = PlayFabControler.EnsureInstance();
 
        // PlayFabControler.PFC.GetStats();
-        TCn.text = PlayFabControler.PFC.tCoins.ToString();
-        ATn.text = PlayFabControler.PFC.aTokens.ToString();
-        ExpText.text = PlayFabControler.PFC.Experience.ToString();
-        WinText.text = PlayFabControler.PFC.Wins.ToString();
-        LossesText.text = PlayFabControler.PFC.Losses.ToString();
-        WinRatio = ((float)PlayFabControler.PFC.Wins / ((float)PlayFabControler.PFC.Losses+ (float)PlayFabControler.PFC.Wins))*100;
+        TCn.text = localBackend.tCoins.ToString();
+        ATn.text = localBackend.aTokens.ToString();
+        ExpText.text = localBackend.Experience.ToString();
+        WinText.text = localBackend.Wins.ToString();
+        LossesText.text = localBackend.Losses.ToString();
+        int gamesPlayed = localBackend.Losses + localBackend.Wins;
+        WinRatio = gamesPlayed == 0 ? 0 : ((float)localBackend.Wins / (float)gamesPlayed) * 100;
         WinRatioText.text = WinRatio.ToString("##")+" %";
-        RankPointText.text = PlayFabControler.PFC.RankPoints.ToString();
-        MaxExpText.text = PlayFabControler.ExpRequiredForLevel[PlayFabControler.PFC.Level + 1].ToString();
-        LevelText.text = PlayFabControler.PFC.Level.ToString();
-        NicknameText.text = PlayFabControler.PFC.UserName;
-        LevelProgress = (float)(PlayFabControler.PFC.Experience) / (float)PlayFabControler.ExpRequiredForLevel[PlayFabControler.PFC.Level];
+        RankPointText.text = localBackend.RankPoints.ToString();
+        int nextLevelIndex = Mathf.Min(localBackend.Level + 1, PlayFabControler.ExpRequiredForLevel.Length - 1);
+        int currentLevelIndex = Mathf.Min(localBackend.Level, PlayFabControler.ExpRequiredForLevel.Length - 1);
+        MaxExpText.text = PlayFabControler.ExpRequiredForLevel[nextLevelIndex].ToString();
+        LevelText.text = localBackend.Level.ToString();
+        NicknameText.text = localBackend.UserName;
+        LevelProgress = (float)(localBackend.Experience) / (float)PlayFabControler.ExpRequiredForLevel[currentLevelIndex];
         LevelSlider.value = LevelProgress;
     }
 }

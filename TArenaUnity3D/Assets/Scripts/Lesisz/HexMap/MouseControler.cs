@@ -1,5 +1,3 @@
-﻿using Photon.Pun;
-using Photon.Realtime;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,7 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Xenu.Game;
-public class MouseControler : MonoBehaviourPunCallbacks
+public class MouseControler : LocalNetworkBehaviour
 {
 
     public OutlineM outlineM;
@@ -20,8 +18,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
     HexClass[] hexPath;
     public LayerMask LayerIDForHexTiles;
     public LayerMask LayerIDForPartTiles;
-    public UnityOutlineManager outlineManager;
-    public UnityOutlineManagerMainToster outlineManagerMainToster;
+    public MonoBehaviour outlineManager;
+    public MonoBehaviour outlineManagerMainToster;
     // public Canvas canvas;
     public UICanvas canvas;
     delegate void UpdateFunc();
@@ -63,7 +61,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     }
     void Start()
     {
-        PlayFabControler.PFC.GetStats();
+        PlayFabControler.EnsureInstance().GetStats();
 
         if (PlayerPrefs.GetInt("AI") == 0)
         {
@@ -71,11 +69,8 @@ public class MouseControler : MonoBehaviourPunCallbacks
         }
         else isAiOn = true;
 
-        if (PlayerPrefs.GetInt("Multi") == 0)
-        {
-            isMulti = false;
-        }
-        else isMulti = true;
+        isMulti = LocalGameSession.ShouldRunNetworkGameplay;
+        SYNC = true;
         TM = FindObjectOfType<TurnManager>();
 
         Update_CurrentFunc = Update_DetectModeStart;
@@ -90,22 +85,6 @@ public class MouseControler : MonoBehaviourPunCallbacks
         throw new NotImplementedException();
     }
 
-    /*
-    public override void OnPlayerLeftRoom(Player otherPlayer)
-    {
-        base.OnPlayerLeftRoom(otherPlayer);
-        canvas.EndPanel.SetActive(true);
-        canvas.EndText.text = "Other Player Disconnected. WIN!";
-        if (isMulti)
-        {
-            PlayFabControler.PFC.GetPhoton();
-
-                PlayFabControler.PFC.StartCloudSetWin();
-            
-
-        }
-    }
-    */
     /// // TODO : CZEKAC NA NASTEPNA TURE DO KONCA ANIMACJI!!!  - > ZOBACZ NA:     StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
     public bool isCamera()
     {
@@ -160,14 +139,14 @@ public class MouseControler : MonoBehaviourPunCallbacks
             canvas.EndText.text = "Left Player Win! ";
             if (isMulti)
             {
-                PlayFabControler.PFC.GetPhoton();
-                if (PhotonNetwork.LocalPlayer.IsMasterClient)
+                PlayFabControler.EnsureInstance().GetPhoton();
+                if (LocalGameSession.IsMasterClient)
                 {
-                    PlayFabControler.PFC.StartCloudSetWin();
+                    PlayFabControler.EnsureInstance().StartCloudSetWin();
                 }
                 else
                 {
-                    PlayFabControler.PFC.StartCloudSetLoss();
+                    PlayFabControler.EnsureInstance().StartCloudSetLoss();
                 }
             }
         }
@@ -177,14 +156,14 @@ public class MouseControler : MonoBehaviourPunCallbacks
             canvas.EndText.text = "Right Player Win! ";
             if (isMulti)
             {
-                PlayFabControler.PFC.GetPhoton();
-                if (PhotonNetwork.LocalPlayer.IsMasterClient)
+                PlayFabControler.EnsureInstance().GetPhoton();
+                if (LocalGameSession.IsMasterClient)
                 {
-                    PlayFabControler.PFC.StartCloudSetLoss();
+                    PlayFabControler.EnsureInstance().StartCloudSetLoss();
                 }
                 else
                 {
-                    PlayFabControler.PFC.StartCloudSetWin();
+                    PlayFabControler.EnsureInstance().StartCloudSetWin();
                 }
             }
         }
@@ -204,7 +183,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
   
 
         hexUnderMouse = SelectedToster.Hex;
-        if (SYNC==false)
+        if (isMulti && SYNC==false)
         {
           
             Update_CurrentFunc = WaitForSyncc;
@@ -216,20 +195,20 @@ public class MouseControler : MonoBehaviourPunCallbacks
 
         if (isMulti == true)
         {
-            if (SelectedToster.Team == hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
+            if (SelectedToster.Team == hexMap.Teams[1] && LocalGameSession.IsMasterClient)
             {
                 Update_CurrentFunc = WaitinForYourTurn;
                 return;
             }
             else
-                if (SelectedToster.Team == hexMap.Teams[0] && !PhotonNetwork.LocalPlayer.IsMasterClient)
+                if (SelectedToster.Team == hexMap.Teams[0] && !LocalGameSession.IsMasterClient)
             {
                 Update_CurrentFunc = WaitinForYourTurn;
                 return;
             }
         }
       
-        if (SYNC==false)
+        if (isMulti && SYNC==false)
         {
           //  return;
         }
@@ -382,13 +361,13 @@ public class MouseControler : MonoBehaviourPunCallbacks
 
         if (isMulti == true)
         {
-            if (SelectedToster.Team == hexMap.Teams[1] && PhotonNetwork.LocalPlayer.IsMasterClient)
+            if (SelectedToster.Team == hexMap.Teams[1] && LocalGameSession.IsMasterClient)
             {
 
                 return;
             }
             else
-                if (SelectedToster.Team == hexMap.Teams[0] && !PhotonNetwork.LocalPlayer.IsMasterClient)
+                if (SelectedToster.Team == hexMap.Teams[0] && !LocalGameSession.IsMasterClient)
             {
                 return;
             }
@@ -565,7 +544,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
                 else if (TempOutlinedToster != hexUnderMouse.Tosters[0])
                 {
 
-                    outlineManager.RemoveAllButMain();
+                    SendOutlineMessage(outlineManager, "RemoveAllButMain");
                     TempOutlinedToster = hexUnderMouse.Tosters[0];
                     List<Renderer> Ren = new List<Renderer>(); Ren.Add((hexMap.GetObjectFromHex(hexUnderMouse).GetComponentInChildren<Renderer>()));
 
@@ -593,7 +572,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
     }
  public   IEnumerator DoMoves(HexClass hex, TosterHexUnit SelectedToster)
     {
-        outlineManagerMainToster.RemoveOutline();
+        RemoveMainOutline();
         outlineM.unSetHexSelectedToster();
         activeButtons = false;
         SelectedToster.move = true;
@@ -614,7 +593,7 @@ public class MouseControler : MonoBehaviourPunCallbacks
 
 public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     {
-        outlineManagerMainToster.RemoveOutline();
+        RemoveMainOutline();
         outlineM.unSetHexSelectedToster();
         activeButtons = false;
         ST.move = true;
@@ -635,7 +614,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     IEnumerator DoMovesWithoutMoved(HexClass hex, TosterHexUnit SelectedToster)
     {
-        outlineManagerMainToster.RemoveOutline();
+        RemoveMainOutline();
         outlineM.unSetHexSelectedToster();
         activeButtons = false;
         SelectedToster.move = true;
@@ -654,7 +633,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     }
     IEnumerator DoMovesWithoutEnd(HexClass hex, TosterHexUnit SelectedToster)
     {
-        outlineManagerMainToster.RemoveOutline();
+        RemoveMainOutline();
         outlineM.unSetHexSelectedToster();
         activeButtons = false;
         SelectedToster.move = true;
@@ -703,7 +682,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     }
     IEnumerator StartCoroutineDoMoveAndAttackA(int i, int k, int r, int f, TosterHexUnit SelectedToster)
     {
-        outlineManagerMainToster.RemoveOutline();
+        RemoveMainOutline();
         activeButtons = false;
         TargetToster = hexMap.GetHexAt(i, k).Tosters[0];// hexUnderMouse.Tosters[0];
         SelectedToster.move = true;
@@ -737,7 +716,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     IEnumerator StartCoroutineDoMoveAndAttackB(int i, int k, int r, int f, TosterHexUnit SelectedToster)
     {
-        outlineManagerMainToster.RemoveOutline();
+        RemoveMainOutline();
         activeButtons = false;
         TargetToster = hexMap.GetHexAt(i, k).Tosters[0];//hexUnderMouse.Tosters[0];
         SelectedToster.move = true;
@@ -769,7 +748,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
             {
                 photonView.RPC("DoMoveAndAttackA", RpcTarget.All, new object[] { toster.Hex.C, toster.Hex.R, temp.C, temp.R , SelectedToster.Hex.C, SelectedToster.Hex.R });
                 /*
-                outlineManagerMainToster.RemoveOutline();
+                RemoveMainOutline();
                 activeButtons = false;
                 TargetToster = toster;// hexUnderMouse.Tosters[0];
                 SelectedToster.move = true;
@@ -797,7 +776,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
             {
                 photonView.RPC("DoMoveAndAttackB", RpcTarget.All, new object[] { toster.Hex.C, toster.Hex.R, temp.C, temp.R , SelectedToster.Hex.C, SelectedToster.Hex.R });
                 /*
-                outlineManagerMainToster.RemoveOutline();
+                RemoveMainOutline();
                 activeButtons = false;
                 TargetToster = toster;//hexUnderMouse.Tosters[0];
                 SelectedToster.move = true;
@@ -1740,6 +1719,22 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         // Also do cleanup of any UI stuff associated with modes.
 
     }
+
+    private void RemoveMainOutline()
+    {
+        SendOutlineMessage(outlineManagerMainToster, "RemoveOutline");
+    }
+
+    private void SendOutlineMessage(MonoBehaviour target, string methodName)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.SendMessage(methodName, SendMessageOptions.DontRequireReceiver);
+    }
+
     void Update_CameraDrag()
     {
         if (Input.GetMouseButtonUp(2))

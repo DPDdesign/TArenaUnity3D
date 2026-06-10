@@ -1,8 +1,8 @@
-﻿using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TimeSpells;
 
@@ -27,8 +27,8 @@ public class UICanvas : MonoBehaviour
     
     public void Disconnect()
     {
-        PhotonNetwork.LeaveRoom();
-        PhotonNetwork.Disconnect();
+        LocalGameSession.ForceLocalMode();
+        SceneManager.LoadScene("MainMenu_Scene");
     }
     public void UpdateCHP(int chp)
     {

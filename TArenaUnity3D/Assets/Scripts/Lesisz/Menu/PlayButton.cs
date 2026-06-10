@@ -49,13 +49,8 @@ public class PlayButton : MonoBehaviour
             PlayerPrefs.SetInt("AI", 1);
         else
             PlayerPrefs.SetInt("AI", 0);
-        if (MultiPlayer.isOn) {
-            PlayerPrefs.SetInt("Multi", 1);
-            
-                }
-        else
-            PlayerPrefs.SetInt("Multi", 0);
-        NetworkConnectionManager.OnClickConnectToMaster();
+        SaveMultiplayerChoice();
+        StartLocalBattle();
  
     }
 
@@ -65,14 +60,8 @@ public class PlayButton : MonoBehaviour
             PlayerPrefs.SetInt("AI", 1);
         else
             PlayerPrefs.SetInt("AI", 0);
-        if (MultiPlayer.isOn)
-        {
-            PlayerPrefs.SetInt("Multi", 1);
-
-        }
-        else
-            PlayerPrefs.SetInt("Multi", 0);
-        NetworkConnectionManager.OnClickConnectToMaster();
+        SaveMultiplayerChoice();
+        StartLocalBattle();
 
     }
     public void JoinFriend()
@@ -81,14 +70,37 @@ public class PlayButton : MonoBehaviour
             PlayerPrefs.SetInt("AI", 1);
         else
             PlayerPrefs.SetInt("AI", 0);
-        if (MultiPlayer.isOn)
+        SaveMultiplayerChoice();
+        if (NetworkConnectionManager != null)
+        {
+            NetworkConnectionManager.OnClickConnectToMasterCustom(inputField.text);
+            return;
+        }
+
+        SceneManager.LoadScene("TestArea2");
+
+    }
+
+    private void StartLocalBattle()
+    {
+        if (NetworkConnectionManager != null)
+        {
+            NetworkConnectionManager.OnClickConnectToMaster();
+            return;
+        }
+
+        SceneManager.LoadScene("TestArea2");
+    }
+
+    private void SaveMultiplayerChoice()
+    {
+        if (MultiPlayer != null && MultiPlayer.isOn)
         {
             PlayerPrefs.SetInt("Multi", 1);
-
         }
         else
+        {
             PlayerPrefs.SetInt("Multi", 0);
-        NetworkConnectionManager.OnClickConnectToMasterCustom(inputField.text);
-
+        }
     }
 }
