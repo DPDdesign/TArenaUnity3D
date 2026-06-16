@@ -2,7 +2,7 @@
 
 Status: active
 Project: TArenaUnity3D
-Last updated: 2026-06-10
+Last updated: 2026-06-12
 
 ## Current Project Goal
 
@@ -37,10 +37,66 @@ The apparent game core is a hex-grid tactics prototype around toster units:
 - menu/shop/profile UI,
 - AI prototype and simulation helpers.
 
+Recent turn-system recovery:
+
+- Team turn selection now treats null, dead, and zero-amount units as
+  non-actionable, including queue preview and new-turn DOT/trap death checks.
+  This was implemented for PRD 015 after a FireElemental fire trap could kill a
+  HeavyHitter but still let the dead unit receive a turn. Unity Play Mode
+  validation is still pending.
+
 The code is heavily coupled to Unity scene objects, Inspector fields,
 `PlayerPrefs`, Resources XML, local serialized build files, Photon/PUN, and
-PlayFab singleton access. Even the local/single-player path still passes through
-some PUN classes and PlayFab calls.
+PlayFab singleton access. Even the local/single-player path still passes
+through some PUN classes and PlayFab calls.
+
+## Current Combat Presentation Notes
+
+- Combat animation flow is code-driven through `TosterHexUnit` and
+  `TosterView`, using Animator state names such as `attack`, `hit`, and
+  `death`.
+- Combat SFX now has a small project-owned script path:
+  `TosterSfxSet` stores per-model `attack`, `hit`, and `death` clip arrays on
+  the same GameObject as the Animator, and `CombatSfxManager` plays them
+  through one scene-level `AudioSource`.
+- Background music has a separate scene-level `BackgroundMusicManager` path with
+  its own `AudioSource`, so looping music can play independently from combat
+  SFX.
+- Combat SFX setup is documented in `_codex/Documentation/User_Setup_Guide.md`.
+- `Stone_Throw` currently uses a local visual workaround: the split unit is
+  instantiated immediately in backend state, but its renderers stay hidden
+  until projectile impact so the visible spawn happens after the explosion.
+  This is acceptable for local presentation work, but it should be treated as a
+  future multiplayer risk because hide/show renderer state is not a strong
+  replicated presentation contract.
+
+## Current Context Documentation State
+
+Core gameplay-context files now exist as TArena-specific documentation. Some
+are initial design drafts and some remain guided templates:
+
+- `_codex/Context/01_Game_Design_Document.md` is marked `Initial Design` and
+  captures the first GDD synthesis from local notes, legacy Retsot reference,
+  invitational unit descriptions, and runtime XML data.
+- `_codex/Context/19_Identity.md` is marked `Initial Design` and captures the
+  first identity guardrails: COBA, point-budget army building, hex tactics,
+  skill-forward units, tier/phase pressure, and recovery-first boundaries.
+- `_codex/Context/GameplayFeelDoctrine.md` is marked `Initial Design` and
+  captures the first feel doctrine around tactical readability, targeting
+  feedback, skill feedback, phase feedback, and persistent-effect clarity.
+- `_codex/Context/08_Current_Mechanics.md` remains a template for verified
+  current mechanics and still needs local code inspection or Unity-side
+  verification before it becomes current-state truth.
+- `_codex/Context/CONTEXT-MAP.md` routes GDD, identity, feel, gameplay, current
+  mechanics, production, cleanup, task-tracker work, and design-grill PRDs to
+  local TArena files.
+
+The GDD, Identity, and Feel documents are not final design truth yet. They are
+working drafts to grill through:
+
+- `_codex/tasks/006_PRD_Grill_GDD_InitialDesign.md`
+- `_codex/tasks/007_PRD_Grill_Identity_InitialDesign.md`
+- `_codex/tasks/008_PRD_Grill_Feel_InitialDesign.md`
 
 ## Production Interpretation
 

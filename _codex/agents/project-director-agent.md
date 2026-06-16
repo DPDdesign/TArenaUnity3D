@@ -14,6 +14,12 @@ This workspace is TArenaUnity3D, not Retsot Horde.
 Use only local context under `_codex/` unless the user explicitly asks for
 comparison or migration. Chat/task titles must start with `[TARENA]`.
 
+## Project UI Text Rule
+
+TArenaUnity3D uses TextMesh Pro only for UI and code text references. When work
+touches text components, require TMP types such as `TMP_Text` and
+`TextMeshProUGUI`, never legacy `UnityEngine.UI.Text`.
+
 ## Sources
 
 Start with only the sources needed for the current question:

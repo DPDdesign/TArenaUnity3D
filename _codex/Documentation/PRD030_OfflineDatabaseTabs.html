@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PRD030 - Offline Database Draft</title>
+  <style>
+    :root {
+      --bg: #f4f0e8;
+      --paper: #fffdf8;
+      --ink: #211d18;
+      --muted: #6f665a;
+      --line: #d7cbb8;
+      --dark: #26362d;
+      --dark2: #32473b;
+      --accent: #9c6b2f;
+      --keep: #dff0df;
+      --maybe: #fff1c7;
+      --cut: #f3d3cb;
+      --blue: #dbe8f6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Segoe UI, Arial, sans-serif;
+      line-height: 1.45;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--dark);
+      color: white;
+      border-bottom: 3px solid var(--accent);
+    }
+
+    .topbar {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 16px 18px 10px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tab-button {
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: var(--dark2);
+      color: white;
+      padding: 8px 11px;
+      border-radius: 6px 6px 0 0;
+      font-size: 13px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .tab-button.active {
+      background: var(--paper);
+      color: var(--ink);
+      border-color: var(--paper);
+    }
+
+    main {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 26px 18px 54px;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    p {
+      max-width: 960px;
+      margin: 0 0 12px;
+      color: var(--muted);
+    }
+
+    .note {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 12px 0 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin: 14px 0 22px;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 11px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--dark);
+      color: white;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #eee7da;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 13px;
+    }
+
+    .decision {
+      min-width: 92px;
+      font-weight: 750;
+    }
+
+    .keep {
+      background: var(--keep);
+    }
+
+    .maybe {
+      background: var(--maybe);
+    }
+
+    .cut {
+      background: var(--cut);
+    }
+
+    .derived {
+      background: var(--blue);
+    }
+
+    .narrow {
+      width: 130px;
+    }
+
+    .wide {
+      width: 38%;
+    }
+
+    .db-format-note {
+      border-left: 4px solid var(--accent);
+    }
+
+    ul,
+    ol {
+      margin: 8px 0 16px 22px;
+      padding: 0;
+    }
+
+    li {
+      margin: 5px 0;
+    }
+
+    @media (max-width: 820px) {
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .topbar,
+      main {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <h1>PRD030 Offline Database Draft</h1>
+      <nav class="tabs" aria-label="Database sections">
+        <button class="tab-button active" data-tab="grill">Grill Questions</button>
+        <button class="tab-button" data-tab="snapshot">Army Snapshot</button>
+        <button class="tab-button" data-tab="accounts">Offline Accounts</button>
+        <button class="tab-button" data-tab="runs">Offline Runs</button>
+        <button class="tab-button" data-tab="route-maps">Route Maps</button>
+        <button class="tab-button" data-tab="route-nodes">Route Nodes</button>
+        <button class="tab-button" data-tab="events">Events</button>
+        <button class="tab-button" data-tab="prd019-audit">PRD019 Audit</button>
+        <button class="tab-button" data-tab="battles">Run Battles</button>
+        <button class="tab-button" data-tab="rewards">Rewards</button>
+        <button class="tab-button" data-tab="shop">Run Shop</button>
+        <button class="tab-button" data-tab="saved">Saved Armies</button>
+        <button class="tab-button" data-tab="progress">Account Progress</button>
+        <button class="tab-button" data-tab="async">Battle Results</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section id="grill" class="tab-panel active">
+      <h2>High-Level Grill Questions</h2>
+      <p>Te pytania ustalają model całej bazy przed zejściem w szczegóły pól.</p>
+
+      <div class="note db-format-note">
+        <strong>Database table style</strong>
+        <p>Dokument używa formatu: <code>Field</code>, <code>Type</code>, <code>Nullable</code>, <code>Default value</code>, <code>Description</code>, <code>Related to / FK</code>, <code>Status</code>.</p>
+        <p>Globalna zasada DB: korzystamy z foreign keys, nie robimy hard delete, a dezaktywacja rekordu oznacza <code>is_active = 0</code>. Statusy biznesowe są integer enum ids z <code>DB Enums.cs</code>.</p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th class="narrow">#</th>
+            <th>Pytanie</th>
+            <th class="wide">Rekomendacja</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Czy armia w bazie jest zawsze zapisywana jako nowy snapshot po każdej ważnej zmianie, zamiast mutować stary snapshot?</td>
+            <td>Tak. Snapshoty powinny być historyczne/niemutowalne. Run wskazuje aktualny snapshot przez <code>current_army_snapshot_id</code>.</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Czy database V1 tworzy pełny schema od razu, a ekrany podpinają się później taskami?</td>
+            <td>Tak. Pełny schema V1 ogranicza drift między Reward, Shop, Summary i Saved Armies.</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Czy baza zapisuje tylko runtime state, bez authored unit/skill/reward/shop catalogs?</td>
+            <td>Tak. DB zapisuje id i stan. Katalogi zostają authored data.</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Czy istnieje jedno lokalne konto w Offline Mode, ale z <code>account_id</code> gotowym pod przyszłe online ids?</td>
+            <td>Tak. Lokalnie default account, ale w przyszlosci moze byc wiecej kont jako osobne save/profile. Wszystkie glowne rekordy maja <code>account_id</code>.</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Czy <code>node_id</code> zastępuje <code>kind/source</code> na snapshotach?</td>
+            <td>Tak. Dla final snapshot moze to byc final node. Snapshot spoza runu powinien pochodzic z jawnego seed/setup node albo osobnej operacji seedujacej.</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>Czy saved army jest zawsze snapshotem, a overwrite tworzy nowe <code>saved_army_id</code>?</td>
+            <td>Tak. Saved army ma status aktywna/nieaktywna. Overwrite ustawia stara jako inactive i zapisuje nowa z nowym id.</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>Czy battle/reward/shop zapisują event records oraz nowy snapshot armii?</td>
+            <td>Tak. Calosc idzie przez jedna tabele <code>run_events</code>. Reward, purchase i battle maja swoje rekordy szczegolowe z referencja do eventu.</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>Czy metaprogress unlock decyduje, co może pojawić się w runie, a snapshot zapisuje tylko to, co faktycznie jest w armii?</td>
+            <td>Tak. Skill unlock metaprogress nie powinien siedzieć w snapshotach armii.</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>Czy Route Nodes są głównym kontekstem przepływu runu?</td>
+            <td>Tak. Route nodes sa seedowane jako cala mapa runu od razu po starcie runu. Potem zmienia sie tylko ich runtime state.</td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td>Czy legacy Arena/custom armies sa calkowicie poza baza PRD030?</td>
+            <td>Tak. Rezygnujemy z import/helper w PRD030. Jesli potrzeba danych testowych, tworzymy na sztywno seed snapshot w nowej bazie.</td>
+          </tr>
+          <tr>
+            <td>11</td>
+            <td>Czy typy eventow i statusow maja byc zamknieta lista kontrolowana przez kod?</td>
+            <td>Tak. W bazie trzymamy enum id jako <code>integer</code>, a mapowanie nazw siedzi w jednym pliku <code>DB Enums.cs</code>.</td>
+          </tr>
+          <tr>
+            <td>12</td>
+            <td>Czy enum ids maja byc stale i recznie przypisane?</td>
+            <td>Tak. Nie moga wynikac z kolejnosci enumow w C#. Te same ids beda pozniej przydatne do tlumaczen, UI labels i stabilnego persistence contract.</td>
+          </tr>
+          <tr>
+            <td>13</td>
+            <td>Czy <code>node_id</code> ma byc calkowicie unikalnym, zwyklym integer id z jednej tabeli node?</td>
+            <td>Tak. Jedna kanoniczna tabela <code>route_nodes</code>, a <code>node_id</code> to plain <code>integer primary key</code>. Snapshoty, eventy, battle, reward i shop referencja ten int.</td>
+          </tr>
+          <tr>
+            <td>14</td>
+            <td>Czy lokalne primary key w SQLite maja byc zwyklymi integer ids zamiast string/Guid?</td>
+            <td>Tak. Lokalne rekordy DB uzywaja <code>integer primary key</code> i integer FK. Tekstowe zostaja tylko authored/catalog ids, np. <code>unit_id</code>, <code>skill_id</code>, <code>template_id</code>, <code>encounter_id</code>. Przyszle online/sync id dodajemy jako osobne opcjonalne pole.</td>
+          </tr>
+          <tr>
+            <td>15</td>
+            <td>Czy uzywamy foreign keys i soft delete zamiast kasowania rekordow?</td>
+            <td>Tak. SQLite ma pracowac z <code>PRAGMA foreign_keys = ON</code>. Nie robimy hard delete w normalnym flow; rekordy dezaktywujemy przez <code>is_active = 0</code>. Nie stosujemy agresywnego cascade delete dla historii runu.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="snapshot" class="tab-panel">
+      <h2>Army Snapshot</h2>
+      <p>Snapshot to zapis armii w konkretnym momencie. Nie przechowuje katalogu jednostek ani opisów skilli.</p>
+
+      <h3><code>army_snapshots</code></h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Decision</th>
+            <th>Po co</th>
+            <th class="wide">Uwagi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>snapshot_id</code></td><td class="decision keep">Keep</td><td>Główne id snapshotu.</td><td>Lokalne <code>integer primary key</code>. Referencja dla runu, saved army, battle, reward i shop.</td></tr>
+          <tr><td><code>account_id</code></td><td class="decision keep">Keep</td><td>Właściciel snapshotu.</td><td>Lokalnie jedno konto, online każdy gracz będzie miał id.</td></tr>
+          <tr><td><code>run_id</code></td><td class="decision keep">Keep</td><td>Run, do którego należy snapshot.</td><td>Puste dla nie-runowych snapshotów.</td></tr>
+          <tr><td><code>saved_army_id</code></td><td class="decision keep">Keep</td><td>Saved army, jeśli snapshot jest zapisaną armią.</td><td>Puste dla snapshotów w trakcie runu.</td></tr>
+          <tr><td><code>node_id</code></td><td class="decision keep">Keep</td><td>Node runu, gdzie snapshot powstał.</td><td>Zwykly int z <code>route_nodes</code>. Zastępuje <code>kind/source</code>. Final snapshot wskazuje final node.</td></tr>
+          <tr><td><code>created_at_utc</code></td><td class="decision keep">Keep</td><td>Czas utworzenia.</td><td>Potrzebne dla debugowania i historii.</td></tr>
+          <tr><td><code>kind</code></td><td class="decision cut">Cut</td><td>Typ snapshotu.</td><td>Niepotrzebne, jeśli node daje kontekst.</td></tr>
+          <tr><td><code>source</code></td><td class="decision cut">Cut</td><td>Źródło snapshotu.</td><td>Dubluje node/context.</td></tr>
+        </tbody>
+      </table>
+
+      <h3><code>army_snapshot_stacks</code></h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Decision</th>
+            <th>Po co</th>
+            <th class="wide">Uwagi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>snapshot_stack_id</code></td><td class="decision keep">Keep</td><td>Id stacka w snapshotcie.</td><td>Główna referencja dla skill rows.</td></tr>
+          <tr><td><code>snapshot_id</code></td><td class="decision keep">Keep</td><td>Rodzic snapshot.</td><td>Każdy stack należy do jednego snapshotu.</td></tr>
+          <tr><td><code>unit_id</code></td><td class="decision keep">Keep</td><td>Jaka jednostka.</td><td>Odwołanie do authored unit catalog.</td></tr>
+          <tr><td><code>amount</code></td><td class="decision keep">Keep</td><td>Ile jednostek w stacku.</td><td>Główna liczba armii.</td></tr>
+          <tr><td><code>formation_slot</code></td><td class="decision keep">Keep</td><td>Pozycja w armii.</td><td>Do przyszłego układania armii i sortowania.</td></tr>
+          <tr><td><code>stack_id</code></td><td class="decision cut">Cut</td><td>Drugie id stacka.</td><td>Niepotrzebne przy <code>snapshot_stack_id</code>.</td></tr>
+          <tr><td><code>lost</code></td><td class="decision cut">Cut</td><td>Straty.</td><td>Można policzyć z porównania snapshotów przed/po.</td></tr>
+          <tr><td><code>level</code></td><td class="decision cut">Cut</td><td>Poziom stacka.</td><td>Nie w V1.</td></tr>
+          <tr><td><code>experience</code></td><td class="decision cut">Cut</td><td>XP stacka.</td><td>Nie w V1.</td></tr>
+          <tr><td><code>sort_order</code></td><td class="decision cut">Cut</td><td>Kolejność UI.</td><td>Sortujemy po <code>formation_slot</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <h3><code>army_snapshot_stack_skills</code></h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Decision</th>
+            <th>Po co</th>
+            <th class="wide">Uwagi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>snapshot_stack_skill_id</code></td><td class="decision keep">Keep</td><td>Id rekordu.</td><td>Primary key.</td></tr>
+          <tr><td><code>snapshot_stack_id</code></td><td class="decision keep">Keep</td><td>Stack, który ma skill.</td><td>Skill jest per stack/unit, nie army-wide.</td></tr>
+          <tr><td><code>skill_id</code></td><td class="decision keep">Keep</td><td>Przypisany skill.</td><td>Stabilny skill string z obecnego systemu.</td></tr>
+          <tr><td><code>acquired_at_run_node_id</code></td><td class="decision keep">Keep</td><td>Node, gdzie skill został zdobyty.</td><td>Integer FK do <code>route_nodes.node_id</code>. Może być puste dla startowej armii.</td></tr>
+          <tr><td><code>unlocked</code></td><td class="decision cut">Cut</td><td>Flaga unlocku.</td><td>Jeśli rekord istnieje, skill jest przypisany/dostępny w snapshotcie.</td></tr>
+          <tr><td><code>source</code></td><td class="decision cut">Cut</td><td>Źródło skilla.</td><td>Zastąpione przez node id.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="accounts" class="tab-panel">
+      <h2>Offline Accounts</h2>
+      <p>Lokalne konto Offline Mode. Dziś jedno, ale schema ma być gotowa pod przyszłe profile i online id.</p>
+
+      <h3><code>offline_accounts</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>account_id</code></td><td class="decision keep">Keep</td><td>Id konta.</td><td>Lokalne <code>integer primary key</code>. Przyszle online id jako osobne opcjonalne pole, nie jako primary key.</td></tr>
+          <tr><td><code>display_name</code></td><td class="decision maybe">Maybe</td><td>Nazwa profilu.</td><td>Nie jest blokujące dla V1.</td></tr>
+          <tr><td><code>account_xp</code></td><td class="decision keep">Keep</td><td>Metaprogress XP.</td><td>Aktualizowane przez run/future async results.</td></tr>
+          <tr><td><code>rank_value</code></td><td class="decision keep">Keep</td><td>Lokalny ranking async/offence.</td><td>Offline simulated, nie online-authoritative.</td></tr>
+          <tr><td><code>unlocked_saved_army_slots</code></td><td class="decision keep">Keep</td><td>Ile slotów jest grywalnie dostępnych.</td><td>Fizycznych slotów może być 8.</td></tr>
+          <tr><td><code>created_at_utc</code></td><td class="decision keep">Keep</td><td>Czas utworzenia.</td><td>Standard persistence.</td></tr>
+          <tr><td><code>updated_at_utc</code></td><td class="decision keep">Keep</td><td>Czas zmiany.</td><td>Standard persistence.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="runs" class="tab-panel">
+      <h2>Offline Runs</h2>
+      <p>Główny rekord runu. Nie przechowuje całej armii inline, tylko wskazuje aktualny snapshot.</p>
+
+      <h3><code>offline_runs</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>run_id</code></td><td class="decision keep">Keep</td><td>Id runu.</td><td>Lokalne <code>integer primary key</code>. Główna referencja flow.</td></tr>
+          <tr><td><code>account_id</code></td><td class="decision keep">Keep</td><td>Właściciel runu.</td><td>Łączy z profilem offline/online.</td></tr>
+          <tr><td><code>run_status_id</code></td><td class="decision keep">Keep</td><td>Stan runu.</td><td>Integer enum id. Nazwy typu <code>Created</code>, <code>InProgress</code>, <code>AwaitingReward</code>, <code>InShop</code>, <code>Won</code>, <code>Lost</code> sa w <code>DB Enums.cs</code>.</td></tr>
+          <tr><td><code>selected_starting_army_id</code></td><td class="decision keep">Keep</td><td>Wybrana startowa armia.</td><td>Id authored/template selection.</td></tr>
+          <tr><td><code>selected_route_choice_id</code></td><td class="decision keep">Keep</td><td>Wybrany route preview/path.</td><td>Wejście dla Route Map.</td></tr>
+          <tr><td><code>route_map_id</code></td><td class="decision keep">Keep</td><td>Mapa runu.</td><td>Może powstać po Begin Run.</td></tr>
+          <tr><td><code>current_node_id</code></td><td class="decision keep">Keep</td><td>Aktualny node.</td><td>Integer FK do <code>route_nodes.node_id</code>. Kontekst następnego ekranu.</td></tr>
+          <tr><td><code>start_army_snapshot_id</code></td><td class="decision keep">Keep</td><td>Startowy snapshot.</td><td>Do summary i porównań.</td></tr>
+          <tr><td><code>current_army_snapshot_id</code></td><td class="decision keep">Keep</td><td>Aktualna armia.</td><td>Najważniejszy pointer runu.</td></tr>
+          <tr><td><code>pre_final_army_snapshot_id</code></td><td class="decision keep">Keep</td><td>Armia do zapisania po finalu.</td><td>Final proof nie pogarsza saved army.</td></tr>
+          <tr><td><code>current_run_gold</code></td><td class="decision keep">Keep</td><td>Waluta runu.</td><td>Reward/shop aktualizują.</td></tr>
+          <tr><td><code>stage_progress</code></td><td class="decision keep">Keep</td><td>Postęp etapu.</td><td>Dla UI i gatingu.</td></tr>
+          <tr><td><code>next_screen</code></td><td class="decision maybe">Maybe</td><td>Gdzie przejść dalej.</td><td>Można też wyliczać z current node/status.</td></tr>
+          <tr><td><code>created_at_utc</code></td><td class="decision keep">Keep</td><td>Czas utworzenia.</td><td>Standard persistence.</td></tr>
+          <tr><td><code>updated_at_utc</code></td><td class="decision keep">Keep</td><td>Czas zmiany.</td><td>Standard persistence.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="route-maps" class="tab-panel">
+      <h2>Route Maps</h2>
+      <p>Mapa runu jako runtime state. Definicje/path catalog pozostają authored data.</p>
+
+      <h3><code>route_maps</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>route_map_id</code></td><td class="decision keep">Keep</td><td>Id mapy runu.</td><td>Lokalne <code>integer primary key</code>. Jedna mapa na run w V1.</td></tr>
+          <tr><td><code>run_id</code></td><td class="decision keep">Keep</td><td>Właściciel mapy.</td><td>Łączy mapę z runem.</td></tr>
+          <tr><td><code>selected_route_choice_id</code></td><td class="decision keep">Keep</td><td>Wybrany route bias/path.</td><td>Pochodzi ze Start Run.</td></tr>
+          <tr><td><code>created_from_catalog_id</code></td><td class="decision maybe">Maybe</td><td>Źródło authored route.</td><td>Przydatne, jeśli będzie kilka route catalogów.</td></tr>
+          <tr><td><code>created_at_utc</code></td><td class="decision keep">Keep</td><td>Czas utworzenia.</td><td>Standard persistence.</td></tr>
+          <tr><td><code>updated_at_utc</code></td><td class="decision keep">Keep</td><td>Czas zmiany.</td><td>Standard persistence.</td></tr>
+        </tbody>
+      </table>
+
+      <h3><code>route_paths</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>route_path_id</code></td><td class="decision keep">Keep</td><td>Runtime path id.</td><td>Łączy node z konkretną ścieżką.</td></tr>
+          <tr><td><code>route_map_id</code></td><td class="decision keep">Keep</td><td>Mapa rodzic.</td><td>Jedna mapa ma wiele pathów.</td></tr>
+          <tr><td><code>path_id</code></td><td class="decision keep">Keep</td><td>Authored path id.</td><td>Referencja, nie cały catalog.</td></tr>
+          <tr><td><code>display_name</code></td><td class="decision maybe">Maybe</td><td>Nazwa patha w UI.</td><td>Może pochodzić z authored catalog; trzymać tylko jeśli trzeba freeze runtime layout.</td></tr>
+          <tr><td><code>bias_description</code></td><td class="decision maybe">Maybe</td><td>Opis biasu.</td><td>Może pochodzić z catalogu.</td></tr>
+          <tr><td><code>formation_slot</code></td><td class="decision cut">Cut</td><td>Nie dotyczy route path.</td><td>Tylko dla stacków armii.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="route-nodes" class="tab-panel">
+      <h2>Route Nodes</h2>
+      <p>Node jest głównym kontekstem flow. Snapshoty, battle, reward i shop powinny wiedzieć, przy którym node powstały. Jest jedna kanoniczna tabela node, a <code>node_id</code> jest zwykłym integer id.</p>
+
+      <h3><code>route_nodes</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>node_id</code></td><td class="decision keep">Keep</td><td>Id node.</td><td><code>integer primary key</code>. Referencja dla snapshotów i eventów. Bez string/composite id.</td></tr>
+          <tr><td><code>route_map_id</code></td><td class="decision keep">Keep</td><td>Mapa rodzic.</td><td>Node należy do mapy runu.</td></tr>
+          <tr><td><code>route_path_id</code></td><td class="decision keep">Keep</td><td>Path rodzic.</td><td>Dla layoutu i gatingu.</td></tr>
+          <tr><td><code>node_type_id</code></td><td class="decision keep">Keep</td><td>Battle/shop/reward/final.</td><td>Integer enum id z <code>DB Enums.cs</code>.</td></tr>
+          <tr><td><code>node_state_id</code></td><td class="decision keep">Keep</td><td>Locked/available/selected/completed.</td><td>Integer enum id z <code>DB Enums.cs</code>.</td></tr>
+          <tr><td><code>stage_index</code></td><td class="decision keep">Keep</td><td>Etap runu.</td><td>Reward scaling/gating/UI.</td></tr>
+          <tr><td><code>encounter_id</code></td><td class="decision keep">Keep</td><td>Encounter dla battle/final.</td><td>Referencja do authored encounter catalog.</td></tr>
+          <tr><td><code>shop_visit_id</code></td><td class="decision maybe">Maybe</td><td>Shop visit dla shop node.</td><td>Można też znaleźć po run_id + node_id.</td></tr>
+          <tr><td><code>possible_reward_hint</code></td><td class="decision maybe">Maybe</td><td>Hint dla UI.</td><td>Może pochodzić z authored route data.</td></tr>
+          <tr><td><code>expected_risk_hint</code></td><td class="decision maybe">Maybe</td><td>Hint ryzyka.</td><td>Może pochodzić z authored route data.</td></tr>
+          <tr><td><code>completed_at_utc</code></td><td class="decision keep">Keep</td><td>Czas ukończenia node.</td><td>Przydatne do debug/summary.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="events" class="tab-panel">
+      <h2>Events</h2>
+      <p>Jedna wspolna tabela zdarzen runu. Battle, reward i purchase nie sa osobnymi glowymi historiami, tylko szczegolami podpietymi pod event.</p>
+
+      <h3><code>run_events</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>event_id</code></td><td class="decision keep">Keep</td><td>Id zdarzenia.</td><td>Lokalne <code>integer primary key</code>. Glowne id dla timeline/history runu.</td></tr>
+          <tr><td><code>run_id</code></td><td class="decision keep">Keep</td><td>Run, w ktorym zdarzenie zaszlo.</td><td>Kazdy event nalezy do runu.</td></tr>
+          <tr><td><code>account_id</code></td><td class="decision keep">Keep</td><td>Konto wlasciciela.</td><td>Ulatwia query po profilu/save.</td></tr>
+          <tr><td><code>node_id</code></td><td class="decision keep">Keep</td><td>Node, przy ktorym zdarzenie zaszlo.</td><td>Integer FK do <code>route_nodes.node_id</code>. Battle/reward/shop/final context.</td></tr>
+          <tr><td><code>event_type_id</code></td><td class="decision keep">Keep</td><td>Rodzaj eventu.</td><td>Integer enum id z jednego pliku <code>DB Enums.cs</code>. Id musi byc recznie przypisane i stale. Przyklady nazw: <code>Battle</code>, <code>Reward</code>, <code>Purchase</code>, <code>StartRun</code>, <code>SaveArmy</code>, <code>RouteTravel</code>.</td></tr>
+          <tr><td><code>before_snapshot_id</code></td><td class="decision keep">Keep</td><td>Armia przed zdarzeniem.</td><td>Moze byc puste dla eventow bez armii.</td></tr>
+          <tr><td><code>after_snapshot_id</code></td><td class="decision keep">Keep</td><td>Armia po zdarzeniu.</td><td>Nowy snapshot po battle/reward/purchase.</td></tr>
+          <tr><td><code>run_gold_before</code></td><td class="decision maybe">Maybe</td><td>Waluta przed.</td><td>Przydatne dla reward/purchase. Moze byc null dla battle.</td></tr>
+          <tr><td><code>run_gold_after</code></td><td class="decision maybe">Maybe</td><td>Waluta po.</td><td>Przydatne dla reward/purchase.</td></tr>
+          <tr><td><code>result</code></td><td class="decision maybe">Maybe</td><td>Krotki wynik eventu.</td><td>Win/loss/success/fail/selected. Szczegoly zostaja w tabelach szczegolowych.</td></tr>
+          <tr><td><code>created_at_utc</code></td><td class="decision keep">Keep</td><td>Czas eventu.</td><td>Sortowanie timeline.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Event Detail Tables</h3>
+      <table>
+        <thead><tr><th>Detail table</th><th>Event type</th><th>Relacja</th><th class="wide">Co trzyma</th></tr></thead>
+        <tbody>
+          <tr><td><code>run_battles</code></td><td><code>Battle</code></td><td><code>event_id</code></td><td>Encounter id, battle status, outcome, launch adapter metadata.</td></tr>
+          <tr><td><code>reward_choices</code></td><td><code>Reward</code></td><td><code>event_id</code></td><td>Reward choice id, selected card, generated cards.</td></tr>
+          <tr><td><code>shop_purchases</code></td><td><code>Purchase</code></td><td><code>event_id</code></td><td>Offer id, price, purchase result.</td></tr>
+          <tr><td><code>saved_armies</code></td><td><code>SaveArmy</code></td><td><code>event_id</code> optional</td><td>Saved army creation can reference the event that saved it.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="battles" class="tab-panel">
+      <h2>Run Battles</h2>
+      <p>Run Battle zapisuje przygotowanie i wynik walki. Nie zapisuje logiki battle systemu.</p>
+
+      <h3><code>run_battles</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>run_battle_id</code></td><td class="decision keep">Keep</td><td>Id walki.</td><td>Lokalne <code>integer primary key</code>. Referencja dla losses i result.</td></tr>
+          <tr><td><code>event_id</code></td><td class="decision keep">Keep</td><td>Event nadrzedny.</td><td>Powinien wskazywac <code>run_events.event_id</code> typu <code>Battle</code>.</td></tr>
+          <tr><td><code>run_id</code></td><td class="decision keep">Keep</td><td>Run właściciel.</td><td>Łączy z runem.</td></tr>
+          <tr><td><code>node_id</code></td><td class="decision keep">Keep</td><td>Battle node.</td><td>Integer FK do <code>route_nodes.node_id</code>. Kontekst mapy.</td></tr>
+          <tr><td><code>encounter_id</code></td><td class="decision keep">Keep</td><td>Enemy encounter.</td><td>Referencja do authored encounter catalog.</td></tr>
+          <tr><td><code>pre_battle_snapshot_id</code></td><td class="decision keep">Keep</td><td>Armia przed walką.</td><td>Do porównania strat.</td></tr>
+          <tr><td><code>post_battle_snapshot_id</code></td><td class="decision keep">Keep</td><td>Armia po walce.</td><td>Aktualny snapshot po completion.</td></tr>
+          <tr><td><code>battle_status_id</code></td><td class="decision keep">Keep</td><td>Prepared/launched/completed.</td><td>Integer enum id z <code>DB Enums.cs</code>.</td></tr>
+          <tr><td><code>battle_outcome_id</code></td><td class="decision keep">Keep</td><td>Win/loss/cancelled.</td><td>Integer enum id z <code>DB Enums.cs</code>.</td></tr>
+          <tr><td><code>launch_adapter_surface</code></td><td class="decision maybe">Maybe</td><td>Opis legacy launch path.</td><td>Przydatne dopóki bridge używa starych battle surfaces.</td></tr>
+          <tr><td><code>next_screen</code></td><td class="decision maybe">Maybe</td><td>Reward/run loss/summary.</td><td>Można wyliczać z outcome + node_type.</td></tr>
+        </tbody>
+      </table>
+
+      <h3><code>run_battle_losses</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>loss_id</code></td><td class="decision maybe">Maybe</td><td>Id rekordu straty.</td><td>Można nie mieć tej tabeli, jeśli zawsze liczymy z snapshot diff.</td></tr>
+          <tr><td><code>run_battle_id</code></td><td class="decision maybe">Maybe</td><td>Walka.</td><td>Patrz wyżej.</td></tr>
+          <tr><td><code>snapshot_stack_id_before</code></td><td class="decision maybe">Maybe</td><td>Stack przed walką.</td><td>Może ułatwić debug, ale jest wyliczalne.</td></tr>
+          <tr><td><code>snapshot_stack_id_after</code></td><td class="decision maybe">Maybe</td><td>Stack po walce.</td><td>Może ułatwić debug, ale jest wyliczalne.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="prd019-audit" class="tab-panel">
+      <h2>PRD019 Fit Audit</h2>
+      <p>Audyt po ponownym przejściu tasków 020-027 oraz kodu w <code>Assets/Scripts/RunMetagame</code>. Status mówi, czy draft PRD030 pokrywa dany slice bez zmiany intencji PRD019.</p>
+
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>020_StartRun</code></td><td class="decision keep">Keep</td><td>Pasuje do <code>offline_runs</code>, <code>army_snapshots</code>, <code>army_snapshot_stacks</code>, <code>army_snapshot_stack_skills</code>.</td><td>Start Run tworzy run i startowy snapshot. Obecne string/Guid ids i <code>Unlocked</code> w DTO są adapter details; DB zapisuje integer ids i tylko faktycznie przypisane skille w snapshotcie.</td></tr>
+          <tr><td><code>021_RunMap</code></td><td class="decision keep">Keep</td><td>Pasuje do <code>route_maps</code>, <code>route_paths</code>, <code>route_nodes</code>, <code>offline_runs.current_node_id</code>.</td><td>Route nodes muszą być seedowane całe przy starcie runu. Authored node strings z obecnego katalogu mogą istnieć tylko podczas seedowania; runtime FK używa integer <code>node_id</code>.</td></tr>
+          <tr><td><code>022_RunBattle</code></td><td class="decision keep">Keep</td><td>Pasuje do <code>run_events</code>, <code>run_battles</code>, snapshotów przed/po walce i opcjonalnego cache strat.</td><td><code>run_battle_losses</code> nie może być źródłem prawdy dla armii. Straty są wyliczalne z przed/po snapshotów; tabela strat jest najwyżej debug/cache dla result UI.</td></tr>
+          <tr><td><code>023_RewardMap</code></td><td class="decision keep">Keep</td><td>Pasuje do <code>run_events</code>, <code>reward_choices</code>, <code>reward_cards</code> i snapshotów preview/apply.</td><td>Reward templates zostają authored catalog. DB zapisuje wygenerowany wybór, wybraną kartę, operation payload i snapshot po apply.</td></tr>
+          <tr><td><code>024_RunShop</code></td><td class="decision keep">Keep</td><td>Pasuje do <code>shop_visits</code>, <code>shop_offers</code>, <code>shop_purchases</code> i eventów purchase.</td><td>Oferta kupiona nie znika przez delete; ma status/purchased/is_active. Free economy offer pozostaje wycięty z V1 zgodnie z PRD024 follow-up.</td></tr>
+          <tr><td><code>025_SummaryValue</code></td><td class="decision keep">Keep</td><td>Pasuje do <code>run_summaries</code>, <code>run_summary_entries</code>, pre-final snapshot i saved-army candidate flow.</td><td>Najważniejsza reguła zostaje zachowana: saved army bazuje na pre-final snapshot, nie na post-final stratach.</td></tr>
+          <tr><td><code>026_SavedArmies</code></td><td class="decision maybe">Maybe</td><td>Pasuje do <code>saved_army_slots</code>, <code>saved_armies</code>, <code>saved_army_roster_state</code>, <code>saved_army_history</code>.</td><td>Świadomy override PRD030: PRD026 miało dev <code>Import from Arena</code>, ale PRD030 tego nie migruje. Czysta baza ma seed snapshoty, a stare import/helper flow zostaje poza DB V1.</td></tr>
+          <tr><td><code>027_BattleResult</code></td><td class="decision keep">Keep</td><td>Pasuje do <code>async_battle_results</code>, <code>saved_army_history</code>, <code>offline_accounts</code> i <code>account_unlocks</code>.</td><td>Nie mutujemy saved armies po wyniku. Result zapisuje rank/xp/history, a army ids wskazują zachowane snapshoty/saved armies.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Architecture Diagnosis</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>in_memory_stores</code></td><td class="decision cut">Cut</td><td>Obecnie produkcyjne adaptery same tworzą <code>InMemory...</code> store.</td><td>PRD030H powinien usunąć produkcyjne użycie in-memory. Zostawić je tylko jako test doubles, jeśli są przydatne dla EditMode tests.</td></tr>
+          <tr><td><code>shared_army_snapshot_module</code></td><td class="decision keep">Keep</td><td>Obecnie każdy slice ma własny snapshot DTO.</td><td>To jest główny deep Module PRD030. Ma dać leverage: jeden zapis/odczyt armii, wiele adapterów slice. View DTO mogą mieć <code>CombatValue</code>, <code>Lost</code>, <code>Level</code>, ale DB snapshot V1 ich nie zapisuje jako prawdy.</td></tr>
+          <tr><td><code>event_journal_module</code></td><td class="decision keep">Keep</td><td>Battle, reward, purchase i save-army potrzebują jednej osi czasu.</td><td><code>run_events</code> powinien być seamem dla historii runu. Detail tables referują <code>event_id</code>; nie dublują całej armii.</td></tr>
+          <tr><td><code>db_enums_module</code></td><td class="decision keep">Keep</td><td>Statusy muszą być stabilne i tłumaczalne.</td><td>Jedno <code>DB Enums.cs</code>, ręcznie przypisane integer ids, bez zależności od kolejności deklaracji C#.</td></tr>
+          <tr><td><code>foreign_keys_soft_delete</code></td><td class="decision keep">Keep</td><td>Spójność danych bez kasowania historii.</td><td><code>PRAGMA foreign_keys = ON</code>, integer FK, <code>is_active = 0</code> zamiast delete, brak agresywnego cascade delete dla historii runu.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="rewards" class="tab-panel">
+      <h2>Rewards</h2>
+      <p>Reward choice zapisuje wygenerowane karty i wybraną kartę. Reward template catalog zostaje authored data.</p>
+
+      <h3><code>reward_choices</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>reward_choice_id</code></td><td class="decision keep">Keep</td><td>Id wyboru.</td><td>Lokalne <code>integer primary key</code>. Jedna paczka 1-of-3.</td></tr>
+          <tr><td><code>event_id</code></td><td class="decision keep">Keep</td><td>Event nadrzedny.</td><td>Powinien wskazywac <code>run_events.event_id</code> typu <code>Reward</code>.</td></tr>
+          <tr><td><code>run_id</code></td><td class="decision keep">Keep</td><td>Run.</td><td>Łączy reward z runem.</td></tr>
+          <tr><td><code>node_id</code></td><td class="decision keep">Keep</td><td>Reward/battle node.</td><td>Integer FK do <code>route_nodes.node_id</code>. Kontekst mapy.</td></tr>
+          <tr><td><code>army_before_reward_snapshot_id</code></td><td class="decision keep">Keep</td><td>Armia przed rewardem.</td><td>Źródło preview/apply.</td></tr>
+          <tr><td><code>selected_reward_card_id</code></td><td class="decision keep">Keep</td><td>Wybrana karta.</td><td>Puste przed wyborem.</td></tr>
+          <tr><td><code>applied_snapshot_id</code></td><td class="decision keep">Keep</td><td>Armia po rewardzie.</td><td>Nowy current snapshot.</td></tr>
+          <tr><td><code>run_gold_before</code></td><td class="decision keep">Keep</td><td>Waluta przed.</td><td>Reward może dać/spędzić gold w przyszłości.</td></tr>
+          <tr><td><code>run_gold_after</code></td><td class="decision keep">Keep</td><td>Waluta po.</td><td>Stan po apply.</td></tr>
+          <tr><td><code>choice_status_id</code></td><td class="decision keep">Keep</td><td>Generated/selected/skipped.</td><td>Integer enum id z <code>DB Enums.cs</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <h3><code>reward_cards</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>reward_card_id</code></td><td class="decision keep">Keep</td><td>Id karty.</td><td>Wybierana przez gracza.</td></tr>
+          <tr><td><code>reward_choice_id</code></td><td class="decision keep">Keep</td><td>Rodzic 1-of-3.</td><td>Łączy kartę z wyborem.</td></tr>
+          <tr><td><code>template_id</code></td><td class="decision keep">Keep</td><td>Authored reward template.</td><td>Referencja, nie cały catalog.</td></tr>
+          <tr><td><code>family</code></td><td class="decision keep">Keep</td><td>Mass/Quality/Skill itd.</td><td>Może być kopią runtime dla UI/debug.</td></tr>
+          <tr><td><code>intention</code></td><td class="decision keep">Keep</td><td>Stabilize/Strengthen/Pivot.</td><td>UI structure.</td></tr>
+          <tr><td><code>target_snapshot_stack_id</code></td><td class="decision maybe">Maybe</td><td>Cel karty.</td><td>Jeśli reward targetuje konkretny stack.</td></tr>
+          <tr><td><code>operation_json</code></td><td class="decision maybe">Maybe</td><td>Parametry operacji.</td><td>Praktyczne dla V1, ale później można rozbić na kolumny.</td></tr>
+          <tr><td><code>preview_snapshot_id</code></td><td class="decision maybe">Maybe</td><td>Preview armii.</td><td>Może być generowane na żywo zamiast persist.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="shop" class="tab-panel">
+      <h2>Run Shop</h2>
+      <p>Shop visit zapisuje oferty i zakupy w obrębie jednego node. Shop rules zostają w domain logic.</p>
+
+      <h3><code>shop_visits</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>shop_visit_id</code></td><td class="decision keep">Keep</td><td>Id wizyty.</td><td>Lokalne <code>integer primary key</code>. Jedna wizyta na shop node.</td></tr>
+          <tr><td><code>run_id</code></td><td class="decision keep">Keep</td><td>Run.</td><td>Łączy shop z runem.</td></tr>
+          <tr><td><code>node_id</code></td><td class="decision keep">Keep</td><td>Shop node.</td><td>Integer FK do <code>route_nodes.node_id</code>. Kontekst mapy.</td></tr>
+          <tr><td><code>visit_status_id</code></td><td class="decision keep">Keep</td><td>Open/left/completed.</td><td>Integer enum id z <code>DB Enums.cs</code>.</td></tr>
+          <tr><td><code>army_before_shop_snapshot_id</code></td><td class="decision keep">Keep</td><td>Armia na wejściu.</td><td>Dla preview i summary.</td></tr>
+          <tr><td><code>current_army_snapshot_id</code></td><td class="decision keep">Keep</td><td>Armia po zakupach.</td><td>Aktualizowane po każdej transakcji.</td></tr>
+          <tr><td><code>run_gold_before</code></td><td class="decision keep">Keep</td><td>Gold na wejściu.</td><td>Dla summary.</td></tr>
+          <tr><td><code>current_run_gold</code></td><td class="decision keep">Keep</td><td>Aktualny gold.</td><td>Aktualizowane po zakupach.</td></tr>
+        </tbody>
+      </table>
+
+      <h3><code>shop_offers</code> / <code>shop_purchases</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>shop_offer_id</code></td><td class="decision keep">Keep</td><td>Id oferty.</td><td>Oferta nie ginie po reloadzie.</td></tr>
+          <tr><td><code>shop_visit_id</code></td><td class="decision keep">Keep</td><td>Wizyta rodzic.</td><td>Oferta należy do wizyty.</td></tr>
+          <tr><td><code>offer_category</code></td><td class="decision keep">Keep</td><td>Recovery/skill/stack itd.</td><td>UI grouping.</td></tr>
+          <tr><td><code>cost</code></td><td class="decision keep">Keep</td><td>Cena.</td><td>Wygenerowana oferta musi zachować cenę.</td></tr>
+          <tr><td><code>purchased</code></td><td class="decision keep">Keep</td><td>Czy kupione.</td><td>Najważniejsze przy reopen shop.</td></tr>
+          <tr><td><code>operation_json</code></td><td class="decision maybe">Maybe</td><td>Parametry zakupu.</td><td>Praktyczne V1.</td></tr>
+          <tr><td><code>purchase_snapshot_id</code></td><td class="decision keep">Keep</td><td>Armia po zakupie.</td><td>Nowy current snapshot.</td></tr>
+          <tr><td><code>shop_purchase_id</code></td><td class="decision keep">Keep</td><td>Historia zakupu.</td><td>Dla summary/debug.</td></tr>
+          <tr><td><code>event_id</code></td><td class="decision keep">Keep</td><td>Event nadrzedny.</td><td>Purchase detail powinien wskazywac <code>run_events.event_id</code> typu <code>Purchase</code>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="saved" class="tab-panel">
+      <h2>Saved Armies</h2>
+      <p>Saved army to snapshot armii przypięty do slotu. Overwrite tworzy nowe saved army id.</p>
+
+      <h3><code>saved_army_slots</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>slot_id</code></td><td class="decision keep">Keep</td><td>Id slotu.</td><td>8 fizycznych slotów.</td></tr>
+          <tr><td><code>account_id</code></td><td class="decision keep">Keep</td><td>Właściciel slotu.</td><td>Per profile.</td></tr>
+          <tr><td><code>slot_index</code></td><td class="decision keep">Keep</td><td>1-8.</td><td>UI order.</td></tr>
+          <tr><td><code>saved_army_id</code></td><td class="decision keep">Keep</td><td>Co jest w slocie.</td><td>Puste dla empty slot.</td></tr>
+          <tr><td><code>locked</code></td><td class="decision maybe">Maybe</td><td>Czy slot zablokowany.</td><td>Można też wyliczać z unlocked slot count.</td></tr>
+        </tbody>
+      </table>
+
+      <h3><code>saved_armies</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>saved_army_id</code></td><td class="decision keep">Keep</td><td>Id saved army.</td><td>Lokalne <code>integer primary key</code>. Nie jest tym samym co slot id.</td></tr>
+          <tr><td><code>account_id</code></td><td class="decision keep">Keep</td><td>Właściciel.</td><td>Per profile.</td></tr>
+          <tr><td><code>snapshot_id</code></td><td class="decision keep">Keep</td><td>Zamrożona armia.</td><td>Główna treść saved army.</td></tr>
+          <tr><td><code>created_from_run_id</code></td><td class="decision keep">Keep</td><td>Run źródłowy.</td><td>Puste tylko dla seed/test snapshotów tworzonych na sztywno w bazie.</td></tr>
+          <tr><td><code>active</code></td><td class="decision keep">Keep</td><td>Czy saved army jest aktywna.</td><td>Overwrite ustawia starą jako inactive, nie usuwa jej.</td></tr>
+          <tr><td><code>replaced_by_saved_army_id</code></td><td class="decision maybe">Maybe</td><td>Co ją zastąpiło.</td><td>Przydatne do debug/historii, ale nie musi być wymagane w V1.</td></tr>
+        </tbody>
+      </table>
+
+      <h3><code>saved_army_roster_state</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>account_id</code></td><td class="decision keep">Keep</td><td>Roster owner.</td><td>Jeden rekord na konto.</td></tr>
+          <tr><td><code>current_defence_saved_army_id</code></td><td class="decision keep">Keep</td><td>Aktualna obrona.</td><td>Może być puste.</td></tr>
+          <tr><td><code>updated_at_utc</code></td><td class="decision keep">Keep</td><td>Czas zmiany.</td><td>Standard persistence.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="progress" class="tab-panel">
+      <h2>Account Progress</h2>
+      <p>Metaprogress mówi, co może pojawić się w przyszłych runach. Nie jest częścią army snapshotu.</p>
+
+      <h3><code>account_unlocks</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>unlock_id</code></td><td class="decision keep">Keep</td><td>Id unlocku.</td><td>Primary key.</td></tr>
+          <tr><td><code>account_id</code></td><td class="decision keep">Keep</td><td>Konto.</td><td>Per profile.</td></tr>
+          <tr><td><code>unlock_type</code></td><td class="decision keep">Keep</td><td>Map/unit/skill/slot.</td><td>Jeden model dla różnych unlocków.</td></tr>
+          <tr><td><code>target_id</code></td><td class="decision keep">Keep</td><td>Co odblokowano.</td><td>Unit id, skill id, map id, slot count marker.</td></tr>
+          <tr><td><code>unlocked_at_utc</code></td><td class="decision keep">Keep</td><td>Czas unlocku.</td><td>Summary/debug.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="async" class="tab-panel">
+      <h2>Battle Results</h2>
+      <p>Lokalnie symulowane offence/defence results. Nie mutują saved armies.</p>
+
+      <h3><code>async_battle_results</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>async_battle_result_id</code></td><td class="decision keep">Keep</td><td>Id wyniku.</td><td>Primary key.</td></tr>
+          <tr><td><code>account_id</code></td><td class="decision keep">Keep</td><td>Konto.</td><td>Per profile.</td></tr>
+          <tr><td><code>attacker_saved_army_id</code></td><td class="decision keep">Keep</td><td>Atakująca armia.</td><td>Nie jest mutowana.</td></tr>
+          <tr><td><code>defender_saved_army_id</code></td><td class="decision keep">Keep</td><td>Broniąca armia.</td><td>Nie jest mutowana.</td></tr>
+          <tr><td><code>result_kind_id</code></td><td class="decision keep">Keep</td><td>Offence win/loss, defence win/loss.</td><td>Integer enum id z <code>DB Enums.cs</code>.</td></tr>
+          <tr><td><code>rank_before</code></td><td class="decision keep">Keep</td><td>Rank przed.</td><td>Dla display.</td></tr>
+          <tr><td><code>rank_after</code></td><td class="decision keep">Keep</td><td>Rank po.</td><td>Dla display.</td></tr>
+          <tr><td><code>account_xp_gained</code></td><td class="decision keep">Keep</td><td>XP reward.</td><td>Metaprogress.</td></tr>
+          <tr><td><code>preservation_record</code></td><td class="decision maybe">Maybe</td><td>No steal/no destroy message.</td><td>Może być stałym UI textem zamiast DB field.</td></tr>
+        </tbody>
+      </table>
+
+      <h3><code>saved_army_history</code></h3>
+      <table>
+        <thead><tr><th>Field</th><th>Decision</th><th>Po co</th><th class="wide">Uwagi</th></tr></thead>
+        <tbody>
+          <tr><td><code>history_id</code></td><td class="decision keep">Keep</td><td>Id historii.</td><td>Primary key.</td></tr>
+          <tr><td><code>saved_army_id</code></td><td class="decision keep">Keep</td><td>Armia, której dotyczy wpis.</td><td>Historia jest po saved army id, nie po slot id.</td></tr>
+          <tr><td><code>async_battle_result_id</code></td><td class="decision keep">Keep</td><td>Wynik źródłowy.</td><td>Łączy z result screen.</td></tr>
+          <tr><td><code>result_kind_id</code></td><td class="decision keep">Keep</td><td>Rodzaj wyniku.</td><td>Integer enum id z <code>DB Enums.cs</code>.</td></tr>
+          <tr><td><code>rank_delta</code></td><td class="decision keep">Keep</td><td>Zmiana rank.</td><td>Dla historii.</td></tr>
+          <tr><td><code>recorded_at_utc</code></td><td class="decision keep">Keep</td><td>Czas wpisu.</td><td>Sortowanie historii.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const buttons = Array.from(document.querySelectorAll('.tab-button'));
+    const panels = Array.from(document.querySelectorAll('.tab-panel'));
+
+    const localIdFields = new Set([
+      'account_id',
+      'unlock_id',
+      'run_id',
+      'snapshot_id',
+      'snapshot_stack_id',
+      'snapshot_stack_skill_id',
+      'route_map_id',
+      'route_path_id',
+      'node_id',
+      'event_id',
+      'run_battle_id',
+      'loss_id',
+      'reward_choice_id',
+      'reward_card_id',
+      'shop_visit_id',
+      'shop_offer_id',
+      'shop_purchase_id',
+      'run_summary_id',
+      'summary_entry_id',
+      'slot_id',
+      'saved_army_id',
+      'history_id',
+      'async_battle_result_id',
+      'current_node_id',
+      'next_node_id',
+      'current_army_snapshot_id',
+      'start_army_snapshot_id',
+      'pre_final_army_snapshot_id',
+      'before_snapshot_id',
+      'after_snapshot_id',
+      'pre_battle_snapshot_id',
+      'post_battle_snapshot_id',
+      'army_before_reward_snapshot_id',
+      'applied_snapshot_id',
+      'preview_snapshot_id',
+      'purchase_snapshot_id',
+      'army_before_shop_snapshot_id',
+      'army_before_purchase_snapshot_id',
+      'army_after_purchase_snapshot_id',
+      'created_from_run_id',
+      'replaced_by_saved_army_id',
+      'current_defence_saved_army_id',
+      'attacker_saved_army_id',
+      'defender_saved_army_id',
+      'async_battle_result_id',
+      'acquired_at_run_node_id',
+      'target_snapshot_stack_id',
+      'affected_snapshot_stack_id'
+    ]);
+
+    const textCatalogFields = new Set([
+      'unit_id',
+      'skill_id',
+      'template_id',
+      'encounter_id',
+      'selected_starting_army_id',
+      'selected_route_choice_id',
+      'starting_army_template_id',
+      'starting_army_variant_id',
+      'created_from_catalog_id',
+      'path_id',
+      'external_account_id',
+      'opponent_id'
+    ]);
+
+    const enumFields = new Set([
+      'game_mode_id',
+      'authority_source_id',
+      'run_status_id',
+      'node_type_id',
+      'node_state_id',
+      'event_type_id',
+      'battle_status_id',
+      'battle_outcome_id',
+      'choice_status_id',
+      'visit_status_id',
+      'purchase_result_id',
+      'final_result_id',
+      'result_kind_id'
+    ]);
+
+    const requiredFields = new Set([
+      'account_id',
+      'run_id',
+      'snapshot_id',
+      'snapshot_stack_id',
+      'route_map_id',
+      'route_path_id',
+      'node_id',
+      'event_id',
+      'unit_id',
+      'skill_id',
+      'template_id',
+      'amount',
+      'formation_slot',
+      'created_at_utc',
+      'updated_at_utc',
+      'is_active'
+    ]);
+
+    const defaults = {
+      account_xp: '0',
+      rank_value: '1000',
+      unlocked_saved_army_slots: '2',
+      current_run_gold: '0',
+      stage_progress: '0',
+      route_progress: '0',
+      amount: '0',
+      formation_slot: '0',
+      sort_order: '0',
+      available: '1',
+      purchased: '0',
+      active: '1',
+      locked: '0',
+      is_active: '1',
+      run_status_id: 'enum',
+      node_state_id: 'enum',
+      event_type_id: 'enum',
+      battle_status_id: 'enum',
+      choice_status_id: 'enum',
+      visit_status_id: 'enum',
+      result_kind_id: 'enum'
+    };
+
+    const fk = {
+      account_id: 'FK offline_accounts.account_id',
+      run_id: 'FK offline_runs.run_id',
+      snapshot_id: 'FK army_snapshots.snapshot_id',
+      saved_army_id: 'FK saved_armies.saved_army_id',
+      snapshot_stack_id: 'FK army_snapshot_stacks.snapshot_stack_id',
+      route_map_id: 'FK route_maps.route_map_id',
+      route_path_id: 'FK route_paths.route_path_id',
+      node_id: 'FK route_nodes.node_id',
+      current_node_id: 'FK route_nodes.node_id',
+      next_node_id: 'FK route_nodes.node_id',
+      event_id: 'FK run_events.event_id',
+      run_battle_id: 'FK run_battles.run_battle_id',
+      reward_choice_id: 'FK reward_choices.reward_choice_id',
+      reward_card_id: 'FK reward_cards.reward_card_id',
+      shop_visit_id: 'FK shop_visits.shop_visit_id',
+      shop_offer_id: 'FK shop_offers.shop_offer_id',
+      current_army_snapshot_id: 'FK army_snapshots.snapshot_id',
+      start_army_snapshot_id: 'FK army_snapshots.snapshot_id',
+      pre_final_army_snapshot_id: 'FK army_snapshots.snapshot_id',
+      before_snapshot_id: 'FK army_snapshots.snapshot_id',
+      after_snapshot_id: 'FK army_snapshots.snapshot_id',
+      pre_battle_snapshot_id: 'FK army_snapshots.snapshot_id',
+      post_battle_snapshot_id: 'FK army_snapshots.snapshot_id',
+      army_before_reward_snapshot_id: 'FK army_snapshots.snapshot_id',
+      applied_snapshot_id: 'FK army_snapshots.snapshot_id',
+      preview_snapshot_id: 'FK army_snapshots.snapshot_id',
+      purchase_snapshot_id: 'FK army_snapshots.snapshot_id',
+      army_before_shop_snapshot_id: 'FK army_snapshots.snapshot_id',
+      army_before_purchase_snapshot_id: 'FK army_snapshots.snapshot_id',
+      army_after_purchase_snapshot_id: 'FK army_snapshots.snapshot_id',
+      created_from_run_id: 'FK offline_runs.run_id',
+      replaced_by_saved_army_id: 'FK saved_armies.saved_army_id',
+      current_defence_saved_army_id: 'FK saved_armies.saved_army_id',
+      async_battle_result_id: 'FK async_battle_results.async_battle_result_id',
+      attacker_saved_army_id: 'FK saved_armies.saved_army_id',
+      defender_saved_army_id: 'FK saved_armies.saved_army_id',
+      acquired_at_run_node_id: 'FK route_nodes.node_id',
+      target_snapshot_stack_id: 'FK army_snapshot_stacks.snapshot_stack_id',
+      affected_snapshot_stack_id: 'FK army_snapshot_stacks.snapshot_stack_id',
+      unit_id: 'Authored unit catalog',
+      skill_id: 'Authored skill catalog',
+      template_id: 'Authored reward/shop template catalog',
+      encounter_id: 'Authored encounter catalog',
+      selected_route_choice_id: 'Authored route preview id',
+      starting_army_template_id: 'Authored starting army catalog',
+      starting_army_variant_id: 'Authored starting army catalog',
+      created_from_catalog_id: 'Authored route catalog',
+      path_id: 'Authored route path id'
+    };
+
+    function textOf(cell) {
+      return cell ? cell.textContent.trim() : '';
+    }
+
+    function fieldNameFrom(cell) {
+      const code = cell.querySelector('code');
+      return code ? code.textContent.trim() : textOf(cell);
+    }
+
+    function inferType(field, status) {
+      if (field === 'is_active' || field === 'active' || field === 'locked' || field === 'available' || field === 'purchased') {
+        return 'bit';
+      }
+      if (enumFields.has(field) || localIdFields.has(field)) {
+        return 'int';
+      }
+      if (field.endsWith('_at_utc') || field.endsWith('_at') || field.endsWith('_on')) {
+        return 'datetime2(7)';
+      }
+      if (field.endsWith('_json') || field === 'operation_json' || field === 'launch_payload_json') {
+        return 'json/text';
+      }
+      if (field.includes('gold') || field.includes('amount') || field.includes('value') || field.includes('rank') || field.includes('xp') || field.includes('progress') || field.includes('slot_index') || field.includes('stage_index') || field.includes('sort_order') || field.includes('cost')) {
+        return 'int';
+      }
+      if (textCatalogFields.has(field) || field.endsWith('_id')) {
+        return 'text';
+      }
+      return status === 'Cut' ? '-' : 'text';
+    }
+
+    function inferNullable(field, status) {
+      if (status === 'Cut') {
+        return '-';
+      }
+      if (field === 'is_active') {
+        return 'FAŁSZ';
+      }
+      if (field.endsWith('_id') && field !== 'external_account_id' && requiredFields.has(field)) {
+        return 'FAŁSZ';
+      }
+      if (field.endsWith('_at_utc') && (field === 'created_at_utc' || field === 'updated_at_utc')) {
+        return 'FAŁSZ';
+      }
+      if (requiredFields.has(field) || enumFields.has(field)) {
+        return 'FAŁSZ';
+      }
+      return 'PRAWDA';
+    }
+
+    function inferDefault(field, type, status, isPrimaryField) {
+      if (status === 'Cut') {
+        return '-';
+      }
+      if (isPrimaryField && type === 'int' && field.endsWith('_id') && !textCatalogFields.has(field)) {
+        return 'auto, PK';
+      }
+      return defaults[field] || '';
+    }
+
+    function addSoftDeleteRow(tbody) {
+      const hasActive = Array.from(tbody.querySelectorAll('tr')).some((row) => {
+        const first = row.querySelector('td');
+        return first && fieldNameFrom(first) === 'is_active';
+      });
+      if (hasActive) {
+        return;
+      }
+
+      const row = document.createElement('tr');
+      row.innerHTML = '<td><code>is_active</code></td><td>bit</td><td>FAŁSZ</td><td>1</td><td>Soft delete/dezaktywacja rekordu. Normalny flow nie usuwa rekordów z bazy.</td><td></td><td class="decision keep">Keep</td>';
+      tbody.appendChild(row);
+    }
+
+    function applyDatabaseTableFormat() {
+      document.querySelectorAll('table').forEach((table) => {
+        if (table.closest('#grill')) {
+          return;
+        }
+
+        const firstHeader = table.querySelector('thead th');
+        if (!firstHeader || textOf(firstHeader) !== 'Field') {
+          return;
+        }
+
+        const tbody = table.querySelector('tbody');
+        if (!tbody) {
+          return;
+        }
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const primaryField = rows.length > 0 ? fieldNameFrom(rows[0].querySelector('td')) : '';
+
+        rows.forEach((row) => {
+          const cells = Array.from(row.children);
+          if (cells.length !== 4) {
+            return;
+          }
+
+          const field = fieldNameFrom(cells[0]);
+          const status = textOf(cells[1]) || 'Keep';
+          const type = inferType(field, status);
+          const nullable = inferNullable(field, status);
+          const defaultValue = inferDefault(field, type, status, field === primaryField);
+          const description = [cells[2].innerHTML, cells[3].innerHTML].filter(Boolean).join(' ');
+          const related = fk[field] || '';
+
+          row.innerHTML = '';
+          [cells[0].innerHTML, type, nullable, defaultValue, description, related, cells[1].innerHTML].forEach((value, index) => {
+            const td = document.createElement('td');
+            td.innerHTML = value;
+            if (index === 6) {
+              td.className = cells[1].className;
+            }
+            row.appendChild(td);
+          });
+        });
+
+        const header = table.querySelector('thead tr');
+        header.innerHTML = '<th>Field</th><th>Type</th><th>Nullable</th><th>Default value</th><th class="wide">Description</th><th>Related to / FK</th><th>Status</th>';
+        addSoftDeleteRow(tbody);
+      });
+    }
+
+    function showTab(id) {
+      buttons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.tab === id);
+      });
+      panels.forEach((panel) => {
+        panel.classList.toggle('active', panel.id === id);
+      });
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => showTab(button.dataset.tab));
+    });
+
+    applyDatabaseTableFormat();
+  </script>
+</body>
+</html>

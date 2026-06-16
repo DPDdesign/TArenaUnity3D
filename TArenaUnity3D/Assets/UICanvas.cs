@@ -1,24 +1,50 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TimeSpells;
+using TMPro;
+
+[System.Serializable]
+public class UnitStatsTextRefs
+{
+    public TMP_Text Name;
+    public TMP_Text MaxHP;
+    public TMP_Text CurrentHP;
+    public TMP_Text HPBar_Text;
+    public GameObject HPBar;
+    public TMP_Text Attack;
+    public TMP_Text Defence;
+    public TMP_Text Damage;
+    public TMP_Text Movement;
+    public TMP_Text Initiative;
+    public TMP_Text Count;
+}
 
 public class UICanvas : MonoBehaviour
 {
-    public List<Text> InfoTextsList;
+    [Header("Stats Panel TMP")]
+    public UnitStatsTextRefs InfoStatsTexts;
+
+    [Header("Footer TMP")]
+    public UnitStatsTextRefs FooterStatsTexts;
+
+    [Header("Action UI")]
     public List<Button> ActionButtons;
     public List<GameObject> SpellImages;
     public List<Button> SkillButtons;
-    public List<Text> SkillT;
+    public bool ShowSkillName = false;
+    public List<TMP_Text> SkillT;
+    public List<Image> CooldownFillImages;
+    public Color CooldownFillColor = new Color(0.25f, 0.25f, 0.25f, 0.65f);
+    public Image CurrentUnitPortrait;
     public GameObject StatsPanel;
     public GameObject EndPanel;
-    public Text EndText;
+    public TMP_Text EndText;
     public MouseControler MC;
-    public List<Text> TypeT;
-    public List<Text> Cooldowns;
+    public List<TMP_Text> Cooldowns;
+    string currentUnitPortraitSpriteName;
     // Start is called before the first frame update
     void Start()
     {
@@ -32,21 +58,34 @@ public class UICanvas : MonoBehaviour
     }
     public void UpdateCHP(int chp)
     {
-        
-       
-        InfoTextsList[1].text = chp.ToString();
+        if (InfoStatsTexts == null)
+        {
+            return;
+        }
+
+        SetTextIfAvailable(InfoStatsTexts.CurrentHP, chp.ToString());
+        int maxHP = MC != null && MC.SelectedToster != null ? MC.SelectedToster.GetHP() : chp;
+        SetTextIfAvailable(InfoStatsTexts.HPBar_Text, chp.ToString() + " / " + maxHP.ToString());
+        SetHPBarFill(InfoStatsTexts.HPBar, chp, maxHP);
     }
 
     public void UpdateAllStats(int mhp, int chp, int att, int def, int dmg , int ms , int INT, string N)
     {
-        InfoTextsList[0].text = mhp.ToString();
-        InfoTextsList[1].text = chp.ToString();
-        InfoTextsList[2].text = att.ToString();
-        InfoTextsList[3].text = def.ToString();
-        InfoTextsList[4].text = dmg.ToString();
-        InfoTextsList[5].text = ms.ToString();
-        InfoTextsList[6].text = INT.ToString();
-        InfoTextsList[7].text = N;
+        if (InfoStatsTexts == null)
+        {
+            return;
+        }
+
+        SetTextIfAvailable(InfoStatsTexts.MaxHP, mhp.ToString());
+        SetTextIfAvailable(InfoStatsTexts.CurrentHP, chp.ToString());
+        SetTextIfAvailable(InfoStatsTexts.HPBar_Text, chp.ToString() + " / " + mhp.ToString());
+        SetHPBarFill(InfoStatsTexts.HPBar, chp, mhp);
+        SetTextIfAvailable(InfoStatsTexts.Attack, att.ToString());
+        SetTextIfAvailable(InfoStatsTexts.Defence, def.ToString());
+        SetTextIfAvailable(InfoStatsTexts.Damage, dmg.ToString());
+        SetTextIfAvailable(InfoStatsTexts.Movement, ms.ToString());
+        SetTextIfAvailable(InfoStatsTexts.Initiative, INT.ToString());
+        SetTextIfAvailable(InfoStatsTexts.Name, N);
     }
 
     public void GetSpellsOnToster(TosterHexUnit toster)
@@ -64,8 +103,8 @@ public class UICanvas : MonoBehaviour
 
         foreach (SpellOverTime spell in SpellsOnToster)
         {
-            Debug.Log(("Sprites/Skill_Icons/" + SpellsOnToster[i].nameofspell));
-            SpellImages[i].GetComponent<Image>().sprite = Resources.Load<Sprite>("Sprites/Skill_Icons/" + SpellsOnToster[i].nameofspell);
+            Debug.Log(SpellsOnToster[i].nameofspell);
+            SpellImages[i].GetComponent<Image>().sprite = DataMapper.Instance.LoadSkillIcon(SpellsOnToster[i].nameofspell);
             SpellImages[i].SetActive(true);
             i++;
 
@@ -77,129 +116,391 @@ public class UICanvas : MonoBehaviour
 
     public void UpdateAllStats(TosterHexUnit toster)
     {
-        InfoTextsList[0].text = toster.HP.ToString()+"("+toster.GetHP().ToString()+")";
-        InfoTextsList[1].text = toster.TempHP.ToString();
-        InfoTextsList[2].text = toster.Att.ToString() + "(" + toster.GetAtt().ToString() + ")";
-        InfoTextsList[3].text = toster.Def.ToString() + "(" + toster.GetDef().ToString() + ")";
-        InfoTextsList[4].text = toster.mindmg.ToString() + "(" + toster.GetMinDmg().ToString() + ")" + "-" + toster.maxdmg.ToString()  +"(" + toster.GetMaxDMG().ToString() + ")";
-        InfoTextsList[5].text = toster.MovmentSpeed.ToString() + "(" + (toster.GetMS()-1).ToString() + ")";
-        InfoTextsList[6].text = toster.Initiative.ToString() + "(" + toster.GetIni().ToString() + ")";
-        InfoTextsList[7].text = toster.Name;
+        SetStatsTexts(InfoStatsTexts, toster);
     }
 
+    public void UpdateFooterStats(TosterHexUnit toster)
+    {
+        SetStatsTexts(FooterStatsTexts, toster);
+    }
+
+    public void UpdateCurrentUnitPortrait(TosterHexUnit toster)
+    {
+        if (CurrentUnitPortrait == null || toster == null)
+        {
+            return;
+        }
+
+        if (currentUnitPortraitSpriteName == toster.TosterSpriteName)
+        {
+            return;
+        }
+
+        currentUnitPortraitSpriteName = toster.TosterSpriteName;
+        CurrentUnitPortrait.sprite = DataMapper.Instance.LoadUnitSprite(currentUnitPortraitSpriteName);
+        CurrentUnitPortrait.enabled = CurrentUnitPortrait.sprite != null;
+    }
+
+    void SetStatsTexts(UnitStatsTextRefs texts, TosterHexUnit toster)
+    {
+        if (texts == null || toster == null)
+        {
+            return;
+        }
+
+        SetTextIfAvailable(texts.Name, toster.Name);
+        SetTextIfAvailable(texts.MaxHP, toster.GetHP().ToString());
+        SetTextIfAvailable(texts.CurrentHP, toster.TempHP.ToString());
+        SetTextIfAvailable(texts.HPBar_Text, toster.TempHP.ToString() + " / " + toster.GetHP().ToString());
+        SetHPBarFill(texts.HPBar, toster.TempHP, toster.GetHP());
+        SetTextIfAvailable(texts.Attack, toster.GetAtt().ToString());
+        SetTextIfAvailable(texts.Defence, toster.GetDef().ToString());
+        SetTextIfAvailable(texts.Damage, GetAverageDamageText(toster));
+        SetTextIfAvailable(texts.Movement, (toster.GetMS() - 1).ToString());
+        SetTextIfAvailable(texts.Initiative, toster.GetIni().ToString());
+        SetTextIfAvailable(texts.Count, toster.Amount.ToString());
+    }
+
+    void SetTextIfAvailable(TMP_Text text, string value)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        text.text = value;
+    }
+
+    string GetAverageDamageText(TosterHexUnit toster)
+    {
+        return Mathf.CeilToInt((toster.GetMinDmg() + toster.GetMaxDMG()) / 2f).ToString();
+    }
+
+    void SetHPBarFill(GameObject hpBar, int currentHP, int maxHP)
+    {
+        Image fillImage = GetHPBarFillImage(hpBar);
+        if (fillImage == null)
+        {
+            return;
+        }
+
+        fillImage.type = Image.Type.Filled;
+        fillImage.fillAmount = maxHP > 0 ? Mathf.Clamp01((float)currentHP / maxHP) : 0f;
+    }
+
+    Image GetHPBarFillImage(GameObject hpBar)
+    {
+        if (hpBar == null)
+        {
+            return null;
+        }
+
+        Transform fillTransform = hpBar.transform.Find("Fill");
+        if (fillTransform != null)
+        {
+            Image fillImage = fillTransform.GetComponent<Image>();
+            if (fillImage != null)
+            {
+                return fillImage;
+            }
+        }
+
+        Image directImage = hpBar.GetComponent<Image>();
+        if (directImage != null)
+        {
+            return directImage;
+        }
+
+        return hpBar.GetComponentInChildren<Image>();
+    }
     // Update is called once per frame
     public void UseSkill(int i)
     {
+        if (HasSkillButton(i) == false)
+        {
+            return;
+        }
 
         SkillButtons[i].image.color= Color.grey;
     }
     public void UnUseSkill(int i)
     {
-        if (TypeT[i].text!="Passive")
-        SkillButtons[i].image.color = Color.white;
+        if (HasSkillButton(i) == false)
+        {
+            return;
+        }
+
+        if (IsPassiveSkillSlot(i) == false)
+        {
+            SkillButtons[i].image.color = Color.white;
+        }
     }
 
-
-    public string GetTypeOfSkill(string name) //XML DATA LOAD
-    {
-        //TODO: VALIDATE SCHEMA/XML
-        TextAsset textAsset = (TextAsset)Resources.Load("data/skills");
-        XmlDocument xmldoc = new XmlDocument();
-        xmldoc.LoadXml(textAsset.text);
-        XmlNodeList nodes = xmldoc.SelectNodes("Skills/Skill/Name");
-        int NumberOfNode = 0;
-        bool found = false;
-        int i = 0;
-        foreach (XmlNode node in nodes)
-        {
-            if (node.InnerText == name && found == false)
-            {
-                found = true;
-                NumberOfNode = i;
-            }
-            i++;
-        }
-        nodes = xmldoc.SelectNodes("Skills/Skill");
-        //  
-        if (found == true)
-        {
-            return nodes[NumberOfNode].ChildNodes[1].InnerText;
-        }
-        else return "brak takiego skilla!";
-    }
-
-
-   public Button escbutton;
     public GameObject menu;
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            menu.SetActive(!menu.activeSelf);
+            if (menu != null)
+            {
+                menu.SetActive(!menu.activeSelf);
+            }
         }
-        if (MC.activeButtons == true)
+        if (MC != null && MC.SelectedToster != null)
+        {
+            UpdateFooterStats(MC.SelectedToster);
+            UpdateCurrentUnitPortrait(MC.SelectedToster);
+        }
+        bool hasSelectedToster = MC != null && MC.SelectedToster != null;
+        bool canUseButtons = hasSelectedToster && MC.activeButtons == true;
+        bool canUseActionButtons = canUseButtons && MC.SelectedToster.MovedThisTurn == false && MC.SelectedToster.UsedSkillThisTurn == false;
+
+        if (hasSelectedToster)
         {
 
-            foreach (Button b in ActionButtons)
+            if (ActionButtons != null)
             {
-                b.interactable = true;
-                //    b.
+                foreach (Button b in ActionButtons)
+                {
+                    if (b != null)
+                    {
+                        b.interactable = canUseActionButtons;
+                    }
+                }
             }
             int i = 0;
-            foreach (string b in MC.SelectedToster.skillstrings)
+            if (MC.SelectedToster.skillstrings != null)
             {
-                SkillButtons[i].image.enabled = true;
-                if (MC.SelectedToster.cooldowns[i] == 0)
+                foreach (string b in MC.SelectedToster.skillstrings)
                 {
-                    Cooldowns[i].gameObject.SetActive(false);
-                    SkillButtons[i].interactable = true;
-                    SkillT[i].text =b;
-                    SkillButtons[i].image.sprite=  Resources.Load<Sprite>("Sprites/Skill_Icons/"+b);
-
-
-
-
-                    if ("Passive" == GetTypeOfSkill(b))
-
+                    if (HasSkillButton(i) == false)
                     {
-                        SkillButtons[i].interactable = false;
-                        SkillButtons[i].image.color = Color.grey;
+                        break;
+                    }
+
+                    SkillButtons[i].image.enabled = true;
+                    int cooldown = GetCooldownValue(i);
+                    if (cooldown == 0)
+                    {
+                        SetCooldownTextActive(i, false);
+                        SetCooldownFill(i, 0f);
+                        SkillButtons[i].interactable = canUseButtons;
+                        SetSkillNameText(i, b);
+                        SkillButtons[i].image.sprite = DataMapper.Instance.LoadSkillIcon(b);
+
+
+
+                        if (canUseButtons == false || MC.CanUseSkillSlot(i) == false)
+
+                        {
+                            SkillButtons[i].interactable = false;
+                            SkillButtons[i].image.color = Color.grey;
+                        }
+                        else
+                        {
+                            SkillButtons[i].image.color = Color.white;
+                        }
                     }
                     else
                     {
-                        SkillButtons[i].image.color = Color.white;
+                        SkillButtons[i].interactable = false;
+
+                        SetSkillNameText(i, b);
+                        SkillButtons[i].image.sprite = DataMapper.Instance.LoadSkillIcon(b);
+                        SetCooldownText(i, cooldown.ToString());
+                        SetCooldownFill(i, GetCooldownFillAmount(b, cooldown));
                     }
+                    i++;
+
+
                 }
-                else
-                {
-                    SkillButtons[i].interactable = false;
-
-                    SkillT[i].text = b;
-                    SkillButtons[i].image.sprite = Resources.Load<Sprite>("Sprites/Skill_Icons/" + b);
-                    Cooldowns[i].gameObject.SetActive(true);
-                    Cooldowns[i].text = MC.SelectedToster.cooldowns[i].ToString();
-                }
-                i++;
-
-
             }
+
+            ClearSkillButtonsFrom(i);
 
         }
         else
         {
-            foreach (Button b in ActionButtons)
+            if (ActionButtons != null)
             {
-                b.interactable = false;
+                foreach (Button b in ActionButtons)
+                {
+                    if (b != null)
+                    {
+                        b.interactable = false;
+                    }
+                }
             }
-            int i = 0;
-            foreach (Button b in SkillButtons)
+            ClearSkillButtonsFrom(0);
+
+        }
+    }
+
+    void SetSkillNameText(int index, string skillName)
+    {
+        if (ShowSkillName == false || SkillT == null || index < 0 || index >= SkillT.Count || SkillT[index] == null)
+        {
+            return;
+        }
+
+        SkillT[index].text = skillName;
+    }
+
+    bool HasSkillButton(int index)
+    {
+        return SkillButtons != null &&
+            index >= 0 &&
+            index < SkillButtons.Count &&
+            SkillButtons[index] != null &&
+            SkillButtons[index].image != null;
+    }
+
+    bool IsPassiveSkillSlot(int index)
+    {
+        string skillName = GetSelectedSkillName(index);
+        if (string.IsNullOrEmpty(skillName))
+        {
+            return false;
+        }
+
+        DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(skillName);
+        return skillDefinition != null && skillDefinition.Type == "Passive";
+    }
+
+    string GetSelectedSkillName(int index)
+    {
+        if (MC == null ||
+            MC.SelectedToster == null ||
+            MC.SelectedToster.skillstrings == null ||
+            index < 0 ||
+            index >= MC.SelectedToster.skillstrings.Count)
+        {
+            return "";
+        }
+
+        return MC.SelectedToster.skillstrings[index];
+    }
+
+    int GetCooldownValue(int index)
+    {
+        if (MC == null ||
+            MC.SelectedToster == null ||
+            MC.SelectedToster.cooldowns == null ||
+            index < 0 ||
+            index >= MC.SelectedToster.cooldowns.Count)
+        {
+            return 0;
+        }
+
+        return MC.SelectedToster.cooldowns[index];
+    }
+
+    float GetCooldownFillAmount(string skillName, int currentCooldown)
+    {
+        if (currentCooldown <= 0)
+        {
+            return 0f;
+        }
+
+        int maxCooldown = GetSkillMaxCooldown(skillName);
+        if (maxCooldown <= 0)
+        {
+            maxCooldown = currentCooldown;
+        }
+
+        return Mathf.Clamp01((float)currentCooldown / maxCooldown);
+    }
+
+    int GetSkillMaxCooldown(string skillName)
+    {
+        DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(skillName);
+        if (skillDefinition == null || string.IsNullOrEmpty(skillDefinition.Info))
+        {
+            return 0;
+        }
+
+        string info = skillDefinition.Info.ToUpperInvariant();
+        int cooldownIndex = info.IndexOf("CD");
+        if (cooldownIndex < 0)
+        {
+            return 0;
+        }
+
+        string digits = "";
+        for (int i = cooldownIndex + 2; i < info.Length; i++)
+        {
+            if (char.IsDigit(info[i]))
             {
-                b.interactable = false;
-                b.image.enabled = false;
-                SkillT[i].text = "";
-                i++;
+                digits += info[i];
+            }
+            else if (digits.Length > 0)
+            {
+                break;
+            }
+        }
+
+        int cooldown;
+        return int.TryParse(digits, out cooldown) ? cooldown : 0;
+    }
+
+    void SetCooldownText(int index, string value)
+    {
+        if (Cooldowns == null || index < 0 || index >= Cooldowns.Count || Cooldowns[index] == null)
+        {
+            return;
+        }
+
+        Cooldowns[index].gameObject.SetActive(true);
+        Cooldowns[index].text = value;
+    }
+
+    void SetCooldownTextActive(int index, bool active)
+    {
+        if (Cooldowns == null || index < 0 || index >= Cooldowns.Count || Cooldowns[index] == null)
+        {
+            return;
+        }
+
+        Cooldowns[index].gameObject.SetActive(active);
+    }
+
+    void SetCooldownFill(int index, float fillAmount)
+    {
+        if (CooldownFillImages == null || index < 0 || index >= CooldownFillImages.Count || CooldownFillImages[index] == null)
+        {
+            return;
+        }
+
+        Image cooldownFill = CooldownFillImages[index];
+        cooldownFill.gameObject.SetActive(fillAmount > 0f);
+        cooldownFill.type = Image.Type.Filled;
+        cooldownFill.fillAmount = fillAmount;
+        cooldownFill.color = CooldownFillColor;
+        cooldownFill.raycastTarget = false;
+    }
+
+    void ClearSkillButtonsFrom(int startIndex)
+    {
+        if (SkillButtons == null)
+        {
+            return;
+        }
+
+        for (int i = startIndex; i < SkillButtons.Count; i++)
+        {
+            if (SkillButtons[i] == null || SkillButtons[i].image == null)
+            {
+                continue;
             }
 
+            SkillButtons[i].interactable = false;
+            SkillButtons[i].image.enabled = false;
+            if (ShowSkillName && SkillT != null && i < SkillT.Count && SkillT[i] != null)
+            {
+                SkillT[i].text = "";
+            }
+            SetCooldownTextActive(i, false);
+            SetCooldownFill(i, 0f);
         }
     }
 }

@@ -14,6 +14,7 @@ public class CameraRotator : MonoBehaviour
     private float newAngle;
     public float zoomUpdateSpeed = 10;
     private float angle;
+    private Vector3 startPosition;
     private Vector3 GetBaseInput()
 
 
@@ -49,10 +50,7 @@ public class CameraRotator : MonoBehaviour
 
     private void Start()
     {
-        
-
-        Mathf.Clamp(this.transform.position.x, 8.48f, 33.22f);
-        Mathf.Clamp(this.transform.position.z, 0.22f, 15.15f);
+        startPosition = this.transform.position;
         newAngle = Camera.main.transform.localEulerAngles.x;
 
     }
@@ -68,12 +66,15 @@ public class CameraRotator : MonoBehaviour
             transform.RotateAround(this.transform.position, -Vector3.up, rotateSpeed * Time.deltaTime*0.5f);
         }
        
+        bool angleChanged = false;
+
         if (Input.GetKey(KeyCode.W))
         {
             if (this.GetComponentInChildren<Camera>().fieldOfView > 25)
             {
                 this.GetComponentInChildren<Camera>().fieldOfView -= (20 * Time.deltaTime);
                 newAngle-=15*Time.deltaTime;
+                angleChanged = true;
             }
            
 
@@ -84,67 +85,91 @@ public class CameraRotator : MonoBehaviour
             {
                 this.GetComponentInChildren<Camera>().fieldOfView += (20 * Time.deltaTime);
                 newAngle +=15 * Time.deltaTime;
+                angleChanged = true;
             }
             
         }
-        if (Input.GetAxis("Mouse ScrollWheel") < 0)
+        float scrollWheel = Input.GetAxis("Mouse ScrollWheel");
+        if (scrollWheel < 0)
         {
             if (this.GetComponentInChildren<Camera>().fieldOfView < 45)
             {
                 this.GetComponentInChildren<Camera>().fieldOfView += (120 * Time.deltaTime);
             }
+            angleChanged = true;
             
         }
-        if (Input.GetAxis("Mouse ScrollWheel") > 0)
+        if (scrollWheel > 0)
         {
             if (this.GetComponentInChildren<Camera>().fieldOfView > 25)
             {
                 this.GetComponentInChildren<Camera>().fieldOfView -= (120 * Time.deltaTime);
             }
+            angleChanged = true;
         }
  
 
 
 
 
-        this.transform.position = this.transform.position + GetBaseInput();
+        Vector3 baseInput = GetBaseInput();
+        if (baseInput != Vector3.zero)
+        {
+            this.transform.position = this.transform.position + baseInput;
+            ClampPosition();
+        }
 
-        newAngle -= Input.GetAxis("Mouse ScrollWheel") * zoomSpeed;
-        newAngle = Mathf.Clamp(newAngle, minAngle, maxAngle);
+        if (angleChanged)
+        {
+            newAngle -= scrollWheel * zoomSpeed;
+            newAngle = Mathf.Clamp(newAngle, minAngle, maxAngle);
+        }
         if (Input.GetKey(KeyCode.X))
         {
             Debug.LogError(newAngle);
         }   
 
-        Camera.main.transform.localEulerAngles = new Vector3(Mathf.LerpAngle(Camera.main.transform.localEulerAngles.x, newAngle, Time.deltaTime * zoomUpdateSpeed), 0, 0);
+        if (angleChanged)
+        {
+            Camera.main.transform.localEulerAngles = new Vector3(Mathf.LerpAngle(Camera.main.transform.localEulerAngles.x, newAngle, Time.deltaTime * zoomUpdateSpeed), 0, 0);
+        }
+    }
 
+    public void ClampPosition()
+    {
+        float xLimit = (30f - 9.2900009f) * 0.5f;
+        float zLimit = (9f - -2.22f) * 0.5f;
 
+        float minX = startPosition.x - xLimit;
+        float maxX = startPosition.x + xLimit;
+        float minZ = startPosition.z - zLimit;
+        float maxZ = startPosition.z + zLimit;
 
-        if (this.transform.position.x>30)
+        if (this.transform.position.x>maxX)
         {
             Vector3 v = this.transform.position;
-            v.x = 30;
+            v.x = maxX;
             this.transform.position = v;
         }
-        if (this.transform.position.x < 9.2900009f)
+        if (this.transform.position.x < minX)
         {
             Vector3 v = this.transform.position;
-            v.x = 9.2900009f;
+            v.x = minX;
             this.transform.position = v;
         }
-        if (this.transform.position.z > 9f)
+        if (this.transform.position.z > maxZ)
         {
             Vector3 v = this.transform.position;
-            v.z = 9f;
+            v.z = maxZ;
             this.transform.position = v;
         }
 
 
 
-        if (this.transform.position.z < -2.22f)
+        if (this.transform.position.z < minZ)
         {
             Vector3 v = this.transform.position;
-            v.z = -2.22f;
+            v.z = minZ;
             this.transform.position = v;
         }
     }

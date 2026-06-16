@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using HPath;
-using System.Xml;
 using System.Xml.Serialization;
 using UnityEngine.UI;
 using System;
@@ -11,6 +10,11 @@ using TimeSpells;
 
 public class TosterHexUnit : IQPathUnit
 {
+    private const float CombatAnimationMaxWaitSeconds = 1.25f;
+    private const float CombatHitAtAttackProgress = 0.5f;
+    private const float FireMovementTrapRevealDelaySeconds = 0.3f;
+    public const float PassiveResolveMaxWaitSeconds = 15f;
+    public static readonly string[] AutocastTurnOrder = new string[] { "Massochism", "Cold_Blood", "Stone_Skin", "Unstoppable_Light", "Fire_Movement", "Fire_Skin", "Terrifying_Presence", "Rotting" };
     public readonly int C; public readonly int R; public readonly int S; // column.row
     public Vector3 vec;
     public string TosterSpriteName;
@@ -173,10 +177,148 @@ public class TosterHexUnit : IQPathUnit
     public delegate void TosterMovedDelegate(HexClass oldH, HexClass newH);
     public event TosterMovedDelegate OnTosterMoved;
     public bool Moved = false;
+    public bool MovedThisTurn = false;
+    public bool UsedSkillThisTurn = false;
+    public List<string> UsedSkillIdsThisTurn = new List<string>();
+    public bool CanMoveAfterSkillThisTurn = false;
     public TeamClass Team;
     public List<HexClass> HexPathList;
+    private const float CameraFacingYawOffsetLimit = 15f;
+    private const string DefaultMovementAnimationState = "walk";
+    private string movementAnimationOverrideState;
 
     List<HexClass> hexPath;
+
+    public void SetMovementAnimationOverride(string stateName)
+    {
+        movementAnimationOverrideState = stateName;
+    }
+
+    public void ClearMovementAnimationOverride()
+    {
+        movementAnimationOverrideState = null;
+    }
+
+    public void ClearUsedSkillIdsThisTurn()
+    {
+        if (UsedSkillIdsThisTurn == null)
+        {
+            UsedSkillIdsThisTurn = new List<string>();
+            return;
+        }
+
+        UsedSkillIdsThisTurn.Clear();
+    }
+
+    public bool HasUsedSkillIdThisTurn(string skillId)
+    {
+        return string.IsNullOrEmpty(skillId) == false &&
+            UsedSkillIdsThisTurn != null &&
+            UsedSkillIdsThisTurn.Contains(skillId);
+    }
+
+    public void AddUsedSkillIdThisTurn(string skillId)
+    {
+        if (string.IsNullOrEmpty(skillId))
+        {
+            return;
+        }
+
+        if (UsedSkillIdsThisTurn == null)
+        {
+            UsedSkillIdsThisTurn = new List<string>();
+        }
+
+        if (UsedSkillIdsThisTurn.Contains(skillId) == false)
+        {
+            UsedSkillIdsThisTurn.Add(skillId);
+        }
+    }
+
+    public string GetMovementAnimationState()
+    {
+        return string.IsNullOrWhiteSpace(movementAnimationOverrideState)
+            ? DefaultMovementAnimationState
+            : movementAnimationOverrideState;
+    }
+
+    public void ApplyTeamVisualFacing()
+    {
+        SetVisualFacingYaw(teamN ? 0f : 180f);
+    }
+
+    public void SetVisualFacingYaw(float baseYaw)
+    {
+        List<Transform> visualRoots = GetVisualRoots();
+        if (visualRoots.Count == 0)
+        {
+            return;
+        }
+
+        Quaternion rotation = Quaternion.Euler(0f, GetTeamBiasedYaw(baseYaw), 0f);
+        foreach (Transform visualRoot in visualRoots)
+        {
+            visualRoot.rotation = rotation;
+        }
+    }
+
+    private List<Transform> GetVisualRoots()
+    {
+        List<Transform> visualRoots = new List<Transform>();
+        Transform root = null;
+        if (tosterView != null)
+        {
+            root = tosterView.transform;
+        }
+        else if (TosterPrefab != null)
+        {
+            root = TosterPrefab.transform;
+        }
+
+        if (root == null)
+        {
+            return visualRoots;
+        }
+
+        Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+        foreach (Renderer renderer in renderers)
+        {
+            if (renderer == null || renderer.GetComponent<TextMesh>() != null)
+            {
+                continue;
+            }
+
+            Transform visualRoot = GetTopVisualChild(root, renderer.transform);
+            if (visualRoot != null && !visualRoots.Contains(visualRoot))
+            {
+                visualRoots.Add(visualRoot);
+            }
+        }
+
+        return visualRoots;
+    }
+
+    private Transform GetTopVisualChild(Transform root, Transform visual)
+    {
+        if (root == null || visual == null)
+        {
+            return null;
+        }
+
+        Transform current = visual;
+        while (current.parent != null && current.parent != root)
+        {
+            current = current.parent;
+        }
+
+        return current;
+    }
+
+    private float GetTeamBiasedYaw(float baseYaw)
+    {
+        return baseYaw + (teamN ? CameraFacingYawOffsetLimit : -CameraFacingYawOffsetLimit);
+    }
+
     #region Pathing
     public void SetHexPath(HexClass[] hexPath)
     {
@@ -274,12 +416,10 @@ public class TosterHexUnit : IQPathUnit
         {
             if (hex.trap.NameOfTraps == "Rope_Trap")
             {
-                TextToSend = "";
-                TextToSend += "Wszedłeś w Rope_Trap";
-                SendMsg(TextToSend);
+                SendTrapTriggeredMsg("Rope_Trap", hex.trap.TosterWhoSetupThisTrap);
                 Pathing_func(hex,true);
                 this.AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, "Rope_Trap", false);
- 
+
                 hex.RemoveTrap();
             }
             if (hex.trap.NameOfTraps == "Fire_Trap")
@@ -288,10 +428,7 @@ public class TosterHexUnit : IQPathUnit
                 if (this != hex.trap.TosterWhoSetupThisTrap)
                 {
                     this.AddNewTimeSpell(5, hex.trap.TosterWhoSetupThisTrap, 0, 0, 0, 0, 0, 0, 0, Convert.ToInt32(CalculateDamageBetweenTosters(hex.trap.TosterWhoSetupThisTrap, this, 1)) / 5, 0, 0, 0, 0, "Fire_Trap", false);
-                    TextToSend = "";
-                    TextToSend += "Wszedłeś w Fire_Trap";
-                
-                    SendMsg(TextToSend);
+                    SendTrapTriggeredMsg("Fire_Trap", hex.trap.TosterWhoSetupThisTrap);
                 }
                 //   this.DealMePURE(this.Amount);
                 //  hex.RemoveTrap();
@@ -299,9 +436,7 @@ public class TosterHexUnit : IQPathUnit
             if (hex.trap.NameOfTraps == "Spike_Trap")
             {
 
-                TextToSend = "";
-                TextToSend += "Wszedłeś w Spike_Trap";
-                SendMsg(TextToSend);
+                SendTrapTriggeredMsg("Spike_Trap", hex.trap.TosterWhoSetupThisTrap);
                 this.AddNewTimeSpell(2, hex.trap.TosterWhoSetupThisTrap, 0, 0, 0, -2, 0, 0, 0,Convert.ToInt32( CalculateDamageBetweenTosters(hex.trap.TosterWhoSetupThisTrap,this,1)), 0, 0, 0, 0, "Spike_Trap", false);
                 if (hexPath.Count>1)
                 {
@@ -319,7 +454,12 @@ public class TosterHexUnit : IQPathUnit
         }
         if(Fire_movement==true && oldHex!=null)
         {
-            oldHex.AddTrap("Fire_Trap",2, this);
+            oldHex.AddTrap("Fire_Trap",2, this, false, "Fire_Movement");
+            SkillPresentationManager.PlaySequencedHexEffect("Fire_Movement", this, oldHex, null);
+            if (oldHex.hexMap != null)
+            {
+                oldHex.hexMap.StartCoroutine(RevealFireTrapAfterDelay(oldHex, FireMovementTrapRevealDelaySeconds));
+            }
         }
         Hex = hex;
         Hex.AddToster(this);
@@ -334,7 +474,7 @@ public class TosterHexUnit : IQPathUnit
             if (d != null)
             {
                 Debug.Log(d);
-                d.Play("Move");
+                d.Play(GetMovementAnimationState());
 
             }
         }
@@ -346,34 +486,34 @@ public class TosterHexUnit : IQPathUnit
             if (tC == 0 && tR == 1)
             {
 
-                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
+                SetVisualFacingYaw(120f);
             }
             if (tC == 0 && tR == -1)
             {
 
-                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
+                SetVisualFacingYaw(-60f);
             }
             if (tC == -1 && tR == 1)
             {
 
-                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
+                SetVisualFacingYaw(60f);
 
             }
             if (tC == 1 && tR == -1)
             {
 
-                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
+                SetVisualFacingYaw(-120f);
 
             }
             if (tC == 1 && tR == 0)
             {
 
-                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
+                SetVisualFacingYaw(180f);
             }
             if (tC == -1 && tR == 0)
             {
 
-                this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
+                SetVisualFacingYaw(0f);
             }
 
         }
@@ -428,12 +568,6 @@ public class TosterHexUnit : IQPathUnit
         skillstrings = new List<string>();
         cooldowns = new List<int>();
         SpellsGoingOn = new List<SpellOverTime>();
-        /*
-        Type type = Type.GetType(p, true);  
-        Skill1 s1 = new Skill1();
-        Debug.Log(type.FullName);
-        skills.Add(s1); 
-        */
     }
     public TosterHexUnit(int c, int r, Vector3 vect, GameObject G, GameObject Toster)
     {
@@ -466,7 +600,7 @@ public class TosterHexUnit : IQPathUnit
     /*
 		<Units>
              <Unit>
-                0 <Name>TosterDPS</Name>
+                0 <Name>UnitName</Name>
                 1 <HP>20</HP>
                 2 <Attack>20</Attack>
                 3 <Defense>1</Defense>
@@ -481,64 +615,28 @@ public class TosterHexUnit : IQPathUnit
     #endregion
     public void InitateType(string name) //XML DATA LOAD
     {
-        //TODO: VALIDATE SCHEMA/XML
-        TextAsset textAsset = (TextAsset)Resources.Load("data/Units");
-        XmlDocument xmldoc = new XmlDocument();
-        xmldoc.LoadXml(textAsset.text);
-        XmlNodeList nodes = xmldoc.SelectNodes("Units/Unit/Name");
-        int NumberOfNode = 0;
-        bool found = false;
-        int i = 0;
-        foreach (XmlNode node in nodes)
+        DataMapper.UnitDefinition definition = DataMapper.Instance.FindUnit(name);
+        if (definition != null)
         {
-            if (node.InnerText == name && found == false)
-            {
-                found = true;
-                NumberOfNode = i;
-            }
-            i++;
-        }
-        nodes = xmldoc.SelectNodes("Units/Unit");
-      //  
-        if (found == true)
-        {
-            XmlNodeList UnitNodes = nodes[NumberOfNode].ChildNodes;
-            XmlNodeList spells = UnitNodes[8].ChildNodes;
-        
-            List<string> sp = new List<string>();
-            foreach (XmlNode s in spells)
-            {
-                
-                sp.Add(s.InnerText);
-
-            }
-
-            
             SetStats(
-                UnitNodes[0].InnerText,
-                int.Parse(UnitNodes[1].InnerText),
-                int.Parse(UnitNodes[2].InnerText),
-                int.Parse(UnitNodes[3].InnerText),
-                int.Parse(UnitNodes[4].InnerText),
-                int.Parse(UnitNodes[5].InnerText),
-                sp,
-                int.Parse(UnitNodes[6].InnerText),
-                int.Parse(UnitNodes[7].InnerText));
-            nodes = xmldoc.SelectNodes("Units/Unit/Sprite");
-            TosterSpriteName = nodes[NumberOfNode].InnerText;
+                definition.Name,
+                definition.HP,
+                definition.Attack,
+                definition.Defense,
+                definition.Initiative,
+                definition.Speed,
+                new List<string>(definition.SkillNames),
+                definition.DamageMinimum,
+                definition.DamageMaximum);
+            TosterSpriteName = definition.SpritePath;
         }
     } 
     public void SetTosterPrefab(HexMap h)
     {
-      
-                this.TosterPrefab = Resources.Load<GameObject>("Models/TosterModels/" + this.Name);
-        if (this.teamN == true) this.TosterPrefab.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
-                else this.TosterPrefab.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
+        this.TosterPrefab = DataMapper.Instance.LoadUnitPrefab(this.Name);
+        ApplyTeamVisualFacing();
 
         //  Debug.Log( this.TosterPrefab.GetComponentInChildren<Renderer>().transform.SetPositionAndRotation(new Vector3(0,0,0),new Quaternion.Euler(0,180,0)));
-
-
-
 
     }
     public void SetTextAmount()
@@ -567,7 +665,7 @@ public class TosterHexUnit : IQPathUnit
 
     public void StartAutocast()
     {
-        ListOfAutocasts = new List<string>(new string[] { "Massochism", "Cold_Blood", "Stone_Skin", "Unstoppable_Light","Fire_Movement","Fire_Skin","Terrifying_Presence", "Rotting"});
+        ListOfAutocasts = new List<string>(AutocastTurnOrder);
 
 
         foreach (string s in skillstrings)
@@ -578,6 +676,37 @@ public class TosterHexUnit : IQPathUnit
                 AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, s, false);
             }
         }
+    }
+
+    public string GetSkillAnimationState(string skillId)
+    {
+        if (string.IsNullOrEmpty(skillId) || skillstrings == null)
+        {
+            return null;
+        }
+
+        int skillIndex = skillstrings.IndexOf(skillId);
+        if (skillIndex < 0)
+        {
+            return null;
+        }
+
+        return "skill" + (skillIndex + 1);
+    }
+
+    static IEnumerator RevealFireTrapAfterDelay(HexClass hex, float delaySeconds)
+    {
+        if (delaySeconds > 0f)
+        {
+            yield return new WaitForSeconds(delaySeconds);
+        }
+
+        if (hex == null || !hex.isTraped || hex.trap == null || hex.trap.NameOfTraps != "Fire_Trap")
+        {
+            yield break;
+        }
+
+        hex.trap.ShowTrap();
     }
     #endregion
     #region Tury/ruchy
@@ -787,29 +916,121 @@ public class TosterHexUnit : IQPathUnit
         return Math.Ceiling(DMGf);
 
     }
-    public void AttackMe(TosterHexUnit t)
+    private void PlayAnimatorState(string stateName)
     {
-       
-          Quaternion _lookRotation;
-     Vector3 _direction;
-    //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
-    double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        int tC, tR;
-        TextToSend = "";
-        TextToSend +=  t.Name + " zadał " + Convert.ToInt32(dmgdouble) + " obrażeń " + this.Name;
-            Quaternion q;
-        if (t.teamN == true)
+        if (this.tosterView == null)
         {
-            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
+            return;
         }
-        else
-        {
-            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
-        }
-        this.DealMePURE(Convert.ToInt32(dmgdouble));
 
-        
-        Animator d = null;
+        this.tosterView.PlayAnimatorStateAndReturnToDefault(stateName);
+    }
+
+    private void FaceTowards(TosterHexUnit target)
+    {
+        if (target == null || target.Hex == null || this.Hex == null)
+        {
+            return;
+        }
+
+        int tC = target.Hex.C - this.Hex.C;
+        int tR = target.Hex.R - this.Hex.R;
+
+        if (tC == 0 && tR == 1)
+        {
+            SetVisualFacingYaw(-60f);
+        }
+        if (tC == 0 && tR == -1)
+        {
+            SetVisualFacingYaw(120f);
+        }
+        if (tC == -1 && tR == 1)
+        {
+            SetVisualFacingYaw(-120f);
+        }
+        if (tC == 1 && tR == -1)
+        {
+            SetVisualFacingYaw(60f);
+        }
+        if (tC == 1 && tR == 0)
+        {
+            SetVisualFacingYaw(0f);
+        }
+        if (tC == -1 && tR == 0)
+        {
+            SetVisualFacingYaw(180f);
+        }
+    }
+
+    private void PlayCombatAnimation(string stateName, TosterHexUnit target)
+    {
+        FaceTowards(target);
+        PlayWeaponTrailsForCombatAttack(stateName);
+        PlayAnimatorState(stateName);
+    }
+
+    private IEnumerator PlayAnimatorStateAndWait(string stateName)
+    {
+        if (this.tosterView == null)
+        {
+            yield break;
+        }
+
+        yield return this.tosterView.PlayAnimatorStateAndWaitForDefault(stateName, CombatAnimationMaxWaitSeconds);
+    }
+
+    private IEnumerator PlayDeathAnimationAndWait()
+    {
+        if (this.tosterView == null)
+        {
+            yield break;
+        }
+
+        yield return this.tosterView.PlayAnimatorStateAndHoldLastFrame("death", CombatAnimationMaxWaitSeconds);
+    }
+
+    private IEnumerator PlayCombatAnimationAndWait(string stateName, TosterHexUnit target)
+    {
+        FaceTowards(target);
+        yield return PlayAnimatorStateAndWait(stateName);
+    }
+
+    private IEnumerator PlayCombatAnimationUntilHitMoment(string stateName, TosterHexUnit target)
+    {
+        FaceTowards(target);
+        if (this.tosterView == null)
+        {
+            yield break;
+        }
+
+        PlayWeaponTrailsForCombatAttack(stateName);
+        yield return this.tosterView.PlayAnimatorStateAndWaitForProgress(stateName, CombatHitAtAttackProgress, CombatAnimationMaxWaitSeconds);
+    }
+
+    private void PlayWeaponTrailsForCombatAttack(string stateName)
+    {
+        if (stateName != "attack" || this.tosterView == null)
+        {
+            return;
+        }
+
+        this.tosterView.TryPlayWeaponTrails(CombatAnimationMaxWaitSeconds);
+    }
+
+    public IEnumerator AttackMeSequence(TosterHexUnit t)
+    {
+        //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
+        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        int damage = Convert.ToInt32(dmgdouble);
+        SendDamageMsg(t, damage);
+        yield return t.PlayCombatAnimationUntilHitMoment("attack", this);
+        FrontendResultReveal reveal = this.DealMePUREForFrontendReveal(damage, t, FrontendResultRevealSource.BasicAttack);
+        yield return RevealFrontendResult(reveal);
+        if (!t.isDead && t.tosterView != null)
+        {
+            t.tosterView.ResetAnimatorToDefault();
+        }
+
         if (CounterAttackAvaible == true)
         {
             CounterAttackBools();
@@ -817,145 +1038,82 @@ public class TosterHexUnit : IQPathUnit
             // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
 
             dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
-            TextToSend = "";
-            TextToSend +=  this.Name + " zadał " + Convert.ToInt32(dmgdouble) + " obrażeń " + t.Name;
-            if (t.teamN == false)
+            damage = Convert.ToInt32(dmgdouble);
+            t.SendDamageMsg(this, damage);
+            yield return this.PlayCombatAnimationUntilHitMoment("attack", t);
+            reveal = t.DealMePUREForFrontendReveal(damage, this, FrontendResultRevealSource.Counterattack);
+            yield return t.RevealFrontendResult(reveal);
+            if (!this.isDead && this.tosterView != null)
             {
-                Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
-            }
-            else
-            {
-                Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
-            }
-            t.DealMePURE(Convert.ToInt32(dmgdouble));
-          
-
-            d = this.tosterView.GetComponentInChildren<Animator>();
-
-            if (d != null)
-            {
-                q = this.tosterView.transform.rotation;
-
-                tC = t.Hex.C - this.Hex.C;
-                tR = t.Hex.R - this.Hex.R;
-                if (tC == 0 && tR == 1)
-                {
-
-                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
-                }
-                if (tC == 0 && tR == -1)
-                {
-
-                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
-                }
-                if (tC == -1 && tR == 1)
-                {
-
-                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
-
-                }
-                if (tC == 1 && tR == -1)
-                {
-
-                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
-
-                }
-                if (tC == 1 && tR == 0)
-                {
-
-                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
-                }
-                if (tC == -1 && tR == 0)
-                {
-
-                    this.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
-                }
-
-                Debug.Log("t.C: " + t.Hex.C + "  t.R: " + t.Hex.R);
-                Debug.Log("this.C: " + this.Hex.C + "  this.R: " + this.Hex.R);
-                Debug.Log(d);
-                d.Play("Atak");
-
-       //    this.tosterView.transform.rotation = q;
+                this.tosterView.ResetAnimatorToDefault();
             }
         }
-      
-        d = t.tosterView.GetComponentInChildren<Animator>();
-        if (d != null)
+    }
+
+    public void AttackMe(TosterHexUnit t)
+    {
+        //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
+        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        t.PlayCombatAnimation("attack", this);
+        int damage = Convert.ToInt32(dmgdouble);
+        SendDamageMsg(t, damage);
+        FrontendResultReveal reveal = this.DealMePUREForFrontendReveal(damage, t, FrontendResultRevealSource.BasicAttack);
+        FrontendResultRevealPlayer.Play(reveal);
+
+        if (CounterAttackAvaible == true)
         {
-           
-            q = this.tosterView.transform.rotation;
-            tC = t.Hex.C - this.Hex.C;
-            tR = t.Hex.R - this.Hex.R;
-            if (tC == 0 && tR == 1)
-            {
+            CounterAttackBools();
 
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
-            }
-            if (tC == 0 && tR == -1)
-            {
+            // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
 
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
-            }
-            if (tC == -1 && tR == 1)
-            {
-
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
-
-            }
-            if (tC == 1 && tR == -1)
-            {
-
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
-
-            }
-            if (tC == 1 && tR == 0)
-            {
-
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
-            }
-            if (tC == -1 && tR == 0)
-            {
-
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
-            }
-        
-            Debug.Log(d);
-            d.Play("Atak");
-            
-        //    this.tosterView.transform.rotation = q;
+            dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
+            this.PlayCombatAnimation("attack", t);
+            damage = Convert.ToInt32(dmgdouble);
+            t.SendDamageMsg(this, damage);
+            reveal = t.DealMePUREForFrontendReveal(damage, this, FrontendResultRevealSource.Counterattack);
+            FrontendResultRevealPlayer.Play(reveal);
         }
     }
 
 
     public void ShootME(TosterHexUnit t, bool sth)
     {
-        //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
-        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        HexClass[] Distance = Pathing(t.Hex,true);
-
-        if (Distance.Length>6)
+        int damage = CalculateShootDamageAndSendMessage(t);
+        if (sth == true)
         {
-            dmgdouble -= dmgdouble / 2;
-        }
-        TextToSend = "";
-        TextToSend += t.Name + " zadał " + Convert.ToInt32(dmgdouble) + " obrażeń " + this.Name;
-        Quaternion q;
-        if (t.teamN == true)
-        {
-            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
+            FrontendResultReveal reveal = DealMePUREForFrontendReveal(damage, t, FrontendResultRevealSource.BasicAttack);
+            SkillPresentationManager.PlayBasicRangedAttack(t, this, reveal);
         }
         else
         {
-            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
-        }
-        DealMePURE(Convert.ToInt32(dmgdouble));
-        if (sth == true)
-        {
-            Hex.hexMap.ThrowSomething(this, t, t.Projectile);
+            PlayStoneSkinDamageReductionFeedback(damage);
+            DealMePURE(damage);
         }
    
 
+    }
+
+    public FrontendResultReveal ShootMEForFrontendReveal(TosterHexUnit t, FrontendResultRevealSource sourceType)
+    {
+        int damage = CalculateShootDamageAndSendMessage(t);
+        return DealMePUREForFrontendReveal(damage, t, sourceType);
+    }
+
+    int CalculateShootDamageAndSendMessage(TosterHexUnit t)
+    {
+        //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
+        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        HexClass[] Distance = Pathing(t.Hex, true);
+
+        if (Distance.Length > 6)
+        {
+            dmgdouble -= dmgdouble / 2;
+        }
+
+        int damage = Convert.ToInt32(dmgdouble);
+        SendDamageMsg(t, damage);
+
+        return damage;
     }
     public void AttackMeS(TosterHexUnit t)
     {
@@ -984,18 +1142,21 @@ public class TosterHexUnit : IQPathUnit
     {
        // double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
                                                                        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        TextToSend = "";
-        TextToSend += t.Name + " zadał " + Convert.ToInt32(dmgdouble) + " obrażeń " + this.Name;
         Quaternion q;
-        if (t.teamN == true)
-        {
-            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
-        }
-        else
-        {
-            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
-        }
-        DealMePURE(Convert.ToInt32(dmgdouble));
+        int damage = Convert.ToInt32(dmgdouble);
+        SendDamageMsg(t, damage);
+        PlayStoneSkinDamageReductionFeedback(damage);
+        DealMePURE(damage);
+    
+    }
+
+    public FrontendResultReveal DealMeDMGForFrontendReveal(TosterHexUnit t, FrontendResultRevealSource sourceType)
+    {
+       // double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
+                                                                       double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        int damage = Convert.ToInt32(dmgdouble);
+        SendDamageMsg(t, damage);
+        return DealMePUREForFrontendReveal(damage, t, sourceType);
     
     }
     public void DealMeDMGS(TosterHexUnit t)
@@ -1012,6 +1173,80 @@ public class TosterHexUnit : IQPathUnit
 
     }
     public bool DealMePURE(int i)
+    {
+        return DealMePURE(i, true);
+    }
+
+    public FrontendResultReveal DealMePUREForFrontendReveal(int i, TosterHexUnit source, FrontendResultRevealSource sourceType)
+    {
+        TosterView targetView = tosterView;
+        bool damageWasReduced = i > 0 && FlatDMGReduce > 0;
+        bool survived = DealMePURE(i, false);
+        return new FrontendResultReveal(sourceType, source, this, targetView, i, survived, damageWasReduced);
+    }
+
+    void PlayStoneSkinDamageReductionFeedback(int finalDamage)
+    {
+        if (finalDamage <= 0 || FlatDMGReduce <= 0)
+        {
+            return;
+        }
+
+        SkillPresentationManager.PlayImpact("Stone_Skin", this, this, Hex);
+    }
+
+    public FrontendResultReveal BuildHealFrontendReveal(TosterHexUnit source, FrontendResultRevealSource sourceType, FrontendTargetReaction targetReaction = FrontendTargetReaction.Hit)
+    {
+        return new FrontendResultReveal(sourceType, FrontendResultRevealKind.Heal, source, this, tosterView, 0, true, false, targetReaction);
+    }
+
+    public FrontendResultReveal BuildStatusFrontendReveal(TosterHexUnit source, FrontendResultRevealSource sourceType, FrontendTargetReaction targetReaction = FrontendTargetReaction.Hit)
+    {
+        return new FrontendResultReveal(sourceType, FrontendResultRevealKind.Status, source, this, tosterView, 0, true, false, targetReaction);
+    }
+
+    string GetAnimatorStateForTargetReaction(FrontendTargetReaction targetReaction)
+    {
+        switch (targetReaction)
+        {
+            case FrontendTargetReaction.Buff:
+                return "buff";
+            case FrontendTargetReaction.Debuff:
+                return "debuff";
+            case FrontendTargetReaction.Hit:
+                return "hit";
+            default:
+                return null;
+        }
+    }
+
+    public IEnumerator RevealFrontendResult(FrontendResultReveal reveal)
+    {
+        if (reveal == null || reveal.TargetUnit != this || !reveal.ShouldReveal)
+        {
+            yield break;
+        }
+
+        if (reveal.DamageWasReduced)
+        {
+            PlayStoneSkinDamageReductionFeedback(reveal.Damage);
+        }
+
+        if (reveal.ResultKind == FrontendResultRevealKind.Damage && !reveal.TargetSurvived)
+        {
+            yield return PlayDeathAnimationAndWait();
+        }
+        else
+        {
+            string stateName = GetAnimatorStateForTargetReaction(reveal.TargetReaction);
+            if (!string.IsNullOrEmpty(stateName))
+            {
+                yield return PlayAnimatorStateAndWait(stateName);
+            }
+        }
+    }
+
+    public bool DealMePURE(int i, bool playHitAnimation)
     {
         
  
@@ -1030,19 +1265,14 @@ public class TosterHexUnit : IQPathUnit
 
         }
         else TempHP = GetHP();
-        TextToSend = "";
-        TextToSend += this.Name + " stracił " +(tempamout-Amount) + " jednostek";
-        if (this.teamN != false)
+        SendUnitLossMsg(tempamout - Amount);
+        if (i > 0 && playHitAnimation)
         {
-            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
-        }
-        else
-        {
-            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
+            PlayAnimatorState(Amount < 1 ? "death" : "hit");
         }
         if (Amount < 1)
         {
-            Died();
+            Died(playHitAnimation);
             return false;
         }
         else { SetTextAmount(); return true; }
@@ -1052,18 +1282,20 @@ public class TosterHexUnit : IQPathUnit
 
         Debug.LogError(i);
         i =Convert.ToInt32(ReCalculateDamageBetweenTosters(t,this,1,i, isStackable));
-        TextToSend = "";
-        TextToSend += t.Name + " zadał " + Convert.ToInt32(i) + " obrażeń " + this.Name;
+        PlayStoneSkinDamageReductionFeedback(i);
         Quaternion q;
-        if (t.teamN == true)
-        {
-            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Master);
-        }
-        else
-        {
-            Chat.chat.SendMessageToChat(TextToSend, Msg.MessageType.Client);
-        }
+        SendDamageMsg(t, Convert.ToInt32(i));
         this.DealMePURE(Convert.ToInt32(i));
+
+    }
+
+    public FrontendResultReveal DealMeDMGDefForFrontendReveal(int i, TosterHexUnit t, bool isStackable, FrontendResultRevealSource sourceType)
+    {
+
+        Debug.LogError(i);
+        i =Convert.ToInt32(ReCalculateDamageBetweenTosters(t,this,1,i, isStackable));
+        SendDamageMsg(t, Convert.ToInt32(i));
+        return this.DealMePUREForFrontendReveal(Convert.ToInt32(i), t, sourceType);
 
     }
 
@@ -1104,17 +1336,29 @@ public class TosterHexUnit : IQPathUnit
 
     public void Died()
     {
+        Died(true);
+    }
 
-            this.tosterView.GetComponentInChildren<Animator>().enabled=false;
-       
+    void Died(bool applyImmediateVisual)
+    {
+        if (tosterView != null)
+        {
+            TextMesh amountText = tosterView.gameObject.GetComponentInChildren<TextMesh>();
+            if (amountText != null)
+            {
+                amountText.text = "";
+            }
+        }
 
-        tosterView.gameObject.GetComponentInChildren<TextMesh>().text = "";
         isDead = true;
         Moved = true;
         Team.HexesUnderTeam.Remove(this.Hex);
         Hex.RemoveToster(this);
         //tosterView.Destroy();
-       tosterView.gameObject.transform.localScale = new Vector3(1f, 0.1f, 1f);
+        if (applyImmediateVisual && tosterView != null)
+        {
+            tosterView.gameObject.transform.localScale = new Vector3(1f, 0.1f, 1f);
+        }
     }
 
 
@@ -1138,6 +1382,79 @@ public class TosterHexUnit : IQPathUnit
             SpellsGoingOn.Remove(s);
         }
 
+        TickCooldowns();
+        QueueAutocastsForNextTurn();
+
+    }
+
+    public IEnumerator CheckSpellsSequence()
+    {
+        List<SpellOverTime> spellSnapshot = new List<SpellOverTime>(SpellsGoingOn);
+        for (int i = 0; i < spellSnapshot.Count; i++)
+        {
+            SpellOverTime s = spellSnapshot[i];
+            if (s == null || SpellsGoingOn.Contains(s) == false)
+            {
+                continue;
+            }
+
+            if (CanContinuePassiveSequence() == false)
+            {
+                yield break;
+            }
+
+            if (ResolveNewTurnSpell(s) == false)
+            {
+                yield break;
+            }
+
+            yield return SkillPresentationManager.WaitForBlockingPresentation(PassiveResolveMaxWaitSeconds);
+
+            if (CanContinuePassiveSequence() == false)
+            {
+                yield break;
+            }
+        }
+
+        FinishNewTurnSpellProcessing();
+    }
+
+    public bool ResolveNewTurnSpell(SpellOverTime s, bool requireAlive = true)
+    {
+        if (s == null || SpellsGoingOn.Contains(s) == false || (requireAlive && CanContinuePassiveSequence() == false))
+        {
+            return false;
+        }
+
+        Debug.LogError(s.Time);
+        Debug.LogError(s.me.Name);
+        s.DoTurn();
+        if (s.IsOver())
+        {
+            SpellsGoingOn.Remove(s);
+        }
+
+        return true;
+    }
+
+    public void FinishNewTurnSpellProcessing()
+    {
+        TickCooldowns();
+        if (CanContinuePassiveSequence() == false)
+        {
+            return;
+        }
+
+        QueueAutocastsForNextTurn();
+    }
+
+    bool CanContinuePassiveSequence()
+    {
+        return isDead == false && Amount > 0;
+    }
+
+    void TickCooldowns()
+    {
         //int i = 0;
         for (int i=0; i<cooldowns.Count;i++)
         {
@@ -1147,6 +1464,10 @@ public class TosterHexUnit : IQPathUnit
             }
    
         }
+    }
+
+    void QueueAutocastsForNextTurn()
+    {
         foreach (string s in skillstrings)
         {
             if (ListOfAutocasts.Contains(s))
@@ -1154,7 +1475,6 @@ public class TosterHexUnit : IQPathUnit
                 AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, s, false);
             }
         }
-
     }
 
 
@@ -1241,13 +1561,25 @@ public class TosterHexUnit : IQPathUnit
 
     public void SendMsg(string s)
     {
-        if (this.teamN == true)
-        {
-            Chat.chat.SendMessageToChat(s, Msg.MessageType.Master);
-        }
-        else
-        {
-            Chat.chat.SendMessageToChat(s, Msg.MessageType.Client);
-        }
+        Chat.chat.SendUnitTextMessage(this, s);
+    }
+
+    void SendDamageMsg(TosterHexUnit attacker, int damage)
+    {
+        string attackerName = attacker != null ? attacker.Name : "";
+        TextToSend = attackerName + " zadał " + damage + " obrażeń " + this.Name;
+        Chat.chat.SendDamageMessage(attacker, damage, this);
+    }
+
+    void SendUnitLossMsg(int amountLost)
+    {
+        TextToSend = this.Name + " stracił " + amountLost + " jednostek";
+        Chat.chat.SendUnitLossMessage(this, amountLost);
+    }
+
+    void SendTrapTriggeredMsg(string trapName, TosterHexUnit trapOwner)
+    {
+        TextToSend = this.Name + " wszedł w " + trapName;
+        Chat.chat.SendTrapTriggeredMessage(this, trapName, trapOwner);
     }
 }

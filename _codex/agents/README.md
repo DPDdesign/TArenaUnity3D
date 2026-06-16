@@ -11,6 +11,10 @@ the user explicitly asks for comparison or migration.
 
 Chat/task titles for this project must start with `[TARENA]`.
 
+Use TextMesh Pro only for UI and code text references in this project. Prefer
+TMP types such as `TMP_Text` and `TextMeshProUGUI`, never legacy
+`UnityEngine.UI.Text`.
+
 ## Default Agent
 
 Use `_codex/agents/coding-agent.md` for normal Unity/C# work.

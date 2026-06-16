@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Xml;
 using UnityEngine;
 using UnityEngine.UI;
  
@@ -14,9 +13,9 @@ public class PanelArmii : MonoBehaviour
     public List<Text> texts;
     public Button back;
     public List<Image> Imagess;
-    public List<string> ListOfHeroes;// = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
-    public List<string> ListOfImages;// = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2", "Sprites/Szaman1" });
-    public List<string> ListOfUnits;// = new List<string>(new string[] { "TosterDPS", "TosterTANK", "TosterHEAL", "Szaman", "zodyn"});
+    public List<string> ListOfHeroes;
+    public List<string> ListOfImages;
+    public List<string> ListOfUnits;
     public BuildG LoadedBuild;
     public Sprite sprite;
     [System.Serializable]
@@ -46,33 +45,11 @@ public class PanelArmii : MonoBehaviour
 
     public void LoadListOfUnits()
     {
-
-        ListOfUnits = new List<string>();
-            //TODO: VALIDATE SCHEMA/XML
-            TextAsset textAsset = (TextAsset)Resources.Load("data/Units");
-            XmlDocument xmldoc = new XmlDocument();
-            xmldoc.LoadXml(textAsset.text);
-            XmlNodeList nodes = xmldoc.SelectNodes("Units/Unit/Name");
-            foreach (XmlNode node in nodes)
-            {
-            ListOfUnits.Add(node.InnerText);
-          //  Debug.LogError(node.InnerText);
-            }
-           
+        ListOfUnits = DataMapper.Instance.GetAllUnitNames();
     }
     public void LoadListOfImages()
     {
-        ListOfImages = new List<string>();
-        //TODO: VALIDATE SCHEMA/XML
-        TextAsset textAsset = (TextAsset)Resources.Load("data/Units");
-        XmlDocument xmldoc = new XmlDocument();
-        xmldoc.LoadXml(textAsset.text);
-        XmlNodeList nodes = xmldoc.SelectNodes("Units/Unit/Sprite");
-        foreach (XmlNode node in nodes)
-        {
-            ListOfImages.Add(node.InnerText);
-          //  Debug.LogError(node.InnerText);
-        }
+        ListOfImages = DataMapper.Instance.GetAllUnitSpriteReferences();
     }
 
     public List<string> GetList()
@@ -81,11 +58,11 @@ public class PanelArmii : MonoBehaviour
     }
     public void sprawdz()
     {
-        string path = Application.persistentDataPath + "/build1.d";
+        string path = DataMapper.Instance.GetBuildFilePath(1);
     
         for (int i = 0; i < 10; i++)
         {
-            path = Application.persistentDataPath + "/build" + i.ToString() + ".d";
+            path = DataMapper.Instance.GetBuildFilePath(i);
             Debug.Log(path);
             if (File.Exists(path))
             {
@@ -148,7 +125,7 @@ public void AddBuild()
 
     public void RemoveBuild()
     {
-        string path = Application.persistentDataPath + "/build"+Buildnr+".d";
+        string path = DataMapper.Instance.GetBuildFilePath(Buildnr);
         if (File.Exists(path))
         {
             File.Delete(path);
@@ -178,7 +155,7 @@ public void SetBuildnr(string x)
 
     public void WczytajPlik(string i)
     {
-        string path = Application.persistentDataPath + "/build" + i + ".d";
+        string path = DataMapper.Instance.GetBuildFilePath(i);
         if (File.Exists(path))
         {
             BinaryFormatter formatter = new BinaryFormatter();
@@ -204,7 +181,7 @@ public void SetBuildnr(string x)
             Build.NoUnits = generator.UnitsAmount;
             Build.Costs = generator.Costs;
             BinaryFormatter formatter = new BinaryFormatter();
-            string path = Application.persistentDataPath + "/build"+PlayerPrefs.GetString("BuildNumber")+".d";
+            string path = DataMapper.Instance.GetBuildFilePath(PlayerPrefs.GetString("BuildNumber"));
             FileStream file = File.Create(path);
             formatter.Serialize(file, Build);
             file.Close();

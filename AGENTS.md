@@ -38,6 +38,7 @@ Project-specific agent material must live under `_codex/`:
 - `_codex/agents/`
 - `_codex/Context/`
 - `_codex/Documentation/`
+- `_codex/Gen_Im/`
 - `_codex/skills/`
 - `_codex/tasks/`
 
@@ -64,9 +65,19 @@ TArenaUnity3D is a Unity project. Project-specific gameplay, production, and
 technical truth must be written into local templates under `_codex/Context/` as
 it becomes known.
 
+Generated image previews and UI concept renders for this project should be
+copied into `_codex/Gen_Im/` before final reporting.
+
 ## Hard Project Rules
 
 - Work in small, safe, testable steps.
+- When Python tooling is needed on Windows, use `py -3` instead of `python`.
+  Do not rely on the Microsoft Store `python.exe` alias.
+- Use TextMesh Pro only for project text UI and code references. When touching
+  UI or text components, use TMP types such as `TMP_Text` and
+  `TextMeshProUGUI`. Do not introduce or recommend legacy
+  `UnityEngine.UI.Text`.
+- Do not write or edit code unless the user explicitly asks for implementation.
 - Do not build large systems unless explicitly asked.
 - Do not rename public or serialized fields without permission.
 - Do not change gameplay float values without permission.

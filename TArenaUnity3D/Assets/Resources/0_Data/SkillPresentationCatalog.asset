@@ -1,0 +1,542 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02e89d6f21127a1459c10d2e00959b16, type: 3}
+  m_Name: SkillPresentationCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::SkillPresentationCatalog
+  entries:
+  - skillId: Axe_Rain
+    AnimationPlayPath: 0
+    castVfxDelay: 0.25
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 0}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0.5
+    projectileVfx: {fileID: 178060, guid: e574311839e2dda42a46b55f6875eb50, type: 3}
+    projectileSfx: {fileID: 8300000, guid: c7fedff97236be145ad7261a0bc6a2db, type: 3}
+    projectileSpeed: 30
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 132198, guid: 7fd6040dc6faca54aaedee494aca3103, type: 3}
+    impactSfx: {fileID: 8300000, guid: 4c9104566eaa9814e9f50b6f91c33460, type: 3}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Blind_by_light
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: f68b564d214b6ae4ca974680abb848c7, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 108168, guid: 557a7e3cafb257e4186fb8129433a303, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0.4
+    effectLifetimeSeconds: 1
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Chope
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: 442f759381cdec948b3fe4d8e27d7ff2, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0.5
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 191018, guid: 592694f61583d324b94e3110ba605da5, type: 3}
+    impactSfx: {fileID: 8300000, guid: 439cce076eb22374eb789153d38767c0, type: 3}
+    impactDelaySeconds: 0.4
+    effectLifetimeSeconds: 1
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Cold_Blood
+    AnimationPlayPath: 0
+    castVfxDelay: 0.25
+    castVfx: {fileID: 132198, guid: 5d73c81fad39bdd46af4f1c8ddf3e993, type: 3}
+    castSfx: {fileID: 8300000, guid: 7e5a83a3f3880934890227ffecd3d3da, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 132198, guid: 5d73c81fad39bdd46af4f1c8ddf3e993, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0.4
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Defence_Ritual
+    AnimationPlayPath: 0
+    castVfxDelay: 0.2
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 0}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 3
+    impactVfx: {fileID: 100006, guid: 0eed9fcd74c2ba2449a54bb890668e8c, type: 3}
+    impactSfx: {fileID: 8300000, guid: f6d6ce37a6199e345b1eaad1cf23a39d, type: 3}
+    impactDelaySeconds: 0.1
+    effectLifetimeSeconds: 2
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Double_Throw
+    AnimationPlayPath: 0
+    castVfxDelay: 0.137
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 0}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0.05
+    projectileVfx: {fileID: 178060, guid: e574311839e2dda42a46b55f6875eb50, type: 3}
+    projectileSfx: {fileID: 8300000, guid: 112da0253779e2d4e8afba0961058d2c, type: 3}
+    projectileSpeed: 22
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 132198, guid: 7fd6040dc6faca54aaedee494aca3103, type: 3}
+    impactSfx: {fileID: 8300000, guid: e6823993b7fc4b54ea8566fc53f5af43, type: 3}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Fire_Ball
+    AnimationPlayPath: 0
+    castVfxDelay: 0.2
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: 1996b1cfa4d618d42a5f8c414670a20d, type: 3}
+    useTrail: 0
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 182490, guid: 722f421fa4365f64a82e19bb90338e87, type: 3}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 30
+    impactAnchor: 0
+    targetReaction: 0
+    impactVfx: {fileID: 184234, guid: 847a556973174d84bbe49226f543a92d, type: 3}
+    impactSfx: {fileID: 8300000, guid: 1ec7b5e406c63be4fbe15e5fbfe0a95f, type: 3}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Fire_Movement
+    AnimationPlayPath: 0
+    castVfxDelay: 0.7
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 0}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 0
+    targetReaction: 0
+    impactVfx: {fileID: 171178, guid: 4e845b2a2f67c424d95d2f46ec589f9f, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 919132149155446097, guid: b12491bb69fe7d545a6682977b324a19,
+      type: 3}
+  - skillId: Fire_Skin
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 100002, guid: d9eca31fd43c4f94cb4860b71f3a6d40, type: 3}
+    castSfx: {fileID: 8300000, guid: 92e29a3c86330264fa2196f46fec50ad, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 2
+    targetReaction: 0
+    impactVfx: {fileID: 100012, guid: 9825718a75f7cfb428f2377f35d10ed5, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0.4
+    effectLifetimeSeconds: 0.3
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Force_Pull
+    AnimationPlayPath: 0
+    castVfxDelay: 0.2
+    castVfx: {fileID: 130084, guid: 9c8b1062f0fce064d90ad316f2cbd7f9, type: 3}
+    castSfx: {fileID: 8300000, guid: f6d6ce37a6199e345b1eaad1cf23a39d, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 150004, guid: 64c8b9c38bf64424eadb1aff4bdca6f7, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0.6
+    effectLifetimeSeconds: 1.4
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Hate
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: 72d93f1388de18945856d20e656fffa9, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 0
+    targetReaction: 0
+    impactVfx: {fileID: 132198, guid: 5d73c81fad39bdd46af4f1c8ddf3e993, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0.3
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Heavy_Fists
+    AnimationPlayPath: 0
+    castVfxDelay: 0.2
+    castVfx: {fileID: 6108769070316271571, guid: 7feff4a244b087245be1bdc2196a938f,
+      type: 3}
+    castSfx: {fileID: 8300000, guid: df1f6c1ed9f90634399f661a58d9dbaa, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 100012, guid: 9825718a75f7cfb428f2377f35d10ed5, type: 3}
+    impactSfx: {fileID: 8300000, guid: 756d00bb5c6367b47ba9f64ecc01a9e2, type: 3}
+    impactDelaySeconds: 0.4
+    effectLifetimeSeconds: 1
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Insult
+    AnimationPlayPath: 0
+    castVfxDelay: 0.7
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: 920e083830f7cba4f8e1b9d9728c4531, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 132198, guid: 1df7012576b854e4c9a5535a40758a27, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Long_Lick
+    AnimationPlayPath: 0
+    castVfxDelay: 0.1
+    castVfx: {fileID: 100006, guid: 0eed9fcd74c2ba2449a54bb890668e8c, type: 3}
+    castSfx: {fileID: 8300000, guid: df1f6c1ed9f90634399f661a58d9dbaa, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 150004, guid: 64c8b9c38bf64424eadb1aff4bdca6f7, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0.6
+    effectLifetimeSeconds: 1.2
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Massochism
+    AnimationPlayPath: 1
+    castVfxDelay: 0
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 0}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 3
+    targetReaction: 0
+    impactVfx: {fileID: 0}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0.3
+    effectLifetimeSeconds: 0.6
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Rage
+    AnimationPlayPath: 0
+    castVfxDelay: 0.2
+    castVfx: {fileID: 132198, guid: 1df7012576b854e4c9a5535a40758a27, type: 3}
+    castSfx: {fileID: 8300000, guid: 3dd8ab5b4653172499ed90aae2b6e662, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 2
+    targetReaction: 3
+    impactVfx: {fileID: 0}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0.1
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Rotting
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 100002, guid: ea55f817bcb56494695eca9f13742b4a, type: 3}
+    castSfx: {fileID: 8300000, guid: 1522f9f810d9ddb479ab287b734816ba, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 2
+    targetReaction: 0
+    impactVfx: {fileID: 0}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0.25
+    effectLifetimeSeconds: 1
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Rope_Trap
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: 8acd5f396f839e04b8bf7678792ecf97, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 0
+    targetReaction: 0
+    impactVfx: {fileID: 130084, guid: 9c8b1062f0fce064d90ad316f2cbd7f9, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 2
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 919132149155446097, guid: 5836ce4ce09194644be888c9c97e970b,
+      type: 3}
+  - skillId: Rush
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: 3fb546824ae92b4409f94230b3883fed, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0.4
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 0
+    targetReaction: 0
+    impactVfx: {fileID: 0}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 1
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Shapeshift
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 166930, guid: 7d500fe649440354b970852340b3a46f, type: 3}
+    castSfx: {fileID: 8300000, guid: 50b60d6697bffd847808d4f60e2aa6a0, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 2
+    targetReaction: 0
+    impactVfx: {fileID: 0}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 1.2
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Slash
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: 74c1de76087e74d40ad662f6d7664277, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 132198, guid: 5d73c81fad39bdd46af4f1c8ddf3e993, type: 3}
+    impactSfx: {fileID: 8300000, guid: 8919fb1640357f04b8d1651b8690203b, type: 3}
+    impactDelaySeconds: 0.5
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Spike_Trap
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: 9cbf57ec7028ba643af1820e9565c928, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 0
+    targetReaction: 0
+    impactVfx: {fileID: 130084, guid: 9c8b1062f0fce064d90ad316f2cbd7f9, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 2
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 919132149155446097, guid: 3f6c4d0df3528ee44b6db49ffd2047a6,
+      type: 3}
+  - skillId: Stone_Stance
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 142328, guid: 89b16e1fbf903cb469f1c968eb195a75, type: 3}
+    castSfx: {fileID: 8300000, guid: 1da5080114547f74fa920806b7ea6dac, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 2
+    targetReaction: 3
+    impactVfx: {fileID: 0}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 1.2
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Stone_Throw
+    AnimationPlayPath: 0
+    castVfxDelay: 0.7
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: 75853e19e89e1f847a19dd59dc5e476e, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 131830, guid: da5b218f99284e34ab7f7865855c3675, type: 3}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 30
+    impactAnchor: 0
+    targetReaction: 0
+    impactVfx: {fileID: 198426, guid: 6bc2e172492149640a2926574ed89f4f, type: 3}
+    impactSfx: {fileID: 8300000, guid: acfc68d8984e53e489a3857e36eed87a, type: 3}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Stone_Skin
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 0}
+    useTrail: 0
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 2
+    targetReaction: 0
+    impactVfx: {fileID: 0}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 1
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Tough_Skin
+    AnimationPlayPath: 0
+    castVfxDelay: 0.1
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: 1522f9f810d9ddb479ab287b734816ba, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 3
+    impactVfx: {fileID: 168396, guid: 8062a0f91e63e3b45a045db000ad52f2, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Toxic_Fume
+    AnimationPlayPath: 0
+    castVfxDelay: 0
+    castVfx: {fileID: 150516, guid: 40d8995d37b228c419637bcf1dade8bf, type: 3}
+    castSfx: {fileID: 8300000, guid: 1522f9f810d9ddb479ab287b734816ba, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 182458, guid: 192a807de5bc83c498bf94f94e6f6b75, type: 3}
+    impactSfx: {fileID: 8300000, guid: a149b443e851a1f49bce5452553eb450, type: 3}
+    impactDelaySeconds: 0.4
+    effectLifetimeSeconds: 1
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  - skillId: Terrifying_Presence
+    AnimationPlayPath: 0
+    castVfxDelay: 0.1
+    castVfx: {fileID: 127662, guid: c70cded20eb22b54b85e9004073a5073, type: 3}
+    castSfx: {fileID: 8300000, guid: 432ee7ba7855797479806c97ba7bbc82, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 0}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 0
+    impactAnchor: 1
+    targetReaction: 0
+    impactVfx: {fileID: 100012, guid: 9825718a75f7cfb428f2377f35d10ed5, type: 3}
+    impactSfx: {fileID: 0}
+    impactDelaySeconds: 0.3
+    effectLifetimeSeconds: 1
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}
+  defaultBasicRangedAttackEntry:
+    skillId: 
+    AnimationPlayPath: 0
+    castVfxDelay: 0.7
+    castVfx: {fileID: 0}
+    castSfx: {fileID: 8300000, guid: bd5e793ea14f9b645849bf0f6e04c93e, type: 3}
+    useTrail: 1
+    weaponTrailDurationSeconds: 0
+    projectileVfx: {fileID: 145510, guid: fe4766ac0a435874a9ad406bfea0ba09, type: 3}
+    projectileSfx: {fileID: 0}
+    projectileSpeed: 16
+    impactAnchor: 0
+    targetReaction: 0
+    impactVfx: {fileID: 105340, guid: 72cf50dded273ff4dbe5f2338b06b066, type: 3}
+    impactSfx: {fileID: 8300000, guid: 50635e2526f8bdd47b52cb6666fbaf4e, type: 3}
+    impactDelaySeconds: 0
+    effectLifetimeSeconds: 0
+    projectileImpactDelaySeconds: 0
+    spawnModel: {fileID: 0}

@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TArena PRD019 UI Flow Board</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111317;
+      --panel: #191d24;
+      --panel-2: #222833;
+      --line: #3b4350;
+      --text: #f2f4f8;
+      --muted: #aab2bf;
+      --blue: #5aa9e6;
+      --green: #54c68c;
+      --amber: #e0b15a;
+      --red: #e26d5c;
+      --violet: #9a86d9;
+      --slot: #2d3440;
+      --locked: #272b33;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.35;
+    }
+
+    main {
+      width: min(1440px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 28px 0 52px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    .board-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    .board-title {
+      display: grid;
+      gap: 6px;
+    }
+
+    .board-title h1 {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .board-title p,
+    .task-meta {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .mode-strip {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      background: #151922;
+      white-space: nowrap;
+    }
+
+    .pill.active {
+      color: #062d1d;
+      background: var(--green);
+      border-color: var(--green);
+      font-weight: 700;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(100px, 1fr));
+      gap: 8px;
+      margin: 18px 0 28px;
+    }
+
+    .flow-step {
+      min-height: 74px;
+      border: 1px solid var(--line);
+      background: #171b22;
+      border-radius: 8px;
+      padding: 10px;
+      display: grid;
+      align-content: center;
+      gap: 4px;
+    }
+
+    .flow-step strong {
+      font-size: 13px;
+    }
+
+    .flow-step span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .screen {
+      margin-top: 28px;
+    }
+
+    .screen-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .screen-head h2 {
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .mockup {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #12161d;
+      padding: 16px;
+      min-height: 560px;
+      display: grid;
+      gap: 12px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+    }
+
+    .topbar,
+    .footerbar {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      min-height: 48px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 260px 1fr 320px;
+      gap: 12px;
+      min-height: 410px;
+    }
+
+    .content-grid.two {
+      grid-template-columns: 1.2fr 1fr;
+    }
+
+    .content-grid.wide-right {
+      grid-template-columns: 300px 1fr 380px;
+    }
+
+    .content-grid.roster {
+      grid-template-columns: 280px 1fr 330px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 12px;
+      min-width: 0;
+    }
+
+    .panel h3 {
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 10px;
+    }
+
+    .list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .row,
+    .offer,
+    .reward,
+    .slot,
+    .history-row {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-2);
+      padding: 10px;
+    }
+
+    .row.selected,
+    .offer.selected,
+    .reward.selected,
+    .slot.selected {
+      border-color: var(--green);
+      box-shadow: inset 0 0 0 1px rgba(84, 198, 140, 0.45);
+    }
+
+    .row-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .row-meta,
+    .micro,
+    .cell-muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .statline {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .tag {
+      border-radius: 4px;
+      background: #111720;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      padding: 4px 6px;
+    }
+
+    .tag.green {
+      color: var(--green);
+      border-color: rgba(84, 198, 140, 0.5);
+    }
+
+    .tag.amber {
+      color: var(--amber);
+      border-color: rgba(224, 177, 90, 0.5);
+    }
+
+    .tag.red {
+      color: var(--red);
+      border-color: rgba(226, 109, 92, 0.5);
+    }
+
+    .army-table {
+      display: grid;
+      gap: 6px;
+    }
+
+    .army-row {
+      display: grid;
+      grid-template-columns: 1fr 44px 58px 62px;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px;
+      background: #181f28;
+      font-size: 13px;
+    }
+
+    .army-row.header {
+      background: transparent;
+      color: var(--muted);
+      border-color: transparent;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .unit-name {
+      display: grid;
+      gap: 2px;
+    }
+
+    .skill-dots {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .dot.locked {
+      background: #5b6470;
+    }
+
+    .routes {
+      display: grid;
+      gap: 10px;
+    }
+
+    .route-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #181f28;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .route-card.selected {
+      border-color: var(--blue);
+    }
+
+    .button {
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: var(--green);
+      color: #062d1d;
+      padding: 10px 16px;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .button.secondary {
+      background: transparent;
+      border-color: var(--line);
+      color: var(--text);
+    }
+
+    .button.danger {
+      background: var(--red);
+      color: #2b0905;
+    }
+
+    .map-lanes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      height: 100%;
+      align-items: stretch;
+    }
+
+    .lane {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      display: grid;
+      align-content: space-between;
+      gap: 12px;
+      background: #151a22;
+    }
+
+    .node {
+      width: 100%;
+      min-height: 54px;
+      border-radius: 8px;
+      border: 2px solid var(--line);
+      background: #202733;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px;
+    }
+
+    .node.available {
+      border-color: var(--blue);
+    }
+
+    .node.done {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .node.final {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .battle-board {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 6px;
+      align-content: center;
+      height: 100%;
+      padding: 12px;
+      background: #161b22;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .hex {
+      aspect-ratio: 1 / 0.86;
+      clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+      background: #2b3340;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 11px;
+      min-width: 0;
+    }
+
+    .hex.player {
+      background: rgba(84, 198, 140, 0.45);
+      color: var(--text);
+    }
+
+    .hex.enemy {
+      background: rgba(226, 109, 92, 0.45);
+      color: var(--text);
+    }
+
+    .hex.target {
+      outline: 2px solid var(--amber);
+      outline-offset: -2px;
+    }
+
+    .reward-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .reward {
+      display: grid;
+      gap: 12px;
+      min-height: 240px;
+      align-content: start;
+    }
+
+    .reward .verb {
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .preview-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .mini-unit {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px;
+      background: #161d26;
+      min-height: 68px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .shop-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr 300px;
+      gap: 12px;
+    }
+
+    .offer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 8px;
+    }
+
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 70px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid var(--line);
+      background: #181f28;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 13px;
+    }
+
+    .slot-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .slot {
+      min-height: 76px;
+      display: grid;
+      align-content: center;
+      gap: 3px;
+      text-align: center;
+      background: var(--slot);
+    }
+
+    .slot.locked {
+      background: var(--locked);
+      color: #747d8b;
+      border-style: dashed;
+    }
+
+    .slot.empty {
+      color: var(--green);
+      border-color: rgba(84, 198, 140, 0.4);
+    }
+
+    .slot.taken {
+      color: var(--amber);
+      border-color: rgba(224, 177, 90, 0.45);
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .versus {
+      display: grid;
+      place-items: center;
+      font-size: 34px;
+      font-weight: 900;
+      color: var(--muted);
+    }
+
+    .progress {
+      height: 12px;
+      background: #111720;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      width: 68%;
+      background: var(--blue);
+    }
+
+    @media (max-width: 1100px) {
+      main {
+        width: min(100% - 24px, 980px);
+      }
+
+      .board-header,
+      .content-grid,
+      .content-grid.two,
+      .content-grid.wide-right,
+      .content-grid.roster,
+      .shop-layout,
+      .result-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .flow,
+      .reward-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .mockup {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .flow,
+      .reward-grid,
+      .map-lanes,
+      .offer-grid,
+      .preview-strip,
+      .slot-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .screen-head,
+      .mode-strip,
+      .topbar,
+      .footerbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .army-row {
+        grid-template-columns: 1fr 40px 52px 58px;
+      }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header class="board-header">
+    <div class="board-title">
+      <h1>TArena PRD019 UI Flow Board</h1>
+      <p>Offline-first metagame flow. Future Online Mode uses separate backend-authoritative adapters.</p>
+    </div>
+    <div class="mode-strip" aria-label="mode guardrail">
+      <span class="pill active">Offline Mode now</span>
+      <span class="pill">Online Mode future</span>
+      <span class="pill">No PlayFab/PUN/Photon</span>
+    </div>
+  </header>
+
+  <nav class="flow" aria-label="PRD019 task flow">
+    <div class="flow-step"><strong>020 Start Run</strong><span>Starting army + route preview</span></div>
+    <div class="flow-step"><strong>021 Run Map</strong><span>Three route paths + next node</span></div>
+    <div class="flow-step"><strong>022 Run Battle</strong><span>Local battle adapter + result</span></div>
+    <div class="flow-step"><strong>023 Reward Map</strong><span>1 of 3 reward cards</span></div>
+    <div class="flow-step"><strong>024 Run Shop</strong><span>Limited offers + preview</span></div>
+    <div class="flow-step"><strong>025 Summary</strong><span>Pre-final army save</span></div>
+    <div class="flow-step"><strong>026 Saved Armies</strong><span>Roster + defence</span></div>
+    <div class="flow-step"><strong>027 Result</strong><span>Rank + account XP</span></div>
+  </nav>
+
+  <section class="screen" id="start-run">
+    <div class="screen-head">
+      <h2>020 PRD019: Start Run</h2>
+      <p class="task-meta">Starting Armies are weaker presets. They are not Saved Armies.</p>
+    </div>
+    <div class="mockup">
+      <div class="topbar">
+        <strong>Start Offline Run</strong>
+        <span class="pill active">Local run state</span>
+      </div>
+      <div class="content-grid">
+        <aside class="panel">
+          <h3>Starting Armies</h3>
+          <div class="list">
+            <div class="row selected">
+              <div class="row-title"><span>Wolf Gate</span><span>1320</span></div>
+              <div class="row-meta">Balanced starter, 3 stacks</div>
+            </div>
+            <div class="row">
+              <div class="row-title"><span>Fire Path</span><span>1180</span></div>
+              <div class="row-meta">Risky caster start</div>
+            </div>
+            <div class="row">
+              <div class="row-title"><span>Stone Guard</span><span>1460</span></div>
+              <div class="row-meta">Slow defensive start</div>
+            </div>
+          </div>
+        </aside>
+        <section class="panel">
+          <h3>Selected Starting Army</h3>
+          <div class="army-table">
+            <div class="army-row header"><span>Unit</span><span>Tier</span><span>Amount</span><span>Value</span></div>
+            <div class="army-row">
+              <div class="unit-name"><strong>Rusher</strong><span class="micro">Chope unlocked, Rush locked</span><span class="skill-dots"><i class="dot"></i><i class="dot locked"></i></span></div>
+              <span>I</span><span>42</span><span>420</span>
+            </div>
+            <div class="army-row">
+              <div class="unit-name"><strong>Thrower</strong><span class="micro">Throw stance ready</span><span class="skill-dots"><i class="dot"></i><i class="dot"></i></span></div>
+              <span>I</span><span>24</span><span>390</span>
+            </div>
+            <div class="army-row">
+              <div class="unit-name"><strong>Healer</strong><span class="micro">Ritual locked</span><span class="skill-dots"><i class="dot"></i><i class="dot locked"></i></span></div>
+              <span>II</span><span>12</span><span>510</span>
+            </div>
+          </div>
+          <div class="statline">
+            <span class="tag green">Total value 1320</span>
+            <span class="tag">Run gold 120</span>
+            <span class="tag amber">No defence/offence badges</span>
+          </div>
+        </section>
+        <aside class="panel">
+          <h3>Route Preview</h3>
+          <div class="routes">
+            <div class="route-card selected">
+              <strong>Forest Pressure</strong>
+              <span class="row-meta">Short battles, recovery hints</span>
+              <span class="tag">Recommended 1200+</span>
+            </div>
+            <div class="route-card">
+              <strong>Stone Market</strong>
+              <span class="row-meta">More shops, stronger final</span>
+              <span class="tag">Recommended 1350+</span>
+            </div>
+            <div class="route-card">
+              <strong>Fire Trial</strong>
+              <span class="row-meta">High risk, rare skills</span>
+              <span class="tag red">Recommended 1500+</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+      <div class="footerbar">
+        <span class="cell-muted">Current value 1320 vs selected route recommendation 1200+</span>
+        <div><button class="button secondary">Back</button> <button class="button">Begin Run</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="run-map">
+    <div class="screen-head">
+      <h2>021 PRD019: Run Map</h2>
+      <p class="task-meta">Node-route map reflects the three route choices from Start Run.</p>
+    </div>
+    <div class="mockup">
+      <div class="topbar">
+        <strong>Run Map - Forest Pressure</strong>
+        <span>Stage Progress 2 / 6 | RUN GOLD 185</span>
+      </div>
+      <div class="content-grid wide-right">
+        <aside class="panel">
+          <h3>Your Army</h3>
+          <div class="preview-strip" style="grid-template-columns: 1fr;">
+            <div class="mini-unit"><strong>Rusher</strong><span>46 alive</span><span class="tag green">+4 since start</span></div>
+            <div class="mini-unit"><strong>Thrower</strong><span>20 alive</span><span class="tag red">-4 losses</span></div>
+            <div class="mini-unit"><strong>Healer</strong><span>12 alive</span><span class="tag">steady</span></div>
+          </div>
+        </aside>
+        <section class="panel">
+          <h3>Three Route Paths</h3>
+          <div class="map-lanes">
+            <div class="lane">
+              <div class="node done">Battle<br>done</div>
+              <div class="node available">Battle<br>available</div>
+              <div class="node">Shop</div>
+              <div class="node final">Boss</div>
+            </div>
+            <div class="lane">
+              <div class="node done">Reward<br>done</div>
+              <div class="node available">Recruit</div>
+              <div class="node">Battle</div>
+              <div class="node final">Boss</div>
+            </div>
+            <div class="lane">
+              <div class="node done">Battle<br>done</div>
+              <div class="node available">Shop</div>
+              <div class="node">Battle</div>
+              <div class="node final">Boss</div>
+            </div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h3>Selected Node</h3>
+          <div class="list">
+            <div class="row selected">
+              <div class="row-title"><span>Battle: Thorn Patrol</span><span>Next</span></div>
+              <div class="row-meta">Possible Rewards: Mass, Recovery, Skill</div>
+              <div class="statline">
+                <span class="tag amber">Expected Risk: Medium?</span>
+                <span class="tag">Enemy goal: deal losses</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="row-title"><span>Travel Result</span><span>Ready</span></div>
+              <div class="row-meta">Offline route adapter validates next node.</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+      <div class="footerbar">
+        <span class="cell-muted">No exact enemy reveal. Risk stays partial information.</span>
+        <div><button class="button secondary">Back</button> <button class="button">Travel</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="run-battle">
+    <div class="screen-head">
+      <h2>022 PRD019: Run Battle</h2>
+      <p class="task-meta">Bridge run node data into the existing local battle path.</p>
+    </div>
+    <div class="mockup">
+      <div class="topbar">
+        <strong>Battle Node: Thorn Patrol</strong>
+        <span>Goal: win, preserve stacks | Result source: offline local</span>
+      </div>
+      <div class="content-grid">
+        <aside class="panel">
+          <h3>Player Army</h3>
+          <div class="list">
+            <div class="row"><div class="row-title"><span>Rusher</span><span>46</span></div><span class="row-meta">front pressure</span></div>
+            <div class="row"><div class="row-title"><span>Thrower</span><span>20</span></div><span class="row-meta">ranged pressure</span></div>
+            <div class="row"><div class="row-title"><span>Healer</span><span>12</span></div><span class="row-meta">support</span></div>
+          </div>
+        </aside>
+        <section class="battle-board" aria-label="simplified battle board">
+          <div class="hex"></div><div class="hex"></div><div class="hex enemy">E</div><div class="hex enemy">E</div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex enemy">E</div><div class="hex"></div>
+          <div class="hex"></div><div class="hex target"></div><div class="hex"></div><div class="hex"></div><div class="hex target"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div>
+          <div class="hex player">P</div><div class="hex"></div><div class="hex"></div><div class="hex player">P</div><div class="hex"></div><div class="hex"></div><div class="hex player">P</div><div class="hex"></div><div class="hex"></div>
+          <div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div>
+        </section>
+        <aside class="panel">
+          <h3>Completion Payload</h3>
+          <div class="list">
+            <div class="row selected"><div class="row-title"><span>Battle Result</span><span>Win</span></div><span class="row-meta">sent back to run state</span></div>
+            <div class="row"><div class="row-title"><span>Losses</span><span>Rusher -6</span></div><span class="row-meta">used by reward and shop</span></div>
+            <div class="row"><div class="row-title"><span>Next Screen</span><span>Reward</span></div><span class="row-meta">no new battle mechanics</span></div>
+          </div>
+        </aside>
+      </div>
+      <div class="footerbar">
+        <span class="cell-muted">Current battle UI remains. This screen only gives run context and transition state.</span>
+        <button class="button">Continue To Reward</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="reward-map">
+    <div class="screen-head">
+      <h2>023 PRD019: Reward Map</h2>
+      <p class="task-meta">One concrete operation. Preview before confirmation.</p>
+    </div>
+    <div class="mockup">
+      <div class="topbar">
+        <strong>Battle Won</strong>
+        <span>Gained: RUN GOLD +45 | Inventory: 1 minor token</span>
+      </div>
+      <section class="panel">
+        <h3>Choose 1 Of 3 Rewards</h3>
+        <div class="reward-grid">
+          <article class="reward">
+            <span class="tag green">Stabilize</span>
+            <div class="verb">Revive</div>
+            <strong>Rusher losses</strong>
+            <span>40 -> 46</span>
+            <p class="row-meta">Recover a small loss from the last battle.</p>
+          </article>
+          <article class="reward selected">
+            <span class="tag amber">Strengthen</span>
+            <div class="verb">Teach</div>
+            <strong>Thrower gains Double Throw</strong>
+            <span>Legal target: Thrower</span>
+            <p class="row-meta">One skill operation. No army-wide skills.</p>
+          </article>
+          <article class="reward">
+            <span class="tag">Pivot</span>
+            <div class="verb">Add</div>
+            <strong>New stack: 10 Trapper</strong>
+            <span>Width reward</span>
+            <p class="row-meta">Adds a tactical role without opening an editor.</p>
+          </article>
+        </div>
+      </section>
+      <div class="content-grid two">
+        <section class="panel">
+          <h3>Army After Focused Reward</h3>
+          <div class="preview-strip">
+            <div class="mini-unit"><strong>Rusher</strong><span>40</span><span class="tag">same</span></div>
+            <div class="mini-unit"><strong>Thrower</strong><span>20</span><span class="tag green">new skill</span></div>
+            <div class="mini-unit"><strong>Healer</strong><span>12</span><span class="tag">same</span></div>
+            <div class="mini-unit"><strong>Run Gold</strong><span>230</span><span class="tag">same</span></div>
+            <div class="mini-unit"><strong>Value</strong><span>1475</span><span class="tag green">+ skill</span></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h3>Validation</h3>
+          <div class="list">
+            <div class="row selected"><div class="row-title"><span>Target</span><span>Legal</span></div><span class="row-meta">Thrower can receive this skill.</span></div>
+            <div class="row"><div class="row-title"><span>Authority</span><span>Offline</span></div><span class="row-meta">Future Online uses backend validation.</span></div>
+          </div>
+        </aside>
+      </div>
+      <div class="footerbar">
+        <span class="cell-muted">Focused card previews the exact applied army state.</span>
+        <div><button class="button secondary">Choose Another</button> <button class="button">Select And Continue</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="run-shop">
+    <div class="screen-head">
+      <h2>024 PRD019: Run Shop</h2>
+      <p class="task-meta">Breathing-room node. Limited offers, not a full army editor.</p>
+    </div>
+    <div class="mockup">
+      <div class="topbar">
+        <strong>Run Shop</strong>
+        <span>RUN GOLD 230 | Offline shop visit</span>
+      </div>
+      <div class="shop-layout">
+        <aside class="panel">
+          <h3>Your Army</h3>
+          <div class="list">
+            <div class="mini-unit"><strong>Rusher</strong><span>40 alive / 6 lost</span><span class="tag red">wounded</span></div>
+            <div class="mini-unit"><strong>Thrower</strong><span>Double Throw</span><span class="tag green">skilled</span></div>
+            <div class="mini-unit"><strong>Healer</strong><span>Ritual locked</span><span class="tag">support</span></div>
+          </div>
+        </aside>
+        <section class="panel">
+          <h3>Limited Offers</h3>
+          <div class="offer-grid">
+            <div class="offer selected"><div class="row-title"><span>Resurrect Rusher</span><span>80</span></div><span class="row-meta">Recovery offer</span></div>
+            <div class="offer"><div class="row-title"><span>Buy 8 Trapper</span><span>120</span></div><span class="row-meta">Stack offer</span></div>
+            <div class="offer"><div class="row-title"><span>Teach Blind</span><span>160</span></div><span class="row-meta">Skill offer, legal target needed</span></div>
+            <div class="offer"><div class="row-title"><span>Promote Rusher</span><span>200</span></div><span class="row-meta">Upgrade/exchange offer</span></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h3>Offer Preview</h3>
+          <div class="list">
+            <div class="row selected"><div class="row-title"><span>Rusher</span><span>40 -> 46</span></div><span class="row-meta">Revives 6 recent losses.</span></div>
+            <div class="row"><div class="row-title"><span>RUN GOLD</span><span>230 -> 150</span></div><span class="row-meta">One currency only.</span></div>
+            <div class="row"><div class="row-title"><span>Army Value</span><span>1475 -> 1535</span></div><span class="row-meta">Preview matches purchase.</span></div>
+          </div>
+        </aside>
+      </div>
+      <div class="footerbar">
+        <span class="cell-muted">Existing non-run shop/profile economy is not reused.</span>
+        <div><button class="button secondary">Leave</button> <button class="button">Buy</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="summary-value">
+    <div class="screen-head">
+      <h2>025 PRD019: Summary Value</h2>
+      <p class="task-meta">Final proves the pre-final army. Save candidate uses the pre-final snapshot.</p>
+    </div>
+    <div class="mockup">
+      <div class="topbar">
+        <strong>Final Won - Save This Army</strong>
+        <span>Account XP +180 | Next unlock 68%</span>
+      </div>
+      <div class="content-grid wide-right">
+        <aside class="panel">
+          <h3>Run Summary</h3>
+          <div class="timeline">
+            <div class="timeline-row"><span>Start</span><strong>Wolf Gate</strong><span>1320</span></div>
+            <div class="timeline-row"><span>Stage 1</span><strong>Teach Skill</strong><span>+ value</span></div>
+            <div class="timeline-row"><span>Shop</span><strong>Revive Losses</strong><span>-80 gold</span></div>
+            <div class="timeline-row"><span>Pre-final</span><strong>Army snapshot</strong><span>1680</span></div>
+            <div class="timeline-row"><span>Final</span><strong>Win</strong><span>proved</span></div>
+          </div>
+        </aside>
+        <section class="panel">
+          <h3>Saved Army Candidate</h3>
+          <div class="preview-strip">
+            <div class="mini-unit"><strong>Rusher</strong><span>46</span><span class="tag">I</span></div>
+            <div class="mini-unit"><strong>Thrower</strong><span>20</span><span class="tag green">Double Throw</span></div>
+            <div class="mini-unit"><strong>Healer</strong><span>12</span><span class="tag">I</span></div>
+            <div class="mini-unit"><strong>Trapper</strong><span>10</span><span class="tag">new</span></div>
+            <div class="mini-unit"><strong>Value</strong><span>1680</span><span class="tag green">candidate</span></div>
+          </div>
+          <div class="statline">
+            <span class="tag green">Immutable after save</span>
+            <span class="tag">Source: offline pre-final snapshot</span>
+          </div>
+        </section>
+        <aside class="panel">
+          <h3>Save Slots</h3>
+          <div class="slot-grid">
+            <div class="slot taken selected"><strong>1</strong><span>Wolf Gate</span><span>Overwrite</span></div>
+            <div class="slot empty"><strong>2</strong><span>Empty</span><span>Save</span></div>
+            <div class="slot locked"><strong>3</strong><span>Locked</span><span>unlock later</span></div>
+            <div class="slot locked"><strong>4</strong><span>Locked</span><span>unlock later</span></div>
+            <div class="slot locked"><strong>5</strong><span>Locked</span><span>unlock later</span></div>
+            <div class="slot locked"><strong>6</strong><span>Locked</span><span>unlock later</span></div>
+            <div class="slot locked"><strong>7</strong><span>Locked</span><span>unlock later</span></div>
+            <div class="slot locked"><strong>8</strong><span>Locked</span><span>unlock later</span></div>
+          </div>
+        </aside>
+      </div>
+      <div class="footerbar">
+        <span class="cell-muted">8 physical slots shown; only unlocked slots are usable. Selected taken slot needs confirmation.</span>
+        <div><button class="button secondary">Return</button> <button class="button danger">Overwrite</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="saved-armies">
+    <div class="screen-head">
+      <h2>026 PRD019: Saved Armies</h2>
+      <p class="task-meta">Main roster panel. Attack target selection is a separate future screen.</p>
+    </div>
+    <div class="mockup">
+      <div class="topbar">
+        <strong>Saved Armies</strong>
+        <span>Offline roster | Defence: Slot 1</span>
+      </div>
+      <div class="content-grid roster">
+        <aside class="panel">
+          <h3>8 Physical Slots</h3>
+          <div class="slot-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="slot taken selected"><strong>1</strong><span>Wolf Gate</span><span>Defence</span></div>
+            <div class="slot empty"><strong>2</strong><span>Empty</span><span>unlocked</span></div>
+            <div class="slot locked"><strong>3</strong><span>Locked</span><span>unlock</span></div>
+            <div class="slot locked"><strong>4</strong><span>Locked</span><span>unlock</span></div>
+            <div class="slot locked"><strong>5</strong><span>Locked</span><span>unlock</span></div>
+            <div class="slot locked"><strong>6</strong><span>Locked</span><span>unlock</span></div>
+            <div class="slot locked"><strong>7</strong><span>Locked</span><span>unlock</span></div>
+            <div class="slot locked"><strong>8</strong><span>Locked</span><span>unlock</span></div>
+          </div>
+        </aside>
+        <section class="panel">
+          <h3>Selected Army Details</h3>
+          <div class="preview-strip">
+            <div class="mini-unit"><strong>Rusher</strong><span>46</span><span class="tag">I</span></div>
+            <div class="mini-unit"><strong>Thrower</strong><span>20</span><span class="tag green">Double Throw</span></div>
+            <div class="mini-unit"><strong>Healer</strong><span>12</span><span class="tag">I</span></div>
+            <div class="mini-unit"><strong>Trapper</strong><span>10</span><span class="tag">I</span></div>
+            <div class="mini-unit"><strong>Value</strong><span>1680</span><span class="tag">immutable</span></div>
+          </div>
+          <div class="statline">
+            <span class="tag green">Current Defence</span>
+            <span class="tag">Created from run 0007</span>
+            <span class="tag amber">No post-run editing</span>
+          </div>
+        </section>
+        <aside class="panel">
+          <h3>Attack History</h3>
+          <div class="list">
+            <div class="history-row"><div class="row-title"><span>Defence Win</span><span>+12</span></div><span class="row-meta">Local simulated opponent</span></div>
+            <div class="history-row"><div class="row-title"><span>Offence Loss</span><span>-6</span></div><span class="row-meta">No army stolen or destroyed</span></div>
+            <div class="history-row"><div class="row-title"><span>Future Attack</span><span>separate</span></div><span class="row-meta">Opponent selection is not here.</span></div>
+          </div>
+        </aside>
+      </div>
+      <div class="footerbar">
+        <span class="cell-muted">Rank/progression belongs on Battle Result, not this roster.</span>
+        <div><button class="button secondary">Back</button> <button class="button">Set Defence</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="battle-result">
+    <div class="screen-head">
+      <h2>027 PRD019: Battle Result</h2>
+      <p class="task-meta">Offline can simulate. Future Online stores and verifies result on backend.</p>
+    </div>
+    <div class="mockup">
+      <div class="topbar">
+        <strong>Async Battle Result</strong>
+        <span class="pill active">No army stolen or destroyed</span>
+      </div>
+      <div class="result-grid">
+        <section class="panel">
+          <h3>Attacker</h3>
+          <div class="mini-unit"><strong>Your Wolf Gate Army</strong><span>Value 1680</span><span class="tag green">Offence win</span></div>
+          <div class="statline">
+            <span class="tag">Rusher 46</span>
+            <span class="tag">Thrower 20</span>
+            <span class="tag">Healer 12</span>
+          </div>
+        </section>
+        <div class="panel versus">
+          VS
+        </div>
+        <section class="panel">
+          <h3>Defender</h3>
+          <div class="mini-unit"><strong>Stone Guard Rival</strong><span>Value 1710</span><span class="tag amber">Similar strength</span></div>
+          <div class="statline">
+            <span class="tag">Golem 8</span>
+            <span class="tag">Tank 14</span>
+            <span class="tag">Wisp 18</span>
+          </div>
+        </section>
+      </div>
+      <div class="content-grid two">
+        <section class="panel">
+          <h3>Ranking</h3>
+          <div class="list">
+            <div class="row selected"><div class="row-title"><span>Rank</span><span>1210 -> 1236</span></div><span class="row-meta">ELO-like delta +26</span></div>
+            <div class="row"><div class="row-title"><span>Opponent strength</span><span>near equal</span></div><span class="row-meta">Farming weak targets is less rewarding.</span></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h3>Account Progress</h3>
+          <div class="row"><div class="row-title"><span>Account XP</span><span>+90</span></div><span class="row-meta">Next unlock: saved army slot</span></div>
+          <div class="progress" aria-label="unlock progress"><div class="bar"></div></div>
+          <p class="row-meta" style="margin-top: 8px;">Progress unlocks future options. It does not edit old saved armies.</p>
+        </aside>
+      </div>
+      <div class="footerbar">
+        <span class="cell-muted">Result source is local simulation now; future Online must be backend-authoritative.</span>
+        <div><button class="button secondary">View Armies</button> <button class="button">Continue</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

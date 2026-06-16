@@ -1,0 +1,42 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.4/staging' branch; Version is '6000.4.6f1 (0b051c2e5d54) revision 722204'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-piotr" at "2026-06-15T09:39:41.166567Z"
+OS: 'Windows 11  (10.0.26200) Core' Language: 'pl' Physical Memory: 32452 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-06-15T09:39:41Z
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 50300, path: "D:/Unity/6000.4.6f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.1+9fbee8e
+  Session Id:              415a7765df1341e3aad46f2124dbf081
+  Correlation Id:          4583c94d5d2be504aa76065aa2ba1cde
+  External correlation Id: 2893420726962659203
+  Machine Id:              J1nI62c1wbiXTGaFloG9Ca0uoWU=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-piotr" (connect: 0.00s, validation: 0.00s, handshake: 0.04s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-piotr-notifications" at "2026-06-15T09:39:41.2071292Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: 7971611175501-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 0.05s
+
+COMMAND LINE ARGUMENTS:
+D:\Unity\6000.4.6f1\Editor\Unity.exe
+-batchmode
+-quit
+-projectPath
+D:\Unity\Projects\TArenaUnity3D\TArenaUnity3D
+-executeMethod
+PRD19_026_SavedArmiesPrefabBuilder.Rebuild
+-logFile
+D:\Unity\Projects\TArenaUnity3D\_codex\tasks\QA\2026-06-15_026_UnityPrefabBuild.log
+Successfully changed project path to: D:\Unity\Projects\TArenaUnity3D\TArenaUnity3D
+D:/Unity/Projects/TArenaUnity3D/TArenaUnity3D
+Exiting without the bug reporter. Application will terminate with return code 1

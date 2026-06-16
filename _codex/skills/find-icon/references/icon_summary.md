@@ -1,0 +1,191 @@
+# Icon Index Summary
+
+- Generated: 2026-06-11 12:14:29 UTC
+- Root: `TArenaUnity3D\Assets\RPG Icons Pixel Art`
+- PNG files: 8266
+- Deduplicated icon concepts: 4863
+- Categories: 92
+
+## Variants
+
+- `background`: 3404
+- `transparent`: 3404
+- `plain`: 1458
+
+## Top Tags
+
+- `transparent`: 3404
+- `loot`: 2106
+- `weapon`: 1720
+- `skill`: 1510
+- `dark`: 1182
+- `avatar`: 1134
+- `magic`: 1114
+- `monster`: 1046
+- `melee`: 864
+- `civilian`: 792
+- `craft`: 770
+- `armor`: 720
+- `nature`: 682
+- `equipment`: 672
+- `resource`: 576
+- `poison`: 528
+- `mage`: 498
+- `alchemy`: 480
+- `food`: 480
+- `rune`: 480
+- `undead`: 442
+- `ranged`: 404
+- `mana`: 384
+- `potion`: 384
+- `jewelry`: 338
+- `demon`: 298
+- `bow`: 252
+- `dwarf`: 250
+- `fairy`: 250
+- `goblin`: 250
+- `displacement`: 248
+- `pirate`: 244
+- `heal`: 240
+- `spear`: 204
+- `sword`: 204
+- `arrow`: 200
+- `chaos`: 200
+- `scroll`: 192
+- `elf`: 192
+- `gem`: 192
+- `mining`: 192
+- `buff`: 170
+- `mace`: 158
+- `staff`: 156
+- `axe`: 154
+- `knockback`: 152
+- `movement`: 152
+- `push`: 152
+- `ring`: 146
+- `curse`: 144
+- `debuff`: 144
+- `slow`: 144
+- `dagger`: 144
+- `shield`: 144
+- `speed`: 96
+- `artefact`: 96
+- `belt`: 96
+- `bone`: 96
+- `book`: 96
+- `bracers`: 96
+- `chest`: 96
+- `key`: 96
+- `treasure`: 96
+- `farming`: 96
+- `fish`: 96
+- `helmet`: 96
+- `meat`: 96
+- `mushroom`: 96
+- `paint`: 96
+- `holy`: 96
+- `boots`: 96
+- `sigil`: 96
+- `trousers`: 96
+- `blood`: 50
+- `engineering`: 50
+- `lightning`: 50
+- `summon`: 50
+- `air`: 48
+- `wind`: 48
+- `archer`: 48
+
+## Categories
+
+- `Runes`: 480
+- `Maces`: 158
+- `Bows`: 156
+- `Spears`: 156
+- `Staffs`: 156
+- `Swords`: 156
+- `Axes`: 154
+- `Arrow`: 152
+- `Chaos monsters loot pack`: 100
+- `Chaos monsters pack`: 100
+- `Demon Avatars`: 100
+- `Demons Loot Icons`: 100
+- `Dwarf avatars 32x32 pack`: 100
+- `Dwarf loot pack`: 100
+- `Exotic weapons pack`: 100
+- `Fairies Avatars`: 100
+- `Fairy loot`: 100
+- `Goblin loot pack`: 100
+- `Goblins avatars 32x32 pack`: 100
+- `Pirate Avatars`: 100
+- `Undead Avatar Icons`: 100
+- `Undead Loot Icons`: 100
+- `Alchemy1`: 96
+- `Alchemy2`: 96
+- `Artefacts`: 96
+- `Belts`: 96
+- `Berries_nuts`: 96
+- `Bones_sculls`: 96
+- `Books`: 96
+- `Brasers`: 96
+- `Chests_keys_treasure`: 96
+- `Civilian Avatar Icons`: 96
+- `Craft_materials1`: 96
+- `Craft_materials2`: 96
+- `Cuirass`: 96
+- `Daggers`: 96
+- `Dark_Elves`: 96
+- `Drop1`: 96
+- `Drop2`: 96
+- `Elves`: 96
+- `Farming`: 96
+- `Fishing`: 96
+- `Food_icons`: 96
+- `Fruits_vegetables`: 96
+- `Gems1`: 96
+- `Gems2`: 96
+- `Halfling Avatar Icons`: 96
+- `Helmets`: 96
+- `Meat_skins`: 96
+- `Minerals`: 96
+- `Mining`: 96
+- `Mushrooms`: 96
+- `Paints`: 96
+- `Pirate`: 96
+- `Potions`: 96
+- `Potions 2`: 96
+- `Rings_jewellery`: 96
+- `Sabatons`: 96
+- `Scrolls`: 96
+- `Shields`: 96
+- `Sigils`: 96
+- `Trousers`: 96
+- `Blood mage pack`: 50
+- `Demon Skills`: 50
+- `Dwarf skills pack`: 50
+- `Engineering skills pack`: 50
+- `Fairy skills`: 50
+- `Goblin skills pack`: 50
+- `Lightning mage pack`: 50
+- `Summoner skills pack`: 50
+- `Undead Skills Icons`: 50
+- `Aeromancer`: 48
+- `Anti-buffs`: 48
+- `Archer`: 48
+- `Barbarian_skills`: 48
+- `Blacksmith`: 48
+- `Buffs`: 48
+- `Cryomancer`: 48
+- `Curse`: 48
+- `Demon_skills`: 48
+- `Druid`: 48
+- `Helloween`: 48
+- `Necromancer Skill Icons`: 48
+- `Paladin`: 48
+- `Pirate Skill Icons`: 48
+- `Priest Skill Icons`: 48
+- `Pyromanser`: 48
+- `Spearsman`: 48
+- `Swordsman_skills`: 48
+- `Thief`: 48
+- `Warlock`: 48
+- `Сrossbowman`: 48

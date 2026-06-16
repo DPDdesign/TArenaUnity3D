@@ -7,7 +7,6 @@ using UnityEngine;
 public class CastManager : LocalNetworkBehaviour
 {
     public MouseControler mouseControler;
-    int kochamizabelke = 0;
   public  int cooldown = 0;
     TosterHexUnit tempToster;
     TosterHexUnit ST;
@@ -23,16 +22,20 @@ public class CastManager : LocalNetworkBehaviour
     public bool Global = false;
     public bool SingleTarget = false;
     public bool isTurn = false;
+    public bool canUseAfterMove = false;
+    public bool canMoveAfterSkill = false;
     public int aoeradius = 0;
     public int MeleeisAoEbetweenRadiusInt = 0;
     public bool rush = false;
     public bool isAvailable = true;
     public bool SlashTarget = false;
     public bool isMove = false;
+    [NonSerialized] public bool ActionInputBlockedByCommittedSkill = false;
     public List<GameObject> Projectiles;
     GameObject bullet;
     HexClass hexum;
     public HexClass tempHex;
+    bool committedSpellStarted = false;
     void Start()
     {
         mouseControler = FindObjectOfType<MouseControler>();
@@ -40,6 +43,7 @@ public class CastManager : LocalNetworkBehaviour
     public void startSpell(string spellID, HexClass hex)
     {
         hexum = hex;
+        committedSpellStarted = true;
 
         Type type = this.GetType();
         MethodInfo method = type.GetMethod(spellID);
@@ -49,17 +53,33 @@ public class CastManager : LocalNetworkBehaviour
     public void getMode(string spellID, TosterHexUnit ST)
     {
         this.ST = ST;
+        committedSpellStarted = false;
+        cooldown = 1;
+        canUseAfterMove = CanUseSkillAfterMove(spellID);
+        canMoveAfterSkill = CanMoveAfterSkill(spellID);
         Type type = this.GetType();
         MethodInfo method = type.GetMethod(spellID + "M");
         method.Invoke(this, null);
+    }
+
+    public bool CanUseSkillAfterMove(string spellID)
+    {
+        DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(spellID);
+        return skillDefinition != null && skillDefinition.HasFlag("AM");
+    }
+
+    public bool CanMoveAfterSkill(string spellID)
+    {
+        DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(spellID);
+        return skillDefinition != null && skillDefinition.HasFlag("NI");
     }
 
     public void SetFalse()
 
     {
         SelectedT().TextToSend = "";
-        SelectedT().TextToSend += SelectedT().Name + " używa " + SelectedT().skillstrings[mouseControler.SelectedSpellid] + ".";
-        SelectedT().SendMsg(SelectedT().TextToSend);
+        SelectedT().TextToSend += SelectedT().Name + " użył skilla " + SelectedT().skillstrings[mouseControler.SelectedSpellid] + ".";
+        Chat.chat.SendSkillUseMessage(SelectedT(), SelectedT().skillstrings[mouseControler.SelectedSpellid]);
         isMove = false;
         tempHex = null; 
          RangeSelectingenemy = false;
@@ -72,13 +92,22 @@ public class CastManager : LocalNetworkBehaviour
         aoeradius = 0;
         Global = false;
         SingleTarget = false;
+        isTurn = false;
         MouseControler.SkillState = false;
         tempToster = null;
         cooldown = 0;
+        canUseAfterMove = false;
+        canMoveAfterSkill = false;
         rush = false;
         isAvailable = true;
         isInProgress = false;
         SlashTarget = false;
+        ActionInputBlockedByCommittedSkill = false;
+        if (committedSpellStarted && mouseControler != null)
+        {
+            committedSpellStarted = false;
+            mouseControler.CompleteSelectedSkillLocally(SelectedT());
+        }
     }
     public HexClass getHexUM()
     {
@@ -87,6 +116,208 @@ public class CastManager : LocalNetworkBehaviour
     public TosterHexUnit SelectedT()
     {
         return ST;
+    }
+
+    void PlaySequencedCasterEffect(string skillId)
+    {
+        SkillPresentationManager.PlaySequencedCasterEffect(skillId, SelectedT(), GetSelectedSkillAnimationState());
+    }
+
+    void PlaySequencedHexEffect(string skillId, HexClass targetHex)
+    {
+        SkillPresentationManager.PlaySequencedHexEffect(skillId, SelectedT(), targetHex, GetSelectedSkillAnimationState());
+    }
+
+    void PlaySequencedHexEffectWithResults(string skillId, HexClass targetHex, List<FrontendResultReveal> reveals)
+    {
+        SkillPresentationManager.PlaySequencedHexEffectWithReveals(skillId, SelectedT(), targetHex, reveals, GetSelectedSkillAnimationState());
+    }
+
+    void PlaySequencedUnitEffect(string skillId, TosterHexUnit target)
+    {
+        SkillPresentationManager.PlaySequencedUnitEffect(skillId, SelectedT(), target, GetSelectedSkillAnimationState());
+    }
+
+    void PlaySequencedResults(string skillId, List<FrontendResultReveal> reveals)
+    {
+        SkillPresentationManager.PlaySequencedInstantHits(skillId, SelectedT(), reveals, GetSelectedSkillAnimationState());
+    }
+
+    void PlaySequencedProjectilesToUnits(string skillId, List<FrontendResultReveal> reveals)
+    {
+        SkillPresentationManager.PlaySequencedProjectileHitsToUnits(skillId, SelectedT(), reveals, GetSelectedSkillAnimationState());
+    }
+
+    void PlaySequencedProjectileHexImpactThenResults(string skillId, HexClass targetHex, List<FrontendResultReveal> reveals, Action afterImpact)
+    {
+        SkillPresentationManager.PlaySequencedProjectileHexImpactThenReveals(
+            skillId,
+            SelectedT(),
+            targetHex,
+            reveals,
+            GetSelectedSkillAnimationState(),
+            afterImpact);
+    }
+
+    void PlaySequencedHexCastUnitImpactThenResults(
+        string skillId,
+        HexClass castHex,
+        TosterHexUnit impactUnit,
+        List<FrontendResultReveal> reveals,
+        Action afterImpact)
+    {
+        SkillPresentationManager.PlaySequencedHexCastUnitImpactThenReveals(
+            skillId,
+            SelectedT(),
+            castHex,
+            impactUnit,
+            reveals,
+            GetSelectedSkillAnimationState(),
+            afterImpact);
+    }
+
+    List<FrontendResultReveal> SingleReveal(FrontendResultReveal reveal)
+    {
+        List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
+        if (reveal != null)
+        {
+            reveals.Add(reveal);
+        }
+
+        return reveals;
+    }
+
+    void AddReveal(List<FrontendResultReveal> reveals, FrontendResultReveal reveal)
+    {
+        if (reveal != null)
+        {
+            reveals.Add(reveal);
+        }
+    }
+
+    void SetUnitVisualVisibility(TosterHexUnit unit, bool visible)
+    {
+        if (unit == null || unit.tosterView == null)
+        {
+            return;
+        }
+
+        Renderer[] renderers = unit.tosterView.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            renderers[i].enabled = visible;
+        }
+    }
+
+    FrontendResultReveal BuildStatusReveal(TosterHexUnit target)
+    {
+        if (target == null)
+        {
+            return null;
+        }
+
+        return target.BuildStatusFrontendReveal(SelectedT(), FrontendResultRevealSource.Skill);
+    }
+
+    FrontendResultReveal BuildHealReveal(TosterHexUnit target)
+    {
+        if (target == null)
+        {
+            return null;
+        }
+
+        return target.BuildHealFrontendReveal(SelectedT(), FrontendResultRevealSource.Skill);
+    }
+
+    IEnumerator MoveAndPlayHexEffect(HexClass moveHex, TosterHexUnit mover, string skillId, HexClass impactHex)
+    {
+        if (mouseControler != null && moveHex != null && mover != null)
+        {
+            yield return StartCoroutine(mouseControler.DoMoves(moveHex, mover));
+        }
+
+        PlaySequencedHexEffect(skillId, impactHex);
+        SetFalse();
+    }
+
+    IEnumerator MoveWithoutMovedAndPlayResults(HexClass moveHex, TosterHexUnit mover, string skillId, List<FrontendResultReveal> reveals)
+    {
+        if (mouseControler != null && moveHex != null && mover != null)
+        {
+            yield return StartCoroutine(mouseControler.DoMovesWithoutMoved(moveHex, mover));
+        }
+
+        PlaySequencedResults(skillId, reveals);
+        SetFalse();
+    }
+
+    IEnumerator MoveAndPlayResults(HexClass moveHex, TosterHexUnit mover, string skillId, List<FrontendResultReveal> reveals)
+    {
+        if (mouseControler != null && moveHex != null && mover != null)
+        {
+            yield return StartCoroutine(mouseControler.DoMoves(moveHex, mover));
+        }
+
+        PlaySequencedResults(skillId, reveals);
+        SetFalse();
+    }
+
+    IEnumerator MoveAttackAndPlayHexEffect(HexClass moveHex, TosterHexUnit target, TosterHexUnit mover, string skillId, HexClass impactHex)
+    {
+        if (mouseControler != null && moveHex != null && mover != null)
+        {
+            yield return StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(moveHex, target, mover));
+        }
+
+        PlaySequencedHexEffect(skillId, impactHex);
+        SetFalse();
+    }
+
+    void StartCommittedSkillCoroutine(IEnumerator routine)
+    {
+        ActionInputBlockedByCommittedSkill = true;
+        StartCoroutine(routine);
+    }
+
+    IEnumerator RushMoveAttackAndPlayHexEffect(HexClass moveHex, TosterHexUnit target, TosterHexUnit mover, string skillId, HexClass impactHex)
+    {
+        SkillPresentationManager.PlayCastSfxOnly(skillId);
+
+        if (mouseControler != null && moveHex != null && mover != null)
+        {
+            mover.SetMovementAnimationOverride("run");
+            try
+            {
+                yield return StartCoroutine(mouseControler.DoMoves(moveHex, mover));
+            }
+            finally
+            {
+                mover.ClearMovementAnimationOverride();
+            }
+        }
+
+        SkillPresentationManager.PlaySequencedHexEffectWithoutCastSfx(skillId, mover, impactHex, GetSelectedSkillAnimationState());
+
+        if (target != null && mover != null && mover.Hex == moveHex)
+        {
+            yield return StartCoroutine(target.AttackMeSequence(mover));
+        }
+
+        SetFalse();
+        if (mouseControler != null && mover != null)
+        {
+            mouseControler.TryCompleteSkillAction(mover);
+        }
+    }
+
+    string GetSelectedSkillAnimationState()
+    {
+        if (mouseControler == null)
+        {
+            return null;
+        }
+
+        return "skill" + (mouseControler.SelectedSpellid + 1);
     }
 
 
@@ -106,138 +337,6 @@ public class CastManager : LocalNetworkBehaviour
 
     }
 
-    #region Skill1 - Triple shot 
-    public void Skill1()
-    {
-        Debug.LogError("działam");
-
-        if (kochamizabelke < 2 && getHexUM() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUM()) && getHexUM().Tosters.Count > 0)
-        {
-            isInProgress = true;
-            TosterHexUnit trgt = getHexUM().Tosters[0];
-            trgt.DealMePURE(100);
-            Debug.Log("Zaatakowalem: " + trgt.Name);
-            kochamizabelke++;
-        }
-
-        else if (kochamizabelke == 2)
-        { kochamizabelke = 0; SetFalse(); }
-
-        else
-        {
-            Debug.Log("Nie ma tosta na tym polu");
-            //yield return null;
-        }
-
-
-    }
-
-
-    public void Skill1M()
-    {
-        unselectaround = true;
-        RangeSelectingenemy = true;
-    }
-    #endregion
-
-    #region Skill2 - aoe fireball
-    public void Skill2()
-    {
-        Debug.LogError("działam");
-        List<HexClass> hexarea = new List<HexClass>(getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), aoeradius));
-        foreach (HexClass t in hexarea)
-        {
-            if (t != null)
-                if (t.Tosters.Count > 0)
-                {
-                    t.Tosters[0].DealMePURE(100);
-                }
-        }
-
-        SetFalse();
-
-
-
-
-    }
-
-    public void Skill2M()
-    {
-        unselectaround = true;
-        aoeradius = 2;
-        RangeisAoE = true;
-
-    }
-    #endregion
-
-    #region Skill3  - Heal
-    public void Skill3()
-    {
-        if (SelectedT().Team.HexesUnderTeam.Contains(getHexUM()) && getHexUM().Tosters.Count > 0)
-        {
-            TosterHexUnit trgt = getHexUM().Tosters[0];
-            trgt.HealMe(25);
-
-            SetFalse();
-
-        }
-
-    }
-
-    public void Skill3M()
-    {
-        unselectaround = true;
-        Rangeselectingfriend = true;
-
-    }
-    #endregion
-
-    #region Teleport Other Toster
-   
-    public void TeleportOT() //Taunt
-    {
-
-//        Debug.LogError(getHexUM().Tosters[0].Name);
-        if (getHexUM().Tosters.Count > 0 && Global == false)
-        {
-            tempToster = getHexUM().Tosters[0];
-    
-            Global = true;
-            SingleTarget = true;
-            RangeSelectingenemy = false;
-            Rangeselectingfriend = false;
-            mouseControler.CastSkillOnlyBooleans(SelectedT());
-        }
-        else
-        if (Global == true && SingleTarget == true && tempToster != null)
-        {
-            if (getHexUM() != tempToster.Hex && getHexUM().Tosters.Count == 0)
-            {
-      
-                HexClass hextomove = getHexUM();
-                if (hextomove.Highlight == true)
-                {
-                    tempToster.TeleportToHex(hextomove);//SetHex(hextomove);
-
-                    SetFalse();
-                }
-            }
-        }
-    }
-
-    public void TeleportOTM()
-    {
-        unselectaround = true;
-        RangeSelectingenemy = true;
-        Rangeselectingfriend = true;
-        isTurn = true;
-        tempToster = new TosterHexUnit();
-    }
-
-
-
-    #endregion
-
     // SelectedT().Team.HexesUnderTeam.Contains(getHexUT())
     // getSelectedToster().Hex
     // getHexUnderMouse()
@@ -249,6 +348,7 @@ public class CastManager : LocalNetworkBehaviour
     public void Chope() // kręci się dookoła i zadaje 40% obrażen wszystkim jednostkom, traci kontratak
     {
         List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, aoeradius));
+        List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
         foreach (HexClass t in hexarea)
         {
          
@@ -260,7 +360,8 @@ public class CastManager : LocalNetworkBehaviour
                     if (t.Tosters.Count > 0 && !t.Tosters.Contains(SelectedT()))
                     {
                        
-                        t.Tosters[0].DealMeDMG(SelectedT());
+                        TosterHexUnit target = t.Tosters[0];
+                        AddReveal(reveals, target.DealMeDMGForFrontendReveal(SelectedT(), FrontendResultRevealSource.Skill));
                         
                     }
 
@@ -270,6 +371,7 @@ public class CastManager : LocalNetworkBehaviour
         }
         SelectedT().SpecialDMGModificator = 0;
  
+        PlaySequencedResults("Chope", reveals);
         SetFalse();
     }
     public void ChopeM()
@@ -289,7 +391,7 @@ public class CastManager : LocalNetworkBehaviour
         if (getHexUM() != null && getHexUM().Highlight == true)
         {
             
-            photonView.RPC("rrush", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R});
+            rrush(getHexUM().C, getHexUM().R);
         }
 
     }
@@ -316,16 +418,12 @@ public class CastManager : LocalNetworkBehaviour
                 temp = getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R);
 
             }
-  
-            //     mouseControler.photonView.RPC.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(temp, getHexUM().Tosters[0]));
-            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { temp.C, temp.R, getHexUM().C, getHexUM().R, SelectedT().Hex.C, SelectedT().Hex.R });
+            StartCommittedSkillCoroutine(RushMoveAttackAndPlayHexEffect(temp, getHexUM().Tosters[0], SelectedT(), "Rush", getHexUM()));
         }
         else
         {
 
-            mouseControler.photonView.RPC("StartCoroutineDoMoveAndAttackWithoutCheck", RpcTarget.All, new object[] { getHexUM().C, getHexUM().R, -5, -5, SelectedT().Hex.C, SelectedT().Hex.R });
-            //  mouseControler.StartCoroutine(mouseControler.DoMoveAndAttackWithoutCheck(getHexUM(), null));
-            SetFalse();
+            StartCommittedSkillCoroutine(RushMoveAttackAndPlayHexEffect(getHexUM(), null, SelectedT(), "Rush", getHexUM()));
         }
     }
     public void RushM()
@@ -345,9 +443,9 @@ public class CastManager : LocalNetworkBehaviour
     }
     public void Range_Stance_BarbM()
     {
+        PlaySequencedCasterEffect("Range_Stance_Barb");
         if (SelectedT().isRange = !SelectedT().isRange)
         {
-            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 20;
             SelectedT().SpecialResistance = 20;
@@ -356,7 +454,6 @@ public class CastManager : LocalNetworkBehaviour
         }
         else
         {
-            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 0;
             SelectedT().SpecialResistance = 0;
@@ -372,16 +469,15 @@ public class CastManager : LocalNetworkBehaviour
     }
     public void Melee_Stance_BarbM()
     {
+        PlaySequencedCasterEffect("Melee_Stance_Barb");
         if (SelectedT().isRange = !SelectedT().isRange)
         {
-            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 20;
             SelectedT().SpecialResistance = 20;
         }
         else
         {
-            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 0;
             SelectedT().SpecialResistance = 0;
@@ -393,27 +489,29 @@ public class CastManager : LocalNetworkBehaviour
     }
     #endregion
     #region Double_Throw 
+    TosterHexUnit[] doubleThrowTargets = new TosterHexUnit[2];
+    short doubleThrowTargetCounter = 0;
+
     public void Double_Throw()
     {
-        if (Rzutnik_Skill1_Counter < 2 && getHexUM() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUM()) && getHexUM().Tosters.Count > 0)
+        if (doubleThrowTargetCounter < 2 && getHexUM() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUM()) && getHexUM().Tosters.Count > 0)
         {
             isInProgress = true;
-            Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter] = getHexUM().Tosters[0];
-            Debug.Log("Wybrałem: " + Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter].Name);
-            Rzutnik_Skill1_Counter++;
+            doubleThrowTargets[doubleThrowTargetCounter] = getHexUM().Tosters[0];
+            Debug.Log("Wybrałem: " + doubleThrowTargets[doubleThrowTargetCounter].Name);
+            doubleThrowTargetCounter++;
         }
 
 
-        if (Rzutnik_Skill1_Counter == 2)
+        if (doubleThrowTargetCounter == 2)
         {
-            //     SelectedT().AddNewTimeSpell(1, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -40, "Rzutnik_skill1", true);
             SelectedT().SpecialDMGModificator += 60;
-            Rzutnik_Skill1_trgt[0].ShootME(SelectedT(), false);
-            Rzutnik_Skill1_trgt[1].ShootME(SelectedT(),false);
-            Axe(Rzutnik_Skill1_trgt[0].Hex, SelectedT());
-            Axe(Rzutnik_Skill1_trgt[1].Hex, SelectedT());
+            List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
+            AddReveal(reveals, doubleThrowTargets[0].ShootMEForFrontendReveal(SelectedT(), FrontendResultRevealSource.Skill));
+            AddReveal(reveals, doubleThrowTargets[1].ShootMEForFrontendReveal(SelectedT(), FrontendResultRevealSource.Skill));
+            PlaySequencedProjectilesToUnits("Double_Throw", reveals);
             SelectedT().SpecialDMGModificator -= 60;
-            Rzutnik_Skill1_Counter = 0;
+            doubleThrowTargetCounter = 0;
             SetFalse();
         }
 
@@ -422,14 +520,17 @@ public class CastManager : LocalNetworkBehaviour
 
     public void Double_ThrowM()
     {
-        if (SelectedT().isRange==false)
+        isTurn = true;
+        unselectaround = true;
+        RangeSelectingenemy = true;
+
+        if (false)
         {
             isTurn = false;
             SetFalse();
             Chat.chat.SendMessageToChat("Nie jesteś w trybie Range", Msg.MessageType.Info);
         }
 
-     SelectedT().Projectile = Projectiles[0];
         isTurn = true;
         unselectaround = true;
         RangeSelectingenemy = true;
@@ -443,6 +544,7 @@ public class CastManager : LocalNetworkBehaviour
     {
         Debug.LogError("działam");
         List<HexClass> hexarea = new List<HexClass>(getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), aoeradius));
+        List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
 
         foreach (HexClass t in hexarea)
         {
@@ -451,29 +553,26 @@ public class CastManager : LocalNetworkBehaviour
                 if (t == getHexUM() && t.Tosters.Count>0)
                 {
                     SelectedT().SpecialDMGModificator = 0;
-                    t.Tosters[0].DealMeDMG(SelectedT());
+                    AddReveal(reveals, t.Tosters[0].DealMeDMGForFrontendReveal(SelectedT(), FrontendResultRevealSource.Skill));
                     SelectedT().SpecialDMGModificator = 0;
-                    Axe(t.Tosters[0].Hex, SelectedT());
                 }
                 else
                 if (t != null)
                     if (t.Tosters.Count > 0)
                     {
                         SelectedT().SpecialDMGModificator = 50;
-                        t.Tosters[0].DealMeDMG(SelectedT());
-                        
-                        Axe(t.Tosters[0].Hex, SelectedT());
+                        AddReveal(reveals, t.Tosters[0].DealMeDMGForFrontendReveal(SelectedT(), FrontendResultRevealSource.Skill));
                         SelectedT().SpecialDMGModificator = 0;
                     }
             }
         }
+        PlaySequencedProjectilesToUnits("Axe_Rain", reveals);
         mouseControler.SetCD(SelectedT());
         SetFalse();
     }
     public void Axe_RainM()
     {
 
-        SelectedT().Projectile = Projectiles[0];
         unselectaround = true;
         aoeradius = 1;
         cooldown = 2;
@@ -491,7 +590,7 @@ public class CastManager : LocalNetworkBehaviour
         {
             isTurn = true;
           
-            photonView.RPC("slash", RpcTarget.All, new object[] { });
+            slash();
           
         }
         if (isMove == true&& hexum.Highlight && SelectedT().IsPathAvaible(hexum) && (hexum.Tosters.Count==0 || hexum.Tosters.Contains(SelectedT())))
@@ -511,7 +610,13 @@ public class CastManager : LocalNetworkBehaviour
     public void slash()
     {
 
+        StartCommittedSkillCoroutine(SlashApproachAndCast());
+    }
+
+    IEnumerator SlashApproachAndCast()
+    {
         HexClass[] hexarray = getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), 1);
+        List<TosterHexUnit> targets = new List<TosterHexUnit>();
 
 
         Debug.LogError(SelectedT().Name);
@@ -524,14 +629,27 @@ public class CastManager : LocalNetworkBehaviour
             {
                 if (h.Tosters.Count > 0 && h.Tosters[0] != SelectedT())
                 {
-                    mouseControler.photonView.RPC("JustDmg", RpcTarget.All, new object[] { h.C, h.R, 60, SelectedT().Hex.C, SelectedT().Hex.R });
-
-
+                    targets.Add(h.Tosters[0]);
                 }
             }
         }
-        //   SelectedT().SpecialDMGModificator = 0;
-        mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { tempHex.C, tempHex.R, SelectedT().Hex.C, SelectedT().Hex.R });
+
+        yield return StartCoroutine(mouseControler.DoMoves(tempHex, SelectedT()));
+
+        List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
+        foreach (TosterHexUnit target in targets)
+        {
+            if (target == null || target.isDead)
+            {
+                continue;
+            }
+
+            SelectedT().SpecialDMGModificator = 60;
+            AddReveal(reveals, target.DealMeDMGForFrontendReveal(SelectedT(), FrontendResultRevealSource.Skill));
+            SelectedT().SpecialDMGModificator = 0;
+        }
+
+        PlaySequencedResults("Slash", reveals);
         SetFalse();
     }
     public void SlashM()
@@ -556,7 +674,7 @@ public class CastManager : LocalNetworkBehaviour
             mouseControler.SetCD();
             SetFalse();
             */
-            photonView.RPC("hate", RpcTarget.All, new object[] { });
+            hate();
         }
     }
 
@@ -566,7 +684,8 @@ public class CastManager : LocalNetworkBehaviour
     {
         SelectedT().AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Hate", false);
         getHexUM().Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Hate", false);
-        SelectedT().SendMsg("Axeman rzucił hate na " + getHexUM().Tosters[0].Name);
+        PlaySequencedResults("Hate", SingleReveal(BuildStatusReveal(getHexUM().Tosters[0])));
+        Chat.chat.SendTargetedSkillMessage(SelectedT(), "Hate", getHexUM().Tosters[0]);
         mouseControler.SetCD(SelectedT());
         SetFalse();
     }
@@ -597,12 +716,14 @@ public class CastManager : LocalNetworkBehaviour
 
     public void Insult()
     {
+        List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
         if (SelectedT().Team == getHexUM().hexMap.Teams[0])
         {
             foreach (TosterHexUnit tost in getHexUM().hexMap.Teams[1].Tosters)
             {
                 
                 tost.AddNewTimeSpell(2, tost, 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0,0, "Insult", false);
+                AddReveal(reveals, BuildStatusReveal(tost));
             }
         }
         else
@@ -611,8 +732,10 @@ public class CastManager : LocalNetworkBehaviour
             {
 
                 tost.AddNewTimeSpell(2, tost, 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0,0, "Insult", false);
+                AddReveal(reveals, BuildStatusReveal(tost));
             }
         }
+        PlaySequencedResults("Insult", reveals);
         mouseControler.SetCD(SelectedT());
         SetFalse();
     }
@@ -631,6 +754,7 @@ public class CastManager : LocalNetworkBehaviour
         if (getHexUM() == SelectedT().Hex)
         {
             SelectedT().AddNewTimeSpell(2, SelectedT(), 0, SelectedT().GetDef()/2, -SelectedT().GetDef(), 0, 0, 0, 0, 0, 0, 0, 0, 0, "Rage", false);
+            PlaySequencedResults("Rage", SingleReveal(BuildStatusReveal(SelectedT())));
             mouseControler.SetCD(SelectedT());
             SetFalse();
         }
@@ -656,288 +780,7 @@ public class CastManager : LocalNetworkBehaviour
     }
     #endregion
     #endregion
-    #region StareSkille/Jednostki
-    #region Topornik skills (TIER III)
-
-    #region Topornik_Skill1 - Zadaje 1 dmg per unit wszystkim dookoła
-
-    public void Topornik_Skill1()
-    {
-        List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, aoeradius));
-        foreach (HexClass t in hexarea)
-        {
-
-            if (t != null)
-            {
-                if (t.Tosters.Count > 0)
-                {
-
-                    if (t.Tosters.Count > 0 && !t.Tosters.Contains(SelectedT()) && t.Tosters[0].Team != SelectedT().Team)
-                    {
-                        t.Tosters[0].DealMePURE(100);
-                    }
-
-                }
-            }
-            else { Debug.Log("No Tosters Hit"); }
-        }
-        SetFalse();
-    }
-
-    public void Topornik_Skill1M()
-    {
-        isTurn = true;
-        unselectaround = true;
-        aoeradius = 2;
-        MeleeisAoE = true;
-    }
-
     #endregion
-
-    #region Topornik_Skill2 - Zabiera 10% swojego całkowitego HP, zadaje +80% dmg (do konca tury)
-
-    public void Topornik_Skill2()
-    {
-        TosterHexUnit trgt = SelectedT();
-        double dmg = Convert.ToDouble(trgt.GetHP()) * trgt.Amount * 0.1;
-
-        trgt.DealMePURE(Convert.ToInt16(dmg));
-        trgt.AddNewTimeSpell(2, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80,0, "Topornik_Skill2", true);
-        mouseControler.SetCD(SelectedT());
-        SetFalse();
-    }
-
-    public void Topornik_Skill2M()
-    {
-        isTurn =  false;
-        cooldown = 2;
-        unselectaround = true;
-        SelfCast = true;
-        Debug.Log("Pain... drives me!");
-    }
-    #endregion
-
-    #region Topornik_Skill3 - 10% otrzymanych obrażeń przechodzi na koniec następnej tury
-
-
-    public void Topornik_Skill3()
-    {
-        TosterHexUnit trgt = SelectedT();
-        trgt.AddNewTimeSpell(1, null, 0, 0, 0, 0, 0, 0, 0, 0, 10,0, 0,0, "Topornik_Skill3", true);
-        //   trgt.Def++;
-        SetFalse();
-    }
-
-    public void Topornik_Skill3M()
-    {
-        isTurn = false;
-        unselectaround = true;
-        SelfCast = true;
-        Debug.Log("Huh! I can hold it.");
-    }
-
-    #endregion
-
-
-    #endregion
-
-    #region Rzutnik
-
-
-    #region Rzutnik_Skill1
-
-    public Array SelectMultipleEnemy(int x)
-    {
-        int i = 0;
-        TosterHexUnit[] enemies = new TosterHexUnit[x];
-
-        while (i < x)
-        {
-            if (i < 2 && getHexUM() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUM()) && getHexUM().Tosters.Count > 0)
-            {
-                isInProgress = true;
-                enemies[i] = getHexUM().Tosters[0];
-                Debug.Log("Wybrałem: " + enemies[i].Name);
-                i++;
-            }
-        }
-        return enemies;
-    }
-
-
-
-    TosterHexUnit[] Rzutnik_Skill1_trgt = new TosterHexUnit[2];
-    short Rzutnik_Skill1_Counter = 0;
-
-    public void Rzutnik_Skill1()
-    {
-
-        if (Rzutnik_Skill1_Counter < 2 && getHexUM() != SelectedT().Hex && !SelectedT().Team.HexesUnderTeam.Contains(getHexUM()) && getHexUM().Tosters.Count > 0)
-        {
-            isInProgress = true;
-            Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter] = getHexUM().Tosters[0];
-            Debug.Log("Wybrałem: " + Rzutnik_Skill1_trgt[Rzutnik_Skill1_Counter].Name);
-            Rzutnik_Skill1_Counter++;
-        }
-
-
-        else if (Rzutnik_Skill1_Counter == 2)
-        {
-            //     SelectedT().AddNewTimeSpell(1, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -40, "Rzutnik_skill1", true);
-            SelectedT().SpecialDMGModificator += 40;
-            Rzutnik_Skill1_trgt[0].DealMePURE(Convert.ToInt32(SelectedT().CalculateDamageBetweenTosters(SelectedT(), Rzutnik_Skill1_trgt[0], 1)));
-            Rzutnik_Skill1_trgt[1].DealMePURE(Convert.ToInt32(SelectedT().CalculateDamageBetweenTosters(SelectedT(), Rzutnik_Skill1_trgt[1], 1)));
-            SelectedT().SpecialDMGModificator -= 40;
-            Rzutnik_Skill1_Counter = 0; SetFalse(); }
-
-        else
-        {
-            Debug.Log("Nie ma tosta na tym polu");
-            //yield return null;
-        }
-    }
-
-    public void Rzutnik_Skill1M()
-    {
-        unselectaround = true;
-        RangeSelectingenemy = true;
-    }
-
-    #endregion
-
-    #region Rzutnik_Skill2
-
-    public void Rzutnik_Skill2()
-    {
-        TosterHexUnit trgt = SelectedT();
-        double dmg = Convert.ToDouble(trgt.HP) * 0.1;
-        trgt.DealMePURE(Convert.ToInt16(dmg));
-            trgt.AddNewTimeSpell(2, trgt, 0, 25, -10, 0, 0, 0, 0, 0, 0, 0,8,0, "Rzutnik_Skill2", true);
-        mouseControler.SetCD(SelectedT());
-        SetFalse();
-    }
-
-    public void Rzutnik_Skill2M()
-    {
-        isTurn = false;
-        cooldown = 3;
-        unselectaround = true;
-        SelfCast = true;
-        Debug.Log("Pain... drives me!");
-    }
-
-    #endregion
-
-    #region Rzutnik_Skill3
-
-    public void Rzutnik_Skill3()
-    {
-        TosterHexUnit trgt = SelectedT();
-        trgt.AddNewTimeSpell(2, trgt, 0, 0, 25, 0, 0, 0, 0, 0, 0, 0, 0,0, "Rzutnik_Skill3", true);
-        SetFalse();
-    }
-
-    public void Rzutnik_Skill3M()
-    {
-        isTurn = false;
-        unselectaround = true;
-        SelfCast = true;
-        Debug.Log("Huh! I can hold it.");
-    }
-
-    #endregion
-
-    #region Rzutnik_Skill4
-
-    public void Rzutnik_Skill4()
-    {
-
-    }
-
-    public void Rzutnik_Skill4M()
-    {
-
-    }
-
-    #endregion
-
-    #endregion
-
-    #region Tank
-
-
-    #region Tank_Skill1 - Tauntuje wszystkich w odległości 1 oraz dodaje +2 CounterAttacks do końca następnej tury
-    public void Tank_Skill1() //Taunt
-    {
-      
-        SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0,0, "Tank_Skill1", false);
-        List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(hexum, aoeradius));
-        foreach (HexClass t in hexarea)
-        {
-
-            if (t != null)
-            {
-                if (t.Tosters.Count > 0)
-                {
-
-                    if (t.Tosters.Count > 0 && !t.Tosters.Contains(SelectedT()) )
-                    {
-                        t.Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0,  0, 0, 0, 0,0, 0,0, "Taunt", false);
-                    }
-
-                }
-            }
-            else { Debug.Log("No Tosters Hit"); }
-        }
-        mouseControler.photonView.RPC("StartCoroutineDoMoves", RpcTarget.All, new object[] { hexum.C, hexum.R, SelectedT().Hex.C, SelectedT().Hex.R });
-        SetFalse();
-    }
-
-    public void Tank_Skill1M()
-    {
-        isMove = true;
-        isTurn = true;
-
-        aoeradius = 1;
-
-    }
-
-
-
-    #endregion
-
-
-    #region Tank_Skill2- Teleport XD
-    public void Tank_Skill2() //teleport
-    {
-        if (getHexUM() != SelectedT().Hex && getHexUM().Tosters.Count == 0)
-        {
-
-            HexClass hextomove = getHexUM();
-            if (hextomove.Highlight == true)
-            {
-                SelectedT().TeleportToHex(hextomove);//SetHex(hextomove);
-
-                SetFalse();
-            }
-        }
-    }
-
-    public void Tank_Skill2M()
-    {
-        isTurn = true;
-        Global = true;
-        SingleTarget = true;
-    }
-
-
-
-    #endregion
-    #endregion
-    #endregion
-    #endregion
-
-
     #region Lizards skills:
     #region Trapper  skills (T1) Trapy...
     #region Skill 1 - Range_Stance
@@ -948,9 +791,9 @@ public class CastManager : LocalNetworkBehaviour
     }
     public void Range_Stance_LizardM()
     {
+        PlaySequencedCasterEffect("Range_Stance_Lizard");
         if (SelectedT().isRange = !SelectedT().isRange)
         {
-            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 20;
             SelectedT().SpecialResistance = 20;
@@ -958,7 +801,6 @@ public class CastManager : LocalNetworkBehaviour
         }
         else
         {
-            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 0;
             SelectedT().SpecialResistance = 0;
@@ -972,16 +814,15 @@ public class CastManager : LocalNetworkBehaviour
     }
     public void Melee_Stance_LizardM()
     {
+        PlaySequencedCasterEffect("Melee_Stance_Lizard");
         if (SelectedT().isRange = !SelectedT().isRange)
         {
-            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 20;
             SelectedT().SpecialResistance = 20;
         }
         else
         {
-            SelectedT().Projectile = Projectiles[0];
             Debug.Log(SelectedT().isRange);
             SelectedT().SpecialDMGModificator = 0;
             SelectedT().SpecialResistance = 0;
@@ -998,6 +839,7 @@ public class CastManager : LocalNetworkBehaviour
         if (getHexUM()!=null)
         {
             getHexUM().AddTrap("Spike_Trap",999, SelectedT());
+            PlaySequencedHexEffect("Spike_Trap", getHexUM());
             mouseControler.SetCD(SelectedT());
             SetFalse();
             
@@ -1022,6 +864,7 @@ public class CastManager : LocalNetworkBehaviour
         if (getHexUM() != null)
         {
             getHexUM().AddTrap("Rope_Trap",999, SelectedT());
+            PlaySequencedHexEffect("Rope_Trap", getHexUM());
             mouseControler.SetCD(SelectedT());
             SetFalse();
 
@@ -1044,7 +887,7 @@ public class CastManager : LocalNetworkBehaviour
     {
         if(getHexUM().Highlight==true)
         {
-            photonView.RPC("tough_Skin", RpcTarget.All, new object[] { });
+            tough_Skin();
         }
         
     }
@@ -1053,14 +896,17 @@ public class CastManager : LocalNetworkBehaviour
 
     public void tough_Skin()
     {
+        TosterHexUnit target = getHexUM().Tosters[0];
         if (getHexUM().Tosters[0].Name == "Tank" || getHexUM().Tosters[0].Name == "Healer" || getHexUM().Tosters[0].Name == "Specialist" || getHexUM().Tosters[0].Name == "Trapper")
         {
-            getHexUM().Tosters[0].AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, "Tough_Skin", false);
+            target.AddNewTimeSpell(2, target, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, "Tough_Skin", false);
         }
         else
-        getHexUM().Tosters[0].AddNewTimeSpell(2, getHexUM().Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, "Tough_Skin", false);
+        target.AddNewTimeSpell(2, target, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, "Tough_Skin", false);
 
-        SelectedT().SendMsg("Healer rzucił Tough_Skin na " + getHexUM().Tosters[0].Name);
+        PlaySequencedResults("Tough_Skin", SingleReveal(BuildStatusReveal(target)));
+
+        Chat.chat.SendTargetedSkillMessage(SelectedT(), "Tough_Skin", getHexUM().Tosters[0]);
 
         mouseControler.SetCD(SelectedT());
         SetFalse();
@@ -1077,6 +923,7 @@ public class CastManager : LocalNetworkBehaviour
     #region Defence_Ritual 
     public void Defence_Ritual()
     {
+        List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
         if (SelectedT().Team == getHexUM().hexMap.Teams[0])
         {
             foreach (TosterHexUnit tost in getHexUM().hexMap.Teams[0].Tosters)
@@ -1087,6 +934,7 @@ public class CastManager : LocalNetworkBehaviour
                 }
                 else
                     tost.AddNewTimeSpell(2, tost, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Defence_Ritual", false);
+                AddReveal(reveals, BuildStatusReveal(tost));
             }
         }
         else
@@ -1100,8 +948,10 @@ public class CastManager : LocalNetworkBehaviour
                 }
                 else
                     tost.AddNewTimeSpell(2, tost, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Defence_Ritual", false);
+                AddReveal(reveals, BuildStatusReveal(tost));
             }
         }
+        PlaySequencedResults("Defence_Ritual", reveals);
         mouseControler.SetCD(SelectedT());
         SetFalse();
     }
@@ -1191,8 +1041,13 @@ public class CastManager : LocalNetworkBehaviour
                 HexClass hextomove = getHexUM();
                 if (hextomove.Highlight == true)
                 {
-                    mouseControler.photonView.RPC("TeleportToster", RpcTarget.All, new object[] { tempToster.Hex.C, tempToster.Hex.R,hextomove.C,hextomove.R });
-                  //  tempToster.TeleportToHex(hextomove);//SetHex(hextomove);
+                    TosterHexUnit pulledToster = tempToster;
+                    PlaySequencedHexCastUnitImpactThenResults(
+                        "Force_Pull",
+                        hextomove,
+                        pulledToster,
+                        SingleReveal(pulledToster.BuildStatusFrontendReveal(SelectedT(), FrontendResultRevealSource.Skill)),
+                        () => pulledToster.TeleportToHex(hextomove));
 
                     SetFalse();
                 }
@@ -1214,14 +1069,8 @@ public class CastManager : LocalNetworkBehaviour
     {
         SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, -SelectedT().CounterAttacks, 0,100, "Stone_Stance", false);
         SelectedT().CounterAttackAvaible = false;
+        PlaySequencedResults("Stone_Stance", SingleReveal(BuildStatusReveal(SelectedT())));
         mouseControler.SetCD(SelectedT());
-        var d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-        if (d != null)
-        {
-            Debug.Log(d);
-            d.Play("Skill2");
-
-        }
         SetFalse();
 
     }
@@ -1254,6 +1103,7 @@ public class CastManager : LocalNetworkBehaviour
 
         SelectedT().AddNewTimeSpell(2, SelectedT(), 0, 0, 0, -SelectedT().GetMS(), 0, 0, 0, 0, 0, 2, 0, 0, "Toxic_Fume", false);
         List<HexClass> hexarea = new List<HexClass>(SelectedT().Hex.hexMap.GetHexesWithinRadiusOf(hexum, aoeradius));
+        List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
         foreach (HexClass t in hexarea)
         {
 
@@ -1264,24 +1114,17 @@ public class CastManager : LocalNetworkBehaviour
 
                     if (t.Tosters.Count > 0 && !t.Tosters.Contains(SelectedT()))
                     {
-                        t.Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
+                        TosterHexUnit target = t.Tosters[0];
+                        target.AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
+                        AddReveal(reveals, BuildStatusReveal(target));
                     }
 
                 }
             }
             else { Debug.Log("No Tosters Hit"); }
         }
-        Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-        if (d != null)
-        {
-            // Debug.Log(mouseControler.SelectedSpellid-1);
-            d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
-
-        }
+        StartCommittedSkillCoroutine(MoveWithoutMovedAndPlayResults(hexum, SelectedT(), "Toxic_Fume", reveals));
         mouseControler.SetCD(SelectedT());
-        
-        mouseControler.photonView.RPC("StartCoroutineDoMovesWithoutMoved", RpcTarget.All, new object[] { hexum.C, hexum.R, SelectedT().Hex.C, SelectedT().Hex.R });
-        SetFalse();
 
         //    SetFalse();
     }
@@ -1303,13 +1146,7 @@ public class CastManager : LocalNetworkBehaviour
         int temp = SelectedT().MovmentSpeed;
         SelectedT().MovmentSpeed = SelectedT().Initiative;
         SelectedT().Initiative = temp;
-        Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-        if (d != null)
-        {
-            // Debug.Log(mouseControler.SelectedSpellid-1);
-            d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
-
-        }
+        PlaySequencedCasterEffect("Shapeshift");
         SetFalse();
 
     }
@@ -1325,12 +1162,12 @@ public class CastManager : LocalNetworkBehaviour
     public void Long_Lick()
     {
 
-        if (getHexUM().Tosters.Count > 0 && getHexUM().Highlight == true )
+        if (getHexUM().Tosters.Count > 0 && getHexUM().Highlight == true && !getHexUM().Tosters.Contains(SelectedT()) && getHexUM().Tosters[0].Team != SelectedT().Team)
         {
             Debug.Log("Tsoter");
             hexum = getHexUM();
             
-            photonView.RPC("long_Lick", RpcTarget.All, new object[] {  });
+            long_Lick();
 
         }
 
@@ -1340,7 +1177,6 @@ public class CastManager : LocalNetworkBehaviour
     public void long_Lick()
     {
 
-        int tC, tR;
       /*  TosterHexUnit t = SelectedT();
 
                 if (hexum.hexMap.GetHexAt((SelectedT().Hex.C + hexum.C) / 2, (SelectedT().Hex.R + hexum.R) / 2).Tosters.Count == 0)
@@ -1351,7 +1187,7 @@ public class CastManager : LocalNetworkBehaviour
                     if (d != null)
                     {
                         // Debug.Log(mouseControler.SelectedSpellid-1);
-                        d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
+                        d.Play("skill" + (mouseControler.SelectedSpellid + 1));
 
                     }
                     SetFalse();
@@ -1365,21 +1201,21 @@ public class CastManager : LocalNetworkBehaviour
 
             if (h != null && h.Tosters.Count == 0)
             {
-                hexum.Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
-                hexum.Tosters[0].SetHex(h); 
-                Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-                if (d != null)
-                {
-                    // Debug.Log(mouseControler.SelectedSpellid-1);
-                    d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
-
-                }
+                TosterHexUnit target = hexum.Tosters[0];
+                target.AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
+                PlaySequencedHexCastUnitImpactThenResults(
+                    "Long_Lick",
+                    h,
+                    target,
+                    SingleReveal(BuildStatusReveal(target)),
+                    () => target.TeleportToHex(h));
                 SetFalse();
                 return;
             }
 
         }
         Debug.Log("All Hexes full!!");
+        SetFalse();
     }
 
 
@@ -1429,13 +1265,7 @@ public class CastManager : LocalNetworkBehaviour
         if (hexum!=null && hexum.Tosters.Count>0)
         {
             hexum.Tosters[0].AddNewTimeSpell(2, hexum.Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Blind", false);
-            Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-            if (d != null)
-            {
-                // Debug.Log(mouseControler.SelectedSpellid-1);
-                d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
-
-            }
+            PlaySequencedResults("Blind_by_light", SingleReveal(BuildStatusReveal(hexum.Tosters[0])));
             mouseControler.SetCD(SelectedT());
             SetFalse();
 
@@ -1487,16 +1317,19 @@ public class CastManager : LocalNetworkBehaviour
                 {
 
                     TosterHexUnit newunit = SelectedT().Team.AddNewUnit(SelectedT().Name, newamount);
+                    List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
                     SelectedT().Amount = SelectedT().Amount - newamount;
                     SelectedT().SetTextAmount();
-                    getHexUM().Tosters[0].DealMeDMGDef(10, SelectedT(),true);
+                    AddReveal(reveals, getHexUM().Tosters[0].DealMeDMGDefForFrontendReveal(10, SelectedT(),true, FrontendResultRevealSource.Skill));
                     newunit.teamN = SelectedT().teamN;
                     newunit.SetTosterPrefab(getHexUM().hexMap);
                     newunit.SetTextAmount();
                     getHexUM().hexMap.GenerateToster(h.C, h.R, newunit);
-                    newunit.DealMeDMGDef(12, SelectedT(),true);
+                    SetUnitVisualVisibility(newunit, false);
+                    AddReveal(reveals, newunit.DealMeDMGDefForFrontendReveal(12, SelectedT(),true, FrontendResultRevealSource.Skill));
                     newunit.skillstrings.Remove("Stone_Throw");
                     newunit.Moved = true;
+                    PlaySequencedProjectileHexImpactThenResults("Stone_Throw", getHexUM(), reveals, () => SetUnitVisualVisibility(newunit, true));
                     mouseControler.SetCD(SelectedT());
                     SetFalse();
 
@@ -1509,23 +1342,19 @@ public class CastManager : LocalNetworkBehaviour
         {
             int newamount = SelectedT().Amount / 2;
             TosterHexUnit newunit = SelectedT().Team.AddNewUnit(SelectedT().Name, newamount);
+            List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
             SelectedT().Amount = SelectedT().Amount - newamount;
             SelectedT().SetTextAmount();
             newunit.teamN = SelectedT().teamN;
             newunit.SetTosterPrefab(getHexUM().hexMap);
             newunit.SetTextAmount();
             getHexUM().hexMap.GenerateToster(getHexUM().C, getHexUM().R, newunit);
-            newunit.DealMeDMGDef(12, SelectedT(),true);
+            SetUnitVisualVisibility(newunit, false);
+            AddReveal(reveals, newunit.DealMeDMGDefForFrontendReveal(12, SelectedT(),true, FrontendResultRevealSource.Skill));
             newunit.Moved = true;
+            PlaySequencedProjectileHexImpactThenResults("Stone_Throw", getHexUM(), reveals, () => SetUnitVisualVisibility(newunit, true));
             mouseControler.SetCD(SelectedT());
             SetFalse();
-        }
-        Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-        if (d != null)
-        {
-            // Debug.Log(mouseControler.SelectedSpellid-1);
-            d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
-
         }
     }
 
@@ -1583,52 +1412,24 @@ public class CastManager : LocalNetworkBehaviour
     #endregion
     #region Fire_ball 
 
-    public void FireBall(HexClass target, TosterHexUnit Shooter)
-    {
-
-        Vector3 m_EulerAngleVelocity = new Vector3(-960, -960, -360);
-        bullet = new GameObject();
-        bullet = Instantiate(Projectiles[1], Shooter.tosterView.gameObject.transform.position, Quaternion.identity) as GameObject;
-
-        bullet.GetComponent<Rigidbody>().AddForce((target.MyHex.gameObject.transform.position - Shooter.tosterView.gameObject.transform.position) * 50);
-        bullet.GetComponent<Rigidbody>().AddTorque(m_EulerAngleVelocity);
-
-    }
-    public void Axe(HexClass target, TosterHexUnit Shooter)
-    {
-
-        Vector3 m_EulerAngleVelocity = new Vector3(-960, -960, -360);
-        bullet = new GameObject();
-        bullet = Instantiate(Projectiles[0], Shooter.tosterView.gameObject.transform.position, Quaternion.identity) as GameObject;
-
-        bullet.GetComponent<Rigidbody>().AddForce((target.MyHex.gameObject.transform.position - Shooter.tosterView.gameObject.transform.position) * 50);
-        bullet.GetComponent<Rigidbody>().AddTorque(m_EulerAngleVelocity);
-
-    }
-
     public void Fire_Ball()
     {
         Debug.LogError("działam");
         List<HexClass> hexarea = new List<HexClass>(getHexUM().hexMap.GetHexesWithinRadiusOf(getHexUM(), aoeradius));
+        List<FrontendResultReveal> hitReveals = new List<FrontendResultReveal>();
         SelectedT().SpecialDMGModificator = 40;
         foreach (HexClass t in hexarea)
         {
             if (t != null)
                 if (t.Tosters.Count > 0)
                 {
-                    t.Tosters[0].ShootME(SelectedT(),false);
+                    TosterHexUnit target = t.Tosters[0];
+                    hitReveals.Add(target.ShootMEForFrontendReveal(SelectedT(), FrontendResultRevealSource.Skill));
                 }
         }
         Debug.Log("C: " + getHexUM().C + "  R: " + getHexUM().R);
-        FireBall(getHexUM(), SelectedT());
+        SkillPresentationManager.PlaySequencedProjectileHits("Fire_Ball", SelectedT(), getHexUM(), hitReveals, GetSelectedSkillAnimationState());
         SelectedT().SpecialDMGModificator = 0;
-        Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-        if (d != null)
-        {
-            // Debug.Log(mouseControler.SelectedSpellid-1);
-            d.Play("Skill" + (mouseControler.SelectedSpellid + 1));
-
-        }
         mouseControler.SetCD(SelectedT());
         SetFalse();
     }
@@ -1692,7 +1493,7 @@ public class CastManager : LocalNetworkBehaviour
                 {
                     tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R - 1).Tosters[0]));
                 }
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 120, 0);
+                t.SetVisualFacingYaw(120f);
             }
             if (tC == 0 && tR == -1)
             {
@@ -1712,7 +1513,7 @@ public class CastManager : LocalNetworkBehaviour
                 {
                     tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
                 }
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -60, 0);
+                t.SetVisualFacingYaw(-60f);
             }
             if (tC == -1 && tR == 1)
             {
@@ -1732,7 +1533,7 @@ public class CastManager : LocalNetworkBehaviour
                 {
                     tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R - 1).Tosters[0]));
                 }
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 60, 0);
+                t.SetVisualFacingYaw(60f);
 
             }
             if (tC == 1 && tR == -1)
@@ -1754,7 +1555,7 @@ public class CastManager : LocalNetworkBehaviour
                     tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
                 }
 
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, -120, 0);
+                t.SetVisualFacingYaw(-120f);
 
             }
             if (tC == 1 && tR == 0)
@@ -1776,7 +1577,7 @@ public class CastManager : LocalNetworkBehaviour
                 {
                     tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C - 1, getHexUM().R + 1).Tosters[0]));
                 }
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 180, 0);
+                t.SetVisualFacingYaw(180f);
             }
             if (tC == -1 && tR == 0)
             {
@@ -1796,20 +1597,13 @@ public class CastManager : LocalNetworkBehaviour
                 {
                     tosterstoattack.Add((getHexUM().hexMap.GetHexAt(getHexUM().C + 1, getHexUM().R - 1).Tosters[0]));
                 }
-                t.tosterView.GetComponentInChildren<Renderer>().transform.rotation = Quaternion.Euler(0, 0, 0);
+                t.SetVisualFacingYaw(0f);
             }
 
 
 
-            // SelectedT().SpecialDMGModificator = -30;
-            foreach (TosterHexUnit tost in tosterstoattack)
-            {
-                if(tost!=SelectedT())
-                mouseControler.photonView.RPC("JustDmg", RpcTarget.All, new object[] { tost.Hex.C, tost.Hex.R,-30, SelectedT().Hex.C, SelectedT().Hex.R });
-                //tost.DealMeDMG(SelectedT());
-            }
-            //SelectedT().SpecialDMGModificator = 0;
-            photonView.RPC("heavy_fists", RpcTarget.All, new object[] { tempHex.C , tempHex.R, SelectedT().Hex.C, SelectedT().Hex.R});
+            StartCommittedSkillCoroutine(HeavyFistsApproachAndCast(tempHex, SelectedT(), tosterstoattack, GetSelectedSkillAnimationState()));
+            return;
 
         }
         if (isMove == true && hexum.Highlight && SelectedT().IsPathAvaible(hexum) && (hexum.Tosters.Count == 0 || hexum.Tosters.Contains(SelectedT())))
@@ -1828,6 +1622,46 @@ public class CastManager : LocalNetworkBehaviour
 
 
 
+
+    IEnumerator HeavyFistsApproachAndCast(
+        HexClass approachHex,
+        TosterHexUnit caster,
+        List<TosterHexUnit> targets,
+        string animationState)
+    {
+        if (approachHex == null || caster == null)
+        {
+            SetFalse();
+            yield break;
+        }
+
+        yield return StartCoroutine(mouseControler.DoMovesST(approachHex, caster));
+
+        if (caster.GetHP() > 20) caster.SpecialHP -= 20;
+        else caster.SpecialHP = -caster.HP + 1;
+
+        List<FrontendResultReveal> hitReveals = new List<FrontendResultReveal>();
+        foreach (TosterHexUnit target in targets)
+        {
+            if (target == null || target == caster || target.isDead)
+            {
+                continue;
+            }
+
+            try
+            {
+                caster.SpecialDMGModificator = -30;
+                hitReveals.Add(target.DealMeDMGForFrontendReveal(caster, FrontendResultRevealSource.Skill));
+            }
+            finally
+            {
+                caster.SpecialDMGModificator = 0;
+            }
+        }
+
+        SkillPresentationManager.PlaySequencedInstantHits("Heavy_Fists", caster, hitReveals, animationState);
+        SetFalse();
+    }
 
     [PunRPC]
 
@@ -1961,57 +1795,6 @@ public class CastManager : LocalNetworkBehaviour
 
     /////////*** Barbarians *** //////////// 
     #region Barbarians
-
-    #region Szaman
-
-
-    #region Szaman_Skill_1
-
-    #endregion
-
-    #region Szaman_Skill_2
-
-    #endregion
-
-
-    #region Szaman_Skill_3
-
-    #endregion
-
-
-    #region Szaman_Skill_4
-
-    #endregion
-
-    #endregion
-
-    #region Rzutnik
-
-
-
-    // 10 % otrzymanych obrażeń przechodzi na koniec następnej tury
-    #region Rzutnik_Skill_1
-
-
-    #endregion
-
-    #region Rzutnik_Skill_2
-    // Zabiera 10 % swojego całkowitego HP, zadaje +8% dmg
-
-    #endregion
-
-
-    #region Rzutnik_Skill_3
-    // Rzut w dwóch przeciwników na raz(po 40% dmg)
-
-    #endregion
-
-
-    #region Rzutnik_Skill_4
-
-    #endregion
-
-    #endregion
 
     #endregion
 

@@ -9,6 +9,12 @@ This is the default agent for Unity/C# implementation work in TArenaUnity3D.
 Use only local TArenaUnity3D context unless the user explicitly asks for
 comparison or migration. Chat/task titles must start with `[TARENA]`.
 
+## Project UI Text Rule
+
+Use TextMesh Pro only for UI and code text references in TArenaUnity3D.
+Prefer TMP types such as `TMP_Text` and `TextMeshProUGUI`. Do not introduce or
+recommend legacy `UnityEngine.UI.Text`.
+
 ## Required Sources Before Coding
 
 - `AGENTS.md`

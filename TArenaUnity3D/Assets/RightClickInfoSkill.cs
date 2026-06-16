@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Xml;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -17,7 +16,7 @@ public class RightClickInfoSkill : MonoBehaviour, IPointerDownHandler, IPointerU
         {
             infopanel.SetActive(true);
             SetPanelSkill(NameOfSkill.text);
-          //  infoImage.sprite = Resources.Load<Sprite>("Sprites/Info_Pages/" + NameOfSkill.text);
+          //  infoImage.sprite = DataMapper.Instance.LoadInfoPageSprite(NameOfSkill.text);
         }
     }
 
@@ -30,32 +29,12 @@ public class RightClickInfoSkill : MonoBehaviour, IPointerDownHandler, IPointerU
     }
     public void SetPanelSkill(string name) //XML DATA LOAD
     {
-        //TODO: VALIDATE SCHEMA/XML
-        TextAsset textAsset = (TextAsset)Resources.Load("data/skills");
-        XmlDocument xmldoc = new XmlDocument();
-        xmldoc.LoadXml(textAsset.text);
-        XmlNodeList nodes = xmldoc.SelectNodes("Skills/Skill/Name");
-        int NumberOfNode = 0;
-        bool found = false;
-        int i = 0;
-        foreach (XmlNode node in nodes)
+        DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(name);
+        if (skillDefinition != null)
         {
-         
-            if (node.InnerText == name && found == false)
-            {
-                Debug.LogError(node.InnerText);
-                found = true;
-                NumberOfNode = i;
-            }
-            i++;
-        }
-        nodes = xmldoc.SelectNodes("Skills/Skill");
-        //  
-        if (found == true)
-        {
-            SNameOfSkill.text = nodes[NumberOfNode].ChildNodes[0].InnerText;
-            TypeSkill.text = nodes[NumberOfNode].ChildNodes[1].InnerText;
-            InfoSkill.text = nodes[NumberOfNode].ChildNodes[2].InnerText;
+            SNameOfSkill.text = skillDefinition.Name;
+            TypeSkill.text = skillDefinition.Type;
+            InfoSkill.text = skillDefinition.Info;
         }
 
     }

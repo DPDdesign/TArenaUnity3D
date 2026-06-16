@@ -10,6 +10,11 @@ using System.Linq;
 
 public class HexMap : LocalNetworkBehaviour, IQPathWorld
 {
+    const float UnitMoveVisualWaitTimeoutSeconds = 5f;
+    const float HexGenerationHeight = 2.5f;
+    const float LegacyMapCenterColumnUnits = 10.75f;
+    const float LegacyMapCenterRowUnits = 6f;
+
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
     public GameObject HexPrefab;
     public List<GameObject> TostersPrefabs;
@@ -17,6 +22,12 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
     public GameObject TosterUnit;
     public GameObject Projectile;
     public Material[] HexMaterials;
+    public bool useLegacyMap = true;
+    [Min(1)]
+    public int Length = 18;
+    [Min(1)]
+    public int Width = 11;
+    public Vector3 MapPositionOffset { get; private set; }
     // Update is called once per frame
     private HexClass[,] hexes;
     List<HexClass> allhexes;
@@ -246,9 +257,25 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
         if (hexes == null)
         {
             Debug.LogError("Hexes not found");
+            return null;
         }
 
-        return hexes[x % 20, y % 11];
+        if (useLegacyMap)
+        {
+            if (x < 0 || y < 0)
+            {
+                return null;
+            }
+
+            return hexes[x % 20, y % 11];
+        }
+
+        if (x < 0 || y < 0 || x >= hexes.GetLength(0) || y >= hexes.GetLength(1))
+        {
+            return null;
+        }
+
+        return hexes[x, y];
     }
 
     /*
@@ -269,12 +296,40 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
     public Vector3 GetHexPos(int q, int r)
     {
         HexClass h = GetHexAt(q, r);
+        if (h == null)
+        {
+            return Vector3.zero;
+        }
+
         return h.Position();
 
     }
 
-    int mapHeight = 20;
-    int mapWidth = 20;
+    public int CurrentLength
+    {
+        get
+        {
+            if (hexes != null)
+            {
+                return hexes.GetLength(0);
+            }
+
+            return useLegacyMap ? 20 : Mathf.Max(1, Length);
+        }
+    }
+
+    public int CurrentWidth
+    {
+        get
+        {
+            if (hexes != null)
+            {
+                return hexes.GetLength(1);
+            }
+
+            return useLegacyMap ? 20 : Mathf.Max(1, Width);
+        }
+    }
 
 
     public IEnumerator DoUnitMoves(TosterHexUnit u)
@@ -284,51 +339,97 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
         // to do anything, or just return immediately.
 
 
-        while (u.DoMove())
+        while (u != null)
         {
-            while (u.tosterView.AnimationIsPlaying) { yield return null; }
+            bool hasMoreMoves = u.DoMove();
+            yield return WaitForTosterVisualMovement(u);
+
+            if (!hasMoreMoves)
+            {
+                break;
+            }
+        }
+
+        if (u.tosterView != null)
+        {
+            u.tosterView.ResetAnimatorToDefault();
         }
 
 
 
     }
 
+    IEnumerator WaitForTosterVisualMovement(TosterHexUnit unit)
+    {
+        if (unit == null || unit.tosterView == null)
+        {
+            yield break;
+        }
+
+        float startedAt = Time.time;
+        while (unit.tosterView.AnimationIsPlaying)
+        {
+            if (Time.time - startedAt > UnitMoveVisualWaitTimeoutSeconds)
+            {
+                Debug.LogWarning("Toster visual movement timed out. Snapping to final logical hex.");
+                if (unit.Hex != null)
+                {
+                    unit.tosterView.TeleportTo(unit.Hex);
+                }
+
+                unit.tosterView.AnimationIsPlaying = false;
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
+
     void GenerateMap()
     {
-        hexes = new HexClass[mapHeight, mapWidth];
+        if (useLegacyMap)
+        {
+            GenerateLegacyMap();
+            return;
+        }
+
+        GenerateSizedMap();
+    }
+
+    void PrepareMapStorage(int length, int width)
+    {
+        hexes = new HexClass[length, width];
         hextoGameObjectMap = new Dictionary<HexClass, GameObject>();
         gameObjectToHexMap = new Dictionary<GameObject, HexClass>();
+    }
+
+    void GenerateSizedMap()
+    {
+        int mapLength = Mathf.Max(1, Length);
+        int mapWidth = Mathf.Max(1, Width);
+        PrepareMapStorage(mapLength, mapWidth);
+        MapPositionOffset = GetLegacyMapCenterPosition() - GetSizedMapCenterPosition(mapLength, mapWidth);
+
+        for (int col = 0; col < mapLength; col++)
+        {
+            for (int row = 0; row < mapWidth; row++)
+            {
+                CreateHex(col, row);
+            }
+        }
+    }
+
+    void GenerateLegacyMap()
+    {
+        PrepareMapStorage(20, 20);
+        MapPositionOffset = Vector3.zero;
+
         for (int col = 0; col < 4; col++)
         {
             for (int row = 11 - ((col + 1) * 2); row < 11; row++)
             {
-
-                HexClass h = new HexClass(this, col, row);
-
-                GameObject HexGo = (GameObject)Instantiate(
-                    HexPrefab,
-                    h.Position(),
-                    Quaternion.identity,
-                    this.transform
-                    );
-                MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
-                mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-
-                HexGo.name = string.Format("HEX: {0}, {1}", col, row);
-       //         HexGo.AddComponent<Outline>();
-        //        HexGo.GetComponent<Outline>().color = 0;
-                gameObjectToHexMap[HexGo] = h;
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count); //{0}, {1}\n {2}
-                hexes[col, row] = h;
-                hextoGameObjectMap.Add(h, HexGo);
-                h.MyHex = HexGo;
-                List<GameObject> list = new List<GameObject>();
-                list = h.MyHex.GetComponentInChildren<HexInfo>().GiveMe();
-                h.crealistofparts(list);
-                allhexes.Add(h);
-
+                CreateHex(col, row);
             }
-
         }
 
 
@@ -336,28 +437,7 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
         {
             for (int row = 2; row < 11; row++)
             {
-                HexClass h = new HexClass(this, col, row);
-                hexes[col, row] = h;
-                GameObject HexGo = (GameObject)Instantiate(
-                    HexPrefab,
-                    h.Position(),
-                    Quaternion.identity,
-                    this.transform
-                    );
-                HexGo.name = string.Format("HEX: {0}, {1}", col, row);
-          //      HexGo.AddComponent<Outline>();
-         //       HexGo.GetComponent<Outline>().color = 2;
-                MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
-                mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
-                hexes[col, row] = h;
-                hextoGameObjectMap[h] = HexGo;
-                gameObjectToHexMap[HexGo] = h;
-                h.MyHex = HexGo;
-                List<GameObject> list = new List<GameObject>();
-                list = h.MyHex.GetComponentInChildren<HexInfo>().GiveMe();
-                h.crealistofparts(list);
-                allhexes.Add(h);
+                CreateHex(col, row);
             }
         }
 
@@ -365,33 +445,61 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
         {
             for (int row = 2; row < ((17 - col) * 2 + 1); row++)
             {
-                HexClass h = new HexClass(this, col, row);
-                hexes[col, row] = h;
-                GameObject HexGo = (GameObject)Instantiate(
-                    HexPrefab,
-                    h.Position(),
-                    Quaternion.identity,
-                    this.transform
-                    );
-                HexGo.name = string.Format("HEX: {0}, {1}", col, row);
-         //       HexGo.AddComponent<Outline>();
-          //      HexGo.GetComponent<Outline>().color = 1;
-                MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
-                mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
-                HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
-                hexes[col, row] = h;
-                hextoGameObjectMap[h] = HexGo;
-                gameObjectToHexMap[HexGo] = h;
-                h.MyHex = HexGo;
-                List<GameObject> list = new List<GameObject>();
-                list = h.MyHex.GetComponentInChildren<HexInfo>().GiveMe();
-                h.crealistofparts(list);
-                allhexes.Add(h);
+                CreateHex(col, row);
             }
         }
         //StaticBatchingUtility.Combine(this.gameObject.GetComponentInChildren<MeshFilter>().gameObject);
+    }
 
+    Vector3 GetSizedMapCenterPosition(int mapLength, int mapWidth)
+    {
+        float maxRowOffset = mapWidth > 1 ? 0.5f : 0f;
+        float centerColumnUnits = ((mapLength - 1) + maxRowOffset) * 0.5f;
+        float centerRowUnits = (mapWidth - 1) * 0.5f;
+        return GetHexPositionFromUnits(centerColumnUnits, centerRowUnits);
+    }
 
+    Vector3 GetLegacyMapCenterPosition()
+    {
+        return GetHexPositionFromUnits(LegacyMapCenterColumnUnits, LegacyMapCenterRowUnits);
+    }
+
+    Vector3 GetHexPositionFromUnits(float columnUnits, float rowUnits)
+    {
+        float height = HexGenerationHeight;
+        float width = Mathf.Sqrt(3) / 2 * height;
+        float vert = height * 0.75f;
+        float horiz = width;
+
+        return new Vector3(
+            horiz * columnUnits,
+            0,
+            vert * rowUnits
+            );
+    }
+
+    void CreateHex(int col, int row)
+    {
+        HexClass h = new HexClass(this, col, row);
+        hexes[col, row] = h;
+
+        GameObject HexGo = (GameObject)Instantiate(
+            HexPrefab,
+            h.Position(),
+            Quaternion.identity,
+            this.transform
+            );
+
+        HexGo.name = string.Format("HEX: {0}, {1}", col, row);
+        MeshRenderer mr = HexGo.GetComponentInChildren<MeshRenderer>();
+        mr.material = HexMaterials[Random.Range(0, HexMaterials.Length - 1)];
+        HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", col, row, h.Tosters.Count);//{0}, {1}\n {2}
+        hextoGameObjectMap[h] = HexGo;
+        gameObjectToHexMap[HexGo] = h;
+        h.MyHex = HexGo;
+        List<GameObject> list = h.MyHex.GetComponentInChildren<HexInfo>().GiveMe();
+        h.crealistofparts(list);
+        allhexes.Add(h);
     }
 
     public HexClass GetHexFromGameObject(GameObject hexGO)
@@ -419,6 +527,11 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
     public void GenerateToster(int i, int j, int k)
     {
         HexClass TosterSpawn = GetHexAt(i, j);
+        if (TosterSpawn == null)
+        {
+            Debug.LogWarning(string.Format("Cannot spawn toster outside map at {0}, {1}.", i, j));
+            return;
+        }
 
         if (tosters == null)
         {
@@ -446,6 +559,7 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
         TosterGo.AddComponent<TosterView>();
         Toster.OnTosterMoved += TosterGo.GetComponent<TosterView>().OnTosterMoved;
         Toster.tosterView = TosterGo.GetComponent<TosterView>();
+        Toster.ApplyTeamVisualFacing();
         HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", i, j, TosterSpawn.Tosters.Count);//{0}, {1}\n {2}
         tostersList.Add(Toster);
 
@@ -459,6 +573,11 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
     public void GenerateToster(int i, int j, TosterHexUnit toster)
     {
         HexClass TosterSpawn = GetHexAt(i, j);
+        if (TosterSpawn == null)
+        {
+            Debug.LogWarning(string.Format("Cannot spawn toster outside map at {0}, {1}.", i, j));
+            return;
+        }
 
         if (tosters == null)
         {
@@ -488,6 +607,7 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
         TosterGo.AddComponent<TosterView>();
         toster.OnTosterMoved += TosterGo.GetComponent<TosterView>().OnTosterMoved;
         toster.tosterView = TosterGo.GetComponent<TosterView>();
+        toster.ApplyTeamVisualFacing();
         HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", i, j, TosterSpawn.Tosters.Count);//{0}, {1}\n {2}
         tostersList.Add(toster);
 
@@ -501,7 +621,7 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
 
     public void LoadArmy()
     {
-        string path = Application.persistentDataPath + "/build" + PlayerPrefs.GetInt("YourArmy").ToString() + ".d";
+        string path = DataMapper.Instance.GetBuildFilePath(PlayerPrefs.GetInt("YourArmy"));
         if (File.Exists(path))
         {
             BinaryFormatter formatter = new BinaryFormatter();
@@ -520,7 +640,7 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
             }
 
         }
-        path = Application.persistentDataPath + "/build" + PlayerPrefs.GetInt("EnemyArmy").ToString() + ".d";
+        path = DataMapper.Instance.GetBuildFilePath(PlayerPrefs.GetInt("EnemyArmy"));
         if (File.Exists(path))
         {
             BinaryFormatter formatter = new BinaryFormatter();
@@ -547,19 +667,33 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
     public HexClass[] GetHexesWithinRadiusOf(HexClass centerhex, int radius)
     {
         List<HexClass> results = new List<HexClass>();
+        if (centerhex == null)
+        {
+            return results.ToArray();
+        }
+
         for (int dx = -radius; dx < radius + 1; dx++)
         {
             for (int dy = Mathf.Max(-radius, -dx - radius); dy < Mathf.Min(radius, -dx + radius) + 1; dy++)
             {
-                if (0 <= centerhex.C + dx && 0 <= centerhex.R + dy && 18 >= centerhex.C + dx && 17 >= centerhex.R + dy)
+                HexClass hex = GetHexAtWithoutWrap(centerhex.C + dx, centerhex.R + dy);
+                if (hex != null)
                 {
-
-                
-                    results.Add(hexes[centerhex.C + dx, centerhex.R + dy]);
+                    results.Add(hex);
                 }
             }
         }
         return results.ToArray();
+    }
+
+    HexClass GetHexAtWithoutWrap(int x, int y)
+    {
+        if (hexes == null || x < 0 || y < 0 || x >= hexes.GetLength(0) || y >= hexes.GetLength(1))
+        {
+            return null;
+        }
+
+        return hexes[x, y];
     }
 
     public void HighlightSlash(HexClass centerHex, HexClass target)
@@ -651,6 +785,12 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
 
     public void unHighlightAroundHex(HexClass what, int radius)
     {
+        if (what == null)
+        {
+            ClearHighlights();
+            return;
+        }
+
         HexClass centerHex = what;
 
         HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex,radius);
@@ -668,6 +808,19 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
                 }
             }
         }
+        UpdateHexVisuals();
+    }
+
+    public void ClearHighlights()
+    {
+        foreach (HexClass h in allhexes)
+        {
+            if (h != null)
+            {
+                h.Highlight = false;
+            }
+        }
+
         UpdateHexVisuals();
     }
 
@@ -700,13 +853,12 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
         HexClass centerHex = what;
 
         HexClass[] areaHexes = GetHexesWithinRadiusOf(centerHex, radius);
-        HexClass[] areaHexes2 = GetHexesWithinRadiusOf(centerHex, radius-1);
       
         foreach (HexClass h in areaHexes)
         {
             //if(h.Elevation < 0)
             //h.Elevation = 0;
-            if (h != null && !areaHexes2.Contains(h) && h.Tosters.Count>0)
+            if (h != null && h != centerHex && h.Tosters.Count>0)
             {
                 if (hextoGameObjectMap.ContainsKey(h) == true)
                 {
@@ -860,9 +1012,9 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
 
     public void UpdateHexVisuals()
     {
-        for (int column = 0; column < 20; column++)
+        for (int column = 0; column < hexes.GetLength(0); column++)
         {
-            for (int row = 0; row < 20; row++)
+            for (int row = 0; row < hexes.GetLength(1); row++)
             {
                 HexClass h = hexes[column, row];
                 if (h != null)

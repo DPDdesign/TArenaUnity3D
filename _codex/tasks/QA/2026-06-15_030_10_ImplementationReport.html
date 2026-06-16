@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TARENA PRD030_10 - raport implementacji</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #1f2933;
+      background: #f5f7fa;
+      line-height: 1.5;
+    }
+
+    main {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.2;
+    }
+
+    h2 {
+      margin: 28px 0 10px;
+      font-size: 21px;
+      border-bottom: 1px solid #d7dde5;
+      padding-bottom: 6px;
+    }
+
+    h3 {
+      margin: 18px 0 8px;
+      font-size: 17px;
+    }
+
+    .meta {
+      color: #52616f;
+      margin-bottom: 24px;
+    }
+
+    .panel {
+      background: #ffffff;
+      border: 1px solid #d7dde5;
+      border-radius: 6px;
+      padding: 18px 20px;
+      margin: 16px 0;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 4px;
+      background: #e6f4ea;
+      color: #137333;
+      font-weight: 600;
+    }
+
+    code {
+      background: #eef2f7;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.95em;
+    }
+
+    ul, ol {
+      padding-left: 24px;
+    }
+
+    li {
+      margin: 5px 0;
+    }
+
+    .warn {
+      background: #fff8e1;
+      border-color: #ead18a;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>[TARENA] PRD030_10 - Remove InMemory Production Usage Final Audit</h1>
+  <p class="meta">Data: 2026-06-15. Raport dla manualnego sprawdzenia w Unity.</p>
+
+  <section class="panel">
+    <h2>Werdykt</h2>
+    <p><span class="status">QA pass</span> z wymaganym manualnym sprawdzeniem w Unity.</p>
+    <p>Produkcja Offline Mode ma teraz jeden punkt skladania DB-backed adapterow: <code>OfflineModeDatabaseComposition</code>.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Co powinno dzialac</h2>
+    <ul>
+      <li>Start Run, Run Map, Run Battle, Reward Map, Run Shop, Summary Value, Saved Armies i Battle Result powinny skladac swoje runtime serwisy przez <code>OfflineModeDatabaseComposition</code>.</li>
+      <li>Domyslne adaptery produkcyjne nie powinny tworzyc <code>new InMemory...Store()</code>.</li>
+      <li>In-memory store'y zostaja tylko jako jawne test double dla EditMode testow.</li>
+      <li>UI controllery nie powinny wykonywac zapytan SQLite bezposrednio; DB dotyka store/repository/database infrastructure.</li>
+      <li>Domyslna baza <code>TArenaOffline.db</code> powinna byc otwierana/migrowana przed utworzeniem runtime DB-backed serwisow.</li>
+    </ul>
+  </section>
+
+  <section class="panel">
+    <h2>Jak ustawic scene</h2>
+    <ol>
+      <li>Otworz scene albo prefab testowy z ekranami Offline Mode PRD019/PRD030.</li>
+      <li>Upewnij sie, ze obiekty ekranow maja przypiete kontrolery: <code>StartRunScreenController</code>, <code>PRD19_021_RunMapMockupController</code>, <code>RewardMapScreenController</code>, <code>RunShopScreenController</code>, <code>SummaryValueScreenController</code>, <code>SavedArmiesScreenController</code>, <code>BattleResultScreenController</code>.</li>
+      <li>Sprawdz, czy pola TMP, przyciski, karty nagrod/ofert i wiersze list sa przypiete tak jak w aktualnych prefabach. Nie trzeba dodawac legacy <code>UnityEngine.UI.Text</code>.</li>
+      <li>Zacznij od ekranu Start Run. Po rozpoczeciu runu uzyj utworzonego, persystowanego <code>run-*</code> id jako wartosci <code>runId</code> na kolejnych ekranach.</li>
+      <li>Dla Run Shop ustaw <code>routeNodeId</code> na aktywny shop node z Run Map. Dla Reward Map uzyj aktywnego reward/battle node z tego samego runu.</li>
+      <li>Nie testuj tych ekranow na starym placeholderze <code>offline-run</code>, bo po tej zmianie produkcyjna sciezka oczekuje runu istniejacego w DB.</li>
+    </ol>
+  </section>
+
+  <section class="panel">
+    <h2>Jak przetestowac w Play Mode</h2>
+    <ol>
+      <li>Wcisnij Play.</li>
+      <li>Na Start Run wybierz armie i trase, rozpocznij run, a potem sprawdz brak bledow w Console.</li>
+      <li>Przejdz na Run Map i wybierz dostepny node. Oczekiwane: stan mapy laduje sie z tego samego offline runu.</li>
+      <li>Uruchom przygotowanie bitwy przez Run Battle. Oczekiwane: payload bitwy dostaje persystowane <code>run_battle_id</code>, a <code>run_events</code> ma wpis battle.</li>
+      <li>Po symulowanym wyniku przejdz na Reward Map. Oczekiwane: wybor nagrody zapisuje choice, karty, snapshot przed/po oraz aktualizuje run gold.</li>
+      <li>Wejdz w Run Shop, kup oferte i wyjdz. Oczekiwane: purchase zapisuje event, purchase detail, snapshot po zakupie i powrot do Run Map.</li>
+      <li>Na Summary Value zapisz pre-final army do slota. Oczekiwane: poprzednia armia w slocie jest soft-deaktywowana, nowa zostaje aktywna.</li>
+      <li>Na Saved Armies ustaw current defence. Oczekiwane: zapis i ponowne wejscie do ekranu pokazuja ten sam slot/defence z DB.</li>
+      <li>Na Battle Result zapisz/przeladuj wynik. Oczekiwane: result wraca z domyslnej bazy Offline Mode, nie z osobnej preview DB.</li>
+    </ol>
+  </section>
+
+  <section class="panel">
+    <h2>Testy EditMode</h2>
+    <p>Dodany plik: <code>Assets/Scripts/Tests/EditMode/OfflineModeProductionCompositionTests.cs</code>.</p>
+    <ol>
+      <li>Otworz Unity Test Runner: <code>Window &gt; General &gt; Test Runner</code>.</li>
+      <li>Wejdz w zakladke <code>EditMode</code>.</li>
+      <li>Uruchom <code>OfflineModeProductionCompositionTests</code>.</li>
+      <li>Oczekiwane: 2 testy pass.</li>
+    </ol>
+    <p>Te testy skanuja source runtime i nie wymagaja ustawionej sceny ani prefabow.</p>
+  </section>
+
+  <section class="panel warn">
+    <h2>Uwagi</h2>
+    <ul>
+      <li>Unity ani testy nie byly uruchamiane automatycznie z CLI, zgodnie z zasadami projektu.</li>
+      <li>Nie edytowano prefabow, scen, assetow, wartosci gameplay, pol publicznych/serializowanych, <code>.asmdef</code> ani <code>.asmref</code>.</li>
+      <li>Stare sample inspector ids moga wymagac podmiany na persystowane <code>run-*</code> id przed Play Mode testem.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -332,34 +331,18 @@ public class PlayFabControler : MonoBehaviour
 
     private void EnsureUnitsFromResources()
     {
-        TextAsset unitData = Resources.Load<TextAsset>("Data/Units");
-        if (unitData == null)
+        foreach (DataMapper.UnitDefinition unit in DataMapper.Instance.GetAllUnits())
         {
-            return;
-        }
-
-        XmlDocument doc = new XmlDocument();
-        doc.LoadXml(unitData.text);
-        XmlNodeList units = doc.SelectNodes("Units/Unit");
-        foreach (XmlNode unit in units)
-        {
-            string id = ReadChildText(unit, "Name");
+            string id = unit.Name;
             if (string.IsNullOrEmpty(id))
             {
                 continue;
             }
 
-            uint cost = 0;
-            uint.TryParse(ReadChildText(unit, "Cost"), out cost);
+            uint cost = (uint)Mathf.Max(0, unit.Cost);
             AddStoreItem(id, "Unit", cost, 0);
             AddInventoryItem(id, "Unit");
         }
-    }
-
-    private static string ReadChildText(XmlNode node, string childName)
-    {
-        XmlNode child = node.SelectSingleNode(childName);
-        return child == null ? string.Empty : child.InnerText;
     }
 
     private void AddStoreItem(string id, string type, uint tcost, uint acost)

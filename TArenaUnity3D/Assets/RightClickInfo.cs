@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Xml;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -33,32 +32,12 @@ public class RightClickInfo : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         int j = 0;
         foreach (string spell in spells)
         {
-            //TODO: VALIDATE SCHEMA/XML
-            TextAsset textAsset = (TextAsset)Resources.Load("data/skills");
-            XmlDocument xmldoc = new XmlDocument();
-            xmldoc.LoadXml(textAsset.text);
-            XmlNodeList nodes = xmldoc.SelectNodes("Skills/Skill/Name");
-            int NumberOfNode = 0;
-            bool found = false;
-            int i = 0;
-            foreach (XmlNode node in nodes)
+            DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(spell);
+            if (skillDefinition != null)
             {
-
-                if (node.InnerText == spell && found == false)
-                {
-                    Debug.LogError(node.InnerText);
-                    found = true;
-                    NumberOfNode = i;
-                }
-                i++;
-            }
-            nodes = xmldoc.SelectNodes("Skills/Skill");
-            //  
-            if (found == true)
-            {
-                SNameOfSkill[j].text = nodes[NumberOfNode].ChildNodes[0].InnerText;
-                TypeSkill[j].text = nodes[NumberOfNode].ChildNodes[1].InnerText;
-                InfoSkill[j].text = nodes[NumberOfNode].ChildNodes[2].InnerText;
+                SNameOfSkill[j].text = skillDefinition.Name;
+                TypeSkill[j].text = skillDefinition.Type;
+                InfoSkill[j].text = skillDefinition.Info;
             }
             j++;
         }

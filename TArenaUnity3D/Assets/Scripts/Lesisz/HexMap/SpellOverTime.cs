@@ -6,6 +6,8 @@ namespace TimeSpells
 {
     public class SpellOverTime
     {
+        const string FireSkinDebuffSpellName = "Fire_Skin_Debuff";
+        const string TerrifyingPresenceDebuffSpellName = "Terrifying_Presence_Debuff";
         public int Time = 0;
         public TosterHexUnit target, me;
         int hp = 0, att = 0, def = 0, ms = 0, ini = 0, maxdmg = 0, mindmg = 0, dmgovertime = 0, res = 0, SpecialDMGModificator = 0, counterattacks = 0, CoolDown = 0, puredmg = 0;
@@ -233,6 +235,7 @@ namespace TimeSpells
                 int dmgdone = TargetStartHP - TargetActualHP;
                 Debug.Log(dmgdone);
                 List<HexClass> hexarea = new List<HexClass>(me.Hex.hexMap.GetHexesWithinRadiusOf(me.Hex, 1));
+                List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
                 me.SendMsg("Wrząca krew z ran Axeman'a rozbryzguje dookoła (ColdBlood)");
                 foreach (HexClass t in hexarea)
                 {
@@ -245,7 +248,11 @@ namespace TimeSpells
                             if (t.Tosters.Count > 0 && !t.Tosters.Contains(me))
                             {
 
-                                t.Tosters[0].DealMeDMGDef(Mathf.RoundToInt((float)dmgdone * 0.05f), me, false);
+                                FrontendResultReveal reveal = t.Tosters[0].DealMeDMGDefForFrontendReveal(Mathf.RoundToInt((float)dmgdone * 0.05f), me, false, FrontendResultRevealSource.Skill);
+                                if (reveal != null)
+                                {
+                                    reveals.Add(reveal);
+                                }
 
                             }
 
@@ -253,6 +260,8 @@ namespace TimeSpells
                     }
                     else { Debug.Log("No Tosters Hit"); }
                 }
+
+                SkillPresentationManager.PlaySequencedInstantHits("Cold_Blood", me, reveals, me.GetSkillAnimationState("Cold_Blood"));
 
 
 
@@ -271,6 +280,7 @@ namespace TimeSpells
                 puredmg = (SpecialEvents[0] - (me.GetHP() * (me.Amount-1) + me.TempHP));
                 Debug.Log(puredmg/5);
                 me.SpecialPUREDMG = puredmg/5;
+                SkillPresentationManager.PlaySequencedCasterEffect("Massochism", me, me.GetSkillAnimationState("Massochism"));
             }
             if (nameofspell == "Hate")
             {
@@ -291,35 +301,42 @@ namespace TimeSpells
             if (nameofspell == "Fire_Skin")
             {
               HexClass[] hexclass =  me.Hex.hexMap.GetHexesWithinRadiusOf(me.Hex, 1);
+                List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
 
             foreach(HexClass h in hexclass)
                 {
                     if(h!=null&&h.Tosters.Count>0 && h.Tosters[0]!=me)
                     {
                         Debug.LogError(h.Tosters[0].Name);
-                        h.Tosters[0].AddNewTimeSpell(2, h.Tosters[0], 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, -10, "Fire_Skin", false) ;
+                        h.Tosters[0].AddNewTimeSpell(2, h.Tosters[0], 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, -10, FireSkinDebuffSpellName, false) ;
+                        reveals.Add(h.Tosters[0].BuildStatusFrontendReveal(me, FrontendResultRevealSource.Skill));
                     }
                 }
+                SkillPresentationManager.PlaySequencedInstantHits("Fire_Skin", me, reveals, me.GetSkillAnimationState("Fire_Skin"));
             }
             if (nameofspell == "Terrifying_Presence")
             {
                 HexClass[] hexclass = me.Hex.hexMap.GetHexesWithinRadiusOf(me.Hex, 1);
+                List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
 
                 foreach (HexClass h in hexclass)
                 {
                     if (h!=null&&h.Tosters.Count > 0 && h.Tosters[0] != me)
                     {
 
-                        h.Tosters[0].AddNewTimeSpell(2, h.Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 0, 0, "Terrifying_Presence", false);
+                        h.Tosters[0].AddNewTimeSpell(2, h.Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 0, 0, TerrifyingPresenceDebuffSpellName, false);
                         h.Tosters[0].CounterAttackAvaible = false;
                         Debug.Log(h.Tosters[0].Name);
+                        reveals.Add(h.Tosters[0].BuildStatusFrontendReveal(me, FrontendResultRevealSource.Skill));
                     }
                 }
+                SkillPresentationManager.PlaySequencedInstantHits("Terrifying_Presence", me, reveals, me.GetSkillAnimationState("Terrifying_Presence"));
             }
             if (nameofspell == "Rotting")
             {
                 if (me.GetHP() > 30) me.SpecialHP -= 30;
                 else me.SpecialHP = -me.HP + 1;
+                SkillPresentationManager.PlaySequencedCasterEffect("Rotting", me, me.GetSkillAnimationState("Rotting"));
             }
             if (nameofspell == "Fire_Movement")
             {

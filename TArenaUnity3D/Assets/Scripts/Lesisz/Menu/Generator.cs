@@ -205,7 +205,7 @@ Debug.Log("WCZYTAJ :PPP");
 
                     if (PanelArmii.ListOfUnits[d] == t)
                     {
-                        buttons[i].gameObject.GetComponent<Image>().sprite = Resources.Load<Sprite>(PanelArmii.ListOfImages[d]);
+                        buttons[i].gameObject.GetComponent<Image>().sprite = DataMapper.Instance.LoadUnitSprite(PanelArmii.ListOfImages[d]);
                 
                     }
 

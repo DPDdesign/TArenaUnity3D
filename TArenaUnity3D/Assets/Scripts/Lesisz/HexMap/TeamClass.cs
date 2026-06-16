@@ -21,7 +21,7 @@ public class TeamClass
 
     public void WczytajPlik() // wczytaj plik zgodnie z reprezentacją buildu w PanelArmii - TODO: przenieść strukture/classe buildu do osobnego skryptu
     {
-        string path = Application.persistentDataPath + "/build" + ThisTeamNO + ".d";
+        string path = DataMapper.Instance.GetBuildFilePath(ThisTeamNO);
         if (File.Exists(path))
         {
             BinaryFormatter formatter = new BinaryFormatter();
@@ -79,6 +79,11 @@ public class TeamClass
       
     }
 
+    static bool CanReceiveTurn(TosterHexUnit t)
+    {
+        return t != null && t.isDead == false && t.Amount > 0;
+    }
+
     public TosterHexUnit AskForUnit()
     {
         int Initiative = 0;
@@ -86,7 +91,7 @@ public class TeamClass
         foreach (TosterHexUnit t in Tosters)
         {
 
-            if (t.Moved==false&&t.GetIni()>Initiative)
+            if (CanReceiveTurn(t) && t.Moved==false&&t.GetIni()>Initiative)
             {
 
                 if (t.Waited == false && t.Blinded==false)
@@ -100,7 +105,7 @@ public class TeamClass
         if (T == null)
             foreach (TosterHexUnit t in Tosters)
             {
-            if (t.Moved == false && t.GetIni() <= Initiative && t.Blinded==false)
+            if (CanReceiveTurn(t) && t.Moved == false && t.GetIni() <= Initiative && t.Blinded==false)
             {
                 T = t;
                 Initiative = t.GetIni();
@@ -118,7 +123,7 @@ public class TeamClass
         foreach (TosterHexUnit t in Tosters)
         {
 
-            if (t.GetIni() > Initiative && t.isDead == false)
+            if (CanReceiveTurn(t) && t.GetIni() > Initiative)
             {
 
                 if (t.Blinded==false)
@@ -132,7 +137,7 @@ public class TeamClass
         if (T == null)
             foreach (TosterHexUnit t in Tosters)
             {
-            if (t.GetIni() <= Initiative && t.Blinded==false && t.isDead == false)
+            if (CanReceiveTurn(t) && t.GetIni() <= Initiative && t.Blinded==false)
             {
                 T = t;
                 Initiative = t.GetIni();
@@ -154,21 +159,70 @@ public class TeamClass
             foreach (TosterHexUnit t in Tosters)
             {
 
-                if (t.isDead==false)
+                if (CanReceiveTurn(t))
                 {
                     
                     t.CheckSpells();
+                    if (CanReceiveTurn(t) == false)
+                    {
+                        continue;
+                    }
 
-                    t.Moved = false;
-                    t.Waited = false;
-                    if (t.DefenceStance == true)
-                        t.SpecialDef -= 5;
-                    t.DefenceStance = false;
-                    t.ResetCounterAttack();
+                    ResetUnitForNewTurn(t);
                 }
             }
         
 
+    }
+
+    public IEnumerator NewTurnSequence()
+    {
+        foreach (TosterHexUnit t in Tosters)
+        {
+            if (CanReceiveTurn(t))
+            {
+                yield return t.CheckSpellsSequence();
+                if (CanReceiveTurn(t) == false)
+                {
+                    continue;
+                }
+
+                ResetUnitForNewTurn(t);
+            }
+        }
+    }
+
+    public void FinishNewTurnAfterSpellSequence()
+    {
+        foreach (TosterHexUnit t in Tosters)
+        {
+            if (CanReceiveTurn(t) == false)
+            {
+                continue;
+            }
+
+            t.FinishNewTurnSpellProcessing();
+            if (CanReceiveTurn(t) == false)
+            {
+                continue;
+            }
+
+            ResetUnitForNewTurn(t);
+        }
+    }
+
+    static void ResetUnitForNewTurn(TosterHexUnit t)
+    {
+        t.Moved = false;
+        t.MovedThisTurn = false;
+        t.UsedSkillThisTurn = false;
+        t.ClearUsedSkillIdsThisTurn();
+        t.CanMoveAfterSkillThisTurn = false;
+        t.Waited = false;
+        if (t.DefenceStance == true)
+            t.SpecialDef -= 5;
+        t.DefenceStance = false;
+        t.ResetCounterAttack();
     }
 
     public bool IsMyTeamDEAD()
@@ -176,7 +230,7 @@ public class TeamClass
         foreach (TosterHexUnit t in Tosters)
         {
 
-            if (t.isDead == false)
+            if (CanReceiveTurn(t))
             {
                 return false;
 
@@ -204,7 +258,20 @@ public class TeamClass
        
         ThisTeamNO = TeamNO;
         CreateTeamFromFile();
-        int i = 0;
+        PrepareLoadedTosters(h, You);
+
+        if (h.useLegacyMap)
+        {
+            GenerateLegacyTeam(h, You);
+        }
+        else
+        {
+            GenerateSizedTeam(h, You);
+        }
+    }
+
+    void PrepareLoadedTosters(HexMap h, bool You)
+    {
         ///Tutaj tosty są już wczytane do swojej drużyny
         ///
         foreach (TosterHexUnit Tost in Tosters)
@@ -216,12 +283,14 @@ public class TeamClass
                 Tost.SetTextAmount();
             }
         }
+    }
+
+    void GenerateLegacyTeam(HexMap h, bool You)
+    {
+        int i = 0;
+
         if (You == true)
         {
-
-
-
-
             if (Tosters.Count < 6)
             {
                 foreach (TosterHexUnit t in Tosters)
@@ -234,8 +303,8 @@ public class TeamClass
                     i++;
                 }
             }
-            else 
-            { 
+            else
+            {
                 int ktory = 1;
                 foreach (TosterHexUnit t in Tosters)
                 {
@@ -264,40 +333,8 @@ public class TeamClass
                 }
             }
         }
-            /*  if (Tosters.Count <6)
-              {
-                  foreach (TosterHexUnit t in Tosters)
-                  {
-                      if (t != null)
-                      {
-                          h.GenerateToster(0 + i, 10 - 2 * i, t);
 
-                      }
-                      i++;
-                  }
-              }
-              else
-              {
-                  int ktory = 1;
-                  foreach (TosterHexUnit t in Tosters)
-                  {
-                      if (ktory == 4 && t != null)
-                      {
-                          h.GenerateToster(2, 5, t);
-                          i--;
-                      }
-                      else
-                      if (t != null)
-                      {
-                          h.GenerateToster(0 + i, 10 - 2 * i, t);
-
-                      }
-                      ktory++;
-                      i++;
-                  }
-              }
-          }*/
-            if (You ==false)
+        if (You == false)
         {
             if (Tosters.Count < 6)
             {
@@ -340,5 +377,88 @@ public class TeamClass
         }
     }
 
+    void GenerateSizedTeam(HexMap h, bool You)
+    {
+        List<HexClass> spawnHexes = BuildSizedMapSpawnHexes(h, You);
+        int spawnIndex = 0;
+
+        foreach (TosterHexUnit t in Tosters)
+        {
+            if (t == null)
+            {
+                continue;
+            }
+
+            if (spawnIndex >= spawnHexes.Count)
+            {
+                Debug.LogWarning("No free spawn hex found for " + t.Name + " on sized map.");
+                continue;
+            }
+
+            HexClass spawnHex = spawnHexes[spawnIndex];
+            h.GenerateToster(spawnHex.C, spawnHex.R, t);
+            spawnIndex++;
+        }
+    }
+
+    List<int> GetSizedMapSpawnColumns(HexMap h, bool You)
+    {
+        List<int> columns = new List<int>();
+        int length = Mathf.Max(1, h.CurrentLength);
+
+        if (You)
+        {
+            for (int column = 0; column < length; column++)
+            {
+                columns.Add(column);
+            }
+        }
+        else
+        {
+            for (int column = length - 1; column >= 0; column--)
+            {
+                columns.Add(column);
+            }
+        }
+
+        return columns;
+    }
+
+    List<HexClass> BuildSizedMapSpawnHexes(HexMap h, bool You)
+    {
+        List<HexClass> spawnHexes = new List<HexClass>();
+        List<int> spawnColumns = GetSizedMapSpawnColumns(h, You);
+
+        for (int columnIndex = 0; columnIndex < spawnColumns.Count; columnIndex++)
+        {
+            int column = spawnColumns[columnIndex];
+            AddSizedMapSpawnRows(h, column, true, spawnHexes);
+            AddSizedMapSpawnRows(h, column, false, spawnHexes);
+        }
+
+        return spawnHexes;
+    }
+
+    void AddSizedMapSpawnRows(HexMap h, int column, bool everySecondRowOnly, List<HexClass> spawnHexes)
+    {
+        for (int row = h.CurrentWidth - 1; row >= 0; row--)
+        {
+            if (everySecondRowOnly != IsPrimarySizedMapSpawnRow(h, row))
+            {
+                continue;
+            }
+
+            HexClass hex = h.GetHexAt(column, row);
+            if (hex != null)
+            {
+                spawnHexes.Add(hex);
+            }
+        }
+    }
+
+    bool IsPrimarySizedMapSpawnRow(HexMap h, int row)
+    {
+        return row % 2 == (h.CurrentWidth - 1) % 2;
+    }
 
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,6 +13,17 @@ public class TosterView : MonoBehaviour
     public bool isSelected = false;
     HexMap_Highlight map;
     public bool AnimationIsPlaying = false;
+    Coroutine returnToDefaultCoroutine;
+    TosterSfxSet sfxSet;
+    readonly Dictionary<TrailRenderer, Coroutine> weaponTrailCoroutines = new Dictionary<TrailRenderer, Coroutine>();
+    readonly Dictionary<TrailRenderer, bool> weaponTrailInitialActiveStates = new Dictionary<TrailRenderer, bool>();
+    readonly Dictionary<TrailRenderer, bool> weaponTrailInitialEnabledStates = new Dictionary<TrailRenderer, bool>();
+
+    private void Awake()
+    {
+        sfxSet = GetComponentInChildren<TosterSfxSet>();
+    }
+
     private void Start()
     {
         oldPos = newPos = this.transform.position;
@@ -59,6 +70,499 @@ public class TosterView : MonoBehaviour
     public void TeleportTo(HexClass hex)
     {
         this.transform.position = hex.Position();
+    }
+
+    public void PlayAnimatorStateAndReturnToDefault(string stateName)
+    {
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            return;
+        }
+
+        if (returnToDefaultCoroutine != null)
+        {
+            StopCoroutine(returnToDefaultCoroutine);
+        }
+
+        Debug.Log(animator);
+        PlaySfxForAnimatorState(stateName);
+        animator.Play(stateName);
+        returnToDefaultCoroutine = StartCoroutine(ReturnAnimatorToDefaultAfterState(animator, stateName));
+    }
+
+    public IEnumerator PlayAnimatorStateAndWaitForDefault(string stateName, float maxWaitSeconds)
+    {
+        yield return PlayAnimatorStateAndWait(stateName, maxWaitSeconds, true);
+    }
+
+    public IEnumerator PlayAnimatorStateAndWait(string stateName, float maxWaitSeconds, bool resetToDefault)
+    {
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            yield break;
+        }
+
+        if (returnToDefaultCoroutine != null)
+        {
+            StopCoroutine(returnToDefaultCoroutine);
+            returnToDefaultCoroutine = null;
+        }
+
+        Debug.Log(animator);
+        PlaySfxForAnimatorState(stateName);
+        animator.Play(stateName);
+        yield return WaitForAnimatorState(animator, stateName, maxWaitSeconds);
+        if (resetToDefault)
+        {
+            ResetAnimatorToDefault(animator);
+        }
+    }
+
+    public IEnumerator PlayAnimatorTriggerAndWait(string triggerName, float maxWaitSeconds)
+    {
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            yield break;
+        }
+
+        if (returnToDefaultCoroutine != null)
+        {
+            StopCoroutine(returnToDefaultCoroutine);
+            returnToDefaultCoroutine = null;
+        }
+
+        Debug.Log(animator);
+        PlaySfxForAnimatorState(triggerName);
+        int initialStateHash = animator.GetCurrentAnimatorStateInfo(0).fullPathHash;
+        animator.ResetTrigger(triggerName);
+        animator.SetTrigger(triggerName);
+        yield return WaitForTriggeredAnimation(animator, initialStateHash, maxWaitSeconds);
+    }
+
+    public IEnumerator PlayAnimatorTriggerAndWaitForProgress(string triggerName, float normalizedProgress, float maxWaitSeconds)
+    {
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            yield break;
+        }
+
+        if (returnToDefaultCoroutine != null)
+        {
+            StopCoroutine(returnToDefaultCoroutine);
+            returnToDefaultCoroutine = null;
+        }
+
+        Debug.Log(animator);
+        PlaySfxForAnimatorState(triggerName);
+        int initialStateHash = animator.GetCurrentAnimatorStateInfo(0).fullPathHash;
+        animator.ResetTrigger(triggerName);
+        animator.SetTrigger(triggerName);
+
+        if (normalizedProgress <= 0f)
+        {
+            yield break;
+        }
+
+        yield return WaitForTriggeredAnimationProgress(
+            animator,
+            initialStateHash,
+            Mathf.Clamp01(normalizedProgress),
+            maxWaitSeconds);
+    }
+
+    public IEnumerator PlayAnimatorStateAndHoldLastFrame(string stateName, float maxWaitSeconds)
+    {
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            yield break;
+        }
+
+        if (returnToDefaultCoroutine != null)
+        {
+            StopCoroutine(returnToDefaultCoroutine);
+            returnToDefaultCoroutine = null;
+        }
+
+        Debug.Log(animator);
+        Vector3 anchoredLocalPosition = animator.transform.localPosition;
+        Quaternion anchoredLocalRotation = animator.transform.localRotation;
+        PlaySfxForAnimatorState(stateName);
+        animator.Play(stateName);
+        yield return WaitForAnimatorState(animator, stateName, maxWaitSeconds);
+
+        if (animator != null)
+        {
+            animator.Play(stateName, 0, 1f);
+            animator.Update(0f);
+            LockAnimatorRootTransform(animator, anchoredLocalPosition, anchoredLocalRotation);
+            animator.enabled = false;
+        }
+    }
+
+    public IEnumerator PlayAnimatorStateAndWaitForProgress(string stateName, float normalizedProgress, float maxWaitSeconds)
+    {
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            yield break;
+        }
+
+        if (returnToDefaultCoroutine != null)
+        {
+            StopCoroutine(returnToDefaultCoroutine);
+            returnToDefaultCoroutine = null;
+        }
+
+        Debug.Log(animator);
+        PlaySfxForAnimatorState(stateName);
+        animator.Play(stateName);
+        yield return WaitForAnimatorStateProgress(animator, stateName, normalizedProgress, maxWaitSeconds);
+    }
+
+    public IEnumerator PlayAnimatorStateAndWaitForPresentationProgress(string stateName, float normalizedProgress, float maxWaitSeconds)
+    {
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            yield break;
+        }
+
+        if (returnToDefaultCoroutine != null)
+        {
+            StopCoroutine(returnToDefaultCoroutine);
+            returnToDefaultCoroutine = null;
+        }
+
+        Debug.Log(animator);
+        PlaySfxForAnimatorState(stateName);
+        animator.Play(stateName);
+
+        if (normalizedProgress > 0f)
+        {
+            yield return WaitForAnimatorStateProgress(
+                animator,
+                stateName,
+                Mathf.Clamp01(normalizedProgress),
+                maxWaitSeconds);
+        }
+
+        if (animator != null)
+        {
+            returnToDefaultCoroutine = StartCoroutine(ReturnAnimatorToDefaultAfterState(animator, stateName));
+        }
+    }
+
+    public void PlayAttackSfx()
+    {
+        TosterSfxSet sfx = GetSfxSet();
+        if (sfx != null)
+        {
+            sfx.PlayAttack();
+        }
+    }
+
+    public void PlayHitSfx()
+    {
+        TosterSfxSet sfx = GetSfxSet();
+        if (sfx != null)
+        {
+            sfx.PlayHit();
+        }
+    }
+
+    public void PlayDeathSfx()
+    {
+        TosterSfxSet sfx = GetSfxSet();
+        if (sfx != null)
+        {
+            sfx.PlayDeath();
+        }
+    }
+
+    public bool TryPlayWeaponTrails(float durationSeconds)
+    {
+        TrailRenderer[] trails = GetComponentsInChildren<TrailRenderer>(true);
+        bool playedAnyTrail = false;
+        for (int i = 0; i < trails.Length; i++)
+        {
+            TrailRenderer trail = trails[i];
+            if (trail == null)
+            {
+                continue;
+            }
+
+            PlayWeaponTrail(trail, durationSeconds);
+            playedAnyTrail = true;
+        }
+
+        return playedAnyTrail;
+    }
+
+    void PlayWeaponTrail(TrailRenderer trail, float durationSeconds)
+    {
+        if (weaponTrailCoroutines.TryGetValue(trail, out Coroutine previousCoroutine) && previousCoroutine != null)
+        {
+            StopCoroutine(previousCoroutine);
+        }
+
+        if (!weaponTrailInitialActiveStates.ContainsKey(trail))
+        {
+            weaponTrailInitialActiveStates.Add(trail, trail.gameObject.activeSelf);
+        }
+
+        if (!weaponTrailInitialEnabledStates.ContainsKey(trail))
+        {
+            weaponTrailInitialEnabledStates.Add(trail, trail.enabled);
+        }
+
+        weaponTrailCoroutines[trail] = StartCoroutine(PlayWeaponTrailForDuration(trail, Mathf.Max(0f, durationSeconds)));
+    }
+
+    IEnumerator PlayWeaponTrailForDuration(TrailRenderer trail, float durationSeconds)
+    {
+        if (trail == null)
+        {
+            yield break;
+        }
+
+        trail.gameObject.SetActive(true);
+        trail.enabled = true;
+        trail.Clear();
+        trail.emitting = true;
+
+        if (durationSeconds > 0f)
+        {
+            yield return new WaitForSeconds(durationSeconds);
+        }
+        else
+        {
+            yield return null;
+        }
+
+        if (trail != null)
+        {
+            trail.emitting = false;
+            trail.Clear();
+
+            if (weaponTrailInitialEnabledStates.TryGetValue(trail, out bool initialEnabled))
+            {
+                trail.enabled = initialEnabled;
+            }
+
+            if (weaponTrailInitialActiveStates.TryGetValue(trail, out bool initialActiveSelf) && !initialActiveSelf)
+            {
+                trail.gameObject.SetActive(false);
+            }
+
+            weaponTrailInitialEnabledStates.Remove(trail);
+            weaponTrailInitialActiveStates.Remove(trail);
+            weaponTrailCoroutines.Remove(trail);
+        }
+    }
+
+    void PlaySfxForAnimatorState(string stateName)
+    {
+        switch (stateName)
+        {
+            case "attack":
+                PlayAttackSfx();
+                break;
+            case "hit":
+                PlayHitSfx();
+                break;
+            case "death":
+                PlayDeathSfx();
+                break;
+        }
+    }
+
+    TosterSfxSet GetSfxSet()
+    {
+        if (sfxSet == null)
+        {
+            sfxSet = GetComponentInChildren<TosterSfxSet>();
+        }
+
+        return sfxSet;
+    }
+
+    public void ResetAnimatorToDefault()
+    {
+        if (returnToDefaultCoroutine != null)
+        {
+            StopCoroutine(returnToDefaultCoroutine);
+            returnToDefaultCoroutine = null;
+        }
+
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator != null)
+        {
+            ResetAnimatorToDefault(animator);
+        }
+    }
+
+    IEnumerator ReturnAnimatorToDefaultAfterState(Animator animator, string stateName)
+    {
+        yield return WaitForAnimatorState(animator, stateName, 1.25f);
+
+        if (animator != null)
+        {
+            ResetAnimatorToDefault(animator);
+        }
+
+        returnToDefaultCoroutine = null;
+    }
+
+    IEnumerator WaitForAnimatorState(Animator animator, string stateName, float maxWaitSeconds)
+    {
+        yield return null;
+
+        float elapsed = 0f;
+        int stateShortNameHash = Animator.StringToHash(stateName);
+        Vector3 anchoredLocalPosition = animator.transform.localPosition;
+        Quaternion anchoredLocalRotation = animator.transform.localRotation;
+        while (animator != null && elapsed < maxWaitSeconds)
+        {
+            LockAnimatorRootTransform(animator, anchoredLocalPosition, anchoredLocalRotation);
+            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            if (stateInfo.shortNameHash != stateShortNameHash)
+            {
+                break;
+            }
+            if (!animator.IsInTransition(0) && stateInfo.normalizedTime >= 1f)
+            {
+                break;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (animator != null)
+        {
+            LockAnimatorRootTransform(animator, anchoredLocalPosition, anchoredLocalRotation);
+        }
+    }
+
+    IEnumerator WaitForAnimatorStateProgress(Animator animator, string stateName, float normalizedProgress, float maxWaitSeconds)
+    {
+        yield return null;
+
+        float elapsed = 0f;
+        int stateShortNameHash = Animator.StringToHash(stateName);
+        Vector3 anchoredLocalPosition = animator.transform.localPosition;
+        Quaternion anchoredLocalRotation = animator.transform.localRotation;
+        while (animator != null && elapsed < maxWaitSeconds)
+        {
+            LockAnimatorRootTransform(animator, anchoredLocalPosition, anchoredLocalRotation);
+            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            if (stateInfo.shortNameHash != stateShortNameHash)
+            {
+                break;
+            }
+            if (!animator.IsInTransition(0) && stateInfo.normalizedTime >= normalizedProgress)
+            {
+                break;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (animator != null)
+        {
+            LockAnimatorRootTransform(animator, anchoredLocalPosition, anchoredLocalRotation);
+        }
+    }
+
+    IEnumerator WaitForTriggeredAnimation(Animator animator, int initialStateHash, float maxWaitSeconds)
+    {
+        yield return null;
+
+        float elapsed = 0f;
+        bool leftInitialState = false;
+        Vector3 anchoredLocalPosition = animator.transform.localPosition;
+        Quaternion anchoredLocalRotation = animator.transform.localRotation;
+        while (animator != null && elapsed < maxWaitSeconds)
+        {
+            LockAnimatorRootTransform(animator, anchoredLocalPosition, anchoredLocalRotation);
+            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            bool isInTransition = animator.IsInTransition(0);
+
+            if (isInTransition || stateInfo.fullPathHash != initialStateHash)
+            {
+                leftInitialState = true;
+            }
+
+            if (leftInitialState && !isInTransition && stateInfo.fullPathHash == initialStateHash)
+            {
+                break;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (animator != null)
+        {
+            LockAnimatorRootTransform(animator, anchoredLocalPosition, anchoredLocalRotation);
+        }
+    }
+
+    IEnumerator WaitForTriggeredAnimationProgress(Animator animator, int initialStateHash, float normalizedProgress, float maxWaitSeconds)
+    {
+        yield return null;
+
+        float elapsed = 0f;
+        bool leftInitialState = false;
+        Vector3 anchoredLocalPosition = animator.transform.localPosition;
+        Quaternion anchoredLocalRotation = animator.transform.localRotation;
+        while (animator != null && elapsed < maxWaitSeconds)
+        {
+            LockAnimatorRootTransform(animator, anchoredLocalPosition, anchoredLocalRotation);
+            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            bool isInTransition = animator.IsInTransition(0);
+
+            if (isInTransition || stateInfo.fullPathHash != initialStateHash)
+            {
+                leftInitialState = true;
+            }
+
+            if (leftInitialState && !isInTransition && stateInfo.fullPathHash != initialStateHash && stateInfo.normalizedTime >= normalizedProgress)
+            {
+                break;
+            }
+
+            if (leftInitialState && !isInTransition && stateInfo.fullPathHash == initialStateHash)
+            {
+                break;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (animator != null)
+        {
+            LockAnimatorRootTransform(animator, anchoredLocalPosition, anchoredLocalRotation);
+        }
+    }
+
+    void LockAnimatorRootTransform(Animator animator, Vector3 localPosition, Quaternion localRotation)
+    {
+        animator.transform.localPosition = localPosition;
+        animator.transform.localRotation = localRotation;
+    }
+
+    void ResetAnimatorToDefault(Animator animator)
+    {
+        animator.Rebind();
+        animator.Update(0f);
     }
     
 

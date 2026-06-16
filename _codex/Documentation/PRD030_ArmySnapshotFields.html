@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PRD030 - Army Snapshot Fields</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f2ea;
+      --paper: #fffdf8;
+      --ink: #211d18;
+      --muted: #6f6558;
+      --line: #d8cdbc;
+      --keep: #dff0df;
+      --maybe: #fff1c7;
+      --cut: #f4d4cc;
+      --head: #2e3d32;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Segoe UI, Arial, sans-serif;
+      line-height: 1.45;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      font-weight: 750;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 30px 0 12px;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 14px;
+      max-width: 920px;
+      color: var(--muted);
+    }
+
+    .summary {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 18px 0 26px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 18px 0 8px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .keep {
+      background: var(--keep);
+    }
+
+    .maybe {
+      background: var(--maybe);
+    }
+
+    .cut {
+      background: var(--cut);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--head);
+      color: white;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      background: #eee7da;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .decision {
+      min-width: 116px;
+      font-weight: 700;
+    }
+
+    .narrow {
+      width: 140px;
+    }
+
+    .wide {
+      width: 36%;
+    }
+
+    @media (max-width: 760px) {
+      main {
+        padding: 22px 12px 42px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>PRD030 - Army Snapshot Fields</h1>
+    <p>Draft do grillowania bazy Offline Mode. Snapshot oznacza zapis armii w konkretnym momencie runu albo saved-army rosteru.</p>
+
+    <section class="summary">
+      <h2>Decyzja Kierunkowa</h2>
+      <p>Baza przechowuje runtime state. Nie przechowuje pełnych katalogów jednostek, skilli, opisów, ikon, kosztów ani tierów jako authored content.</p>
+      <p>Snapshot armii zapisuje to, co gracz faktycznie ma: jakie stacki, ile sztuk, jakie skille są przypisane, na którym node runu powstał ten stan oraz kiedy został zapisany.</p>
+      <div class="legend">
+        <span class="pill keep">Keep - trzymać w V1</span>
+        <span class="pill maybe">Maybe - decyzja produktowa</span>
+        <span class="pill cut">Cut - raczej wyciąć</span>
+      </div>
+    </section>
+
+    <h2>Table: <code>army_snapshots</code></h2>
+    <table>
+      <thead>
+        <tr>
+          <th class="narrow">Field</th>
+          <th class="narrow">Decision</th>
+          <th>Po co</th>
+          <th class="wide">Uwagi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>snapshot_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Unikalne id snapshotu.</td>
+          <td>Potrzebne do łączenia z runem, saved army, battle, reward i shop.</td>
+        </tr>
+        <tr>
+          <td><code>account_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Właściciel snapshotu.</td>
+          <td>Lokalnie na razie może być jedno konto, ale online każdy gracz będzie miał własne id. Warto mieć ten sam kształt danych od początku.</td>
+        </tr>
+        <tr>
+          <td><code>run_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Łączy snapshot z runem.</td>
+          <td>Może być puste dla snapshotu saved army importowanego spoza runu.</td>
+        </tr>
+        <tr>
+          <td><code>saved_army_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Łączy snapshot z zapisaną armią.</td>
+          <td>Może być puste dla snapshotów w trakcie runu.</td>
+        </tr>
+        <tr>
+          <td><code>node_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Node runu, przy którym powstał snapshot.</td>
+          <td>Zastępuje wcześniejsze <code>kind</code> / <code>source</code>. Z kontekstu node można odczytać, czy chodziło o battle, reward, shop, final itd. Może być puste dla snapshotów spoza runu, np. import/dev seed.</td>
+        </tr>
+        <tr>
+          <td><code>created_at_utc</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Czas utworzenia.</td>
+          <td>Przydatne dla save/load, debugowania i historii.</td>
+        </tr>
+        <tr>
+          <td><code>kind</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Typ snapshotu.</td>
+          <td>Niepotrzebne, bo <code>node_id</code> daje kontekst runu.</td>
+        </tr>
+        <tr>
+          <td><code>source</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Źródło snapshotu.</td>
+          <td>Niepotrzebne, bo dubluje <code>kind</code> i w praktyce zastępuje je <code>node_id</code>.</td>
+        </tr>
+        <tr>
+          <td><code>note</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Dowolna notatka debugowa.</td>
+          <td>Niepotrzebne w V1. Lepiej użyć osobnej tabeli debug events, jeśli będzie potrzebna.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Table: <code>army_snapshot_stacks</code></h2>
+    <table>
+      <thead>
+        <tr>
+          <th class="narrow">Field</th>
+          <th class="narrow">Decision</th>
+          <th>Po co</th>
+          <th class="wide">Uwagi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>snapshot_stack_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Unikalne id stacka w tym snapshotcie.</td>
+          <td>Potrzebne, żeby przypiąć skille do konkretnego stacka.</td>
+        </tr>
+        <tr>
+          <td><code>snapshot_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Łączy stack ze snapshotem.</td>
+          <td>Każdy stack należy do jednego snapshotu.</td>
+        </tr>
+        <tr>
+          <td><code>stack_id</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Osobne id stacka wewnątrz runu.</td>
+          <td>Niepotrzebne, skoro istnieje <code>snapshot_stack_id</code>. Porównania i targetowanie powinny opierać się na snapshot stack id albo formation slot, zależnie od flow.</td>
+        </tr>
+        <tr>
+          <td><code>unit_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Jaka jednostka jest w stacku.</td>
+          <td>Odwołuje się do authored unit catalog. Nie zapisuje pełnej definicji jednostki.</td>
+        </tr>
+        <tr>
+          <td><code>amount</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Ile jednostek jest w stacku.</td>
+          <td>Główna wartość saved army i run army.</td>
+        </tr>
+        <tr>
+          <td><code>lost</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Ile jednostek jest straconych/rannych w tym stanie.</td>
+          <td>Niepotrzebne, jeśli straty liczymy przez porównanie snapshotu przed i po walce.</td>
+        </tr>
+        <tr>
+          <td><code>level</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Poziom stacka, jeśli stacki mają progresję.</td>
+          <td>Nie wchodzi do V1 snapshotu.</td>
+        </tr>
+        <tr>
+          <td><code>experience</code></td>
+          <td class="decision cut">Cut</td>
+          <td>XP stacka, jeśli stacki mają progresję.</td>
+          <td>Nie wchodzi do V1 snapshotu.</td>
+        </tr>
+        <tr>
+          <td><code>formation_slot</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Pozycja stacka w rosterze/układzie armii.</td>
+          <td>Potrzebne do przyszłego układania armii i stabilnej kolejności wyświetlania.</td>
+        </tr>
+        <tr>
+          <td><code>sort_order</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Stabilna kolejność wyświetlania.</td>
+          <td>Niepotrzebne, bo sortowanie idzie po <code>formation_slot</code>.</td>
+        </tr>
+        <tr>
+          <td><code>temporary_power</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Tymczasowa moc/buff stacka.</td>
+          <td>Raczej nie mieszać z armią. Buff/debuff powinien mieć osobny model, jeśli kiedyś będzie zapisywany.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Table: <code>army_snapshot_stack_skills</code></h2>
+    <table>
+      <thead>
+        <tr>
+          <th class="narrow">Field</th>
+          <th class="narrow">Decision</th>
+          <th>Po co</th>
+          <th class="wide">Uwagi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>snapshot_stack_skill_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Unikalne id rekordu skilla.</td>
+          <td>Proste primary key.</td>
+        </tr>
+        <tr>
+          <td><code>snapshot_stack_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Łączy skill ze stackiem.</td>
+          <td>Skill unlock jest per unit stack, nie army-wide.</td>
+        </tr>
+        <tr>
+          <td><code>skill_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Jaki skill jest zapisany.</td>
+          <td>To ten sam string, którego używa obecny skill system.</td>
+        </tr>
+        <tr>
+          <td><code>acquired_at_run_node_id</code></td>
+          <td class="decision keep">Keep</td>
+          <td>Na którym node runu skill został zdobyty.</td>
+          <td>Zastępuje <code>source</code>. Jeśli skill jest przypisany w snapshotcie, znaczy że jest dostępny dla tego stacka. Metaprogress unlock należy do osobnej tabeli account progress, nie do snapshotu.</td>
+        </tr>
+        <tr>
+          <td><code>unlocked</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Czy skill jest odblokowany.</td>
+          <td>Niepotrzebne. Jeśli skill jest przypisany do stacka w snapshotcie, jest dostępny. Globalne odblokowanie możliwości pojawienia się skilla w runie należy do account/metaprogress DB.</td>
+        </tr>
+        <tr>
+          <td><code>source</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Skąd stack dostał skill.</td>
+          <td>Niepotrzebne, używamy <code>acquired_at_run_node_id</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Fields To Avoid In Snapshot</h2>
+    <table>
+      <thead>
+        <tr>
+          <th class="narrow">Field</th>
+          <th class="narrow">Decision</th>
+          <th>Dlaczego nie</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>display_name</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Pochodzi z unit catalog.</td>
+        </tr>
+        <tr>
+          <td><code>tier</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Pochodzi z unit catalog, chyba że kiedyś tier stanie się runtime upgrade state.</td>
+        </tr>
+        <tr>
+          <td><code>unit_cost</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Pochodzi z unit catalog/balansu.</td>
+        </tr>
+        <tr>
+          <td><code>combat_value</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Powinno być wyliczane z aktualnego katalogu i amount, jeśli nie chcemy historycznych kopii wartości.</td>
+        </tr>
+        <tr>
+          <td><code>skill_description</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Pochodzi z skill catalog/XML/presentation data.</td>
+        </tr>
+        <tr>
+          <td><code>skill_icon</code></td>
+          <td class="decision cut">Cut</td>
+          <td>Pochodzi z Resources/presentation data.</td>
+        </tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

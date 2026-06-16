@@ -2,7 +2,7 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1102 &-6633420340116546213
 AnimatorState:
-  serializedVersion: 5
+  serializedVersion: 6
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -28,7 +28,7 @@ AnimatorState:
   m_TimeParameter: 
 --- !u!1102 &-4413849353837639534
 AnimatorState:
-  serializedVersion: 5
+  serializedVersion: 6
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -54,7 +54,7 @@ AnimatorState:
   m_TimeParameter: 
 --- !u!1102 &-3165863027944829478
 AnimatorState:
-  serializedVersion: 5
+  serializedVersion: 6
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -85,7 +85,7 @@ AnimatorController:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: GameObject
-  serializedVersion: 5
+  serializedVersion: 6
   m_AnimatorParameters: []
   m_AnimatorLayers:
   - serializedVersion: 5
@@ -100,9 +100,10 @@ AnimatorController:
     m_IKPass: 0
     m_SyncedLayerAffectsTiming: 0
     m_Controller: {fileID: 9100000}
+  m_EvaluateTransitionsOnStart: 0
 --- !u!1102 &2746122698296830360
 AnimatorState:
-  serializedVersion: 5
+  serializedVersion: 6
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -128,7 +129,7 @@ AnimatorState:
   m_TimeParameter: 
 --- !u!1102 &2772204560484511360
 AnimatorState:
-  serializedVersion: 5
+  serializedVersion: 6
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -154,7 +155,7 @@ AnimatorState:
   m_TimeParameter: 
 --- !u!1107 &4425133902812306669
 AnimatorStateMachine:
-  serializedVersion: 5
+  serializedVersion: 7
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -163,7 +164,7 @@ AnimatorStateMachine:
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: -4413849353837639534}
-    m_Position: {x: 200, y: 0, z: 0}
+    m_Position: {x: 300, y: -40, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -3165863027944829478}
     m_Position: {x: 240, y: 70, z: 0}

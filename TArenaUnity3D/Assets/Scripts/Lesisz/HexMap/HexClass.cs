@@ -19,10 +19,10 @@ public class HexClass : IPathTile {
         ListOfParts = new List<GameObject>();
         ListOfParts = l;
     }
-    public void AddTrap(string name, int time, TosterHexUnit toster)
+    public void AddTrap(string name, int time, TosterHexUnit toster, bool showImmediately = true, string presentationSkillId = null)
     {
         isTraped = true;
-        trap = new Traps.Traps(time, name, this, toster);
+        trap = new Traps.Traps(time, name, this, toster, showImmediately, presentationSkillId);
     }
     public void RemoveTrap()
     {
@@ -93,14 +93,15 @@ public class HexClass : IPathTile {
     }
     public Vector3 Position()
     {
-        
-            
         float height = radius * 2.5f;
         float width = Mathf.Sqrt(3) / 2 * height;
         float vert = height * 0.75f;
         float horiz = width;
-        return new Vector3(
-            horiz*(this.C+this.R/2f),
+        float rowOffset = GetColumnOffsetForRow();
+        Vector3 mapOffset = GetMapPositionOffset();
+
+        return mapOffset + new Vector3(
+            horiz*(this.C + rowOffset),
             0,
             vert * this.R
             );
@@ -113,11 +114,29 @@ public class HexClass : IPathTile {
         float width = Mathf.Sqrt(3) / 2 * height;
         float vert = height * 0.75f;
         float horiz = width;
-        return new Vector3(
-        horiz * (this.C + this.R / 2f),
+        float rowOffset = GetColumnOffsetForRow();
+        Vector3 mapOffset = GetMapPositionOffset();
+
+        return mapOffset + new Vector3(
+        horiz * (this.C + rowOffset),
          0 + G.transform.lossyScale.y / 2,
          vert * this.R
          );
+    }
+
+    float GetColumnOffsetForRow()
+    {
+        if (hexMap != null && hexMap.useLegacyMap == false)
+        {
+            return Mathf.Abs(R % 2) * 0.5f;
+        }
+
+        return R / 2f;
+    }
+
+    Vector3 GetMapPositionOffset()
+    {
+        return hexMap != null ? hexMap.MapPositionOffset : Vector3.zero;
     }
     public void AddToster(TosterHexUnit Toster)
     {
@@ -195,16 +214,14 @@ public class HexClass : IPathTile {
             return this.neighbours;
 
         List<HexClass> neighbours = new List<HexClass>();
-        neighbours.Add(hexMap.GetHexAt(C+1, R));
-        if (C - 1 >= 0)
-            neighbours.Add(hexMap.GetHexAt(C-1, R));
-        neighbours.Add(hexMap.GetHexAt(C, R+1));
-        if (R - 1 >= 0)
-            neighbours.Add(hexMap.GetHexAt(C, R-1));
-        if (R - 1 >= 0)
-            neighbours.Add(hexMap.GetHexAt(C+1, R-1));
-        if (C-1>=0)
-        neighbours.Add(hexMap.GetHexAt(C-1, R+1));
+        if (hexMap != null && hexMap.useLegacyMap == false)
+        {
+            AddOffsetRowNeighbours(neighbours);
+        }
+        else
+        {
+            AddLegacyNeighbours(neighbours);
+        }
 
         List<HexClass> neighbours2 = new List<HexClass>();
         foreach(HexClass h in neighbours)
@@ -216,6 +233,41 @@ public class HexClass : IPathTile {
         }
         this.neighbours = neighbours2.ToArray();
         return this.neighbours;
+    }
+
+    void AddLegacyNeighbours(List<HexClass> neighbours)
+    {
+        neighbours.Add(hexMap.GetHexAt(C+1, R));
+        if (C - 1 >= 0)
+            neighbours.Add(hexMap.GetHexAt(C-1, R));
+        neighbours.Add(hexMap.GetHexAt(C, R+1));
+        if (R - 1 >= 0)
+            neighbours.Add(hexMap.GetHexAt(C, R-1));
+        if (R - 1 >= 0)
+            neighbours.Add(hexMap.GetHexAt(C+1, R-1));
+        if (C-1>=0)
+        neighbours.Add(hexMap.GetHexAt(C-1, R+1));
+    }
+
+    void AddOffsetRowNeighbours(List<HexClass> neighbours)
+    {
+        neighbours.Add(hexMap.GetHexAt(C + 1, R));
+        neighbours.Add(hexMap.GetHexAt(C - 1, R));
+
+        if (Mathf.Abs(R % 2) == 0)
+        {
+            neighbours.Add(hexMap.GetHexAt(C, R - 1));
+            neighbours.Add(hexMap.GetHexAt(C - 1, R - 1));
+            neighbours.Add(hexMap.GetHexAt(C, R + 1));
+            neighbours.Add(hexMap.GetHexAt(C - 1, R + 1));
+        }
+        else
+        {
+            neighbours.Add(hexMap.GetHexAt(C, R - 1));
+            neighbours.Add(hexMap.GetHexAt(C + 1, R - 1));
+            neighbours.Add(hexMap.GetHexAt(C, R + 1));
+            neighbours.Add(hexMap.GetHexAt(C + 1, R + 1));
+        }
     }
 
     public float CostToMoveToTile(float costsofar, IPathTile sourceTile, IQPathUnit Unit)

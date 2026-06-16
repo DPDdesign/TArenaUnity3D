@@ -4,7 +4,6 @@ using UnityEngine;
 
 
 
-using System.Xml;
 
 
 public class SimButtons : MonoBehaviour
@@ -15,54 +14,20 @@ public class SimButtons : MonoBehaviour
     {
         foreach (SimButtonCh b in Buttons)
         {
-            //TODO: VALIDATE SCHEMA/XML
-            TextAsset textAsset = (TextAsset)Resources.Load("data/Units");
-            XmlDocument xmldoc = new XmlDocument();
-            xmldoc.LoadXml(textAsset.text);
-            XmlNodeList nodes = xmldoc.SelectNodes("Units/Unit/Name");
-            XmlNodeList costs = xmldoc.SelectNodes("Units/Unit/Cost");
-            int NumberOfNode = 0;
-            bool found = false;
-            int i = 0;
-            foreach (XmlNode node in nodes)
+            DataMapper.UnitDefinition definition = DataMapper.Instance.FindUnit(b.Name);
+            if (definition != null)
             {
-                if (node.InnerText == b.Name && found == false)
-                {
-                    found = true;
-                    NumberOfNode = i;
-                }
-                i++;
-            }
-            nodes = xmldoc.SelectNodes("Units/Unit");
-            //  
-            if (found == true)
-            {
-                XmlNodeList UnitNodes = nodes[NumberOfNode].ChildNodes;
-                XmlNodeList spells = UnitNodes[8].ChildNodes;
-
-                List<string> sp = new List<string>();
-                foreach (XmlNode s in spells)
-                {
-
-                    sp.Add(s.InnerText);
-
-                }
-
-
                 b.tosterStats = new SimButtonCh.TosterStats(
-
-                     int.Parse(UnitNodes[1].InnerText),//hp
-                     int.Parse(UnitNodes[2].InnerText),//att
-                     int.Parse(UnitNodes[3].InnerText),//def
-                     int.Parse(UnitNodes[4].InnerText),//Int
-                     int.Parse(UnitNodes[5].InnerText),//speed                        
-                     int.Parse(UnitNodes[6].InnerText),//dmgmin
-                     int.Parse(UnitNodes[7].InnerText),//dmgmax
-                     int.Parse(costs[NumberOfNode].InnerText),
-                     sp
+                     definition.HP,
+                     definition.Attack,
+                     definition.Defense,
+                     definition.Initiative,
+                     definition.Speed,
+                     definition.DamageMinimum,
+                     definition.DamageMaximum,
+                     definition.Cost,
+                     new List<string>(definition.SkillNames)
                      );
-
-
             }
         }
     }

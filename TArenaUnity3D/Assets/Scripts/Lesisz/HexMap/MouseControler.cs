@@ -36,6 +36,11 @@ public class MouseControler : LocalNetworkBehaviour
     Vector3 cameraTargetOffset;
     TurnManager TM;
     public int SelectedSpellid = 0;
+    int selectedSkillCooldown = 1;
+    string selectedSkillId = "";
+    bool selectedSkillConsumesTurn = false;
+    bool selectedSkillAllowsMoveAfterUse = false;
+    bool selectedSkillCompletionRequested = false;
     public TosterHexUnit SelectedToster = null;
     TosterHexUnit TempSelectedToster = null;
     TosterHexUnit TempOutlinedToster = null;
@@ -72,6 +77,7 @@ public class MouseControler : LocalNetworkBehaviour
         isMulti = LocalGameSession.ShouldRunNetworkGameplay;
         SYNC = true;
         TM = FindObjectOfType<TurnManager>();
+        BattleActionLifecycle.EnsureInstance();
 
         Update_CurrentFunc = Update_DetectModeStart;
         hexMap = GameObject.FindObjectOfType<HexMap>();
@@ -123,6 +129,11 @@ public class MouseControler : LocalNetworkBehaviour
     void Update_DetectModeStart()
     {
         activeButtons = false;
+        if (BattleActionLifecycle.IsActionBlocking)
+        {
+            return;
+        }
+
         hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
 
 
@@ -169,6 +180,11 @@ public class MouseControler : LocalNetworkBehaviour
         }
 
         SelectedToster = TM.AskWhosTurn();
+        if (SelectedToster == null)
+        {
+            return;
+        }
+
         TM.GetTostersQueue();
         SelectedToster.isSelected = true;
         if (isAiOn==true)
@@ -221,7 +237,10 @@ public class MouseControler : LocalNetworkBehaviour
         outlineM.SetHexSelectedToster(SelectedToster.Hex);
 
 
-        SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
+        if (SelectedToster.MovedThisTurn == false)
+        {
+            SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
+        }
         Update_CurrentFunc = SelectTosterMovement;
         return;
     }
@@ -283,28 +302,30 @@ public class MouseControler : LocalNetworkBehaviour
     [PunRPC]
     void StartCoroutineDoMoveAndAttackWithoutCheck(int i, int k, int r, int f, int SelectedTosterC, int SelectedTosterR)
     {
+        TosterHexUnit actor = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
         if (r == -5 && f == -5)
         {
-            StartCoroutine(DoMoveAndAttackWithoutCheck(hexMap.GetHexAt(i, k), null, hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0]));
+            TryStartMoveAndAttackAction(hexMap.GetHexAt(i, k), null, actor);
         }
         else
         {
             Debug.LogError("i" + i + "k" + k + "r" + r + "f" + f);
-            StartCoroutine(DoMoveAndAttackWithoutCheck(hexMap.GetHexAt(i, k), hexMap.GetHexAt(r, f).Tosters[0], hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0]));
+            TryStartMoveAndAttackAction(hexMap.GetHexAt(i, k), hexMap.GetHexAt(r, f).Tosters[0], actor);
         }
     }
 
     [PunRPC]
     void StartCoroutineDoMoveAndAttackWithoutCheck2(int i, int k, int r, int f, int SelectedTosterC, int SelectedTosterR)
     {
+        TosterHexUnit actor = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
         if (r == -5 && f == -5)
         {
-            StartCoroutine(DoMoveAndAttackWithoutCheck2(hexMap.GetHexAt(i, k), null, hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0]));
+            TryStartMoveAndAttackAction(hexMap.GetHexAt(i, k), null, actor, true);
         }
         else
         {
             Debug.LogError("i" + i + "k" + k + "r" + r + "f" + f);
-            StartCoroutine(DoMoveAndAttackWithoutCheck2(hexMap.GetHexAt(i, k), hexMap.GetHexAt(r, f).Tosters[0], hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0]));
+            TryStartMoveAndAttackAction(hexMap.GetHexAt(i, k), hexMap.GetHexAt(r, f).Tosters[0], actor, true);
         }
     }
     // TRYB RUCHU JEDNOSTKI
@@ -312,6 +333,11 @@ public class MouseControler : LocalNetworkBehaviour
     void WaitinForYourTurn()
     {
         activeButtons = false;
+        if (BattleActionLifecycle.IsActionBlocking)
+        {
+            return;
+        }
+
         hexMap.unHighlightAroundHex(hexMap.GetHexAt(5, 5), 20);
         Outlining();
         shiftctrlmode();
@@ -347,6 +373,11 @@ public class MouseControler : LocalNetworkBehaviour
         }
 
         SelectedToster = TM.AskWhosTurn();
+        if (SelectedToster == null)
+        {
+            return;
+        }
+
         SelectedToster.isSelected = true;
         outlineM.SetHexSelectedToster(SelectedToster.Hex);
         if (isAiOn == true)
@@ -379,13 +410,22 @@ public class MouseControler : LocalNetworkBehaviour
 
         hexUnderMouse = SelectedToster.Hex;
 
-        SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
+        if (SelectedToster.MovedThisTurn == false)
+        {
+            SelectedToster.Hex.hexMap.HighlightWithPath(SelectedToster);
+        }
         Update_CurrentFunc = SelectTosterMovement;
         return;
 
     }
     void SelectTosterMovement()
     {
+        if (BattleActionLifecycle.IsActionBlocking)
+        {
+            activeButtons = false;
+            return;
+        }
+
         activeButtons = true;
         if (SelectedToster.Taunt == true)
         {
@@ -438,6 +478,11 @@ public class MouseControler : LocalNetworkBehaviour
                     if (SelectedToster.IsPathAvaible(hexUnderMouse))
                     {
                         var temp = MouseToPart();
+                        if (temp == null)
+                        {
+                            return;
+                        }
+
                         DoMoveAndAttack(hexUnderMouse.Tosters[0], hexMap.GetHexAt(temp.C, temp.R), SelectedToster);
                        // photonView.RPC("StartCoroutineDoMoveAndAttack", RpcTarget.All, new object[] { hexUnderMouse.C, hexUnderMouse.R, temp.C, temp.R });
                     }                 //   StartCoroutineDoMoveAndAttack(hexUnderMouse.C, hexUnderMouse.R);
@@ -462,9 +507,7 @@ public class MouseControler : LocalNetworkBehaviour
     void Shot(int i, int k, int SelectedTosterC, int SelectedTosterR)
     {
        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
-        hexMap.GetHexAt(i, k).Tosters[0].ShootME(ST, true);
-        ST.Moved = true;
-        CancelUpdateFunc();
+        TryStartBasicRangedAttackAction(hexMap.GetHexAt(i, k), ST);
 
     }
 
@@ -503,7 +546,7 @@ public class MouseControler : LocalNetworkBehaviour
     {
         TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
         Debug.Log("happen");
-        StartCoroutine(DoMoves(hexMap.GetHexAt(i, k), ST));
+        TryStartMoveAction(hexMap.GetHexAt(i, k), ST);
 
     }
 
@@ -511,7 +554,7 @@ public class MouseControler : LocalNetworkBehaviour
     void StartCoroutineDoMovesST(int si, int sr ,int i, int k)
     {
         Debug.Log("happen");
-        StartCoroutine(DoMovesST(hexMap.GetHexAt(i, k), hexMap.GetHexAt(sr,sr).Tosters[0]));
+        TryStartMoveAction(hexMap.GetHexAt(i, k), hexMap.GetHexAt(sr,sr).Tosters[0]);
          
     }
     [PunRPC]
@@ -519,7 +562,12 @@ public class MouseControler : LocalNetworkBehaviour
     {
         TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
         Debug.Log("happen");
-        StartCoroutine(DoMovesWithoutMoved(hexMap.GetHexAt(i, k), ST));
+        TryRunLifecycleAction(
+            ST,
+            BattleActionLifecycleKind.Movement,
+            "MoveWithoutMoved",
+            null,
+            () => DoMovesWithoutMoved(hexMap.GetHexAt(i, k), ST));
 
     }
     public void Outlining()
@@ -570,6 +618,191 @@ public class MouseControler : LocalNetworkBehaviour
         //  shiftctrlmode();
         // ScrollLook();
     }
+
+    bool TryRunLifecycleAction(
+        TosterHexUnit actor,
+        BattleActionLifecycleKind kind,
+        string label,
+        Action commit,
+        Func<IEnumerator> actionBody)
+    {
+        activeButtons = false;
+        return BattleActionLifecycle.EnsureInstance().TryRunAction(
+            actor,
+            kind,
+            label,
+            commit,
+            actionBody,
+            CompleteActionModeCleanup);
+    }
+
+    void CompleteActionModeCleanup()
+    {
+        activeButtons = false;
+        shiftmode = false;
+        CancelUpdateFunc();
+    }
+
+    public bool TryStartMoveAction(HexClass destinationHex, TosterHexUnit actor)
+    {
+        if (destinationHex == null || actor == null || actor.MovedThisTurn || (actor.UsedSkillThisTurn && actor.CanMoveAfterSkillThisTurn == false))
+        {
+            return false;
+        }
+
+        return TryRunLifecycleAction(
+            actor,
+            BattleActionLifecycleKind.Movement,
+            "Move",
+            () => CompleteMoveCommit(actor),
+            () => DoMoves(destinationHex, actor));
+    }
+
+    void CompleteMoveCommit(TosterHexUnit actor)
+    {
+        actor.MovedThisTurn = true;
+        if (actor.Waited || HasAvailableSkillAfterMove(actor) == false)
+        {
+            actor.Moved = true;
+        }
+    }
+
+    public bool TryStartMoveAndAttackAction(HexClass moveHex, TosterHexUnit target, TosterHexUnit actor)
+    {
+        return TryStartMoveAndAttackAction(moveHex, target, actor, false);
+    }
+
+    public bool TryStartMoveAndAttackAction(HexClass moveHex, TosterHexUnit target, TosterHexUnit actor, bool ignoreObstacles)
+    {
+        if (moveHex == null || actor == null || actor.MovedThisTurn || (actor.UsedSkillThisTurn && actor.CanMoveAfterSkillThisTurn == false))
+        {
+            return false;
+        }
+
+        return TryRunLifecycleAction(
+            actor,
+            BattleActionLifecycleKind.MoveAndAttack,
+            "MoveAndAttack",
+            () => actor.Moved = true,
+            () => ignoreObstacles
+                ? DoMoveAndAttackWithoutCheck2(moveHex, target, actor)
+                : DoMoveAndAttackWithoutCheck(moveHex, target, actor));
+    }
+
+    public bool TryStartBasicRangedAttackAction(HexClass targetHex, TosterHexUnit actor)
+    {
+        if (targetHex == null || actor == null || actor.MovedThisTurn || actor.UsedSkillThisTurn)
+        {
+            return false;
+        }
+
+        return TryRunLifecycleAction(
+            actor,
+            BattleActionLifecycleKind.BasicRangedAttack,
+            "BasicRangedAttack",
+            () => actor.Moved = true,
+            () => BasicRangedAttackAction(targetHex, actor));
+    }
+
+    IEnumerator BasicRangedAttackAction(HexClass targetHex, TosterHexUnit actor)
+    {
+        if (targetHex != null && targetHex.Tosters.Count > 0)
+        {
+            targetHex.Tosters[0].ShootME(actor, true);
+        }
+
+        yield return null;
+    }
+
+    public bool TryStartWaitAction(TosterHexUnit actor)
+    {
+        if (actor == null || actor.MovedThisTurn || actor.UsedSkillThisTurn || actor.Waited)
+        {
+            return false;
+        }
+
+        return TryRunLifecycleAction(
+            actor,
+            BattleActionLifecycleKind.Wait,
+            "Wait",
+            () => actor.Waited = true,
+            null);
+    }
+
+    public bool TryStartDefenseAction(TosterHexUnit actor)
+    {
+        if (actor == null || actor.MovedThisTurn || actor.UsedSkillThisTurn)
+        {
+            return false;
+        }
+
+        return TryRunLifecycleAction(
+            actor,
+            BattleActionLifecycleKind.Defense,
+            "Defense",
+            () =>
+            {
+                actor.Moved = true;
+                actor.DefenceStance = true;
+                actor.SpecialDef += 5;
+            },
+            () => DefenseAction(actor));
+    }
+
+    IEnumerator DefenseAction(TosterHexUnit actor)
+    {
+        if (actor != null && actor.tosterView != null)
+        {
+            yield return actor.tosterView.PlayAnimatorStateAndWaitForDefault("defense", 1.25f);
+        }
+    }
+
+    public bool TryCompleteSkillAction(TosterHexUnit actor)
+    {
+        if (actor == null)
+        {
+            return false;
+        }
+
+        string skillId = string.IsNullOrEmpty(selectedSkillId) == false
+            ? selectedSkillId
+            : GetSkillIdAtSlot(actor, SelectedSpellid);
+
+        return TryRunLifecycleAction(
+            actor,
+            BattleActionLifecycleKind.Skill,
+            skillId,
+            () => CompleteSkillCommit(actor, selectedSkillConsumesTurn),
+            null);
+    }
+
+    void CompleteSkillCommit(TosterHexUnit actor, bool consumesTurn)
+    {
+        string skillId = string.IsNullOrEmpty(selectedSkillId) == false
+            ? selectedSkillId
+            : GetSkillIdAtSlot(actor, SelectedSpellid);
+
+        if (IsRepeatableToggleSkill(skillId))
+        {
+            canvas.UnUseSkill(SelectedSpellid);
+            hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
+            actor.Hex.hexMap.unHighlight(actor.Hex.C, actor.Hex.R, actor.GetMS());
+            return;
+        }
+
+        actor.UsedSkillThisTurn = true;
+        actor.AddUsedSkillIdThisTurn(skillId);
+        actor.CanMoveAfterSkillThisTurn = selectedSkillAllowsMoveAfterUse;
+        ApplySelectedSkillCooldownIfNeeded(actor);
+        canvas.UnUseSkill(SelectedSpellid);
+        hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
+        actor.Hex.hexMap.unHighlight(actor.Hex.C, actor.Hex.R, actor.GetMS());
+        if (actor.MovedThisTurn || (consumesTurn && selectedSkillAllowsMoveAfterUse == false))
+        {
+            actor.Moved = true;
+        }
+    }
+
  public   IEnumerator DoMoves(HexClass hex, TosterHexUnit SelectedToster)
     {
         RemoveMainOutline();
@@ -580,12 +813,8 @@ public class MouseControler : LocalNetworkBehaviour
         SelectedToster.Pathing_func(hex, false);
 
         // Debug.LogError(SelectedToster.HexPathList.Count);
-        SelectedToster.Moved = true;
-        Update_CurrentFunc = BeforeNextTurn;
-        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        yield return StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
-        CancelUpdateFunc();
         shiftmode = false;
         // CancelUpdateFunc();
 
@@ -601,18 +830,14 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         ST.Pathing_func(hex, false);
 
         // Debug.LogError(SelectedToster.HexPathList.Count);
-        ST.Moved = true;
-        Update_CurrentFunc = BeforeNextTurn;
-        StartCoroutine(hexMap.DoUnitMoves(ST));
-        yield return new WaitUntil(() => ST.tosterView.AnimationIsPlaying == false);
+        yield return StartCoroutine(hexMap.DoUnitMoves(ST));
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
-        CancelUpdateFunc();
         shiftmode = false;
         // CancelUpdateFunc();
 
     }
 
-    IEnumerator DoMovesWithoutMoved(HexClass hex, TosterHexUnit SelectedToster)
+    public IEnumerator DoMovesWithoutMoved(HexClass hex, TosterHexUnit SelectedToster)
     {
         RemoveMainOutline();
         outlineM.unSetHexSelectedToster();
@@ -622,9 +847,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         SelectedToster.Pathing_func(hex, false);
 
         // Debug.LogError(SelectedToster.HexPathList.Count);
-
-        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        yield return StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
 
         shiftmode = false;
@@ -641,12 +864,8 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         SelectedToster.Pathing_func(hex, false);
 
         // Debug.LogError(SelectedToster.HexPathList.Count);
-        SelectedToster.Moved = true;
-        Update_CurrentFunc = BeforeNextTurn;
-        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        yield return StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
-        CancelUpdateFunc();
         shiftmode = false;
         // CancelUpdateFunc();
 
@@ -660,12 +879,8 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
    
 
         // Debug.LogError(SelectedToster.HexPathList.Count);
-        SelectedToster.Moved = true;
-        Update_CurrentFunc = BeforeNextTurn;
-        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        yield return StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
-        CancelUpdateFunc();
         shiftmode = false;
         // CancelUpdateFunc();
 
@@ -677,7 +892,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     void DoMoveAndAttackA(int i, int k, int r, int f, int SelectedTosterC, int SelectedTosterR)
     {
         TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
-        StartCoroutine(StartCoroutineDoMoveAndAttackA(i, k, r, f,ST));
+        TryStartMoveAndAttackAction(hexMap.GetHexAt(r, f), hexMap.GetHexAt(i, k).Tosters[0], ST);
 
     }
     IEnumerator StartCoroutineDoMoveAndAttackA(int i, int k, int r, int f, TosterHexUnit SelectedToster)
@@ -694,13 +909,8 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
 
         SelectedToster.Pathing_func(hexMap.GetHexAt(r, f), false);
-        SelectedToster.Moved = true;
-
-        Update_CurrentFunc = BeforeNextTurn;
-        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
-        if (SelectedToster.Hex == hexMap.GetHexAt(r, f)) hexMap.GetHexAt(i, k).Tosters[0].AttackMe(SelectedToster);
-        CancelUpdateFunc();
+        yield return StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+        if (SelectedToster.Hex == hexMap.GetHexAt(r, f)) yield return StartCoroutine(hexMap.GetHexAt(i, k).Tosters[0].AttackMeSequence(SelectedToster));
         shiftmode = false;
 
     }
@@ -709,7 +919,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     void DoMoveAndAttackB(int i, int k, int r, int f, int SelectedTosterC, int SelectedTosterR)
     {
         TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
-        StartCoroutine(StartCoroutineDoMoveAndAttackB(i,k,r,f,ST));
+        TryStartMoveAndAttackAction(hexMap.GetHexAt(r, f), hexMap.GetHexAt(i, k).Tosters[0], ST);
 
     }
 
@@ -728,13 +938,8 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
 
         SelectedToster.Pathing_func(hexMap.GetHexAt(r, f), false);
-        SelectedToster.Moved = true;
-
-        Update_CurrentFunc = BeforeNextTurn;
-        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
-        if (SelectedToster.Hex == hexMap.GetHexAt(r, f)) hexMap.GetHexAt(i, k).Tosters[0].AttackMe(SelectedToster);
-        CancelUpdateFunc();
+        yield return StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
+        if (SelectedToster.Hex == hexMap.GetHexAt(r, f)) yield return StartCoroutine(hexMap.GetHexAt(i, k).Tosters[0].AttackMeSequence(SelectedToster));
         shiftmode = false;
     }
 
@@ -815,18 +1020,13 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
 
         SelectedToster.Pathing_func(temp, false);
-        SelectedToster.Moved = true;
-
-        Update_CurrentFunc = BeforeNextTurn;
-        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        yield return StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
         if (toster != null)
         {
             Debug.LogError(toster.Name);
 
-            if (SelectedToster.Hex == temp) { toster.AttackMe(SelectedToster); Debug.LogError(toster.Name); }
+            if (SelectedToster.Hex == temp) { yield return StartCoroutine(toster.AttackMeSequence(SelectedToster)); Debug.LogError(toster.Name); }
         }
-        CancelUpdateFunc();
         shiftmode = false;
 
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
@@ -844,18 +1044,13 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
         SelectedToster.Pathing_func(temp, true);
         SelectedToster.HexPathList.RemoveAt(SelectedToster.HexPathList.Count - 1);
-        SelectedToster.Moved = true;
-
-        Update_CurrentFunc = BeforeNextTurn;
-        StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
-        yield return new WaitUntil(() => SelectedToster.tosterView.AnimationIsPlaying == false);
+        yield return StartCoroutine(hexMap.DoUnitMoves(SelectedToster));
         if (toster != null)
         {
             Debug.LogError(toster.Name);
 
-            if (SelectedToster.Hex == temp) { toster.AttackMe(SelectedToster); Debug.LogError(toster.Name); }
+            if (SelectedToster.Hex == temp) { yield return StartCoroutine(toster.AttackMeSequence(SelectedToster)); Debug.LogError(toster.Name); }
         }
-        CancelUpdateFunc();
         shiftmode = false;
 
         // Debug.LogError(SelectedToster.tosterView.AnimationIsPlaying);
@@ -864,34 +1059,96 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     public void EndSkills()
     {
+        if (selectedSkillCompletionRequested)
+        {
+            return;
+        }
+
         photonView.RPC("EndSkillss", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R });
     }
 
     [PunRPC]
     void EndSkillss(int SelectedTosterC, int SelectedTosterR)
     {
-        TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
-
-
-        if (castManager.isTurn)
+        if (selectedSkillCompletionRequested)
         {
-            canvas.UnUseSkill(SelectedSpellid);
-            hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
-            ST.Hex.hexMap.unHighlight(ST.Hex.C, ST.Hex.R, ST.GetMS());
-            ST.Moved = true;
-            CancelUpdateFunc();
-            shiftmode = false;
+            return;
         }
-        else
-        {
-            canvas.UnUseSkill(SelectedSpellid);
-            hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
-            ST.Hex.hexMap.unHighlight(ST.Hex.C, ST.Hex.R, ST.GetMS());
 
-            CancelUpdateFunc();
-            shiftmode = false;
+        TosterHexUnit ST = ResolveSkillCompletionActor(SelectedTosterC, SelectedTosterR);
+        if (ST == null)
+        {
+            Debug.LogWarning("Could not resolve skill completion actor.");
+            return;
         }
+
+        CompleteSelectedSkillLocally(ST);
         return;
+    }
+
+    public bool CompleteSelectedSkillLocally(TosterHexUnit actor)
+    {
+        if (selectedSkillCompletionRequested)
+        {
+            return false;
+        }
+
+        selectedSkillCompletionRequested = true;
+        return TryCompleteSkillAction(actor);
+    }
+
+    TosterHexUnit ResolveSkillCompletionActor(int selectedTosterC, int selectedTosterR)
+    {
+        HexClass actorHex = hexMap.GetHexAt(selectedTosterC, selectedTosterR);
+        if (actorHex != null && actorHex.Tosters.Count > 0)
+        {
+            return actorHex.Tosters[0];
+        }
+
+        TosterHexUnit teamActor = ResolveSkillCompletionActorFromTeams(selectedTosterC, selectedTosterR);
+        if (teamActor != null)
+        {
+            return teamActor;
+        }
+
+        if (SelectedToster != null &&
+            SelectedToster.Hex != null &&
+            SelectedToster.Hex.C == selectedTosterC &&
+            SelectedToster.Hex.R == selectedTosterR)
+        {
+            return SelectedToster;
+        }
+
+        return null;
+    }
+
+    TosterHexUnit ResolveSkillCompletionActorFromTeams(int selectedTosterC, int selectedTosterR)
+    {
+        if (hexMap == null || hexMap.Teams == null)
+        {
+            return null;
+        }
+
+        foreach (TeamClass team in hexMap.Teams)
+        {
+            if (team == null || team.Tosters == null)
+            {
+                continue;
+            }
+
+            foreach (TosterHexUnit toster in team.Tosters)
+            {
+                if (toster != null &&
+                    toster.Hex != null &&
+                    toster.Hex.C == selectedTosterC &&
+                    toster.Hex.R == selectedTosterR)
+                {
+                    return toster;
+                }
+            }
+        }
+
+        return null;
     }
 
     [PunRPC]
@@ -902,6 +1159,11 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     public void CancelSpellCasting()
     {
+      if (castManager.ActionInputBlockedByCommittedSkill)
+        {
+            return;
+        }
+
       if (castManager.isInProgress == false)
         {
             canvas.UnUseSkill(SelectedSpellid);
@@ -913,12 +1175,181 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     }
     public void SetCD(TosterHexUnit SelectedToster)
     {
-        SelectedToster.cooldowns[SelectedSpellid] = castManager.cooldown;
+        if (IsSkillIndexValid(SelectedSpellid, SelectedToster) == false)
+        {
+            return;
+        }
+
+        SelectedToster.cooldowns[SelectedSpellid] = Mathf.Max(1, selectedSkillCooldown);
         Debug.LogError(SelectedSpellid);
         Debug.LogError(SelectedToster.cooldowns[SelectedSpellid]);
     }
+
+    bool IsSkillIndexValid(int skillIndex, TosterHexUnit actor)
+    {
+        return actor != null &&
+            actor.skillstrings != null &&
+            actor.cooldowns != null &&
+            skillIndex >= 0 &&
+            skillIndex < actor.skillstrings.Count &&
+            skillIndex < actor.cooldowns.Count;
+    }
+
+    string GetSkillIdAtSlot(TosterHexUnit actor, int skillIndex)
+    {
+        if (actor == null || actor.skillstrings == null || skillIndex < 0 || skillIndex >= actor.skillstrings.Count)
+        {
+            return "Skill";
+        }
+
+        return actor.skillstrings[skillIndex];
+    }
+
+    bool CanStartSkill(int skillIndex, TosterHexUnit actor)
+    {
+        if (IsSkillIndexValid(skillIndex, actor) == false)
+        {
+            return false;
+        }
+
+        if (actor.cooldowns[skillIndex] > 0)
+        {
+            return false;
+        }
+
+        if (actor.Waited)
+        {
+            return false;
+        }
+
+        string skillId = actor.skillstrings[skillIndex];
+        if (IsPassiveSkill(skillId))
+        {
+            return false;
+        }
+
+        if (IsRepeatableToggleSkill(skillId))
+        {
+            return true;
+        }
+
+        if (IsSkillAlreadyUsedThisTurn(actor, skillId))
+        {
+            return false;
+        }
+
+        bool canUseAfterMove = CanUseSkillAfterMove(skillId);
+        if (actor.MovedThisTurn && canUseAfterMove == false)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool CanUseSkillSlot(int skillIndex)
+    {
+        return CanStartSkill(skillIndex, SelectedToster);
+    }
+
+    bool IsSkillAlreadyUsedThisTurn(TosterHexUnit actor, string skillId)
+    {
+        return actor != null &&
+            IsRepeatableToggleSkill(skillId) == false &&
+            actor.HasUsedSkillIdThisTurn(skillId);
+    }
+
+    bool IsRepeatableToggleSkill(string skillId)
+    {
+        return string.IsNullOrEmpty(skillId) == false &&
+            (skillId.StartsWith("Melee_Stance", StringComparison.Ordinal) ||
+             skillId.StartsWith("Range_Stance", StringComparison.Ordinal));
+    }
+
+    bool IsPassiveSkill(string skillId)
+    {
+        if (DataMapper.Instance == null)
+        {
+            return false;
+        }
+
+        DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(skillId);
+        return skillDefinition != null && skillDefinition.Type == "Passive";
+    }
+
+    public bool CanUseSkillAfterMove(string skillId)
+    {
+        return castManager != null && castManager.CanUseSkillAfterMove(skillId);
+    }
+
+    public bool CanMoveAfterSkill(string skillId)
+    {
+        return castManager != null && castManager.CanMoveAfterSkill(skillId);
+    }
+
+    bool HasAvailableSkillAfterMove(TosterHexUnit actor)
+    {
+        if (actor == null || actor.skillstrings == null || actor.cooldowns == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < actor.skillstrings.Count && i < actor.cooldowns.Count; i++)
+        {
+            string skillId = actor.skillstrings[i];
+            if (IsRepeatableToggleSkill(skillId))
+            {
+                continue;
+            }
+
+            if (CanStartSkill(i, actor))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void ApplySelectedSkillCooldownIfNeeded(TosterHexUnit actor)
+    {
+        if (IsSkillIndexValid(SelectedSpellid, actor) == false)
+        {
+            return;
+        }
+
+        if (actor.cooldowns[SelectedSpellid] <= 0)
+        {
+            SetCD(actor);
+        }
+    }
+
+    bool TryStartSelectedSkill(int skillIndex)
+    {
+        if (CanStartSkill(skillIndex, SelectedToster) == false)
+        {
+            return false;
+        }
+
+        photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { skillIndex, SelectedToster.Hex.C, SelectedToster.Hex.R });
+        Update_CurrentFunc = SpellCasting;
+        return true;
+    }
+
     void SpellCasting()
     {
+        if (BattleActionLifecycle.IsActionBlocking)
+        {
+            activeButtons = false;
+            return;
+        }
+
+        if (castManager.ActionInputBlockedByCommittedSkill)
+        {
+            activeButtons = false;
+            return;
+        }
+
        
         Outlining();
         ScrollLook();
@@ -1036,7 +1467,11 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
   
     
-        castManager.startSpell(ST.skillstrings[SelectedSpellid],hexMap.GetHexAt(i,j));
+        string skillId = string.IsNullOrEmpty(selectedSkillId) == false
+            ? selectedSkillId
+            : GetSkillIdAtSlot(ST, SelectedSpellid);
+
+        castManager.startSpell(skillId,hexMap.GetHexAt(i,j));
 
     }
 
@@ -1193,11 +1628,22 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     public void CastSkillBooleans(int SelectedSkill,TosterHexUnit SelectedToster)
     {
+        if (CanStartSkill(SelectedSkill, SelectedToster) == false)
+        {
+            return;
+        }
+
         SelectedSpellid = SelectedSkill;
+        selectedSkillCompletionRequested = false;
         SkillState = true;
         canvas.UseSkill(SelectedSpellid);
-        Debug.LogError((SelectedToster.skillstrings[SelectedSpellid]));
+        string skillId = SelectedToster.skillstrings[SelectedSpellid];
+        selectedSkillId = skillId;
+        Debug.LogError(skillId);
+        selectedSkillAllowsMoveAfterUse = castManager.CanMoveAfterSkill(skillId);
+        selectedSkillConsumesTurn = selectedSkillAllowsMoveAfterUse == false;
         castManager.getMode(SelectedToster.skillstrings[SelectedSpellid], SelectedToster);
+        selectedSkillCooldown = Mathf.Max(1, castManager.cooldown);
         if (castManager.isAvailable == false)
         {
             Debug.LogError("Umiejetnosc niedostepna");
@@ -1270,9 +1716,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     public void CastSkill(int i)
     {
-        photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { i,SelectedToster.Hex.C,SelectedToster.Hex.R });
-        Update_CurrentFunc = SpellCasting;
-        return;
+        TryStartSelectedSkill(i);
     }
 
 
@@ -1282,39 +1726,23 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            if (SelectedToster.skillstrings.Count >= 1 && SelectedToster.cooldowns[0]==0)
-            {
-                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 0, SelectedToster.Hex.C, SelectedToster.Hex.R });
-                Update_CurrentFunc = SpellCasting;
-                return;
-            }
+            TryStartSelectedSkill(0);
+            return;
         }
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            if (SelectedToster.skillstrings.Count >= 2 && SelectedToster.cooldowns[1] == 0)
-            {
-                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 1, SelectedToster.Hex.C, SelectedToster.Hex.R });
-                Update_CurrentFunc = SpellCasting;
-                return;
-            }
+            TryStartSelectedSkill(1);
+            return;
         }
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            if (SelectedToster.skillstrings.Count >= 3 && SelectedToster.cooldowns[2] == 0)
-            {
-                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 2, SelectedToster.Hex.C, SelectedToster.Hex.R });
-                Update_CurrentFunc = SpellCasting;
-                return;
-            }
+            TryStartSelectedSkill(2);
+            return;
         }
         if (Input.GetKeyDown(KeyCode.Alpha4))
         {
-            if (SelectedToster.skillstrings.Count >= 4 && SelectedToster.cooldowns[3] == 0)
-            {
-                photonView.RPC("CastSkillBooleanss", RpcTarget.All, new object[] { 3, SelectedToster.Hex.C, SelectedToster.Hex.R });
-                Update_CurrentFunc = SpellCasting;
-                return;
-            }
+            TryStartSelectedSkill(3);
+            return;
         }
 
         /*
@@ -1473,18 +1901,16 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     {
         if (Input.GetKeyUp(KeyCode.N))
         {
+            if (SelectedToster.MovedThisTurn || SelectedToster.UsedSkillThisTurn)
+            {
+                return;
+            }
+
             if (SelectedToster.Waited == false)
             {
                 SelectedToster.TextToSend = "";
                 SelectedToster.TextToSend += SelectedToster.Name + " czeka.";
-                if (SelectedToster.teamN == true)
-                {
-                    Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Master);
-                }
-                else
-                {
-                    Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
-                }
+                Chat.chat.SendUnitActionMessage(SelectedToster, "czeka.");
                 SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
                 photonView.RPC("Waitt", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R });
             }
@@ -1495,8 +1921,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     void Waitt(  int SelectedTosterC, int SelectedTosterR)
     {
         TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
-        ST.Waited = true;
-        CancelUpdateFunc();
+        TryStartWaitAction(ST);
 
     }
 
@@ -1527,16 +1952,14 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     {
         if (Input.GetKeyUp(KeyCode.Space))
         {
+            if (SelectedToster.MovedThisTurn || SelectedToster.UsedSkillThisTurn)
+            {
+                return;
+            }
+
             SelectedToster.TextToSend = "";
             SelectedToster.TextToSend += SelectedToster.Name + " broni się.";
-            if (SelectedToster.teamN == true)
-            {
-                Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Master);
-            }
-            else
-            {
-                Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
-            }
+            Chat.chat.SendUnitActionMessage(SelectedToster, "broni się.");
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
             photonView.RPC("Defensee", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R });
           
@@ -1549,19 +1972,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     void Defensee(int SelectedTosterC, int SelectedTosterR)
     {
         TosterHexUnit ST = hexMap.GetHexAt(SelectedTosterC, SelectedTosterR).Tosters[0];
-        var d = ST.tosterView.GetComponentInChildren<Animator>();
-        if (d != null)
-        {
-            Debug.Log(d);
-            d.Play("Defense");
-
-        }
-
-
-        ST.Moved = true;
-        ST.DefenceStance = true;
-        ST.SpecialDef += 5;
-        CancelUpdateFunc();
+        TryStartDefenseAction(ST);
 
     }
 
@@ -1745,7 +2156,9 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         }
         Vector3 hitPos = MouseToGroundPlane(Input.mousePosition);
         Vector3 diff = LastMouseGroundPlanePosition - hitPos;             
-        FindObjectOfType<CameraRotator>().transform.Translate(diff, Space.World);
+        CameraRotator cameraRotator = FindObjectOfType<CameraRotator>();
+        cameraRotator.transform.Translate(diff, Space.World);
+        cameraRotator.ClampPosition();
         LastMouseGroundPlanePosition = hitPos = MouseToGroundPlane(Input.mousePosition);
     }
 
@@ -1763,19 +2176,16 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     public void WaitB()
     {
+        if (SelectedToster.MovedThisTurn || SelectedToster.UsedSkillThisTurn)
+        {
+            return;
+        }
 
         if (SelectedToster.Waited == false)
         {
             SelectedToster.TextToSend = "";
             SelectedToster.TextToSend += SelectedToster.Name + " czeka.";
-            if (SelectedToster.teamN == true)
-            {
-                Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Master);
-            }
-            else
-            {
-                Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
-            }
+            Chat.chat.SendUnitActionMessage(SelectedToster, "czeka.");
             SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
             photonView.RPC("Waitt", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R });
         }
@@ -1785,17 +2195,14 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
    public  void DefenseB()
     {
+        if (SelectedToster.MovedThisTurn || SelectedToster.UsedSkillThisTurn)
+        {
+            return;
+        }
 
         SelectedToster.TextToSend = "";
         SelectedToster.TextToSend += SelectedToster.Name + " broni się.";
-        if (SelectedToster.teamN == true)
-        {
-            Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Master);
-        }
-        else
-        {
-            Chat.chat.SendMessageToChat(SelectedToster.TextToSend, Msg.MessageType.Client);
-        }
+        Chat.chat.SendUnitActionMessage(SelectedToster, "broni się.");
         SelectedToster.Hex.hexMap.unHighlight(SelectedToster.Hex.C, SelectedToster.Hex.R, SelectedToster.GetMS());
         photonView.RPC("Defensee", RpcTarget.All, new object[] { SelectedToster.Hex.C, SelectedToster.Hex.R });
 
@@ -1805,21 +2212,21 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     {
         
         CancelSpellCasting();
-        CastSkillBooleans(0 , SelectedToster);
+        CastSkill(0);
     }
     public void CastSkill2B()
     {
         CancelSpellCasting();
-        CastSkillBooleans(1, SelectedToster);
+        CastSkill(1);
     }
     public void CastSkill3B()
     {
         CancelSpellCasting();
-        CastSkillBooleans(2, SelectedToster);
+        CastSkill(2);
     }
     public void CastSkill4B()
     {
         CancelSpellCasting();
-        CastSkillBooleans(3, SelectedToster);
+        CastSkill(3);
     }
 }

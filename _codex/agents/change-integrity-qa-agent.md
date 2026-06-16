@@ -6,3 +6,6 @@ docs.
 
 Use only TArenaUnity3D local files unless the user explicitly asks for
 comparison or migration.
+When a reviewed change touches UI text, enforce TextMesh Pro only. Flag legacy
+`UnityEngine.UI.Text` usage and expect TMP types such as `TMP_Text` or
+`TextMeshProUGUI`.

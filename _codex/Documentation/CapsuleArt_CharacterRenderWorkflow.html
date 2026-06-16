@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[TARENA] Capsule Art - Unity Character Render Workflow</title>
+  <style>
+    :root {
+      --bg: #0f1418;
+      --panel: #172027;
+      --panel-2: #1f2a32;
+      --text: #edf3f5;
+      --muted: #aebbc2;
+      --line: #33434c;
+      --warm: #ff9a35;
+      --cool: #5fd9ff;
+      --good: #8ed184;
+      --warn: #ffd166;
+      --bad: #ff7b72;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    main {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.2;
+      margin: 0 0 14px;
+    }
+
+    h1 {
+      font-size: 34px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 24px;
+      margin-top: 32px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin-top: 22px;
+      color: #ffffff;
+    }
+
+    p {
+      margin: 0 0 12px;
+      color: var(--muted);
+    }
+
+    strong {
+      color: #ffffff;
+    }
+
+    code {
+      background: #0b1115;
+      border: 1px solid #26333b;
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: #e9f5f8;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.95em;
+    }
+
+    ul, ol {
+      margin: 0 0 16px 22px;
+      padding: 0;
+      color: var(--muted);
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    .hero {
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1d2a31, #12191f);
+    }
+
+    .hero p {
+      max-width: 900px;
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    .callout {
+      border-left: 4px solid var(--warn);
+      background: #231f16;
+      padding: 14px 16px;
+      margin: 16px 0;
+      color: #f6e7bd;
+    }
+
+    .callout.good {
+      border-left-color: var(--good);
+      background: #172316;
+      color: #d6f2d0;
+    }
+
+    .callout.bad {
+      border-left-color: var(--bad);
+      background: #271a1c;
+      color: #ffd7d3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 22px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+      color: var(--muted);
+    }
+
+    th {
+      background: var(--panel-2);
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid rgba(255,255,255,0.35);
+      vertical-align: -2px;
+      margin-right: 6px;
+    }
+
+    .warm { background: var(--warm); }
+    .cool { background: var(--cool); }
+    .dark { background: #0b1a22; }
+    .golem { background: #00d6c9; }
+
+    .checklist li {
+      list-style: square;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #94a2aa;
+    }
+
+    @media (max-width: 820px) {
+      main {
+        width: min(100% - 24px, 1180px);
+        padding-top: 18px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <h1>[TARENA] Capsule Art - Unity Character Render Workflow</h1>
+    <p>
+      Dokument opisuje workflow do przygotowania <strong>osobnych renderów postaci w Unity</strong>
+      pod finalny capsule art w GIMP. Nie dotyczy jeszcze finalnej kompozycji sceny, logo ani paintoveru.
+      Celem jest uzyskanie dwóch wysokiej jakości warstw postaci: wilkołaka i stone golema, z czytelną
+      sylwetką, dobrym światłem, mocnymi krawędziami i transparentnym tłem.
+    </p>
+  </section>
+
+  <section>
+    <h2>0. Zasada Bazowa</h2>
+    <div class="callout good">
+      Unity traktujemy jak studio fotograficzne. Scena renderowa nie musi być gameplayowo prawdziwa.
+      Można oszukiwać kamerą, światłem, skalą, pozą, tłem porównawczym i ręcznymi override'ami kości.
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Render roboczy</h3>
+        <ul>
+          <li>Używaj ciemnego tła porównawczego, nie białego ani szarego.</li>
+          <li>Oceniaj światło w <strong>Game View</strong>, nie w Scene View.</li>
+          <li>Postprocessing musi działać przez <code>Post-process Layer</code> na kamerze.</li>
+          <li>Na czas testów ustaw <code>Layer = Everything</code>, jeśli inaczej efekty nie działają.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Render finalny</h3>
+        <ul>
+          <li>Eksportuj jako PNG z alpha, wysoką rozdzielczością i bez tła.</li>
+          <li>Wersję beauty na ciemnym tle zachowaj tylko do porównania światła.</li>
+          <li>Nie próbuj robić pełnego finalnego outline'u w Unity. Subtelny edge polish lepiej zrobić w GIMP.</li>
+          <li>Nie klikaj <code>Apply</code> / <code>Apply All</code> na prefabie po ręcznym pozowaniu.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>1. Wilkołak - Poza</h2>
+    <p>
+      Cel: wilkołak ma być agresywną, dużą sylwetką z czytelnym pyskiem, pancerzem i pazurami.
+      Ma wyglądać jak postać z key artu, nie jak neutralny render modelu.
+    </p>
+
+    <h3>Najważniejsza hierarchia obrazu</h3>
+    <ol>
+      <li><strong>Pysk, oko, zęby</strong> - pierwszy punkt uwagi.</li>
+      <li><strong>Grzywa i górna linia sylwetki</strong> - ciepły, jasny, agresywny kształt.</li>
+      <li><strong>Czerwony pancerz barku</strong> - duży znak rozpoznawczy postaci.</li>
+      <li><strong>Przednia łapa</strong> - ma budować głębię, ale nie może zasłaniać centrum.</li>
+    </ol>
+
+    <h3>Ustawienie pozy</h3>
+    <ul>
+      <li>Postać pochylona do przodu, jakby nacierała na przeciwnika.</li>
+      <li>Głowa skierowana lekko w stronę środka przyszłej kompozycji capsule artu.</li>
+      <li>Pysk otwarty, zęby widoczne, oko nie może ginąć w cieniu.</li>
+      <li>Duży bark z czerwonym pancerzem po lewej stronie kadru, mocno czytelny.</li>
+      <li>Przednia łapa ma tworzyć ramę na dole/lewym dole, ale nie przecinać pyska, klatki ani pasa.</li>
+      <li>Druga ręka może iść w stronę przeciwnika, dając kierunek ataku.</li>
+    </ul>
+
+    <div class="callout bad">
+      Unikać: dłoni przez środek kadru, palców przecinających pysk, dłoni większej wizualnie niż głowa
+      i pancerz razem, dużej ciemnej plamy w centrum postaci.
+    </div>
+
+    <h3>Ręczne poprawki kości</h3>
+    <ul>
+      <li>Jeśli animacja daje złą łapę, ustaw Timeline na dobrą klatkę i ręcznie obróć kości ręki.</li>
+      <li>Ruszaj głównie <code>UpperArm</code>, <code>Forearm</code>, <code>Hand</code> i ewentualnie palce.</li>
+      <li>Obracaj kości małymi krokami: 5-15 stopni.</li>
+      <li>Nie skaluj kości i nie przesuwaj samego <code>Skinned Mesh Renderer</code>.</li>
+      <li>Po ustawieniu pozy najlepiej od razu renderować. Timeline może nadpisać ręczne poprawki.</li>
+    </ul>
+
+    <h3>Cel dla przedniej łapy</h3>
+    <ul>
+      <li>Dłoń niżej niż klatka i pysk.</li>
+      <li>Palce widoczne jako agresywny claw shape.</li>
+      <li>Między łapą a torsem powinna zostać przerwa, żeby sylwetka oddychała.</li>
+      <li>Łapa może być duża, ale nie może być głównym punktem obrazu.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>2. Wilkołak - Światła I Postprocessing</h2>
+    <p>
+      Cel światła: podgrzać grzywę i pancerz, wyciągnąć pysk, dodać zimny rim light na krawędziach
+      i nie zgubić formy mięśni w płaskim świetle.
+    </p>
+
+    <h3>Tło porównawcze</h3>
+    <table>
+      <tr>
+        <th>Element</th>
+        <th>Ustawienie</th>
+        <th>Cel</th>
+      </tr>
+      <tr>
+        <td>Camera background</td>
+        <td><span class="swatch dark"></span><code>#0B1A22</code> albo <code>#102330</code></td>
+        <td>Ciemne, chłodne tło pozwala ocenić rim light i czytelność krawędzi.</td>
+      </tr>
+      <tr>
+        <td>Clear Flags</td>
+        <td><code>Solid Color</code></td>
+        <td>Unikać Skyboxa przy renderze postaci.</td>
+      </tr>
+      <tr>
+        <td>Uwaga</td>
+        <td>Nie oceniaj na białym tle.</td>
+        <td>Białe tło ukrywa przepalenia i źle pokazuje krawędzie.</td>
+      </tr>
+    </table>
+
+    <h3>Setup świateł</h3>
+    <table>
+      <tr>
+        <th>Światło</th>
+        <th>Startowe ustawienia</th>
+        <th>Cel</th>
+        <th>Na co uważać</th>
+      </tr>
+      <tr>
+        <td><strong>Key_Warm_LeftFront</strong></td>
+        <td>
+          Type: <code>Directional</code> albo <code>Spot</code><br>
+          Color: <span class="swatch warm"></span><code>#FF9A35</code><br>
+          Direction: przód-lewo-góra<br>
+          Intensity: Directional <code>1.2-2.0</code> albo Spot <code>8-16</code>
+        </td>
+        <td>Główne ciepłe światło na grzywę, pancerz, bark i twarz.</td>
+        <td>Nie świecić zbyt frontalnie, bo postać robi się płaska.</td>
+      </tr>
+      <tr>
+        <td><strong>Face_Kicker_Warm</strong></td>
+        <td>
+          Type: <code>Spot</code><br>
+          Color: <span class="swatch warm"></span><code>#FFB15A</code><br>
+          Intensity: <code>1.5-3</code><br>
+          Range: <code>6-10</code><br>
+          Spot Angle: <code>20-30</code><br>
+          Shadows: <code>Off</code>
+        </td>
+        <td>Wyciągnąć pysk, oko i zęby z cienia.</td>
+        <td>Nie łapać całego nosa i klatki. To ma być mały kicker, nie drugie key light.</td>
+      </tr>
+      <tr>
+        <td><strong>Rim_Cyan_BackRight</strong></td>
+        <td>
+          Type: <code>Spot</code><br>
+          Color: <span class="swatch cool"></span><code>#4AB8D8</code> / <code>#5FD9FF</code><br>
+          Intensity: <code>2.5-4</code><br>
+          Range: <code>10-14</code><br>
+          Spot Angle: <code>25-35</code><br>
+          Shadows: <code>Off</code><br>
+          Indirect Multiplier: <code>0</code>
+        </td>
+        <td>Cienki zimny kontur na prawej ręce, uchu, grzywie, palcach i profilu pyska.</td>
+        <td>Jeśli ręka robi się biała albo cyan zalewa całą kończynę, intensity/range/angle są za duże albo światło jest zbyt frontalne.</td>
+      </tr>
+      <tr>
+        <td><strong>Fill_Cool_Soft</strong></td>
+        <td>
+          Type: <code>Directional</code> albo <code>Spot</code><br>
+          Color: <code>#506F8C</code><br>
+          Intensity: Directional <code>0.15-0.30</code> albo Spot <code>1-3</code><br>
+          Shadows: <code>Off</code>
+        </td>
+        <td>Minimalnie podnieść cienie, żeby nie były czarną plamą.</td>
+        <td>Za mocny fill zabija mięśnie, pysk i pancerz. Lepiej za mało niż za dużo.</td>
+      </tr>
+    </table>
+
+    <h3>Post-process Volume - wilkołak</h3>
+    <table>
+      <tr>
+        <th>Efekt</th>
+        <th>Ustawienie</th>
+        <th>Uwagi</th>
+      </tr>
+      <tr>
+        <td>Post-process Volume</td>
+        <td><code>Is Global: On</code>, <code>Weight: 1</code>, <code>Priority: 100</code></td>
+        <td>Profil np. <code>PP_Character_Werewolf</code>.</td>
+      </tr>
+      <tr>
+        <td>Post-process Layer</td>
+        <td><code>Layer: Everything</code>, <code>SMAA High</code>, <code>Stop NaN Propagation: On</code></td>
+        <td>Jeśli postprocess nie działa, testuj <code>Saturation = -100</code>.</td>
+      </tr>
+      <tr>
+        <td>Ambient Occlusion</td>
+        <td><code>Mode: Multi Scale Volumetric Obscurance</code>, <code>Intensity: 0.45-0.60</code>, <code>Thickness: 1.0-1.1</code></td>
+        <td>Jeśli pysk i pachy robią się brudne/czarne, zmniejsz AO.</td>
+      </tr>
+      <tr>
+        <td>Color Grading</td>
+        <td><code>Mode: Low Definition Range</code>, <code>Tonemapping: ACES</code>, <code>Temperature: +5 do +8</code>, <code>Saturation: +8 do +10</code>, <code>Contrast: +18 do +22</code></td>
+        <td>Przy Gamma color space używać LDR, nie HDR grading.</td>
+      </tr>
+      <tr>
+        <td>Bloom</td>
+        <td><code>Off</code> albo <code>Intensity: 0.03-0.05</code>, <code>Threshold: 1.3-1.6</code></td>
+        <td>Za dużo bloomu rozmywa krawędzie.</td>
+      </tr>
+      <tr>
+        <td>Wyłączone</td>
+        <td><code>Motion Blur</code>, <code>Depth of Field</code>, <code>Film Grain</code>, <code>Chromatic Aberration</code>, <code>Vignette</code></td>
+        <td>Te efekty utrudniają czysty render postaci na alpha.</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>3. Stone Golem - Poza</h2>
+    <p>
+      Cel: golem ma być ciężki, masywny i nacierający. Ma kontrastować z wilkołakiem: mniej organiczny,
+      bardziej skalny, chłodniejszy kolorystycznie, z mocnymi bryłami i świecącym cyan akcentem.
+    </p>
+
+    <h3>Najważniejsza hierarchia obrazu</h3>
+    <ol>
+      <li><strong>Głowa i oczy</strong> - punkt uwagi, nawet jeśli głowa jest mniejsza niż barki.</li>
+      <li><strong>Pięści / dłonie</strong> - pokazują atak i skalę.</li>
+      <li><strong>Barki i górna masa</strong> - mają robić wrażenie ogromu.</li>
+      <li><strong>Cyan runy / świecące pęknięcia</strong> - znak rozpoznawczy i separacja od tła.</li>
+    </ol>
+
+    <h3>Ustawienie pozy</h3>
+    <ul>
+      <li>Golem powinien iść/nacierać lekko w stronę kamery, ale nie frontalnie jak T-pose.</li>
+      <li>Głowa w centrum górnej masy, twarz widoczna, oczy/runa nie mogą ginąć.</li>
+      <li>Jedna pięść bliżej kamery, druga trochę z tyłu, żeby była głębia.</li>
+      <li>Ramiona mogą tworzyć kształt klamry, ale nie mogą zasłonić głowy.</li>
+      <li>Barki szerokie, sylwetka trójkątna: szeroko u góry, ciężko w centrum, stabilnie na dole.</li>
+      <li>Unikać pozy, gdzie golema czyta się jako płaski blok kamieni bez twarzy.</li>
+    </ul>
+
+    <h3>Co poprawić względem źródła</h3>
+    <ul>
+      <li>Źródłowy golem ma dobrą energię ramion, ale twarz jest za mało hierarchiczna.</li>
+      <li>Zadbaj, żeby głowa była jaśniejsza lub mocniej obrysowana niż brzuch i barki.</li>
+      <li>Niech najbliższa pięść nie przykrywa twarzy.</li>
+      <li>Ustaw ciało pod kątem, żeby prawa i lewa ręka miały różną głębokość w kadrze.</li>
+      <li>Cyan akcenty powinny prowadzić oko: pięść/bark - głowa - druga ręka.</li>
+    </ul>
+
+    <div class="callout">
+      Golem nie potrzebuje tak ciepłego światła jak wilkołak. Jego kontrast ma pochodzić z chłodnego cyan światła,
+      kamiennych highlightów i mocnych ciemnych szczelin między bryłami.
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Stone Golem - Światła I Postprocessing</h2>
+    <p>
+      Cel światła: podkreślić bryły kamieni, dodać cyan energię, wyciągnąć twarz oraz zrobić kontur
+      na rękach i barkach, bez zamieniania całej postaci w jedną turkusową plamę.
+    </p>
+
+    <h3>Tło porównawcze</h3>
+    <table>
+      <tr>
+        <th>Element</th>
+        <th>Ustawienie</th>
+        <th>Cel</th>
+      </tr>
+      <tr>
+        <td>Camera background</td>
+        <td><span class="swatch dark"></span><code>#071820</code> albo <code>#0B2028</code></td>
+        <td>Ciemny chłodny granat podkreśla cyan runy i jasne krawędzie kamieni.</td>
+      </tr>
+      <tr>
+        <td>Clear Flags</td>
+        <td><code>Solid Color</code></td>
+        <td>Stałe tło do porównywania wartości i krawędzi.</td>
+      </tr>
+      <tr>
+        <td>Uwaga</td>
+        <td>Nie renderować testów na szarym tle viewportu.</td>
+        <td>Szary spłaszcza kamień i utrudnia ocenę cyan rim lightu.</td>
+      </tr>
+    </table>
+
+    <h3>Setup świateł</h3>
+    <table>
+      <tr>
+        <th>Światło</th>
+        <th>Startowe ustawienia</th>
+        <th>Cel</th>
+        <th>Na co uważać</th>
+      </tr>
+      <tr>
+        <td><strong>Key_Stone_TopLeft</strong></td>
+        <td>
+          Type: <code>Directional</code> albo <code>Spot</code><br>
+          Color: <code>#D7C797</code> / ciepły kamienny beż<br>
+          Direction: góra-lewo-przód<br>
+          Intensity: Directional <code>0.9-1.4</code> albo Spot <code>6-12</code>
+        </td>
+        <td>Pokazać główne płaszczyzny kamieni i górne krawędzie barków.</td>
+        <td>Nie przegrzewać za mocno. Golem ma być chłodniejszy od wilkołaka.</td>
+      </tr>
+      <tr>
+        <td><strong>Core_Cyan_Face</strong></td>
+        <td>
+          Type: <code>Spot</code> albo mały <code>Point</code><br>
+          Color: <span class="swatch golem"></span><code>#00D6C9</code><br>
+          Intensity: Spot <code>2-5</code> albo Point <code>1-3</code><br>
+          Range: <code>4-8</code><br>
+          Shadows: <code>Off</code>
+        </td>
+        <td>Podbić twarz, oczy, runę i cyan akcent centralny.</td>
+        <td>Jeśli cała twarz świeci płasko, zmniejsz range albo intensity.</td>
+      </tr>
+      <tr>
+        <td><strong>Rim_Cyan_BackRight</strong></td>
+        <td>
+          Type: <code>Spot</code><br>
+          Color: <span class="swatch cool"></span><code>#5FD9FF</code><br>
+          Intensity: <code>3-6</code><br>
+          Range: <code>12-18</code><br>
+          Spot Angle: <code>30-45</code><br>
+          Shadows: <code>Off</code><br>
+          Indirect Multiplier: <code>0</code>
+        </td>
+        <td>Kontur na barku, pięści, głowie i zewnętrznych kamieniach.</td>
+        <td>Golem ma dużo płaszczyzn, więc rim łatwo zalewa pół modelu. Zawężaj angle zanim podbijesz intensity.</td>
+      </tr>
+      <tr>
+        <td><strong>Underside_Cool_Fill</strong></td>
+        <td>
+          Type: <code>Spot</code> / <code>Point</code><br>
+          Color: <code>#246D76</code><br>
+          Intensity: <code>0.5-1.5</code><br>
+          Range: <code>6-10</code>
+        </td>
+        <td>Delikatny cyan bounce w dolnych szczelinach i pod ramionami.</td>
+        <td>Nie robić z tego drugiego key light. Cienie w szczelinach muszą zostać.</td>
+      </tr>
+      <tr>
+        <td><strong>Fill_Neutral</strong></td>
+        <td>
+          Type: <code>Directional</code> albo <code>Spot</code><br>
+          Color: <code>#52636A</code><br>
+          Intensity: Directional <code>0.10-0.25</code> albo Spot <code>0.8-2</code>
+        </td>
+        <td>Minimalnie odblokować zbyt czarne fragmenty modelu.</td>
+        <td>Za mocny fill niszczy skalną formę i szczeliny.</td>
+      </tr>
+    </table>
+
+    <h3>Post-process Volume - stone golem</h3>
+    <table>
+      <tr>
+        <th>Efekt</th>
+        <th>Ustawienie</th>
+        <th>Uwagi</th>
+      </tr>
+      <tr>
+        <td>Post-process Volume</td>
+        <td><code>Is Global: On</code>, <code>Weight: 1</code>, <code>Priority: 100</code></td>
+        <td>Profil np. <code>PP_Character_StoneGolem</code>.</td>
+      </tr>
+      <tr>
+        <td>Ambient Occlusion</td>
+        <td><code>Intensity: 0.60-0.85</code>, <code>Thickness: 1.1-1.4</code></td>
+        <td>Golem może mieć mocniejsze AO niż wilkołak, bo kamienne szczeliny muszą czytać się wyraźnie.</td>
+      </tr>
+      <tr>
+        <td>Color Grading</td>
+        <td><code>Mode: Low Definition Range</code>, <code>Tonemapping: ACES</code>, <code>Temperature: -5 do 0</code>, <code>Saturation: +8 do +14</code>, <code>Contrast: +20 do +28</code></td>
+        <td>Chłodniejszy niż wilkołak. Cyan ma być wyraźny, ale nie plastikowy.</td>
+      </tr>
+      <tr>
+        <td>Bloom</td>
+        <td><code>Intensity: 0.04-0.10</code>, <code>Threshold: 1.2-1.5</code></td>
+        <td>Tylko dla cyan run/oczu. Jeśli rozmywa krawędzie kamieni, wyłącz.</td>
+      </tr>
+      <tr>
+        <td>Wyłączone</td>
+        <td><code>Motion Blur</code>, <code>Depth of Field</code>, <code>Film Grain</code>, <code>Chromatic Aberration</code>, <code>Vignette</code></td>
+        <td>Render postaci ma być czystą warstwą do GIMP.</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>5. Kamera I Jakość Renderu</h2>
+    <table>
+      <tr>
+        <th>Ustawienie</th>
+        <th>Wartość startowa</th>
+        <th>Cel</th>
+      </tr>
+      <tr>
+        <td>Projection</td>
+        <td><code>Perspective</code></td>
+        <td>Marketingowy character render z głębią.</td>
+      </tr>
+      <tr>
+        <td>Field of View</td>
+        <td><code>25-35</code></td>
+        <td>Mniej deformacji niż FOV 60+. Jeśli dłoń robi się ogromna, zmniejsz FOV i cofnij kamerę.</td>
+      </tr>
+      <tr>
+        <td>Camera height</td>
+        <td>lekko poniżej/na wysokości klatki, patrzy trochę w górę</td>
+        <td>Daje potworom większą skalę i agresję.</td>
+      </tr>
+      <tr>
+        <td>Resolution</td>
+        <td><code>3840 x 2160</code>, <code>4096 x 2304</code> albo więcej</td>
+        <td>Render dużo większy niż finalny capsule. Downscale później poprawi ostrość.</td>
+      </tr>
+      <tr>
+        <td>Anti-aliasing</td>
+        <td><code>SMAA High</code> albo <code>MSAA 4x/8x</code></td>
+        <td>Ostre, czyste krawędzie bez TAA blur.</td>
+      </tr>
+      <tr>
+        <td>Dynamic Resolution</td>
+        <td><code>Off</code></td>
+        <td>Stała jakość eksportu.</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>6. Eksport HD Transparent PNG</h2>
+    <p>
+      Najlepszy workflow: najpierw render beauty na ciemnym tle do oceny światła, potem render techniczny
+      z transparentnym tłem do GIMP. Nie oceniaj światła na przezroczystości.
+    </p>
+
+    <h3>Wariant A - Unity Recorder z alpha</h3>
+    <ol>
+      <li>Otwórz <code>Window &gt; General &gt; Recorder &gt; Recorder Window</code>.</li>
+      <li>Dodaj <code>Image Sequence</code>.</li>
+      <li>Ustaw <code>Source: Game View</code>.</li>
+      <li>Ustaw format <code>PNG</code>.</li>
+      <li>Ustaw <code>Capture Alpha</code> / <code>Include Alpha</code> na <code>On</code>, jeśli opcja istnieje.</li>
+      <li>Ustaw rozdzielczość: <code>3840x2160</code>, <code>4096x2304</code> lub większą.</li>
+      <li>Kamera: <code>Clear Flags: Solid Color</code>.</li>
+      <li>Background color: dowolny, ale Alpha <code>0</code>.</li>
+      <li>Nagraj jedną klatkę i sprawdź PNG w programie, który pokazuje alpha.</li>
+    </ol>
+
+    <h3>Wariant B - Render Texture ARGB32</h3>
+    <ol>
+      <li>Utwórz <code>Render Texture</code>.</li>
+      <li>Format: <code>ARGB32</code>.</li>
+      <li>Depth: <code>24</code>.</li>
+      <li>Size: <code>4096x4096</code> albo <code>4096x2304</code>.</li>
+      <li>Przypnij ją do kamery: <code>Camera &gt; Target Texture</code>.</li>
+      <li>Kamera: <code>Clear Flags: Solid Color</code>, Background Alpha <code>0</code>.</li>
+      <li>Zapisz RenderTexture do PNG skryptem/helperem renderowym.</li>
+    </ol>
+
+    <h3>Wariant C - awaryjne jednolite tło</h3>
+    <p>
+      Jeśli alpha z postprocessingiem nie działa poprawnie, renderuj na jednolitym tle, którego nie ma w postaci,
+      np. magenta albo zielony, i wytnij w GIMP. To jest fallback, nie docelowy workflow.
+    </p>
+
+    <table>
+      <tr>
+        <th>Przed transparent exportem</th>
+        <th>Ustawienie</th>
+      </tr>
+      <tr>
+        <td>Bloom</td>
+        <td><code>Off</code> albo bardzo nisko. Bloom z alpha potrafi dawać brudne brzegi.</td>
+      </tr>
+      <tr>
+        <td>Vignette</td>
+        <td><code>Off</code>. Vignette nie ma sensu na osobnej postaci.</td>
+      </tr>
+      <tr>
+        <td>Motion Blur / DOF / Film Grain / Chromatic Aberration</td>
+        <td><code>Off</code>. Render ma być czystą warstwą.</td>
+      </tr>
+      <tr>
+        <td>Background alpha</td>
+        <td><code>0</code> przy eksporcie transparentnym.</td>
+      </tr>
+      <tr>
+        <td>Beauty check</td>
+        <td>Zachowaj osobny PNG/JPG na ciemnym tle do oceny światła i porównań.</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>7. Checklist Przed Wyjściem Do GIMP</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Wilkołak</h3>
+        <ul class="checklist">
+          <li>Pysk, oko i zęby są czytelne.</li>
+          <li>Ciepłe światło działa na grzywie i czerwonym pancerzu.</li>
+          <li>Przednia łapa nie przecina pyska ani centrum torsu.</li>
+          <li>Cyan rim light jest subtelny, bez białych przepaleń.</li>
+          <li>Cienie nie są mleczne, ale też nie gubią całych kończyn.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Stone Golem</h3>
+        <ul class="checklist">
+          <li>Głowa i oczy/runa są pierwszym punktem uwagi.</li>
+          <li>Pięści pokazują skalę, ale nie zasłaniają twarzy.</li>
+          <li>Krawędzie kamieni są widoczne dzięki AO i bocznemu światłu.</li>
+          <li>Cyan akcenty prowadzą oko, ale nie zalewają całej postaci.</li>
+          <li>Sylwetka jest szeroka i ciężka, nie płaska.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout good">
+      Finalny cel Unity: dobry materiał źródłowy, nie skończony key art. Unity ma dać mocną pozę,
+      wartości, światło i czystą alpha. Subtelny outline, lokalny kontrast, ręczne highlighty i integracja
+      z tłem to etap GIMP.
+    </div>
+  </section>
+</main>
+</body>
+</html>

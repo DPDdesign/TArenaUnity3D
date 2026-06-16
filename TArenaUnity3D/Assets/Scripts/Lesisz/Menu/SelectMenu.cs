@@ -18,7 +18,7 @@ public class SelectMenu : MonoBehaviour
     public List<Image> EImagess;
     public List<Image> BigImagess;
     public List<string> ListOfHeroes = new List<string>(new string[] { "Biały Toster", "Czerwony Toster", "Zielony Toster" });
-    public List<string> ListOfImages = new List<string>(new string[] { "Sprites/wT1", "Sprites/redT2", "Sprites/gT2" });
+    public List<string> ListOfImages = new List<string>();
     public GameObject PanelBuilds,ThisPanel;
     public Button ButtonBuilds, ThisButton;
     void OnEnable()
@@ -26,7 +26,7 @@ public class SelectMenu : MonoBehaviour
        test = BigImagess[0].sprite;
 
         if (PlayerPrefs.HasKey("YourArmy")){
-            string path = Application.persistentDataPath + "/build" + PlayerPrefs.GetInt("YourArmy").ToString() + ".d";
+            string path = DataMapper.Instance.GetBuildFilePath(PlayerPrefs.GetInt("YourArmy"));
             if (File.Exists(path))
             {
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -43,7 +43,7 @@ public class SelectMenu : MonoBehaviour
             else PlayerPrefs.DeleteKey("YourArmy");
         }
             if (PlayerPrefs.HasKey("EnemyArmy")){
-            string path = Application.persistentDataPath + "/build" + PlayerPrefs.GetInt("EnemyArmy").ToString() + ".d";
+            string path = DataMapper.Instance.GetBuildFilePath(PlayerPrefs.GetInt("EnemyArmy"));
 
             if (File.Exists(path))
             {
@@ -64,11 +64,11 @@ public class SelectMenu : MonoBehaviour
 
     public void CheckYours()
     {
-        string path = Application.persistentDataPath + "/build1.d";
+        string path = DataMapper.Instance.GetBuildFilePath(1);
 
         for (int i = 0; i < 10; i++)
         {
-            path = Application.persistentDataPath + "/build" + i.ToString() + ".d";
+            path = DataMapper.Instance.GetBuildFilePath(i);
 
             if (File.Exists(path))
             {
@@ -102,11 +102,11 @@ public class SelectMenu : MonoBehaviour
 
     public void CheckEnemy()
     {
-        string path = Application.persistentDataPath + "/build1.d";
+        string path = DataMapper.Instance.GetBuildFilePath(1);
 
         for (int i = 0; i < 10; i++)
         {
-            path = Application.persistentDataPath + "/build" + i.ToString() + ".d";
+            path = DataMapper.Instance.GetBuildFilePath(i);
 
             if (File.Exists(path))
             {
@@ -131,7 +131,7 @@ public class SelectMenu : MonoBehaviour
     public Sprite sprite;
     public void PickArmyYours(int i)
     {
-        string path = Application.persistentDataPath + "/build" + i.ToString() + ".d";
+        string path = DataMapper.Instance.GetBuildFilePath(i);
 
         if (File.Exists(path))
         {
@@ -159,7 +159,7 @@ public class SelectMenu : MonoBehaviour
     }
     public void PickArmyEnemy(int i)
     {
-        string path = Application.persistentDataPath + "/build" + i.ToString() + ".d";
+        string path = DataMapper.Instance.GetBuildFilePath(i);
 
         if (File.Exists(path))
         {

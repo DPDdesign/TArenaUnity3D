@@ -55,7 +55,7 @@ public class MostStupidAIEver : MonoBehaviour
 
                         if (MC.getSelectedToster().IsPathAvaible(hex))
                         {
-                            MC.StartCoroutine(MC.DoMoveAndAttackWithoutCheck(hex, h.Tosters[0],MC.getSelectedToster()));
+                            MC.TryStartMoveAndAttackAction(hex, h.Tosters[0], MC.getSelectedToster());
                             return;
                         }
                     }
@@ -88,7 +88,7 @@ public class MostStupidAIEver : MonoBehaviour
         for (int i = 0; i < MC.getSelectedToster().GetMS(); i++)
             hexmaxpath.Add(hexpath[i]);
 
-        StartCoroutine(MC.DoMovesST(hexmaxpath[hexmaxpath.Count-1],MC.getSelectedToster()));
+        MC.TryStartMoveAction(hexmaxpath[hexmaxpath.Count-1], MC.getSelectedToster());
         return;
 
 

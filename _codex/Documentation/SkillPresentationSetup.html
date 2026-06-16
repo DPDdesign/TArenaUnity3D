@@ -1,0 +1,1275 @@
+﻿<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TArena Skill VFX/SFX Setup</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #18202a;
+      --muted: #5f6b7a;
+      --line: #d9dee7;
+      --accent: #246bfe;
+      --yes: #0b7a45;
+      --no: #9b1c1c;
+      --opt: #7a5200;
+      --num: #3d4c91;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 28px 22px 56px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin: 0 0 22px;
+      max-width: 860px;
+      color: var(--muted);
+    }
+
+    .note {
+      background: #eef3ff;
+      border: 1px solid #c9d8ff;
+      padding: 12px 14px;
+      margin: 0 0 20px;
+      border-radius: 6px;
+    }
+
+    .tab-nav {
+      display: flex;
+      gap: 8px;
+      margin: 0 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tab-button {
+      appearance: none;
+      border: 1px solid transparent;
+      border-bottom: 0;
+      border-radius: 6px 6px 0 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      padding: 10px 14px;
+    }
+
+    .tab-button.active {
+      background: var(--panel);
+      border-color: var(--line);
+      color: var(--text);
+      margin-bottom: -1px;
+    }
+
+    .tab-panel[hidden] {
+      display: none;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 0 0 14px;
+    }
+
+    .toolbar label {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .toolbar select {
+      min-width: 180px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .status-count {
+      color: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+
+    th,
+    td {
+      vertical-align: top;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #edf1f7;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      color: #3a4655;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      color: #13284d;
+    }
+
+    .skill {
+      min-width: 150px;
+      font-weight: 700;
+      color: #0f2759;
+    }
+
+    .setup {
+      min-width: 260px;
+    }
+
+    .check {
+      min-width: 150px;
+    }
+
+    .migrated {
+      min-width: 88px;
+    }
+
+    .setup div {
+      display: flex;
+      gap: 8px;
+      margin: 0 0 3px;
+    }
+
+    .tag {
+      display: inline-block;
+      min-width: 92px;
+      color: var(--muted);
+    }
+
+    .yes { color: var(--yes); font-weight: 650; }
+    .no { color: var(--no); font-weight: 650; }
+    .opt { color: var(--opt); font-weight: 650; }
+    .num { color: var(--num); font-weight: 650; }
+    .na { color: var(--muted); font-style: italic; }
+
+    .unit-status-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 0 14px;
+    }
+
+    .unit-status-header h2 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .unit-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .action-button {
+      appearance: none;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 650;
+      padding: 8px 11px;
+    }
+
+    .action-button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .unit-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 0 0 14px;
+    }
+
+    .unit-toolbar label {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .unit-toolbar input[type="search"] {
+      min-width: 240px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .save-status,
+    .unit-count {
+      color: var(--muted);
+    }
+
+    .unit-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .unit-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .unit-card summary {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      list-style: none;
+      padding: 12px;
+    }
+
+    .unit-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .unit-avatar {
+      width: 58px;
+      height: 58px;
+      flex: 0 0 58px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #edf1f7;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    .unit-avatar-fallback {
+      display: grid;
+      place-items: center;
+      width: 58px;
+      height: 58px;
+      flex: 0 0 58px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #edf1f7;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .unit-summary-text {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .unit-name {
+      display: block;
+      font-size: 16px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .unit-progress {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .unit-card-body {
+      border-top: 1px solid var(--line);
+      padding: 12px;
+    }
+
+    .unit-group-title {
+      margin: 0 0 8px;
+      color: #3a4655;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    .status-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) minmax(180px, 1.5fr);
+      gap: 10px;
+      align-items: start;
+      padding: 8px;
+      border: 1px solid #e6e9ef;
+      border-radius: 6px;
+      background: #fbfcfe;
+    }
+
+    .status-action {
+      min-width: 0;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .status-checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(82px, 1fr));
+      gap: 6px 10px;
+    }
+
+    .status-checks label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #3a4655;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .status-checks input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--accent);
+    }
+
+    @media (max-width: 1180px) {
+      .unit-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      main {
+        padding: 18px 12px 38px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      .unit-status-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .unit-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .status-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>TArena Skill VFX/SFX Setup</h1>
+    <p class="lead">
+      Alfabetyczna mapa ustawień dla <code>SkillPresentationCatalog</code>. Wartości nie wskazują konkretnych assetów,
+      tylko typ entry potrzebny przez aktualny kod <code>CastManager</code> po migracji PRD 010.
+    </p>
+    <div class="note">
+      <strong>Zasada:</strong> <code>skillId</code> musi być identyczny jak nazwa skilla w XML. Brak VFX/SFX powinien być bezpieczny,
+      ale wpis w katalogu daje kontrolę nad timingiem, anchorami i audio.
+    </div>
+
+    <nav class="tab-nav" role="tablist" aria-label="Widoki dokumentu">
+            <button class="tab-button" type="button" id="tabUnitsStatus" role="tab" aria-selected="false" aria-controls="unitsStatusPanel" data-tab-target="unitsStatusPanel">Units status</button>
+
+      <button class="tab-button active" type="button" id="tabSkillSetup" role="tab" aria-selected="true" aria-controls="skillSetupPanel" data-tab-target="skillSetupPanel">Skill setup</button>
+    </nav>
+
+    <section class="tab-panel" id="skillSetupPanel" role="tabpanel" aria-labelledby="tabSkillSetup">
+    <div class="toolbar">
+      <label for="statusFilter">Filtr statusu</label>
+      <select id="statusFilter">
+        <option value="all">Wszystkie</option>
+        <option value="ok">OK</option>
+        <option value="issue">Do poprawy / weryfikacji</option>
+        <option value="todo">Todo</option>
+      </select>
+      <span class="status-count" id="statusCount"></span>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Skill</th>
+          <th>Check</th>
+          <th>Migrated</th>
+          <th>Kodowo</th>
+          <th>Opis działania</th>
+          <th>Setup VFX/SFX</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="skill"><code>Axe_Rain</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Projectile AoE na jednostki.</td>
+          <td>Wybiera hex AoE radius 1, zbiera jednostki w obszarze, pomija hex castera i wysyła osobny projectile do każdej trafionej jednostki.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="yes">tak</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Proj speed</span><span class="num">8</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.15</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Blind_by_light</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Single-target enemy status.</td>
+          <td>Targetuje wrogą jednostkę i nakłada status <code>Blind</code>. Reveal jest statusowy, bez hit/death animacji.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.2</span></div>
+            <div><span class="tag">Lifetime</span><span class="num">1-2</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Chope</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Instant melee AoE damage.</td>
+          <td>Caster uderza jednostki wokół siebie w radius 1, bez projectile. Każdy faktycznie trafiony target dostaje impact i damage reveal.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.2</span></div>
+            <div><span class="tag">SFX</span><span class="opt">opcjonalnie</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Cold_Blood</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Passive self resist + end-turn splash.</td>
+          <td>Autocast na sobie. Przy wygaśnięciu cyklu odpala normalną prezentację AoE z animacją castera i hit feedbackiem na sąsiednich trafionych jednostkach.</td>
+          <td class="setup">
+            <div><span class="tag">Catalog</span><span class="yes">tak</span></div>
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Defence_Ritual</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Team-wide friendly status AoE.</td>
+          <td>Nakłada buff obrony na całą drużynę castera. Reveal jest statusowy na każdej objętej jednostce.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0.1-0.25</span></div>
+            <div><span class="tag">SFX</span><span class="opt">opcjonalnie</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Double_Throw</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Multi-target projectile damage.</td>
+          <td>Gracz wybiera dwie wrogie jednostki. Po drugim wyborze caster rzuca projectile do obu targetów.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="yes">tak</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Proj speed</span><span class="num">8-12</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.1</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Fire_Ball</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Projectile AoE damage.</td>
+          <td>Wybiera hex AoE radius 1, odpala projectile do wybranego obszaru i reveal obrażeń na faktycznie trafionych jednostkach.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="yes">tak</span></div>
+            <div><span class="tag">Anchor</span><code>AreaCenter</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Proj speed</span><span class="num">6-10</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.15</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Fire_Movement</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Passive move trail -> fire trap.</td>
+          <td>Autocast ustawia flage ruchu. Gdy jednostka opuszcza hex, runtime odpala normalny hex effect na opuszczonym hexie i zostawia Fire_Trap.</td>
+          <td class="setup">
+            <div><span class="tag">Catalog</span><span class="yes">tak</span></div>
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Fire_Skin</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Passive aura debuff pulse.</td>
+          <td>Autocast na sobie. Przy wygaśnięciu cyklu odpala normalną prezentację AoE z animacją castera i statusem na każdej trafionej jednostce.</td>
+          <td class="setup">
+            <div><span class="tag">Catalog</span><span class="yes">tak</span></div>
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Force_Pull</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Target select + reposition.</td>
+          <td>Najpierw wybiera jednostkę, potem pusty hex. Jednostka jest teleportowana/pociągnięta na nowy hex, a prezentacja odpala się na miejscu docelowym.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.15</span></div>
+            <div><span class="tag">SFX</span><span class="opt">opcjonalnie</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Hate</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Single-target status link.</td>
+          <td>Targetuje wroga i nakłada wzajemny status/taunt relacji między casterem a targetem. Reveal statusowy na target.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.2</span></div>
+            <div><span class="tag">SFX</span><span class="opt">opcjonalnie</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Heavy_Fists</code></td>
+          <td class="check"><span class="yes">OK</span><br><span class="opt">impact VFX do wymiany</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Approach + instant AoE damage.</td>
+          <td>Caster najpierw przemieszcza się na wybrany hex, potem rozwiązuje obrażenia w układzie zależnym od kierunku i odpala impact/reveal na trafionych jednostkach.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.2</span></div>
+            <div><span class="tag">SFX</span><span class="opt">opcjonalnie</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Insult</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Enemy-team status AoE.</td>
+          <td>Nakłada debuff na wszystkie jednostki przeciwnej drużyny. Reveal statusowy na każdy objęty target.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0.1-0.25</span></div>
+            <div><span class="tag">SFX</span><span class="opt">opcjonalnie</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Long_Lick</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Pull/reposition + status.</td>
+          <td>Targetuje jednostkę w zasięgu, znajduje wolny hex obok castera, przenosi target i nakłada status <code>Taunt</code>.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.15</span></div>
+            <div><span class="tag">SFX</span><span class="opt">opcjonalnie</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Massochism</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Passive damage-bank -> next hit pure dmg.</td>
+          <td>Autocast na sobie. Przy wygaśnięciu cyklu ładuje pure damage i odpala normalną self prezentację z animacją castera.</td>
+          <td class="setup">
+            <div><span class="tag">Catalog</span><span class="yes">tak</span></div>
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Melee_Stance_Barb</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Self stance toggle.</td>
+          <td>Przełącza stan ranged/melee i modyfikatory castera. To czysty stance feedback na casterze.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>Caster</code></div>
+            <div><span class="tag">Impact</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Delay</span><span class="num">0</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Melee_Stance_Lizard</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Self stance toggle.</td>
+          <td>Przełącza stance jaszczura z ranged na melee i aktualizuje skill string w slocie.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>Caster</code></div>
+            <div><span class="tag">Impact</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Delay</span><span class="num">0</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Rage</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Self status buff/debuff.</td>
+          <td>Self-cast na własnym hexie. Nakłada czasowy efekt zmieniający obronę i atak.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>Caster</code></div>
+            <div><span class="tag">Impact</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.1</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Range_Stance_Barb</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Self stance toggle.</td>
+          <td>Przełącza barbarzyńcę w tryb ranged/melee i podmienia skill string w slocie.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>Caster</code></div>
+            <div><span class="tag">Impact</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Delay</span><span class="num">0</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Range_Stance_Lizard</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Self stance toggle.</td>
+          <td>Przełącza jaszczura w tryb ranged/melee i podmienia skill string w slocie.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>Caster</code></div>
+            <div><span class="tag">Impact</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Delay</span><span class="num">0</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Rope_Trap</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Trap placement on hex.</td>
+          <td>Dodaje trap <code>Rope_Trap</code> na wybranym hexie. Nie ma unit reveal.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetHex</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.1</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Rotting</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Passive self decay.</td>
+          <td>Autocast na sobie. Przy wygaśnięciu cyklu odpala normalną self prezentację z animacją castera i self-decay VFX/SFX.</td>
+          <td class="setup">
+            <div><span class="tag">Catalog</span><span class="yes">tak</span></div>
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Rush</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Approach/move attack.</td>
+          <td>Caster biegnie do docelowego hexa lub do ataku na pierwszą jednostkę. Prezentacja powinna odpalić po ruchu/uderzeniu.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetHex</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.15</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Shapeshift</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Self stat swap.</td>
+          <td>Zamienia miejscami MovementSpeed i Initiative castera. To self-cast feedback bez targetu.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>Caster</code></div>
+            <div><span class="tag">Impact</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Delay</span><span class="num">0</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Slash</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Approach + instant AoE damage.</td>
+          <td>Najpierw wybiera hex ruchu, potem obszar trafienia. Caster przemieszcza się, dopiero potem damage/reveal odpala na targetach.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.2</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Spike_Trap</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Trap placement on hex.</td>
+          <td>Dodaje trap <code>Spike_Trap</code> na wybranym hexie. Nie ma unit reveal przy castowaniu.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetHex</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.1</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Stone_Skin</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Passive flat damage reduction.</td>
+          <td>Autocast na sobie. Gdy jednostka z FlatDMGReduce faktycznie przyjmuje obrażenia, runtime odpala impact-style feedback na obrońcy.</td>
+          <td class="setup">
+            <div><span class="tag">Catalog</span><span class="yes">tak</span></div>
+            <div><span class="tag">Cast</span><span class="no">nie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Stone_Stance</code></td>
+          <td class="check"><span class="opt">do poprawy</span><br><span class="opt">VFX za mały</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Self status stance.</td>
+          <td>Nakłada self status, wyłącza counterattack i wzmacnia odporność. Reveal statusowy na casterze.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>Caster</code></div>
+            <div><span class="tag">Impact</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.1</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Stone_Throw</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Split + projectile na hex.</td>
+          <td>Dzieli stack StoneGolema, tworzy nową jednostkę na wolnym hexie albo docelowym hexie i aplikuje fixed damage reveal.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="yes">tak</span></div>
+            <div><span class="tag">Anchor</span><code>TargetHex</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Proj speed</span><span class="num">6-10</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.2</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Terrifying_Presence</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Passive anti-counter aura.</td>
+          <td>Autocast na sobie. Przy wygaśnięciu cyklu odpala normalną prezentację AoE z animacją castera i statusem na każdej trafionej jednostce.</td>
+          <td class="setup">
+            <div><span class="tag">Catalog</span><span class="yes">tak</span></div>
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Tough_Skin</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Single-target friendly status.</td>
+          <td>Targetuje przyjazną lub self jednostkę i nakłada buff odporności zależny od typu jednostki.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0-0.15</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Toxic_Fume</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Move + AoE status.</td>
+          <td>Caster dostaje self status, porusza się bez oznaczenia jako moved, a okoliczne jednostki dostają status <code>Taunt</code>.</td>
+          <td class="setup">
+            <div><span class="tag">Cast</span><span class="yes">tak</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Anchor</span><code>TargetUnit</code></div>
+            <div><span class="tag">Impact</span><span class="yes">tak</span></div>
+            <div><span class="tag">Delay</span><span class="num">0.1-0.25</span></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="skill"><code>Unstoppable_Light</code></td>
+          <td class="check"><span class="yes">OK</span></td>
+          <td class="migrated"><span class="yes">YES</span></td>
+          <td>Passive self armor penetration.</td>
+          <td>Autocast na sobie. Zgodnie z PRD 013 nie dostaje dodatkowego feedbacku; efekt pozostaje czytany przez ataki jednostki.</td>
+          <td class="setup">
+            <div><span class="tag">Catalog</span><span class="opt">opcjonalnie</span></div>
+            <div><span class="tag">Cast</span><span class="no">nie</span></div>
+            <div><span class="tag">Projectile</span><span class="no">nie</span></div>
+            <div><span class="tag">Impact</span><span class="no">nie</span></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    </section>
+
+    <section class="tab-panel" id="unitsStatusPanel" role="tabpanel" aria-labelledby="tabUnitsStatus" hidden>
+      <div class="unit-status-header">
+        <h2>Units status</h2>
+        <div class="unit-actions">
+          <button class="action-button" type="button" id="expandUnitsButton">Rozwiń karty</button>
+          <button class="action-button" type="button" id="collapseUnitsButton">Zwiń karty</button>
+        </div>
+      </div>
+      <div class="unit-toolbar">
+        <label for="unitSearch">Szukaj</label>
+        <input id="unitSearch" type="search" autocomplete="off" placeholder="Unit albo skill">
+        <span class="unit-count" id="unitStatusCount"></span>
+        <span class="save-status" id="saveStatus"></span>
+      </div>
+      <div class="unit-grid" id="unitCards"></div>
+    </section>
+  </main>
+  <script type="application/json" id="unitStatusEmbeddedState">{}</script>
+  <script>
+    (function () {
+      const tabs = Array.from(document.querySelectorAll('.tab-button'));
+      const panels = Array.from(document.querySelectorAll('.tab-panel'));
+      const filter = document.getElementById('statusFilter');
+      const count = document.getElementById('statusCount');
+      const rows = Array.from(document.querySelectorAll('#skillSetupPanel tbody tr'));
+      const unitCards = document.getElementById('unitCards');
+      const unitSearch = document.getElementById('unitSearch');
+      const unitStatusCount = document.getElementById('unitStatusCount');
+      const saveStatus = document.getElementById('saveStatus');
+      const expandUnitsButton = document.getElementById('expandUnitsButton');
+      const collapseUnitsButton = document.getElementById('collapseUnitsButton');
+      const embeddedState = document.getElementById('unitStatusEmbeddedState');
+      const storageKey = 'tarena.unitStatus.v1';
+      let unitStatusState = loadState();
+      const setupFields = [
+        { name: 'Catalog', defaultHtml: '<span class="na">n/d</span>' },
+        { name: 'Cast', defaultHtml: '<span class="na">n/d</span>' },
+        { name: 'Projectile', defaultHtml: '<span class="na">n/d</span>' },
+        { name: 'Anchor', defaultHtml: '<span class="na">n/d</span>' },
+        { name: 'Impact', defaultHtml: '<span class="na">n/d</span>' },
+        { name: 'Delay', defaultHtml: '<span class="na">n/d</span>' },
+        { name: 'Lifetime', defaultHtml: '<span class="na">n/d</span>' },
+        { name: 'Proj speed', defaultHtml: '<span class="na">n/d</span>' },
+        { name: 'SFX', defaultHtml: '<span class="na">n/d</span>' }
+      ];
+      const statusFields = [
+        { key: 'sfx', label: 'SFX' },
+        { key: 'vfx', label: 'VFX' },
+        { key: 'animation', label: 'Animation' },
+        { key: 'works', label: 'Działa' }
+      ];
+      const baseActions = [
+        { id: 'move', label: 'move' },
+        { id: 'defend', label: 'defend' },
+        { id: 'attack', label: 'attack' },
+        { id: 'die', label: 'die' }
+      ];
+      const units = [
+        unit('Rusher', 'Sprites/Brb_Rusher_sprite', ['Chope', 'Rush']),
+        unit('Thrower', 'Sprites/Brb_Thrower_sprite', ['Range_Stance_Barb', 'Double_Throw', 'Axe_Rain']),
+        unit('Axeman', 'Sprites/Brb_Axeman_sprite', ['Slash', 'Hate', 'Cold_Blood']),
+        unit('HeavyHitter', 'Sprites/Brb_HeavyHitter_sprite', ['Insult', 'Rage', 'Massochism']),
+        unit('Trapper', 'Sprites/Liz_Trapper_sprite', ['Range_Stance_Lizard', 'Spike_Trap', 'Rope_Trap']),
+        unit('Healer', 'Sprites/Liz_Healer_sprite', ['Tough_Skin', 'Defence_Ritual']),
+        unit('Specialist', 'Sprites/Liz_Specialist_sprite', ['Force_Pull', 'Stone_Stance']),
+        unit('Tank', 'Sprites/Liz_Tank_sprite', ['Toxic_Fume', 'Shapeshift', 'Long_Lick']),
+        unit('Wisp', 'Sprites/Gol_W_sprite', ['Blind_by_light', 'Unstoppable_Light']),
+        unit('StoneGolem', 'Sprites/Gol_SG_sprite', ['Stone_Throw', 'Stone_Skin']),
+        unit('FireElemental', 'Sprites/Gol_FE_sprite', ['Fire_Movement', 'Fire_Ball', 'Fire_Skin']),
+        unit('FleshGolem', 'Sprites/Gol_FG_sprite', ['Heavy_Fists', 'Terrifying_Presence', 'Rotting'])
+      ];
+
+      function unit(name, sprite, skills) {
+        const assetRoot = '../../TArenaUnity3D/Assets/Resources/';
+        const spritePath = assetRoot + sprite + '.png';
+        const infoPagePath = assetRoot + 'Sprites/Info_Pages/' + name + '.png';
+        const legacyPath = assetRoot + sprite.replace(/^Sprites\//, 'LEGACY/') + '.png';
+
+        return {
+          name: name,
+          avatarCandidates: unique([spritePath, infoPagePath, legacyPath]),
+          skills: skills.map((skillName, index) => ({
+            id: 'skill' + (index + 1),
+            label: 'skill ' + (index + 1) + ' - ' + skillName,
+            name: skillName
+          }))
+        };
+      }
+
+      function unique(values) {
+        return values.filter((value, index) => values.indexOf(value) === index);
+      }
+
+      function activateTab(targetId) {
+        tabs.forEach((tab) => {
+          const selected = tab.dataset.tabTarget === targetId;
+          tab.classList.toggle('active', selected);
+          tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+        });
+
+        panels.forEach((panel) => {
+          panel.hidden = panel.id !== targetId;
+        });
+      }
+
+      function getRowStatus(row) {
+        const cell = row.querySelector('.check');
+        const text = cell ? cell.textContent.toLowerCase() : '';
+
+        if (text.includes('do poprawy') || text.includes('weryfik')) {
+          return 'issue';
+        }
+
+        if (text.includes('todo')) {
+          return 'todo';
+        }
+
+        if (text.includes('ok')) {
+          return 'ok';
+        }
+
+        return 'other';
+      }
+
+      function applyFilter() {
+        const selected = filter.value;
+        let visible = 0;
+
+        rows.forEach((row) => {
+          const status = getRowStatus(row);
+          const show = selected === 'all' || status === selected;
+          row.style.display = show ? '' : 'none';
+
+          if (show) {
+            visible += 1;
+          }
+        });
+
+        count.textContent = visible + ' / ' + rows.length;
+      }
+
+      function normalizeSetupCells() {
+        const cells = Array.from(document.querySelectorAll('td.setup'));
+
+        cells.forEach((cell) => {
+          const values = new Map();
+          const existingRows = Array.from(cell.querySelectorAll(':scope > div'));
+
+          existingRows.forEach((row) => {
+            const tag = row.querySelector('.tag');
+
+            if (!tag) {
+              return;
+            }
+
+            const key = tag.textContent.trim();
+            const valueHtml = row.innerHTML.replace(tag.outerHTML, '').trim();
+            values.set(key, valueHtml);
+          });
+
+          cell.innerHTML = setupFields.map((field) => {
+            const valueHtml = values.has(field.name) ? values.get(field.name) : field.defaultHtml;
+            return '<div><span class="tag">' + field.name + '</span>' + valueHtml + '</div>';
+          }).join('');
+        });
+      }
+
+      function loadState() {
+        const embedded = parseJson(embeddedState ? embeddedState.textContent : '{}');
+        const stored = parseJson(localStorage.getItem(storageKey) || '{}');
+
+        return Object.assign({}, embedded, stored);
+      }
+
+      function parseJson(text) {
+        try {
+          return JSON.parse(text || '{}') || {};
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function stateKey(unitName, actionId, fieldKey) {
+        return unitName + '::' + actionId + '::' + fieldKey;
+      }
+
+      function getUnitActions(unitData) {
+        return baseActions.concat(unitData.skills);
+      }
+
+      function renderUnitCards() {
+        unitCards.innerHTML = units.map((unitData) => {
+          const actions = getUnitActions(unitData);
+          const rowsHtml = actions.map((action) => {
+            const checksHtml = statusFields.map((field) => {
+              const key = stateKey(unitData.name, action.id, field.key);
+              const checked = unitStatusState[key] ? ' checked' : '';
+
+              return '<label><input type="checkbox" data-unit="' + escapeHtml(unitData.name) + '" data-action="' + escapeHtml(action.id) + '" data-field="' + escapeHtml(field.key) + '"' + checked + '> ' + escapeHtml(field.label) + '</label>';
+            }).join('');
+
+            return '<div class="status-row"><div class="status-action">' + escapeHtml(action.label) + '</div><div class="status-checks">' + checksHtml + '</div></div>';
+          }).join('');
+
+          return '<details class="unit-card" data-unit-card="' + escapeHtml(unitData.name.toLowerCase()) + '" data-search="' + escapeHtml((unitData.name + ' ' + unitData.skills.map((skill) => skill.name).join(' ')).toLowerCase()) + '">'
+            + '<summary>'
+            + renderAvatar(unitData)
+            + '<span class="unit-summary-text"><span class="unit-name">' + escapeHtml(unitData.name) + '</span><span class="unit-progress" data-progress-for="' + escapeHtml(unitData.name) + '"></span></span>'
+            + '</summary>'
+            + '<div class="unit-card-body"><h3 class="unit-group-title">Actions</h3><div class="status-list">' + rowsHtml + '</div></div>'
+            + '</details>';
+        }).join('');
+
+        unitCards.querySelectorAll('.unit-avatar[data-candidates]').forEach((img) => {
+          img.addEventListener('error', handleAvatarError);
+        });
+
+        unitCards.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+          checkbox.addEventListener('change', handleUnitCheckboxChange);
+        });
+
+        updateAllUnitProgress();
+        applyUnitSearch();
+      }
+
+      function renderAvatar(unitData) {
+        if (!unitData.avatarCandidates.length) {
+          return '<span class="unit-avatar-fallback">' + escapeHtml(unitData.name.slice(0, 2).toUpperCase()) + '</span>';
+        }
+
+        return '<img class="unit-avatar" src="' + escapeHtml(unitData.avatarCandidates[0]) + '" alt="" data-candidate-index="0" data-candidates="' + escapeHtml(JSON.stringify(unitData.avatarCandidates)) + '">';
+      }
+
+      function handleAvatarError(event) {
+        const img = event.currentTarget;
+        const candidates = parseJson(img.dataset.candidates || '[]');
+        const nextIndex = Number(img.dataset.candidateIndex || 0) + 1;
+
+        if (nextIndex < candidates.length) {
+          img.dataset.candidateIndex = String(nextIndex);
+          img.src = candidates[nextIndex];
+          return;
+        }
+
+        const fallback = document.createElement('span');
+        const details = img.closest('.unit-card');
+        const unitName = details ? details.getAttribute('data-unit-card') || '' : '';
+        fallback.className = 'unit-avatar-fallback';
+        fallback.textContent = unitName.slice(0, 2).toUpperCase();
+        img.replaceWith(fallback);
+      }
+
+      function handleUnitCheckboxChange(event) {
+        const checkbox = event.currentTarget;
+        const key = stateKey(checkbox.dataset.unit, checkbox.dataset.action, checkbox.dataset.field);
+
+        unitStatusState[key] = checkbox.checked;
+
+        syncCheckboxAttribute(checkbox);
+        persistUnitStatus();
+        updateUnitProgress(checkbox.dataset.unit);
+      }
+
+      function syncCheckboxAttribute(checkbox) {
+        if (checkbox.checked) {
+          checkbox.setAttribute('checked', '');
+        } else {
+          checkbox.removeAttribute('checked');
+        }
+      }
+
+      function persistUnitStatus() {
+        syncEmbeddedState();
+        localStorage.setItem(storageKey, JSON.stringify(unitStatusState));
+        saveStatus.textContent = 'Zapisane automatycznie w tej przeglądarce.';
+      }
+
+      function syncEmbeddedState() {
+        embeddedState.textContent = JSON.stringify(unitStatusState, null, 2);
+      }
+
+      function updateAllUnitProgress() {
+        units.forEach((unitData) => updateUnitProgress(unitData.name));
+      }
+
+      function updateUnitProgress(unitName) {
+        const unitData = units.find((candidate) => candidate.name === unitName);
+
+        if (!unitData) {
+          return;
+        }
+
+        const total = getUnitActions(unitData).length * statusFields.length;
+        const done = Object.keys(unitStatusState).filter((key) => key.indexOf(unitName + '::') === 0 && unitStatusState[key] === true).length;
+        const label = done + ' / ' + total + ' checklist';
+        const progress = unitCards.querySelector('[data-progress-for="' + CSS.escape(unitName) + '"]');
+
+        if (progress) {
+          progress.textContent = label;
+        }
+      }
+
+      function applyUnitSearch() {
+        const query = unitSearch.value.trim().toLowerCase();
+        const cards = Array.from(unitCards.querySelectorAll('.unit-card'));
+        let visible = 0;
+
+        cards.forEach((card) => {
+          const show = !query || card.dataset.search.includes(query);
+          card.style.display = show ? '' : 'none';
+
+          if (show) {
+            visible += 1;
+          }
+        });
+
+        unitStatusCount.textContent = visible + ' / ' + cards.length + ' units';
+      }
+
+      normalizeSetupCells();
+      syncEmbeddedState();
+      renderUnitCards();
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => activateTab(tab.dataset.tabTarget));
+      });
+      filter.addEventListener('change', applyFilter);
+      unitSearch.addEventListener('input', applyUnitSearch);
+      expandUnitsButton.addEventListener('click', () => {
+        unitCards.querySelectorAll('.unit-card').forEach((card) => {
+          card.open = true;
+        });
+      });
+      collapseUnitsButton.addEventListener('click', () => {
+        unitCards.querySelectorAll('.unit-card').forEach((card) => {
+          card.open = false;
+        });
+      });
+      applyFilter();
+    }());
+  </script>
+</body>
+</html>
+
+
+
+
