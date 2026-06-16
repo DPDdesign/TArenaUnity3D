@@ -25,6 +25,13 @@ recommend legacy `UnityEngine.UI.Text`.
 - the specific `_codex/tasks/` file, when implementing a task
 - relevant C# files under `D:\Unity\Projects\TArenaUnity3D\TArenaUnity3D\Assets`
 
+Always add these sources before coding if the task touches gameplay design,
+UI design, run metagame screens, persistence, database state, or moving data
+between screens:
+
+- `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md`
+- `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
+
 Use `_codex/Context/CONTEXT-MAP.md` only when the task needs design,
 production, gameplay, AI, skill, level, difficulty, or architecture context.
 

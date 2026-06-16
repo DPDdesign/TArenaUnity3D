@@ -14,6 +14,8 @@ public static class RunMetagameUnitDefinitionMapper
             unit.Name,
             unit.Tier,
             unit.Cost,
+            unit.FactionId,
+            unit.UnitRoleCategory,
             CopySkillIds(unit.SkillNames));
     }
 

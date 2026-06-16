@@ -57,7 +57,7 @@ public class OfflineRunMapDbStore : IRunMapStore
             int routeMapId = EnsureRouteMap(connection, transaction, runId, state);
             UpdateNodeStates(connection, transaction, routeMapId, state);
 
-            int currentNodeId = ResolveCurrentNodeIntId(connection, transaction, routeMapId, state.CurrentNodeId);
+            int currentNodeId = ResolveCurrentNodeIntId(connection, transaction, routeMapId, state.SelectedRouteChoiceId, state.CurrentNodeId);
             OfflineDatabaseSql.ExecuteNonQuery(
                 connection,
                 @"
@@ -426,14 +426,14 @@ WHERE node_id = @nodeId;",
         }
     }
 
-    private int ResolveCurrentNodeIntId(IDbConnection connection, IDbTransaction transaction, int routeMapId, string currentNodeId)
+    private int ResolveCurrentNodeIntId(IDbConnection connection, IDbTransaction transaction, int routeMapId, string selectedRouteChoiceId, string currentNodeId)
     {
         if (string.IsNullOrEmpty(currentNodeId) || currentNodeId == "run-start")
         {
             return 0;
         }
 
-        List<RunMapPathDefinition> catalogPaths = pathCatalog.BuildPaths(string.Empty);
+        List<RunMapPathDefinition> catalogPaths = pathCatalog.BuildPaths(selectedRouteChoiceId);
         List<PersistedPathRow> persistedPaths = LoadPaths(connection, routeMapId, transaction);
         List<PersistedNodeRow> persistedNodes = LoadNodes(connection, routeMapId, transaction);
         Dictionary<string, PersistedNodeRow> byCatalogNodeId = BuildNodeLookup(catalogPaths, persistedPaths, persistedNodes);
@@ -528,6 +528,9 @@ ORDER BY route_path_id, stage_index, node_id;",
             for (int nodeIndex = 0; nodeIndex < nodes.Count; nodeIndex++)
             {
                 PersistedNodeRow node = nodes[nodeIndex];
+                RunMapNodeDefinition catalogNode = catalogPath != null && catalogPath.Nodes != null && nodeIndex < catalogPath.Nodes.Count
+                    ? catalogPath.Nodes[nodeIndex]
+                    : null;
                 definitions.Add(
                     new RunMapNodeDefinition(
                         node.CatalogNodeId,
@@ -538,7 +541,7 @@ ORDER BY route_path_id, stage_index, node_id;",
                         node.PossibleRewardHint,
                         node.ExpectedRiskHint,
                         node.EncounterId,
-                        node.NextNodeId > 0 && catalogNodeByDb.ContainsKey(node.NextNodeId) ? catalogNodeByDb[node.NextNodeId] : string.Empty));
+                        BuildNextNodeIds(node, catalogNode, catalogNodeByDb)));
             }
 
             result.Add(new RunMapPathDefinition(path.PathId, string.Empty, path.DisplayName, path.BiasDescription, definitions));
@@ -598,6 +601,32 @@ ORDER BY route_path_id, stage_index, node_id;",
             if (node != null && node.NodeStateId == (int)DBNodeStateId.Completed && !string.IsNullOrEmpty(node.CatalogNodeId))
             {
                 result.Add(node.CatalogNodeId);
+            }
+        }
+
+        return result;
+    }
+
+    private static List<string> BuildNextNodeIds(
+        PersistedNodeRow node,
+        RunMapNodeDefinition catalogNode,
+        Dictionary<int, string> catalogNodeByDb)
+    {
+        List<string> result = new List<string>();
+        if (node != null && node.NextNodeId > 0 && catalogNodeByDb.ContainsKey(node.NextNodeId))
+        {
+            result.Add(catalogNodeByDb[node.NextNodeId]);
+        }
+
+        if (catalogNode != null && catalogNode.NextNodeIds != null)
+        {
+            for (int i = 0; i < catalogNode.NextNodeIds.Count; i++)
+            {
+                string nextNodeId = catalogNode.NextNodeIds[i];
+                if (!string.IsNullOrEmpty(nextNodeId) && !result.Contains(nextNodeId))
+                {
+                    result.Add(nextNodeId);
+                }
             }
         }
 
@@ -736,6 +765,10 @@ WHERE node_id = @nodeId;",
                 return RunMapNodeType.RecruitReward;
             case (int)DBNodeTypeId.FinalBoss:
                 return RunMapNodeType.FinalBoss;
+            case (int)DBNodeTypeId.RandomEvent:
+                return RunMapNodeType.RandomEvent;
+            case (int)DBNodeTypeId.Empty:
+                return RunMapNodeType.Empty;
             default:
                 return RunMapNodeType.Start;
         }
@@ -769,19 +802,64 @@ WHERE node_id = @nodeId;",
 
         if (node.NodeType == RunMapNodeType.FinalBoss)
         {
-            return state.RouteProgress >= 2 ? RunMapNodeState.Available : RunMapNodeState.Locked;
+            return state.RouteProgress >= 2 && IsReachableFromCurrent(state, node)
+                ? RunMapNodeState.Available
+                : RunMapNodeState.Locked;
+        }
+
+        if (IsReachableFromCurrent(state, node))
+        {
+            return RunMapNodeState.Available;
+        }
+
+        return RunMapNodeState.Locked;
+    }
+
+    private static bool IsReachableFromCurrent(RunMapStateRecord state, RunMapNodeDefinition node)
+    {
+        if (state == null || node == null || string.IsNullOrEmpty(state.CurrentNodeId) || state.CurrentNodeId == "run-start")
+        {
+            return false;
         }
 
         if (!string.IsNullOrEmpty(state.CurrentNodeId) && state.CurrentNodeId != "run-start")
         {
             RunMapNodeDefinition current = FindNode(state.Paths, state.CurrentNodeId);
-            if (current != null && current.NextNodeId == node.NodeId)
+            if (current != null && HasNextNode(current, node.NodeId))
             {
-                return RunMapNodeState.Available;
+                return true;
             }
         }
 
-        return RunMapNodeState.Locked;
+        return false;
+    }
+
+    private static bool HasNextNode(RunMapNodeDefinition current, string nodeId)
+    {
+        if (current == null || string.IsNullOrEmpty(nodeId))
+        {
+            return false;
+        }
+
+        if (current.NextNodeId == nodeId)
+        {
+            return true;
+        }
+
+        if (current.NextNodeIds == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < current.NextNodeIds.Count; i++)
+        {
+            if (current.NextNodeIds[i] == nodeId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static RunMapNodeDefinition FindNode(List<RunMapPathDefinition> paths, string nodeId)

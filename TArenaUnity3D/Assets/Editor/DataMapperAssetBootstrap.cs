@@ -106,15 +106,22 @@ public static class DataMapperAssetBootstrap
 
         string assetPath = UnitDefinitionsFolder + "/" + SanitizeAssetName(unitName) + ".asset";
         UnitDefinitionAsset unitAsset = AssetDatabase.LoadAssetAtPath<UnitDefinitionAsset>(assetPath);
+        bool createdAsset = false;
         if (unitAsset == null)
         {
             unitAsset = ScriptableObject.CreateInstance<UnitDefinitionAsset>();
             AssetDatabase.CreateAsset(unitAsset, assetPath);
+            createdAsset = true;
         }
+
+        int factionId = createdAsset ? UnitFactionResolver.ResolveFactionId(unitName) : unitAsset.FactionId;
+        UnitRoleCategory unitRoleCategory = createdAsset ? InferDefaultRoleCategory(unitName) : unitAsset.UnitRoleCategory;
 
         unitAsset.Configure(
             unitName,
             ReadTier(unitNode, unitName),
+            factionId,
+            unitRoleCategory,
             ReadChildInt(unitNode, "HP"),
             ReadChildInt(unitNode, "Attack"),
             ReadChildInt(unitNode, "Defense"),
@@ -128,6 +135,31 @@ public static class DataMapperAssetBootstrap
 
         EditorUtility.SetDirty(unitAsset);
         return unitAsset;
+    }
+
+    private static UnitRoleCategory InferDefaultRoleCategory(string unitName)
+    {
+        switch (unitName)
+        {
+            case "Healer":
+                return UnitRoleCategory.Support;
+            case "Thrower":
+            case "Wisp":
+                return UnitRoleCategory.Ranged;
+            case "Trapper":
+            case "Specialist":
+                return UnitRoleCategory.Control;
+            case "Tank":
+            case "Axeman":
+            case "Rusher":
+            case "HeavyHitter":
+            case "StoneGolem":
+            case "FleshGolem":
+            case "FireElemental":
+                return UnitRoleCategory.Frontline;
+            default:
+                return UnitRoleCategory.Flexible;
+        }
     }
 
     private static List<string> ReadSkills(XmlNode unitNode)

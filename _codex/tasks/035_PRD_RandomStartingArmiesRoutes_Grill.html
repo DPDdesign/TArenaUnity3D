@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[TARENA] PRD 035 - Random Starting Armies And Routes Grill</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111315;
+      --panel: #1b2024;
+      --panel-2: #232a30;
+      --line: #34404a;
+      --text: #eef2f5;
+      --muted: #aab5bf;
+      --accent: #d6b35a;
+      --accent-2: #75b5d8;
+      --danger: #dc7f72;
+      --ok: #8ccf9a;
+      --field: #121619;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--line);
+      background: rgba(17, 19, 21, 0.96);
+      backdrop-filter: blur(8px);
+    }
+
+    .header-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 18px 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 12px rgba(140, 207, 154, 0.55);
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 22px 56px;
+    }
+
+    .context {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    section,
+    .question {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+    }
+
+    section {
+      padding: 16px;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: var(--accent);
+      letter-spacing: 0;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 19px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    li + li {
+      margin-top: 6px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 16px 0 20px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 9px 12px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    button.primary {
+      background: #3a3120;
+      border-color: #8b7234;
+    }
+
+    button.warning:hover {
+      border-color: var(--danger);
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0 0 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tab-button {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      margin-bottom: -1px;
+    }
+
+    .tab-button[aria-selected="true"] {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: #242016;
+    }
+
+    .tab-panel[hidden] {
+      display: none;
+    }
+
+    .note {
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .hidden-file {
+      display: none;
+    }
+
+    .question-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .question {
+      padding: 16px;
+    }
+
+    .q-head {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: start;
+      margin-bottom: 10px;
+    }
+
+    .q-number {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      background: #2d3540;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .q-title {
+      margin: 2px 0 0;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .tag {
+      color: var(--accent-2);
+      font-size: 12px;
+      border: 1px solid #386174;
+      border-radius: 999px;
+      padding: 4px 8px;
+      white-space: nowrap;
+    }
+
+    .recommendation {
+      margin: 0 0 12px 40px;
+      padding: 10px 12px;
+      border-left: 3px solid var(--accent);
+      background: #171b1f;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 6px 40px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    textarea,
+    input {
+      width: calc(100% - 40px);
+      margin-left: 40px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--field);
+      color: var(--text);
+      padding: 11px 12px;
+      font: inherit;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 96px;
+      outline: none;
+    }
+
+    input {
+      min-height: 0;
+      height: 40px;
+      margin-bottom: 12px;
+    }
+
+    textarea:focus,
+    input:focus {
+      border-color: var(--accent);
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .meta-grid label,
+    .meta-grid input {
+      margin-left: 0;
+      width: 100%;
+    }
+
+    .preview {
+      margin-top: 20px;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #0d1012;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      color: #d7dee5;
+      font-size: 12px;
+      max-height: 420px;
+      overflow: auto;
+    }
+
+    @media (max-width: 820px) {
+      .header-inner,
+      .context,
+      .q-head,
+      .meta-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .status {
+        justify-content: flex-start;
+      }
+
+      .recommendation,
+      label,
+      textarea,
+      input {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div>
+        <h1>[TARENA] PRD 035 - Generator Starting Armies i Routes</h1>
+        <p class="subtitle">20 pytan do wypelnienia. Odpowiedzi zapisuja sie automatycznie w tej przegladarce.</p>
+      </div>
+      <div class="status" aria-live="polite">
+        <span class="dot"></span>
+        <span id="saveStatus">Autosave gotowy</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="context">
+      <section>
+        <h2>Ustalenia z kodu i bazy</h2>
+        <ul>
+          <li>Obecny Start Run ma 3 recznie wpisane armie w <code>DefaultStartRunCatalog</code>: Barbarian Starter, Lizard Breakout, Stone Spark.</li>
+          <li>Wartosc stacka jest liczona jako <code>amount * unit.Cost</code> z <code>DataMapper/UnitCatalog</code>; legalne skille tez ida z katalogu jednostek.</li>
+          <li>Obecny Run Map ma recznie wpisane sciezki w <code>DefaultRunMapPathCatalog</code>: pressure, recovery, pivot oraz wspolny final.</li>
+          <li>SQLite zapisuje runtime: <code>offline_runs</code>, <code>army_snapshots</code>, <code>route_maps</code>, <code>route_paths</code>, <code>route_nodes</code>.</li>
+          <li>Autorskie katalogi armii, tras, encounterow, rewardow i shopu nie sa obecnie prawda SQLite; DB przechowuje runtime seed i postep.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Dostepne dane jednostek</h2>
+        <ul>
+          <li>T1: Wisp 6, Rusher 31, Trapper 45.</li>
+          <li>T2: Thrower 60, Healer 60, StoneGolem 67.</li>
+          <li>T3: Specialist 129, Axeman 192, FireElemental 250.</li>
+          <li>T4: Tank 472, HeavyHitter 500, FleshGolem 550.</li>
+          <li>Pytania zakladaja brak zmian statystyk, kosztow, cooldownow i plikow Unity assetow w PRD 035.</li>
+        </ul>
+      </section>
+    </div>
+
+    <section>
+      <h2>Metadane PRD</h2>
+      <div class="meta-grid">
+        <div>
+          <label for="owner">Autor decyzji</label>
+          <input id="owner" data-save="meta.owner" placeholder="np. Piotr">
+        </div>
+        <div>
+          <label for="date">Data wypelnienia</label>
+          <input id="date" data-save="meta.date" placeholder="YYYY-MM-DD">
+        </div>
+      </div>
+      <label for="prdSummary" style="margin-left:0">Jednozdaniowy cel PRD 035</label>
+      <textarea id="prdSummary" data-save="meta.summary" placeholder="Np. Zastapic reczne katalogi startowych armii i tras deterministycznymi generatorami, ktore seeduja runtime do obecnej bazy offline."></textarea>
+    </section>
+
+    <div class="controls">
+      <button class="primary" id="copyRecommended">Wstaw rekomendacje do pustych pol</button>
+      <button id="copyMarkdown">Kopiuj PRD jako Markdown</button>
+      <button id="downloadJson">Pobierz odpowiedzi JSON</button>
+      <button id="importJsonButton">Importuj odpowiedzi JSON</button>
+      <input class="hidden-file" id="importJsonInput" type="file" accept="application/json,.json">
+      <button class="warning" id="clearAnswers">Wyczysc lokalne odpowiedzi</button>
+    </div>
+
+    <nav class="tab-bar" aria-label="PRD grill tabs">
+      <button class="tab-button" type="button" data-tab="main" aria-selected="true">Grill 20 pytan</button>
+      <button class="tab-button" type="button" data-tab="followups" aria-selected="false">Dopytki 1</button>
+    </nav>
+
+    <div id="tab-main" class="tab-panel">
+      <div id="questions" class="question-list"></div>
+    </div>
+
+    <div id="tab-followups" class="tab-panel" hidden>
+      <section class="note">
+        Te dopytki sa druga warstwa grillowania dla decyzji, ktore zwykle zostaja otwarte po pierwszych 20 odpowiedziach:
+        dokladny budzet, tagi rol, kontrakt generatora, zapis seeda, route topology i testy blokujace implementacje.
+        Jesli odpowiedzi byly zapisane tylko w przegladarce, ten plik zaladuje je przez ten sam klucz localStorage.
+      </section>
+      <div id="followupQuestions" class="question-list"></div>
+    </div>
+
+    <section class="preview">
+      <h2>Podglad PRD Markdown</h2>
+      <pre id="markdownPreview"></pre>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "tarena-prd-035-random-starting-armies-routes-grill-v1";
+
+    const questions = [
+      {
+        tag: "Zakres",
+        q: "Czy PRD 035 ma zastapic tylko reczne katalogi Start Run/Run Map generatorami, czy ma tez zmieniac UI i flow runa?",
+        rec: "Zakres V1: tylko domena i persistence seam. Generator ma dostarczac dane do istniejacych adapterow Start Run i Run Map; UI moze dalej konsumowac te same view modele."
+      },
+      {
+        tag: "Autorytet",
+        q: "Co jest zrodlem prawdy dla legalnych jednostek i skilli w generatorze starting armies?",
+        rec: "DataMapper/UnitCatalog. Generator nie powinien trzymac wlasnych statystyk jednostek ani legalnych skill list; moze miec tylko reguly wyboru, budzet i ograniczenia."
+      },
+      {
+        tag: "Balans armii",
+        q: "Jaki glowny budzet wartosci ma miec losowa starting army V1?",
+        rec: "Budzet powinien byc zakresem, nie jedna liczba: np. 1450-1750 total value, liczone obecna formula `amount * unit.Cost`, z mozliwoscia per-route bias."
+      },
+      {
+        tag: "Kompozycja",
+        q: "Ile stackow powinna miec wygenerowana starting army i czy duplikaty jednostek sa dozwolone?",
+        rec: "V1: 4 stacki, bez duplikatow jednostki w jednej armii. To pasuje do obecnego Start Run UI i zmniejsza ryzyko problemow z duplicate stack identity w DB."
+      },
+      {
+        tag: "Tier",
+        q: "Jak ograniczyc tiery jednostek w starting armies, zeby start byl slabszy, ale ciekawy?",
+        rec: "V1: wymagane co najmniej 2 stacki T1/T2, maksymalnie 1 stack T3, bez T4 w normalnym starcie. T4 tylko jako przyszly unlock/modifier."
+      },
+      {
+        tag: "Role",
+        q: "Czy generator ma rozumiec role jednostek, czy wystarczy koszt/tier/skill tags?",
+        rec: "V1: dodac lekka warstwe tagow projektowych dla generatora, np. frontline, ranged, support, control, fragile, summon/pivot. Nie wyciagac roli z nazwy jednostki."
+      },
+      {
+        tag: "Skille",
+        q: "Ile skilli jednostki moze miec odblokowane na starcie i jak wybierac locked/unlocked?",
+        rec: "V1: zawsze pierwszy legalny skill unlocked, pozniejsze legalne skille locked. Wyjatki tylko jako jawna regula generatora, nie losowy pelny unlock."
+      },
+      {
+        tag: "Seed",
+        q: "Czy losowanie musi byc deterministyczne po seedzie runa?",
+        rec: "Tak. Generator powinien przyjmowac seed i zapisywac wygenerowany rezultat do DB jako runtime snapshot/routes. Reload nie moze ponownie losowac innego wyniku."
+      },
+      {
+        tag: "Unlocki",
+        q: "Czy generator ma respektowac account unlocks juz w V1?",
+        rec: "Tak dla struktury API, minimalnie dla danych. V1 powinien filtrowac locked jednostki/skille, ale jesli unlock data jest pusta, uzywa domyslnego zestawu early units."
+      },
+      {
+        tag: "Prezentacja",
+        q: "Ile propozycji starting armies gracz widzi na ekranie Start Run?",
+        rec: "Trzy propozycje wygenerowane z jednego seeda ekranu. Po rozpoczeciu runa wybrana armia jest snapshotowana i juz nie zalezy od ponownego losowania."
+      },
+      {
+        tag: "Reroll",
+        q: "Czy Start Run ma miec reroll propozycji armii lub tras?",
+        rec: "Nie w V1. Reroll zostawic jako przyszly system, bo obecne modele maja `RunRollTokens = 0` i brak decyzji ekonomicznej wokol rerolli."
+      },
+      {
+        tag: "Routes",
+        q: "Czy route generator tworzy trzy niezalezne sciezki, czy jedna mape z rozgalezieniami?",
+        rec: "V1: trzy czytelne path choices plus wspolny final, zgodnie z obecnym `DefaultRunMapPathCatalog`. Prawdziwe krzyzowe rozgalezienia zostawic na pozniej."
+      },
+      {
+        tag: "Dlugosc",
+        q: "Jaka dlugosc trasy jest celem V1?",
+        rec: "Start scope: 2 wybory/nody przed finalem, potem FinalBoss, jak obecna implementacja. Generator powinien jednak miec parametr `stageCount`, z domyslnym 3."
+      },
+      {
+        tag: "Node mix",
+        q: "Jaki minimalny miks node types musi wygenerowac route set?",
+        rec: "W kazdym secie 3 tras: co najmniej 3 Battle, 1 Shop, 1 RecruitReward i 1 FinalBoss. Event nodes poza V1."
+      },
+      {
+        tag: "Risk",
+        q: "Czy risk/reward hint ma byc liczony z realnej trudnosci encountera, czy tylko z template bias?",
+        rec: "V1: z template bias i budzetu encountera, jako partial information. Nie pokazywac dokladnego enemy army; zapisac tylko hint i encounter id."
+      },
+      {
+        tag: "Encountery",
+        q: "Czy route generator ma od razu generowac enemy armies dla Battle nodes?",
+        rec: "Nie jako osobny duzy system w PRD 035. V1 moze wybierac `encounter_id` z katalogu po risk band; osobny generator enemy armies powinien byc kolejnym PRD."
+      },
+      {
+        tag: "DB",
+        q: "Czy trzeba zmieniac schema SQLite dla generatora?",
+        rec: "Najpierw unikac schema change. Zapisywac wynik do istniejacych tabel `offline_runs`, `army_snapshots`, `route_maps`, `route_paths`, `route_nodes`; seed/catalog id mozna trzymac w istniejacych polach tekstowych."
+      },
+      {
+        tag: "Testy",
+        q: "Jakie testy EditMode musza powstac, zeby generator byl uznany za bezpieczny?",
+        rec: "Testy determinism by seed, budget bounds, legal skills, no duplicate stacks, route node mix, final gate, DB reload without reroll, oraz brak runtime `new InMemory...Store()` w produkcji."
+      },
+      {
+        tag: "Granice",
+        q: "Czego PRD 035 ma jawnie nie robic?",
+        rec: "Bez zmian statystyk jednostek, floatow gameplayu, legacy battle, scen, prefabow, assetow Unity, online backendu, encounter battle resolvera i reroll ekonomii."
+      },
+      {
+        tag: "Model minimalny",
+        q: "Jaki minimalny model danych powinien opisac PRD 035?",
+        rec: " `StartingArmyGeneratorConfig`, `StartingArmyCandidate`, `RouteGeneratorConfig`, `GeneratedRouteMap`, `RunGenerationSeed`, oraz adapter zasilajacy obecne `IStartingArmyTemplateSource` i `IRunMapPathCatalog`."
+      }
+    ];
+
+    const followUpQuestions = [
+      {
+        tag: "Budzet",
+        q: "Czy zakres 1450-1750 ma byc twardym warunkiem generatora, czy tylko docelowym pasmem z tolerancja?",
+        rec: "Ustal twardy walidowany zakres dla V1, np. 1450-1750, a generator ma odrzucac kandydatow poza zakresem po skonstruowaniu stackow."
+      },
+      {
+        tag: "Fallback",
+        q: "Co generator ma zrobic, gdy account unlocks zostawia za malo legalnych jednostek do zbudowania 4-stackowej armii?",
+        rec: "Dla V1 uzyc jawnego fallback pool early units: Wisp, Rusher, Trapper, Thrower, Healer, StoneGolem. Zapisac warning w rezultacie, ale nie blokowac Start Run."
+      },
+      {
+        tag: "Role",
+        q: "Gdzie maja mieszkac tagi rol jednostek: w nowym kodowym katalogu generatora, ScriptableObject, czy przyszlym UnitCatalog rozszerzeniu?",
+        rec: "V1: kodowy katalog `StartingArmyGeneratorUnitRules` obok generatora, bez edycji Unity assetow. Przyszly PRD moze przeniesc tagi do ScriptableObject."
+      },
+      {
+        tag: "Seed",
+        q: "Jaki seed jest autorytetem: seed ekranu Start Run, seed utworzonego runa, czy oba?",
+        rec: "Dwa poziomy: `offerSeed` generuje trzy propozycje na ekranie, a `runSeed` zapisany przy Begin Run odtwarza wybrany runtime route/army handoff."
+      },
+      {
+        tag: "Snapshot",
+        q: "Czy trzy niewybrane starting armies maja byc zapisane do bazy, czy tylko wybrana armia po Begin Run?",
+        rec: "Tylko wybrana armia trafia do `army_snapshots`. Niewybrane propozycje sa ekranowym outputem seeda, chyba ze osobny future PRD doda historię ofert."
+      },
+      {
+        tag: "Routes",
+        q: "Czy route generator ma generowac routes dopiero po wyborze armii, zaleznie od jej wartosci/kompozycji?",
+        rec: "Tak, ale lekko: route previews moga uzywac current army value i bias, bez pelnego counter-pickowania pod konkretne jednostki."
+      },
+      {
+        tag: "Encounter",
+        q: "Czy `encounter_id` ma byc losowany z katalogu po risk band, czy tymczasowo moze zostac stalym ID z obecnego katalogu?",
+        rec: "V1: losowac z malej tabeli encounter ids per risk band. Jesli katalog jest za maly, dopuszczalne sa powtorki, ale test ma sprawdzac niepuste encounter_id dla Battle/Final."
+      },
+      {
+        tag: "DB seed",
+        q: "Gdzie zapisac informacje o generatorze i seedzie bez zmiany schema V1?",
+        rec: "Na razie w `route_maps.created_from_catalog_id` jako czytelny token, np. `route-gen-v1:seed-12345:risk-balanced`; dla armii w `starting_army_variant_id`."
+      },
+      {
+        tag: "Identity",
+        q: "Czy wygenerowane armie maja miec nazwy fabularne, czy techniczne nazwy wariantow?",
+        rec: "V1: generowac proste player-facing nazwy z archetypu, np. Stone Spark, Lizard Pressure, Wisp Screen, oraz stabilny techniczny id."
+      },
+      {
+        tag: "Implementacja",
+        q: "Czy generator ma zastapic `DefaultStartRunCatalog` i `DefaultRunMapPathCatalog`, czy wejsc jako nowy katalog za tymi samymi interfejsami?",
+        rec: "Nowe klasy za istniejacymi interfejsami: `GeneratedStartRunCatalog : IStartingArmyTemplateSource, IRunRoutePreviewSource` i `GeneratedRunMapPathCatalog : IRunMapPathCatalog`."
+      },
+      {
+        tag: "Test fixture",
+        q: "Czy testy generatora maja uzywac realnych UnitCatalog assetow, czy fake unit source?",
+        rec: "Service-level testy powinny uzywac fake unit source dla stabilnosci, a osobny Unity-side smoke/manual check moze potwierdzic DataMapper asset path."
+      },
+      {
+        tag: "Gotowe do PRD",
+        q: "Jaki jest minimalny acceptance test, ktory powie, ze PRD 035 mozna przekazac do implementacji?",
+        rec: "Jednym seedem wygenerowac 3 legalne armie i 3 trasy, zaczac run, zapisac snapshot/routes do DB, odtworzyc po adapter recreation i potwierdzic identyczny state bez rerolla."
+      }
+    ];
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const now = new Date();
+      document.getElementById("saveStatus").textContent = "Zapisano " + now.toLocaleTimeString();
+      renderMarkdown();
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function renderQuestionGroup(hostId, items, idPrefix, saveRoot, titlePrefix) {
+      const host = document.getElementById(hostId);
+      host.innerHTML = "";
+
+      items.forEach((item, index) => {
+        const id = idPrefix + String(index + 1).padStart(2, "0");
+        const article = document.createElement("article");
+        article.className = "question";
+        article.innerHTML = `
+          <div class="q-head">
+            <div class="q-number">${titlePrefix}${index + 1}</div>
+            <div class="q-title">${escapeHtml(item.q)}</div>
+            <div class="tag">${escapeHtml(item.tag)}</div>
+          </div>
+          <div class="recommendation"><strong>Rekomendacja:</strong> ${escapeHtml(item.rec)}</div>
+          <label for="${id}">Twoja odpowiedz / decyzja</label>
+          <textarea id="${id}" data-save="${saveRoot}.${id}" placeholder="Wpisz decyzje, korekte rekomendacji albo otwarte pytanie...">${escapeHtml(getValue(saveRoot + "." + id))}</textarea>
+        `;
+        host.appendChild(article);
+      });
+    }
+
+    function renderQuestions() {
+      renderQuestionGroup("questions", questions, "q", "answers", "");
+    }
+
+    function renderFollowups() {
+      renderQuestionGroup("followupQuestions", followUpQuestions, "f", "followups", "D");
+    }
+
+    function getValue(path) {
+      const parts = path.split(".");
+      let current = state;
+      for (const part of parts) {
+        if (!current || typeof current !== "object") {
+          return "";
+        }
+        current = current[part];
+      }
+      return current || "";
+    }
+
+    function setValue(path, value) {
+      const parts = path.split(".");
+      let current = state;
+      for (let i = 0; i < parts.length - 1; i += 1) {
+        const part = parts[i];
+        if (!current[part] || typeof current[part] !== "object") {
+          current[part] = {};
+        }
+        current = current[part];
+      }
+      current[parts[parts.length - 1]] = value;
+      saveState();
+    }
+
+    function bindAutosave() {
+      document.querySelectorAll("[data-save]").forEach((field) => {
+        const path = field.getAttribute("data-save");
+        const stored = getValue(path);
+        if (stored) {
+          field.value = stored;
+        }
+        field.addEventListener("input", () => setValue(path, field.value));
+      });
+    }
+
+    function buildMarkdown() {
+      const meta = state.meta || {};
+      const answers = state.answers || {};
+      const followups = state.followups || {};
+      const lines = [];
+      lines.push("# [TARENA] PRD 035 - Generator Random Starting Armies And Routes");
+      lines.push("");
+      lines.push("- Status: draft-from-grill");
+      lines.push("- Type: PRD");
+      lines.push("- Area: Run Metagame, Starting Armies, Routes, Offline DB");
+      lines.push("- Author decision owner: " + (meta.owner || ""));
+      lines.push("- Filled date: " + (meta.date || ""));
+      lines.push("");
+      lines.push("## Goal");
+      lines.push("");
+      lines.push(meta.summary || "");
+      lines.push("");
+      lines.push("## Code And DB Context");
+      lines.push("");
+      lines.push("- Start Run currently uses `DefaultStartRunCatalog` with 3 authored armies and `StartRunService` value = `amount * unit.Cost`.");
+      lines.push("- Unit legality comes from `DataMapper/UnitCatalog`; generated armies should not duplicate unit stats or skill legality.");
+      lines.push("- Run Map currently uses `DefaultRunMapPathCatalog` with three path choices plus shared final.");
+      lines.push("- Offline DB already persists `offline_runs`, `army_snapshots`, `route_maps`, `route_paths`, and `route_nodes`.");
+      lines.push("");
+      lines.push("## Decisions");
+      lines.push("");
+      questions.forEach((item, index) => {
+        const id = "q" + String(index + 1).padStart(2, "0");
+        lines.push("### " + (index + 1) + ". " + item.q);
+        lines.push("");
+        lines.push("Recommended: " + item.rec);
+        lines.push("");
+        lines.push("Decision: " + (answers[id] || ""));
+        lines.push("");
+      });
+      lines.push("## Follow-Up Grill - Dopytki 1");
+      lines.push("");
+      followUpQuestions.forEach((item, index) => {
+        const id = "f" + String(index + 1).padStart(2, "0");
+        lines.push("### D" + (index + 1) + ". " + item.q);
+        lines.push("");
+        lines.push("Recommended: " + item.rec);
+        lines.push("");
+        lines.push("Decision: " + (followups[id] || ""));
+        lines.push("");
+      });
+      return lines.join("\n");
+    }
+
+    function renderMarkdown() {
+      document.getElementById("markdownPreview").textContent = buildMarkdown();
+    }
+
+    function download(filename, text, type) {
+      const blob = new Blob([text], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("copyRecommended").addEventListener("click", () => {
+      questions.forEach((item, index) => {
+        const id = "q" + String(index + 1).padStart(2, "0");
+        if (!getValue("answers." + id)) {
+          setValue("answers." + id, item.rec);
+          const field = document.getElementById(id);
+          if (field) {
+            field.value = item.rec;
+          }
+        }
+      });
+      followUpQuestions.forEach((item, index) => {
+        const id = "f" + String(index + 1).padStart(2, "0");
+        if (!getValue("followups." + id)) {
+          setValue("followups." + id, item.rec);
+          const field = document.getElementById(id);
+          if (field) {
+            field.value = item.rec;
+          }
+        }
+      });
+      saveState();
+    });
+
+    document.getElementById("copyMarkdown").addEventListener("click", async () => {
+      const markdown = buildMarkdown();
+      try {
+        await navigator.clipboard.writeText(markdown);
+        document.getElementById("saveStatus").textContent = "Markdown skopiowany";
+      } catch {
+        download("035_PRD_RandomStartingArmiesRoutes_Grill.md", markdown, "text/markdown");
+      }
+    });
+
+    document.getElementById("downloadJson").addEventListener("click", () => {
+      download("035_PRD_RandomStartingArmiesRoutes_Answers.json", JSON.stringify(state, null, 2), "application/json");
+    });
+
+    document.getElementById("importJsonButton").addEventListener("click", () => {
+      document.getElementById("importJsonInput").click();
+    });
+
+    document.getElementById("importJsonInput").addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          state = JSON.parse(String(reader.result || "{}")) || {};
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          document.querySelectorAll("[data-save]").forEach((field) => {
+            field.value = getValue(field.getAttribute("data-save"));
+          });
+          saveState();
+          document.getElementById("saveStatus").textContent = "JSON zaimportowany";
+        } catch {
+          document.getElementById("saveStatus").textContent = "Import JSON nieudany";
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = "";
+    });
+
+    document.querySelectorAll("[data-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const selected = button.getAttribute("data-tab");
+        document.querySelectorAll("[data-tab]").forEach((tabButton) => {
+          tabButton.setAttribute("aria-selected", tabButton.getAttribute("data-tab") === selected ? "true" : "false");
+        });
+        document.querySelectorAll(".tab-panel").forEach((panel) => {
+          panel.hidden = panel.id !== "tab-" + selected;
+        });
+      });
+    });
+
+    document.getElementById("clearAnswers").addEventListener("click", () => {
+      if (!confirm("Wyczyscic lokalnie zapisane odpowiedzi dla PRD 035?")) {
+        return;
+      }
+      state = {};
+      localStorage.removeItem(STORAGE_KEY);
+      document.querySelectorAll("[data-save]").forEach((field) => {
+        field.value = "";
+      });
+      saveState();
+    });
+
+    renderQuestions();
+    renderFollowups();
+    bindAutosave();
+    renderMarkdown();
+  </script>
+</body>
+</html>

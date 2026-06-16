@@ -304,6 +304,8 @@ public class DataMapper : ScriptableObject
     {
         public string Name { get; private set; }
         public string Tier { get; private set; }
+        public int FactionId { get; private set; }
+        public UnitRoleCategory UnitRoleCategory { get; private set; }
         public int HP { get; private set; }
         public int Attack { get; private set; }
         public int Defense { get; private set; }
@@ -318,6 +320,8 @@ public class DataMapper : ScriptableObject
         public UnitDefinition(
             string name,
             string tier,
+            int factionId,
+            UnitRoleCategory unitRoleCategory,
             int hp,
             int attack,
             int defense,
@@ -331,6 +335,8 @@ public class DataMapper : ScriptableObject
         {
             Name = name;
             Tier = string.IsNullOrEmpty(tier) ? "I" : tier;
+            FactionId = factionId <= 0 ? UnitFactionResolver.ResolveFactionId(name) : factionId;
+            UnitRoleCategory = unitRoleCategory;
             HP = hp;
             Attack = attack;
             Defense = defense;

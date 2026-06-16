@@ -177,19 +177,64 @@ public class RunMapService
 
         if (node.NodeType == RunMapNodeType.FinalBoss)
         {
-            return state.RouteProgress >= 2 ? RunMapNodeState.Available : RunMapNodeState.Locked;
+            return state.RouteProgress >= 2 && IsReachableFromCurrent(state, node)
+                ? RunMapNodeState.Available
+                : RunMapNodeState.Locked;
+        }
+
+        if (IsReachableFromCurrent(state, node))
+        {
+            return RunMapNodeState.Available;
+        }
+
+        return RunMapNodeState.Locked;
+    }
+
+    private static bool IsReachableFromCurrent(RunMapStateRecord state, RunMapNodeDefinition node)
+    {
+        if (state == null || node == null || string.IsNullOrEmpty(state.CurrentNodeId))
+        {
+            return false;
         }
 
         if (!string.IsNullOrEmpty(state.CurrentNodeId))
         {
             RunMapNodeDefinition current = FindNode(state.Paths, state.CurrentNodeId);
-            if (current != null && current.NextNodeId == node.NodeId)
+            if (current != null && HasNextNode(current, node.NodeId))
             {
-                return RunMapNodeState.Available;
+                return true;
             }
         }
 
-        return RunMapNodeState.Locked;
+        return false;
+    }
+
+    private static bool HasNextNode(RunMapNodeDefinition current, string nodeId)
+    {
+        if (current == null || string.IsNullOrEmpty(nodeId))
+        {
+            return false;
+        }
+
+        if (current.NextNodeId == nodeId)
+        {
+            return true;
+        }
+
+        if (current.NextNodeIds == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < current.NextNodeIds.Count; i++)
+        {
+            if (current.NextNodeIds[i] == nodeId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static RunMapNodeDefinition FindNode(List<RunMapPathDefinition> paths, string nodeId)

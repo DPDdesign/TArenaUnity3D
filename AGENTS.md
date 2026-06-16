@@ -71,6 +71,11 @@ copied into `_codex/Gen_Im/` before final reporting.
 ## Hard Project Rules
 
 - Work in small, safe, testable steps.
+- For gameplay design, UI design, and programming tasks, always use the local
+  PRD019/PRD030 maps before proposing or changing work that can touch run
+  metagame, screens, persistence, or data flow:
+  `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md` and
+  `_codex/Documentation/PRD030_OfflineDatabase_Map.md`.
 - When Python tooling is needed on Windows, use `py -3` instead of `python`.
   Do not rely on the Microsoft Store `python.exe` alias.
 - Use TextMesh Pro only for project text UI and code references. When touching
@@ -80,6 +85,11 @@ copied into `_codex/Gen_Im/` before final reporting.
 - Do not write or edit code unless the user explicitly asks for implementation.
 - Do not build large systems unless explicitly asked.
 - Do not rename public or serialized fields without permission.
+- When a requested change replaces legacy Inspector wiring, remove obsolete
+  `[SerializeField]` or public Inspector fields from the component so they no
+  longer appear in Unity. It is acceptable to leave old logic commented only
+  when useful during transition, but legacy fields must not remain visible in
+  the Inspector.
 - Do not change gameplay float values without permission.
 - Do not edit Unity assets, prefabs, scenes, materials, controllers,
   `.inputactions`, generated Unity files, `.asmdef`, or `.asmref` unless the
@@ -100,6 +110,10 @@ Load only the runbooks relevant to the current task:
 - Git-related request: `_codex/agents/runbooks/git-policy.md`
 - code navigation: `_codex/agents/docs/codebase-map.md`
 - design/production/gameplay context routing: `_codex/Context/CONTEXT-MAP.md`
+- PRD019/PRD030 run metagame, UI, gameplay, programming, persistence, or screen
+  data-flow work:
+  `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md` and
+  `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
 
 ## Skills
 

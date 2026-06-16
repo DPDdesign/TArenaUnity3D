@@ -1,4 +1,6 @@
-public class DataMapperStartRunUnitSource : IStartRunUnitDefinitionSource
+using System.Collections.Generic;
+
+public class DataMapperStartRunUnitSource : IStartRunUnitPoolSource
 {
     private readonly DataMapper dataMapper;
 
@@ -26,5 +28,26 @@ public class DataMapperStartRunUnitSource : IStartRunUnitDefinitionSource
         }
 
         return RunMetagameUnitDefinitionMapper.ToStartRunUnitDefinition(unit);
+    }
+
+    public List<StartRunUnitDefinition> ListUnits()
+    {
+        List<StartRunUnitDefinition> result = new List<StartRunUnitDefinition>();
+        if (dataMapper == null)
+        {
+            return result;
+        }
+
+        List<DataMapper.UnitDefinition> units = dataMapper.GetAllUnits();
+        for (int i = 0; i < units.Count; i++)
+        {
+            StartRunUnitDefinition mapped = RunMetagameUnitDefinitionMapper.ToStartRunUnitDefinition(units[i]);
+            if (mapped != null)
+            {
+                result.Add(mapped);
+            }
+        }
+
+        return result;
     }
 }

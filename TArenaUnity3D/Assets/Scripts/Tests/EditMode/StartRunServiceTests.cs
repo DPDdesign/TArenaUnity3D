@@ -21,6 +21,9 @@ public class StartRunServiceTests
         Assert.That(viewData.SelectedStartingArmy.Stacks[0].Level, Is.EqualTo(1));
         Assert.That(viewData.SelectedStartingArmy.Stacks[0].Amount, Is.EqualTo(28));
         Assert.That(viewData.SelectedStartingArmy.Stacks[0].CombatValue, Is.EqualTo(28 * 31));
+        Assert.That(viewData.StartingAssets.RunStartingGold, Is.EqualTo(viewData.SelectedStartingArmy.StartingCurrency));
+        Assert.That(viewData.StartingAssets.RunRollTokens, Is.EqualTo(0));
+        Assert.That(viewData.StartingAssets.BattleSkipTokens, Is.EqualTo(0));
         Assert.That(viewData.SelectedRoutePreview.RouteId, Is.EqualTo("iron-line"));
         Assert.That(viewData.SelectedRoutePreview.CurrentArmyValue, Is.EqualTo(viewData.SelectedStartingArmy.TotalArmyValue));
     }
@@ -116,6 +119,80 @@ public class StartRunServiceTests
         StartRunScreenViewData viewData = service.BuildScreen("tier-from-catalog", "iron-line");
 
         Assert.That(viewData.SelectedStartingArmy.Stacks[0].Tier, Is.EqualTo("I"));
+    }
+
+    [Test]
+    public void BuildScreen_OrdersSkillIconsByUnitCatalogAndKeepsUnlockedState()
+    {
+        IStartingArmyTemplateSource armySource = new SingleArmySource(new StartingArmyTemplate(
+            "skill-order",
+            "skill-order-v1",
+            "Skill Order",
+            "Unlocked skill may not be the first catalog skill.",
+            0,
+            new List<StartRunStackTemplate>
+            {
+                new StartRunStackTemplate(
+                    "Rusher",
+                    "I",
+                    1,
+                    10,
+                    new List<StartRunSkillTemplate>
+                    {
+                        new StartRunSkillTemplate("Rush", true)
+                    })
+            }));
+        DefaultStartRunCatalog routeSource = new DefaultStartRunCatalog();
+        StartRunService service = CreateService(armySource, routeSource, new InMemoryStartRunRecordStore());
+
+        StartRunScreenViewData viewData = service.BuildScreen("skill-order", "iron-line");
+        List<StartRunSkillViewData> skills = viewData.SelectedStartingArmy.Stacks[0].Skills;
+
+        Assert.That(skills[0].SkillId, Is.EqualTo("Chope"));
+        Assert.That(skills[0].Unlocked, Is.False);
+        Assert.That(skills[1].SkillId, Is.EqualTo("Rush"));
+        Assert.That(skills[1].Unlocked, Is.True);
+    }
+
+    [Test]
+    public void BuildScreen_SortsStacksByFactionThenTier()
+    {
+        IStartingArmyTemplateSource armySource = new SingleArmySource(new StartingArmyTemplate(
+            "stack-order",
+            "stack-order-v1",
+            "Stack Order",
+            "Stacks should render by faction then tier.",
+            0,
+            new List<StartRunStackTemplate>
+            {
+                Stack("Wisp", "Blind_by_light"),
+                Stack("Healer", "Tough_Skin"),
+                Stack("Thrower", "Range_Stance_Barb"),
+                Stack("Rusher", "Chope")
+            }));
+        DefaultStartRunCatalog routeSource = new DefaultStartRunCatalog();
+        StartRunService service = CreateService(armySource, routeSource, new InMemoryStartRunRecordStore());
+
+        StartRunScreenViewData viewData = service.BuildScreen("stack-order", "iron-line");
+        List<StartRunStackViewData> stacks = viewData.SelectedStartingArmy.Stacks;
+
+        Assert.That(stacks[0].UnitId, Is.EqualTo("Rusher"));
+        Assert.That(stacks[1].UnitId, Is.EqualTo("Thrower"));
+        Assert.That(stacks[2].UnitId, Is.EqualTo("Healer"));
+        Assert.That(stacks[3].UnitId, Is.EqualTo("Wisp"));
+    }
+
+    private static StartRunStackTemplate Stack(string unitId, string skillId)
+    {
+        return new StartRunStackTemplate(
+            unitId,
+            "I",
+            1,
+            10,
+            new List<StartRunSkillTemplate>
+            {
+                new StartRunSkillTemplate(skillId, true)
+            });
     }
 
     private static StartRunService CreateService(

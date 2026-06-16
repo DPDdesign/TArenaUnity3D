@@ -31,6 +31,12 @@ Start with only the sources needed for the current question:
 - `_codex/Context/04_Milestones.md`
 - `_codex/tasks/`
 
+For gameplay design, UI design, programming plans, run metagame work, database
+state, persistence, or screen data-flow changes, also read:
+
+- `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md`
+- `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
+
 If a document is still a template, say so briefly and work from the latest local
 facts.
 

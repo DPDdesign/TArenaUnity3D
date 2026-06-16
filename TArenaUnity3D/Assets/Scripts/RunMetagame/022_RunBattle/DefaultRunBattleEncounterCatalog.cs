@@ -54,6 +54,61 @@ public class DefaultRunBattleEncounterCatalog : IRunBattleEncounterSource
             }
         }
 
-        return null;
+        return BuildGeneratedEncounter(routeNodeId, encounterId);
+    }
+
+    private static RunBattleEncounterDefinition BuildGeneratedEncounter(string routeNodeId, string encounterId)
+    {
+        if (string.IsNullOrEmpty(encounterId) || !encounterId.StartsWith("enc-prd35-"))
+        {
+            return null;
+        }
+
+        string riskBand = ResolveRiskBand(encounterId);
+        bool isFinal = encounterId.Contains("-final-");
+        return new RunBattleEncounterDefinition(
+            encounterId,
+            string.IsNullOrEmpty(routeNodeId) ? "generated-route-node" : routeNodeId,
+            isFinal ? RunBattleNodeType.Final : RunBattleNodeType.Battle,
+            isFinal ? "Generated Final Battle" : "Generated Mission Battle",
+            riskBand,
+            RecommendedValueForRisk(riskBand),
+            "enemy-build-" + encounterId,
+            riskBand == "High" || riskBand == "Final" ? RunBattleEnemyGoal.DealMaximumLosses : RunBattleEnemyGoal.TryToWin);
+    }
+
+    private static string ResolveRiskBand(string encounterId)
+    {
+        if (encounterId.Contains("-final-"))
+        {
+            return "Final";
+        }
+
+        if (encounterId.Contains("-high-"))
+        {
+            return "High";
+        }
+
+        if (encounterId.Contains("-medium-"))
+        {
+            return "Medium";
+        }
+
+        return "Low";
+    }
+
+    private static int RecommendedValueForRisk(string riskBand)
+    {
+        switch (riskBand)
+        {
+            case "Final":
+                return 2650;
+            case "High":
+                return 2150;
+            case "Medium":
+                return 1800;
+            default:
+                return 1500;
+        }
     }
 }

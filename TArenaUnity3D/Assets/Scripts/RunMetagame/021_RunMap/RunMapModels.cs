@@ -19,7 +19,9 @@ public enum RunMapNodeType
     Battle,
     Shop,
     RecruitReward,
-    FinalBoss
+    FinalBoss,
+    RandomEvent,
+    Empty
 }
 
 public enum RunMapNodeState
@@ -52,6 +54,7 @@ public class RunMapNodeDefinition
     public string ExpectedRiskHint;
     public string EncounterId;
     public string NextNodeId;
+    public List<string> NextNodeIds;
 
     public RunMapNodeDefinition(
         string nodeId,
@@ -63,6 +66,20 @@ public class RunMapNodeDefinition
         string expectedRiskHint,
         string encounterId,
         string nextNodeId)
+        : this(nodeId, pathId, nodeType, stageIndex, displayName, possibleRewardHint, expectedRiskHint, encounterId, BuildSingleNextNodeList(nextNodeId))
+    {
+    }
+
+    public RunMapNodeDefinition(
+        string nodeId,
+        string pathId,
+        RunMapNodeType nodeType,
+        int stageIndex,
+        string displayName,
+        string possibleRewardHint,
+        string expectedRiskHint,
+        string encounterId,
+        List<string> nextNodeIds)
     {
         NodeId = nodeId;
         PathId = pathId;
@@ -72,7 +89,39 @@ public class RunMapNodeDefinition
         PossibleRewardHint = possibleRewardHint;
         ExpectedRiskHint = expectedRiskHint;
         EncounterId = encounterId;
-        NextNodeId = nextNodeId;
+        NextNodeIds = NormalizeNextNodeIds(nextNodeIds);
+        NextNodeId = NextNodeIds.Count == 0 ? string.Empty : NextNodeIds[0];
+    }
+
+    private static List<string> BuildSingleNextNodeList(string nextNodeId)
+    {
+        List<string> result = new List<string>();
+        if (!string.IsNullOrEmpty(nextNodeId))
+        {
+            result.Add(nextNodeId);
+        }
+
+        return result;
+    }
+
+    private static List<string> NormalizeNextNodeIds(List<string> nextNodeIds)
+    {
+        List<string> result = new List<string>();
+        if (nextNodeIds == null)
+        {
+            return result;
+        }
+
+        for (int i = 0; i < nextNodeIds.Count; i++)
+        {
+            string nextNodeId = nextNodeIds[i];
+            if (!string.IsNullOrEmpty(nextNodeId) && !result.Contains(nextNodeId))
+            {
+                result.Add(nextNodeId);
+            }
+        }
+
+        return result;
     }
 }
 

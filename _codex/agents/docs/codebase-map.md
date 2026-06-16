@@ -65,6 +65,14 @@ For normal gameplay/code tasks, inspect these first:
 - `Assets/Scripts/Multiplayer/` only when dealing with PlayFab/PUN/shop/chat
   removal or backend replacement
 
+For PRD019 Run Metagame and PRD030 Offline Database tasks, inspect these first:
+
+- `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md`
+- `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
+- `Assets/Scripts/RunMetagame/`
+- `Assets/Scripts/RunMetagame/030_Database/OfflineModeDatabaseComposition.cs`
+- `Assets/Scripts/RunMetagame/030_Database/OfflineDatabaseSchemaV1.cs`
+
 For dependency-removal tasks, inspect direct game-code references before opening
 vendor SDK internals. Most vendor code is not project-specific truth.
 

@@ -6,6 +6,8 @@ public class UnitDefinitionAsset : ScriptableObject
 {
     [SerializeField] private string unitName;
     [SerializeField] private string tier = "I";
+    [SerializeField] private int factionId;
+    [SerializeField] private UnitRoleCategory unitRoleCategory = UnitRoleCategory.Flexible;
     [SerializeField] private int hp;
     [SerializeField] private int attack;
     [SerializeField] private int defense;
@@ -19,6 +21,8 @@ public class UnitDefinitionAsset : ScriptableObject
 
     public string UnitName { get { return unitName; } }
     public string Tier { get { return string.IsNullOrEmpty(tier) ? "I" : tier; } }
+    public int FactionId { get { return factionId <= 0 ? UnitFactionResolver.ResolveFactionId(unitName) : factionId; } }
+    public UnitRoleCategory UnitRoleCategory { get { return unitRoleCategory; } }
     public int HP { get { return hp; } }
     public int Attack { get { return attack; } }
     public int Defense { get { return defense; } }
@@ -39,6 +43,8 @@ public class UnitDefinitionAsset : ScriptableObject
         return new DataMapper.UnitDefinition(
             unitName,
             Tier,
+            FactionId,
+            UnitRoleCategory,
             hp,
             attack,
             defense,
@@ -55,6 +61,8 @@ public class UnitDefinitionAsset : ScriptableObject
     public void Configure(
         string newUnitName,
         string newTier,
+        int newFactionId,
+        UnitRoleCategory newUnitRoleCategory,
         int newHp,
         int newAttack,
         int newDefense,
@@ -68,6 +76,8 @@ public class UnitDefinitionAsset : ScriptableObject
     {
         unitName = newUnitName;
         tier = string.IsNullOrEmpty(newTier) ? "I" : newTier;
+        factionId = newFactionId <= 0 ? UnitFactionResolver.ResolveFactionId(newUnitName) : newFactionId;
+        unitRoleCategory = newUnitRoleCategory;
         hp = newHp;
         attack = newAttack;
         defense = newDefense;

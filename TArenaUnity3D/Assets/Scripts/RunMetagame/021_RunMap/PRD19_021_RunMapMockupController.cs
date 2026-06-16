@@ -533,6 +533,10 @@ public class PRD19_021_RunMapMockupController : MonoBehaviour
                 return "Recruit / Reward";
             case RunMapNodeType.FinalBoss:
                 return "Final Battle";
+            case RunMapNodeType.RandomEvent:
+                return "Random Event";
+            case RunMapNodeType.Empty:
+                return "Empty";
             default:
                 return type.ToString();
         }

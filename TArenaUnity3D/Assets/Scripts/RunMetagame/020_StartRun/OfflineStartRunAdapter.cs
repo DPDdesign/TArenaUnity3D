@@ -27,17 +27,36 @@ public class OfflineStartRunAdapter
         return service.BuildScreen(selectedStartingArmyId, selectedRouteId);
     }
 
+    public StartRunScreenViewData BuildScreen(
+        string selectedStartingArmyId,
+        string selectedRouteId,
+        int requestedSlotCount,
+        string accountPlayerId)
+    {
+        return service.BuildScreen(selectedStartingArmyId, selectedRouteId, requestedSlotCount, accountPlayerId);
+    }
+
     public StartRunResult BeginRun(
         string accountPlayerId,
         string selectedStartingArmyId,
         string selectedRoutePreviewOptionId)
+    {
+        return BeginRun(accountPlayerId, selectedStartingArmyId, selectedRoutePreviewOptionId, 0);
+    }
+
+    public StartRunResult BeginRun(
+        string accountPlayerId,
+        string selectedStartingArmyId,
+        string selectedRoutePreviewOptionId,
+        int requestedSlotCount)
     {
         StartRunCommand command = new StartRunCommand(
             accountPlayerId,
             selectedStartingArmyId,
             selectedStartingArmyId,
             selectedStartingArmyId,
-            selectedRoutePreviewOptionId);
+            selectedRoutePreviewOptionId,
+            requestedSlotCount);
 
         return service.BeginRun(command);
     }

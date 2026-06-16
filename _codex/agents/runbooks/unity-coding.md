@@ -23,6 +23,11 @@ Do not change without explicit permission:
 - method names used by UnityEvents,
 - existing Inspector setup assumptions.
 
+When the user explicitly asks to replace legacy Inspector wiring, remove the
+obsolete `[SerializeField]` or public field so it disappears from the Unity
+Inspector. Transitional old logic may be commented if it is useful, but legacy
+fields must not remain visible in the Inspector.
+
 Do not edit:
 
 - `.prefab`,

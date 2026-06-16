@@ -37,7 +37,9 @@ public enum DBNodeTypeId
     Battle = 2,
     Shop = 3,
     RecruitReward = 4,
-    FinalBoss = 5
+    FinalBoss = 5,
+    RandomEvent = 6,
+    Empty = 7
 }
 
 public enum DBNodeStateId

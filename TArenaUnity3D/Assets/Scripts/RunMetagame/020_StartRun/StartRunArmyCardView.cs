@@ -10,7 +10,11 @@ public class StartRunArmyCardView : MonoBehaviour
     [SerializeField] private TMP_Text nameText;
     [SerializeField] private TMP_Text valueText;
     [SerializeField] private TMP_Text statusText;
-    [SerializeField] private Image[] unitIcons = new Image[4];
+    [SerializeField] private GameObject locked;
+    [SerializeField] private TMP_Text lockedReasonText;
+    [SerializeField] private StackRepresentation[] stackRepresentations = new StackRepresentation[0];
+
+    private StackRepresentation[] cachedChildStackRepresentations;
 
     public string TemplateId { get; private set; }
 
@@ -42,8 +46,10 @@ public class StartRunArmyCardView : MonoBehaviour
 
         if (statusText != null)
         {
-            statusText.text = isSelected ? "SELECTED" : "READY";
-            statusText.color = isSelected ? new Color(0.62f, 1f, 0.42f, 1f) : new Color(0.9f, 0.78f, 0.42f, 1f);
+            statusText.text = option.IsLocked ? "LOCKED" : (isSelected ? "SELECTED" : "READY");
+            statusText.color = option.IsLocked
+                ? new Color(0.74f, 0.72f, 0.68f, 1f)
+                : (isSelected ? new Color(0.62f, 1f, 0.42f, 1f) : new Color(0.9f, 0.78f, 0.42f, 1f));
         }
 
         if (background != null)
@@ -53,29 +59,88 @@ public class StartRunArmyCardView : MonoBehaviour
                 : new Color(0.33f, 0.18f, 0.09f, 1f);
         }
 
+        if (locked != null)
+        {
+            locked.SetActive(option.IsLocked);
+        }
+
+        if (lockedReasonText != null)
+        {
+            lockedReasonText.text = option.IsLocked ? option.LockedReason : string.Empty;
+        }
+
         if (button != null)
         {
             button.interactable = option.CanStartRun;
+            button.enabled = option.CanStartRun;
         }
 
-        for (int i = 0; i < unitIcons.Length; i++)
+        StackRepresentation[] resolvedStackRepresentations = ResolveStackRepresentations();
+        BindStackRepresentations(option, dataMapper, resolvedStackRepresentations);
+    }
+
+    private void BindStackRepresentations(
+        StartingArmyOptionViewData option,
+        DataMapper dataMapper,
+        StackRepresentation[] resolvedStackRepresentations)
+    {
+        for (int i = 0; i < resolvedStackRepresentations.Length; i++)
         {
-            Image icon = unitIcons[i];
-            if (icon == null)
+            StackRepresentation representation = resolvedStackRepresentations[i];
+            if (representation == null)
             {
                 continue;
             }
 
-            bool hasStack = option.Stacks != null && i < option.Stacks.Count && option.Stacks[i] != null;
-            icon.gameObject.SetActive(hasStack);
+            StartRunStackViewData stack = option.Stacks != null && i < option.Stacks.Count
+                ? option.Stacks[i]
+                : null;
+
+            bool hasStack = stack != null;
+            representation.gameObject.SetActive(hasStack);
             if (!hasStack)
             {
-                icon.sprite = null;
                 continue;
             }
 
-            icon.sprite = StartRunUiSpriteResolver.LoadUnitSprite(dataMapper, option.Stacks[i].UnitId);
-            icon.color = icon.sprite == null ? new Color(1f, 1f, 1f, 0f) : Color.white;
+            StackInfoData stackInfo = RunMetagameDisplayInfoFactory.FromStartRun(stack, dataMapper);
+            if (stackInfo != null)
+            {
+                representation.DisplayInfo(stackInfo);
+            }
         }
+    }
+
+    private StackRepresentation[] ResolveStackRepresentations()
+    {
+        if (HasStackRepresentation(stackRepresentations))
+        {
+            return stackRepresentations;
+        }
+
+        if (cachedChildStackRepresentations == null || cachedChildStackRepresentations.Length == 0)
+        {
+            cachedChildStackRepresentations = GetComponentsInChildren<StackRepresentation>(true);
+        }
+
+        return cachedChildStackRepresentations ?? new StackRepresentation[0];
+    }
+
+    private static bool HasStackRepresentation(StackRepresentation[] representations)
+    {
+        if (representations == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < representations.Length; i++)
+        {
+            if (representations[i] != null)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

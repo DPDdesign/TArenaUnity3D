@@ -7,14 +7,14 @@ public class StartRunScreenController : MonoBehaviour
 {
     [SerializeField] private string defaultAccountPlayerId = "offline-player";
     [SerializeField] private string initialStartingArmyId = string.Empty;
-    [SerializeField] private string initialRouteId = string.Empty;
     [SerializeField] private StartRunArmyCardView[] armyCards = new StartRunArmyCardView[0];
-    [SerializeField] private StartRunRouteOptionView[] routeOptions = new StartRunRouteOptionView[0];
     [SerializeField] private StackRepresentation[] stackRows = new StackRepresentation[0];
     [SerializeField] private Image leaderIcon;
     [SerializeField] private TMP_Text armyPreviewName;
     [SerializeField] private TMP_Text armyPreviewValue;
-    [SerializeField] private TMP_Text routeSummaryText;
+    [SerializeField] private TMP_Text runStartingGoldText;
+    [SerializeField] private TMP_Text runRollTokensText;
+    [SerializeField] private TMP_Text battleSkipTokensText;
     [SerializeField] private TMP_Text runtimeMessageText;
     [SerializeField] private Button backButton;
     [SerializeField] private Button beginButton;
@@ -24,23 +24,45 @@ public class StartRunScreenController : MonoBehaviour
 
     private string selectedStartingArmyId;
     private string selectedRouteId;
+    private bool initialized;
+    private bool skipInitialOnEnable;
 
     private void Awake()
     {
-        adapter = new OfflineStartRunAdapter();
+        skipInitialOnEnable = true;
+        StartNewOfferSession();
         dataMapper = DataMapper.Instance;
 
         WireStaticButtons();
 
-        selectedStartingArmyId = initialStartingArmyId;
-        selectedRouteId = initialRouteId;
+        RefreshScreen();
+        initialized = true;
+    }
 
+    private void OnEnable()
+    {
+        if (!initialized)
+        {
+            return;
+        }
+
+        if (skipInitialOnEnable)
+        {
+            skipInitialOnEnable = false;
+            return;
+        }
+
+        StartNewOfferSession();
         RefreshScreen();
     }
 
     public void RefreshScreen()
     {
-        StartRunScreenViewData viewData = adapter.BuildScreen(selectedStartingArmyId, selectedRouteId);
+        StartRunScreenViewData viewData = adapter.BuildScreen(
+            selectedStartingArmyId,
+            string.Empty,
+            armyCards == null ? 0 : armyCards.Length,
+            defaultAccountPlayerId);
         if (viewData == null)
         {
             SetRuntimeMessage("Start Run screen data is missing.");
@@ -55,16 +77,17 @@ public class StartRunScreenController : MonoBehaviour
             : viewData.SelectedRoutePreview.RouteId;
 
         BindArmyCards(viewData);
-        BindRouteOptions(viewData);
         BindSelectedArmy(viewData.SelectedStartingArmy);
-        BindRouteSummary(viewData.SelectedRoutePreview);
+        BindStartingAssets(viewData.StartingAssets);
 
         if (beginButton != null)
         {
             beginButton.interactable = viewData.CanBeginRun;
         }
 
-        SetRuntimeMessage(viewData.ValidationMessage);
+        SetRuntimeMessage(viewData.ValidationError == StartRunValidationError.None
+            ? "Starting army selected."
+            : viewData.ValidationMessage);
     }
 
     private void BindArmyCards(StartRunScreenViewData viewData)
@@ -86,38 +109,10 @@ public class StartRunScreenController : MonoBehaviour
             if (card.Button != null)
             {
                 card.Button.onClick.RemoveAllListeners();
-                if (option != null)
+                if (option != null && option.CanStartRun)
                 {
                     string optionId = option.TemplateId;
                     card.Button.onClick.AddListener(delegate { OnStartingArmySelected(optionId); });
-                }
-            }
-        }
-    }
-
-    private void BindRouteOptions(StartRunScreenViewData viewData)
-    {
-        for (int i = 0; i < routeOptions.Length; i++)
-        {
-            StartRunRouteOptionView route = routeOptions[i];
-            if (route == null)
-            {
-                continue;
-            }
-
-            RoutePreviewViewData option = viewData.RoutePreviews != null && i < viewData.RoutePreviews.Count
-                ? viewData.RoutePreviews[i]
-                : null;
-            bool isSelected = option != null && option.RouteId == selectedRouteId;
-            route.Bind(option, isSelected);
-
-            if (route.Button != null)
-            {
-                route.Button.onClick.RemoveAllListeners();
-                if (option != null)
-                {
-                    string optionId = option.RouteId;
-                    route.Button.onClick.AddListener(delegate { OnRouteSelected(optionId); });
                 }
             }
         }
@@ -164,24 +159,20 @@ public class StartRunScreenController : MonoBehaviour
         }
     }
 
-    private void BindRouteSummary(RoutePreviewViewData selectedRoute)
+    private void BindStartingAssets(StartRunStartingAssetsViewData assets)
     {
-        if (routeSummaryText == null)
-        {
-            return;
-        }
+        int runStartingGold = assets == null ? 0 : assets.RunStartingGold;
+        int runRollTokens = assets == null ? 0 : assets.RunRollTokens;
+        int battleSkipTokens = assets == null ? 0 : assets.BattleSkipTokens;
 
-        if (selectedRoute == null)
-        {
-            routeSummaryText.text = "Select a route.";
-            return;
-        }
+        SetText(runStartingGoldText, runStartingGold + " RUN GOLD");
+        SetText(runRollTokensText, runRollTokens + " ROLL TOKENS");
+        SetText(battleSkipTokensText, battleSkipTokens + " BATTLE SKIP TOKENS");
+    }
 
-        routeSummaryText.text =
-            "Route: " + selectedRoute.DisplayName +
-            "\n" + selectedRoute.Description +
-            "\nRecommended value " + selectedRoute.RecommendedArmyValue +
-            "\nCurrent army value " + selectedRoute.CurrentArmyValue;
+    public string GetSelectedStartingArmyId()
+    {
+        return selectedStartingArmyId;
     }
 
     private void WireStaticButtons()
@@ -221,22 +212,22 @@ public class StartRunScreenController : MonoBehaviour
         RefreshScreen();
     }
 
-    private void OnRouteSelected(string routeId)
-    {
-        selectedRouteId = routeId;
-        RefreshScreen();
-    }
-
     private void OnBeginClicked()
     {
-        StartRunResult result = adapter.BeginRun(defaultAccountPlayerId, selectedStartingArmyId, selectedRouteId);
+        StartRunResult result = adapter.BeginRun(
+            defaultAccountPlayerId,
+            selectedStartingArmyId,
+            selectedRouteId,
+            armyCards == null ? 0 : armyCards.Length);
         if (result == null)
         {
             SetRuntimeMessage("Run start returned no result.");
             return;
         }
 
-        string resultMessage = result.Message + (result.Success && result.CreatedRun != null ? " " + result.CreatedRun.RunId : string.Empty);
+        string resultMessage = result.Message + (result.Success && result.CreatedRun != null
+            ? " " + result.CreatedRun.RunId
+            : string.Empty);
         RefreshScreen();
         SetRuntimeMessage(resultMessage);
     }
@@ -246,11 +237,27 @@ public class StartRunScreenController : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    private void StartNewOfferSession()
+    {
+        OfflineModeDatabaseComposition.ResetStartRunOfferSession();
+        adapter = new OfflineStartRunAdapter();
+        selectedStartingArmyId = initialStartingArmyId;
+        selectedRouteId = string.Empty;
+    }
+
     private void SetRuntimeMessage(string message)
     {
         if (runtimeMessageText != null)
         {
             runtimeMessageText.text = string.IsNullOrEmpty(message) ? string.Empty : message;
+        }
+    }
+
+    private static void SetText(TMP_Text text, string value)
+    {
+        if (text != null)
+        {
+            text.text = value ?? string.Empty;
         }
     }
 

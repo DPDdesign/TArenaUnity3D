@@ -9,27 +9,38 @@ public class StartRunService
     private readonly IRunRoutePreviewSource routeSource;
     private readonly IStartRunUnitDefinitionSource unitSource;
     private readonly IStartRunRecordStore recordStore;
+    private readonly IStartRunSlotAvailabilitySource slotAvailabilitySource;
 
     public StartRunService(
         IStartingArmyTemplateSource armySource,
         IRunRoutePreviewSource routeSource,
         IStartRunUnitDefinitionSource unitSource,
-        IStartRunRecordStore recordStore)
+        IStartRunRecordStore recordStore,
+        IStartRunSlotAvailabilitySource slotAvailabilitySource = null)
     {
         this.armySource = armySource;
         this.routeSource = routeSource;
         this.unitSource = unitSource;
         this.recordStore = recordStore;
+        this.slotAvailabilitySource = slotAvailabilitySource ?? new UnrestrictedStartRunSlotAvailabilitySource();
     }
 
     public StartRunScreenViewData BuildScreen(string selectedStartingArmyId, string selectedRouteId)
     {
-        List<StartingArmyTemplate> armyTemplates = armySource == null
-            ? new List<StartingArmyTemplate>()
-            : armySource.ListStartingArmies();
+        return BuildScreen(selectedStartingArmyId, selectedRouteId, 0, string.Empty);
+    }
+
+    public StartRunScreenViewData BuildScreen(
+        string selectedStartingArmyId,
+        string selectedRouteId,
+        int requestedSlotCount,
+        string accountPlayerId = "")
+    {
+        List<StartingArmyTemplate> armyTemplates = ListStartingArmies(requestedSlotCount);
         List<RoutePreviewTemplate> routeTemplates = routeSource == null
             ? new List<RoutePreviewTemplate>()
             : routeSource.ListRoutePreviews();
+        StartRunSlotAvailabilityContext availabilityContext = LoadAvailabilityContext(accountPlayerId);
 
         StartingArmyTemplate selectedTemplate = FindArmy(armyTemplates, selectedStartingArmyId);
         if (selectedTemplate == null && armyTemplates.Count > 0)
@@ -45,11 +56,13 @@ public class StartRunService
 
         List<StartingArmyOptionViewData> armyOptions = new List<StartingArmyOptionViewData>();
         StartingArmyOptionViewData selectedArmyView = null;
-        for (int i = 0; i < armyTemplates.Count; i++)
+        int optionCount = requestedSlotCount > 0 ? requestedSlotCount : armyTemplates.Count;
+        for (int i = 0; i < optionCount; i++)
         {
-            StartingArmyOptionViewData option = BuildArmyOption(armyTemplates[i]);
+            StartingArmyTemplate template = i < armyTemplates.Count ? armyTemplates[i] : null;
+            StartingArmyOptionViewData option = BuildArmyOption(template, i, availabilityContext);
             armyOptions.Add(option);
-            if (selectedTemplate != null && armyTemplates[i].TemplateId == selectedTemplate.TemplateId)
+            if (selectedTemplate != null && template != null && template.TemplateId == selectedTemplate.TemplateId)
             {
                 selectedArmyView = option;
             }
@@ -74,14 +87,24 @@ public class StartRunService
         }
 
         StartRunValidationError error = Validate(selectedTemplate, selectedRoute);
+        string validationMessage = MessageFor(error);
+        if (error == StartRunValidationError.None && selectedArmyView != null && selectedArmyView.IsLocked)
+        {
+            error = StartRunValidationError.BlockedRunStart;
+            validationMessage = string.IsNullOrEmpty(selectedArmyView.LockedReason)
+                ? MessageFor(error)
+                : selectedArmyView.LockedReason;
+        }
+
         return new StartRunScreenViewData(
             armyOptions,
             selectedArmyView,
             routeOptions,
             selectedRouteView,
+            BuildStartingAssets(selectedArmyView),
             error == StartRunValidationError.None,
             error,
-            MessageFor(error));
+            validationMessage);
     }
 
     public StartRunResult BeginRun(StartRunCommand command)
@@ -91,12 +114,11 @@ public class StartRunService
             return Fail(StartRunValidationError.MissingStartingArmy);
         }
 
-        List<StartingArmyTemplate> armyTemplates = armySource == null
-            ? new List<StartingArmyTemplate>()
-            : armySource.ListStartingArmies();
+        List<StartingArmyTemplate> armyTemplates = ListStartingArmies(command.RequestedSlotCount);
         List<RoutePreviewTemplate> routeTemplates = routeSource == null
             ? new List<RoutePreviewTemplate>()
             : routeSource.ListRoutePreviews();
+        StartRunSlotAvailabilityContext availabilityContext = LoadAvailabilityContext(command.AccountPlayerId);
 
         StartingArmyTemplate selectedTemplate = FindArmy(armyTemplates, command.SelectedStartingArmyId);
         if (selectedTemplate == null)
@@ -111,7 +133,19 @@ public class StartRunService
             return Fail(error);
         }
 
-        StartingArmyOptionViewData selectedArmyView = BuildArmyOption(selectedTemplate);
+        StartingArmyOptionViewData selectedArmyView = BuildArmyOption(
+            selectedTemplate,
+            FindArmyIndex(armyTemplates, selectedTemplate),
+            availabilityContext);
+        if (selectedArmyView.IsLocked)
+        {
+            return new StartRunResult(
+                false,
+                StartRunValidationError.BlockedRunStart,
+                string.IsNullOrEmpty(selectedArmyView.LockedReason) ? MessageFor(StartRunValidationError.BlockedRunStart) : selectedArmyView.LockedReason,
+                null);
+        }
+
         RunArmySnapshot snapshot = CreateSnapshot(selectedArmyView);
         CreatedRunRecord record = new CreatedRunRecord(
             "run-" + Guid.NewGuid().ToString("N"),
@@ -138,11 +172,38 @@ public class StartRunService
         return new StartRunResult(true, StartRunValidationError.None, MessageFor(StartRunValidationError.None), record);
     }
 
-    private StartingArmyOptionViewData BuildArmyOption(StartingArmyTemplate template)
+    private List<StartingArmyTemplate> ListStartingArmies(int requestedSlotCount)
+    {
+        if (armySource == null)
+        {
+            return new List<StartingArmyTemplate>();
+        }
+
+        IRequestedStartingArmyTemplateSource requestedSource = armySource as IRequestedStartingArmyTemplateSource;
+        if (requestedSource != null && requestedSlotCount > 0)
+        {
+            return requestedSource.ListStartingArmies(requestedSlotCount);
+        }
+
+        return armySource.ListStartingArmies();
+    }
+
+    private StartRunSlotAvailabilityContext LoadAvailabilityContext(string accountPlayerId)
+    {
+        return slotAvailabilitySource == null
+            ? new StartRunSlotAvailabilityContext(99, true)
+            : slotAvailabilitySource.LoadAvailabilityContext(accountPlayerId);
+    }
+
+    private StartingArmyOptionViewData BuildArmyOption(
+        StartingArmyTemplate template,
+        int visualSlotIndex,
+        StartRunSlotAvailabilityContext availabilityContext)
     {
         List<StartRunStackViewData> stackViews = new List<StartRunStackViewData>();
         int totalValue = 0;
         StartRunValidationError validationError = ValidateArmy(template);
+        StartRunSlotAvailability availability = StartRunSlotAvailabilityRules.Evaluate(visualSlotIndex, availabilityContext);
 
         if (template != null && template.Stacks != null)
         {
@@ -154,16 +215,31 @@ public class StartRunService
             }
         }
 
+        SortStackViews(stackViews);
+
         return new StartingArmyOptionViewData(
             template == null ? string.Empty : template.TemplateId,
             template == null ? string.Empty : template.VariantId,
-            template == null ? string.Empty : template.DisplayName,
+            template == null ? "Slot " + (visualSlotIndex + 1).ToString() : template.DisplayName,
             template == null ? string.Empty : template.Description,
             template == null ? 0 : template.StartingCurrency,
+            template == null ? 0 : template.StartingRerollTokens,
+            template == null ? 0 : template.BattleSkipTokens,
             totalValue,
             validationError == StartRunValidationError.None,
             validationError,
-            stackViews);
+            stackViews,
+            visualSlotIndex,
+            availability.IsLocked || template == null,
+            template == null ? StartRunSlotAvailabilityRules.ComingSoonReason : availability.LockedReason);
+    }
+
+    private static StartRunStartingAssetsViewData BuildStartingAssets(StartingArmyOptionViewData selectedArmy)
+    {
+        return new StartRunStartingAssetsViewData(
+            selectedArmy == null ? 0 : selectedArmy.StartingCurrency,
+            selectedArmy == null ? 0 : selectedArmy.StartingRerollTokens,
+            selectedArmy == null ? 0 : selectedArmy.BattleSkipTokens);
     }
 
     private StartRunStackViewData BuildStackView(StartRunStackTemplate stack)
@@ -189,33 +265,105 @@ public class StartRunService
             BuildSkillViewData(stack, unit));
     }
 
+    private void SortStackViews(List<StartRunStackViewData> stacks)
+    {
+        if (stacks == null)
+        {
+            return;
+        }
+
+        stacks.Sort(delegate(StartRunStackViewData left, StartRunStackViewData right)
+        {
+            int factionCompare = FactionFor(left).CompareTo(FactionFor(right));
+            if (factionCompare != 0)
+            {
+                return factionCompare;
+            }
+
+            int tierCompare = TierNumber(left == null ? string.Empty : left.Tier).CompareTo(TierNumber(right == null ? string.Empty : right.Tier));
+            if (tierCompare != 0)
+            {
+                return tierCompare;
+            }
+
+            string leftId = left == null ? string.Empty : left.UnitId;
+            string rightId = right == null ? string.Empty : right.UnitId;
+            return string.CompareOrdinal(leftId, rightId);
+        });
+    }
+
+    private int FactionFor(StartRunStackViewData stack)
+    {
+        StartRunUnitDefinition unit = unitSource == null || stack == null ? null : unitSource.FindUnit(stack.UnitId);
+        return unit == null ? UnitFactionResolver.ResolveFactionId(stack == null ? string.Empty : stack.UnitId) : unit.FactionId;
+    }
+
+    private static int TierNumber(string tier)
+    {
+        if (string.IsNullOrEmpty(tier))
+        {
+            return 1;
+        }
+
+        int parsed;
+        if (int.TryParse(tier, out parsed))
+        {
+            return Math.Max(1, parsed);
+        }
+
+        switch (tier.Trim().ToUpperInvariant())
+        {
+            case "I":
+                return 1;
+            case "II":
+                return 2;
+            case "III":
+                return 3;
+            case "IV":
+                return 4;
+            case "V":
+                return 5;
+            default:
+                return 1;
+        }
+    }
+
     private List<StartRunSkillViewData> BuildSkillViewData(StartRunStackTemplate stack, StartRunUnitDefinition unit)
     {
         List<StartRunSkillViewData> skills = new List<StartRunSkillViewData>();
-        if (stack == null || stack.Skills == null)
+        if (stack == null)
         {
             return skills;
         }
 
-        for (int i = 0; i < stack.Skills.Count; i++)
-        {
-            StartRunSkillTemplate skill = stack.Skills[i];
-            if (skill != null)
-            {
-                skills.Add(new StartRunSkillViewData(skill.SkillId, skill.Unlocked));
-            }
-        }
+        List<StartRunSkillTemplate> stackSkills = stack.Skills ?? new List<StartRunSkillTemplate>();
 
-        if (unit == null || unit.SkillIds == null)
+        if (unit == null || unit.SkillIds == null || unit.SkillIds.Count == 0)
         {
+            for (int i = 0; i < stackSkills.Count; i++)
+            {
+                StartRunSkillTemplate skill = stackSkills[i];
+                if (skill != null)
+                {
+                    skills.Add(new StartRunSkillViewData(skill.SkillId, skill.Unlocked));
+                }
+            }
+
             return skills;
         }
 
         for (int i = 0; i < unit.SkillIds.Count; i++)
         {
-            if (!ContainsSkill(skills, unit.SkillIds[i]))
+            StartRunSkillTemplate skill = FindSkillTemplate(stackSkills, unit.SkillIds[i]);
+            skills.Add(new StartRunSkillViewData(unit.SkillIds[i], skill != null && skill.Unlocked));
+        }
+
+        for (int i = 0; i < stackSkills.Count; i++)
+        {
+            StartRunSkillTemplate skill = stackSkills[i];
+            if (skill != null && !ContainsSkill(skills, skill.SkillId))
             {
-                skills.Add(new StartRunSkillViewData(unit.SkillIds[i], false));
+                skills.Add(new StartRunSkillViewData(skill.SkillId, skill.Unlocked));
             }
         }
 
@@ -336,6 +484,24 @@ public class StartRunService
         return null;
     }
 
+    private static int FindArmyIndex(List<StartingArmyTemplate> armies, StartingArmyTemplate selectedTemplate)
+    {
+        if (armies == null || selectedTemplate == null)
+        {
+            return 0;
+        }
+
+        for (int i = 0; i < armies.Count; i++)
+        {
+            if (armies[i] != null && armies[i].TemplateId == selectedTemplate.TemplateId)
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
     private static RoutePreviewTemplate FindRoute(List<RoutePreviewTemplate> routes, string id)
     {
         if (routes == null || string.IsNullOrEmpty(id))
@@ -370,6 +536,24 @@ public class StartRunService
         }
 
         return false;
+    }
+
+    private static StartRunSkillTemplate FindSkillTemplate(List<StartRunSkillTemplate> skills, string skillId)
+    {
+        if (skills == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            if (skills[i] != null && skills[i].SkillId == skillId)
+            {
+                return skills[i];
+            }
+        }
+
+        return null;
     }
 
     private static bool ContainsSkill(List<string> skills, string skillId)

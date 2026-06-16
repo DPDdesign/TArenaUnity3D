@@ -63,6 +63,8 @@ public class StartingArmyTemplate
     public string DisplayName;
     public string Description;
     public int StartingCurrency;
+    public int StartingRerollTokens;
+    public int BattleSkipTokens;
     public List<StartRunStackTemplate> Stacks;
 
     public StartingArmyTemplate(
@@ -72,12 +74,27 @@ public class StartingArmyTemplate
         string description,
         int startingCurrency,
         List<StartRunStackTemplate> stacks)
+        : this(templateId, variantId, displayName, description, startingCurrency, 0, 0, stacks)
+    {
+    }
+
+    public StartingArmyTemplate(
+        string templateId,
+        string variantId,
+        string displayName,
+        string description,
+        int startingCurrency,
+        int startingRerollTokens,
+        int battleSkipTokens,
+        List<StartRunStackTemplate> stacks)
     {
         TemplateId = templateId;
         VariantId = variantId;
         DisplayName = displayName;
         Description = description;
         StartingCurrency = startingCurrency;
+        StartingRerollTokens = Math.Max(0, startingRerollTokens);
+        BattleSkipTokens = Math.Max(0, battleSkipTokens);
         Stacks = stacks ?? new List<StartRunStackTemplate>();
     }
 }
@@ -106,14 +123,30 @@ public class StartRunUnitDefinition
     public string DisplayName;
     public string Tier;
     public int Cost;
+    public int FactionId;
+    public UnitRoleCategory UnitRoleCategory;
     public List<string> SkillIds;
 
     public StartRunUnitDefinition(string unitId, string displayName, string tier, int cost, List<string> skillIds)
+        : this(unitId, displayName, tier, cost, UnitFactionResolver.ResolveFactionId(unitId), UnitRoleCategory.Flexible, skillIds)
+    {
+    }
+
+    public StartRunUnitDefinition(
+        string unitId,
+        string displayName,
+        string tier,
+        int cost,
+        int factionId,
+        UnitRoleCategory unitRoleCategory,
+        List<string> skillIds)
     {
         UnitId = unitId;
         DisplayName = string.IsNullOrEmpty(displayName) ? unitId : displayName;
         Tier = string.IsNullOrEmpty(tier) ? "I" : tier;
         Cost = Math.Max(0, cost);
+        FactionId = factionId <= 0 ? UnitFactionResolver.ResolveFactionId(unitId) : factionId;
+        UnitRoleCategory = unitRoleCategory;
         SkillIds = skillIds ?? new List<string>();
     }
 }
@@ -168,7 +201,12 @@ public class StartingArmyOptionViewData
     public string VariantId;
     public string DisplayName;
     public string Description;
+    public int VisualSlotIndex;
+    public bool IsLocked;
+    public string LockedReason;
     public int StartingCurrency;
+    public int StartingRerollTokens;
+    public int BattleSkipTokens;
     public int TotalArmyValue;
     public bool CanStartRun;
     public StartRunValidationError ValidationError;
@@ -180,18 +218,28 @@ public class StartingArmyOptionViewData
         string displayName,
         string description,
         int startingCurrency,
+        int startingRerollTokens,
+        int battleSkipTokens,
         int totalArmyValue,
         bool canStartRun,
         StartRunValidationError validationError,
-        List<StartRunStackViewData> stacks)
+        List<StartRunStackViewData> stacks,
+        int visualSlotIndex = 0,
+        bool isLocked = false,
+        string lockedReason = "")
     {
         TemplateId = templateId;
         VariantId = variantId;
         DisplayName = displayName;
         Description = description;
+        VisualSlotIndex = Math.Max(0, visualSlotIndex);
+        IsLocked = isLocked;
+        LockedReason = lockedReason ?? string.Empty;
         StartingCurrency = startingCurrency;
+        StartingRerollTokens = Math.Max(0, startingRerollTokens);
+        BattleSkipTokens = Math.Max(0, battleSkipTokens);
         TotalArmyValue = totalArmyValue;
-        CanStartRun = canStartRun;
+        CanStartRun = canStartRun && !IsLocked;
         ValidationError = validationError;
         Stacks = stacks ?? new List<StartRunStackViewData>();
     }
@@ -222,12 +270,28 @@ public class RoutePreviewViewData
 }
 
 [Serializable]
+public class StartRunStartingAssetsViewData
+{
+    public int RunStartingGold;
+    public int RunRollTokens;
+    public int BattleSkipTokens;
+
+    public StartRunStartingAssetsViewData(int runStartingGold, int runRollTokens, int battleSkipTokens)
+    {
+        RunStartingGold = runStartingGold;
+        RunRollTokens = runRollTokens;
+        BattleSkipTokens = battleSkipTokens;
+    }
+}
+
+[Serializable]
 public class StartRunScreenViewData
 {
     public List<StartingArmyOptionViewData> StartingArmies;
     public StartingArmyOptionViewData SelectedStartingArmy;
     public List<RoutePreviewViewData> RoutePreviews;
     public RoutePreviewViewData SelectedRoutePreview;
+    public StartRunStartingAssetsViewData StartingAssets;
     public bool CanBeginRun;
     public StartRunValidationError ValidationError;
     public string ValidationMessage;
@@ -237,6 +301,7 @@ public class StartRunScreenViewData
         StartingArmyOptionViewData selectedStartingArmy,
         List<RoutePreviewViewData> routePreviews,
         RoutePreviewViewData selectedRoutePreview,
+        StartRunStartingAssetsViewData startingAssets,
         bool canBeginRun,
         StartRunValidationError validationError,
         string validationMessage)
@@ -245,6 +310,7 @@ public class StartRunScreenViewData
         SelectedStartingArmy = selectedStartingArmy;
         RoutePreviews = routePreviews ?? new List<RoutePreviewViewData>();
         SelectedRoutePreview = selectedRoutePreview;
+        StartingAssets = startingAssets ?? new StartRunStartingAssetsViewData(0, 0, 0);
         CanBeginRun = canBeginRun;
         ValidationError = validationError;
         ValidationMessage = validationMessage;
@@ -259,19 +325,22 @@ public class StartRunCommand
     public string StartingArmyVariantId;
     public string SelectedStartingArmyId;
     public string RoutePreviewOptionId;
+    public int RequestedSlotCount;
 
     public StartRunCommand(
         string accountPlayerId,
         string startingArmyTemplateId,
         string startingArmyVariantId,
         string selectedStartingArmyId,
-        string routePreviewOptionId)
+        string routePreviewOptionId,
+        int requestedSlotCount = 0)
     {
         AccountPlayerId = accountPlayerId;
         StartingArmyTemplateId = startingArmyTemplateId;
         StartingArmyVariantId = startingArmyVariantId;
         SelectedStartingArmyId = selectedStartingArmyId;
         RoutePreviewOptionId = routePreviewOptionId;
+        RequestedSlotCount = Math.Max(0, requestedSlotCount);
     }
 }
 

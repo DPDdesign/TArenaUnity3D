@@ -1,7 +1,7 @@
 # TArenaUnity3D Context Map
 
 Status: active
-Last updated: 2026-06-15
+Last updated: 2026-06-16
 
 ## Purpose
 
@@ -16,6 +16,20 @@ skill, feel, AI, cleanup, or implementation context.
 
 Do not read every source document by default. Pick only the contexts relevant
 to the current task.
+
+## Mandatory Run Metagame Maps
+
+For gameplay design, UI design, and programming tasks, always read both maps
+below before proposing or changing work that can touch PRD019/PRD030 run
+metagame, Offline Mode screens, persistence, database state, or data movement
+between screens:
+
+- `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md`
+- `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
+
+These maps are required routing context for Start Run, Run Map, Run Battle,
+Reward Map, Run Shop, Summary Value, Saved Armies, Battle Result, shared army
+snapshots, Offline Mode database adapters, and SQLite table ownership.
 
 ## Project Documentation Layout
 
@@ -108,6 +122,10 @@ Use for normal Unity/C# work:
 - `_codex/agents/runbooks/unity-coding.md`
 - `_codex/agents/runbooks/testing.md`
 - `_codex/agents/docs/codebase-map.md`
+- `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md` and
+  `_codex/Documentation/PRD030_OfflineDatabase_Map.md` when the implementation
+  touches gameplay design, UI design, run metagame, persistence, database
+  state, or screen data flow
 - the specific task file from `_codex/tasks/`, when provided
 - relevant C# files under `TArenaUnity3D/Assets`
 
@@ -117,6 +135,10 @@ Use when the user asks about new UI, HUD, battle UI, active unit panels, skill
 buttons, cooldown display, right-click skill info, or where UI should connect
 to gameplay logic:
 
+- `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md` and
+  `_codex/Documentation/PRD030_OfflineDatabase_Map.md` when the UI touches
+  Offline Mode, PRD019/PRD030 screens, run metagame, saved armies, rewards,
+  shops, summary, battle result, persistence, or data movement between screens
 - `_codex/Context/11_UI_Context.md`
 - `_codex/Context/12_UI_Visual_Context.md` when improving UI visuals,
   screenshot readability, icon/button/zone sizes, layout proportions, or visual
@@ -151,6 +173,16 @@ Current battle UI bridge: read active unit state from
 `MouseControler.activeButtons`, skill ids from `SelectedToster.skillstrings`,
 cooldowns from `SelectedToster.cooldowns`, and invoke skills through
 `MouseControler.CastSkill(slotIndex)`.
+
+Default unit UI programming tip: parent UI views should receive and bind ready
+`UnitRepresentation` or `StackRepresentation` child components instead of
+rebuilding unit UI from raw `Image`/`TMP_Text` arrays. The parent owns screen
+selection/card state, while the child representation owns unit presentation and
+is filled from `UnitInfoData` or `StackInfoData`.
+
+When UI code replaces a legacy wiring style, remove obsolete serialized/public
+Inspector fields from the component. Commenting old logic is acceptable only as
+a temporary code note; obsolete fields should not remain visible in Unity.
 
 ## Production Context
 
@@ -238,6 +270,8 @@ Current feel split:
 Use when a task touches run routes, reward cards, shops, army saving, account
 progress, offence/defence, ranking, or AI goals:
 
+- `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md`
+- `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
 - `_codex/Context/01_Game_Design_Document.md`
 - `_codex/Context/19_Identity.md`
 - `_codex/Context/GameplayFeelDoctrine.md`

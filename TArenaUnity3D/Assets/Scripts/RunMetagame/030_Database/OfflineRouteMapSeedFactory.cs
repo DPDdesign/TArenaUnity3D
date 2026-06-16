@@ -135,6 +135,10 @@ public static class OfflineRouteMapSeedFactory
                 return (int)DBNodeTypeId.RecruitReward;
             case RunMapNodeType.FinalBoss:
                 return (int)DBNodeTypeId.FinalBoss;
+            case RunMapNodeType.RandomEvent:
+                return (int)DBNodeTypeId.RandomEvent;
+            case RunMapNodeType.Empty:
+                return (int)DBNodeTypeId.Empty;
             default:
                 return (int)DBNodeTypeId.Start;
         }

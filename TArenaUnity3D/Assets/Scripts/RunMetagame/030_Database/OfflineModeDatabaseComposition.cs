@@ -1,8 +1,15 @@
 public static class OfflineModeDatabaseComposition
 {
+    private static StartRunService runtimeStartRunService;
+
     public static OfflineDatabaseOpenResult OpenDefaultDatabase()
     {
         return new OfflineDatabaseModule().OpenOrCreate();
+    }
+
+    public static void ResetStartRunOfferSession()
+    {
+        runtimeStartRunService = null;
     }
 
     public static OfflineStartRunAdapter CreateStartRunAdapter()
@@ -13,12 +20,20 @@ public static class OfflineModeDatabaseComposition
     public static StartRunService CreateStartRunService()
     {
         EnsureDefaultDatabase();
-        DefaultStartRunCatalog catalog = new DefaultStartRunCatalog();
-        return new StartRunService(
-            catalog,
-            catalog,
-            new DataMapperStartRunUnitSource(),
-            new OfflineStartRunDbStore());
+        if (runtimeStartRunService == null)
+        {
+            DataMapperStartRunUnitSource unitSource = new DataMapperStartRunUnitSource();
+            StartRunGenerationUnlockContext unlockContext = new OfflineStartRunUnlockContextSource().LoadUnlockContext("offline-player");
+            DeterministicRunGenerationCatalog catalog = CreateRuntimeRunGenerationCatalog(unitSource, unlockContext);
+            runtimeStartRunService = new StartRunService(
+                catalog,
+                catalog,
+                unitSource,
+                new OfflineStartRunDbStore(null, catalog),
+                new OfflineStartRunSlotAvailabilitySource());
+        }
+
+        return runtimeStartRunService;
     }
 
     public static OfflineRunMapAdapter CreateRunMapAdapter()
@@ -29,7 +44,8 @@ public static class OfflineModeDatabaseComposition
     public static RunMapService CreateRunMapService()
     {
         EnsureDefaultDatabase();
-        return new RunMapService(new DefaultRunMapPathCatalog(), new OfflineRunMapDbStore());
+        DeterministicRunGenerationCatalog catalog = CreateRuntimeRunGenerationCatalog(new DataMapperStartRunUnitSource());
+        return new RunMapService(catalog, new OfflineRunMapDbStore(null, catalog));
     }
 
     public static OfflineRunBattleAdapter CreateRunBattleAdapter()
@@ -130,6 +146,20 @@ public static class OfflineModeDatabaseComposition
     private static IOfflineArmySnapshotCatalogResolver CreateSnapshotResolver()
     {
         return new DataMapperOfflineArmySnapshotCatalogResolver(DataMapper.Instance);
+    }
+
+    private static DeterministicRunGenerationCatalog CreateRuntimeRunGenerationCatalog(DataMapperStartRunUnitSource unitSource)
+    {
+        return CreateRuntimeRunGenerationCatalog(unitSource, null);
+    }
+
+    private static DeterministicRunGenerationCatalog CreateRuntimeRunGenerationCatalog(
+        DataMapperStartRunUnitSource unitSource,
+        StartRunGenerationUnlockContext unlockContext)
+    {
+        StartingArmyGeneratorConfig armyConfig = StartingArmyGeneratorConfig.CreateRuntimeRandomized();
+        RouteGeneratorConfig routeConfig = RouteGeneratorConfig.CreateRuntimeRandomized(armyConfig.Seed.Value);
+        return new DeterministicRunGenerationCatalog(unitSource, armyConfig, routeConfig, unlockContext);
     }
 
     private static void EnsureDefaultDatabase()
