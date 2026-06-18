@@ -164,6 +164,17 @@ CREATE TABLE IF NOT EXISTS schema_version (
                 ExecuteNonQuery(connection, statements[i], transaction);
             }
 
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "map_nodes",
+                "catalog_path_id",
+                "ALTER TABLE map_nodes ADD COLUMN catalog_path_id TEXT;");
+
+            DropTableIfExists(connection, transaction, "route_nodes");
+            DropTableIfExists(connection, transaction, "route_paths");
+            DropTableIfExists(connection, transaction, "route_maps");
+
             transaction.Commit();
         }
         catch
@@ -171,6 +182,11 @@ CREATE TABLE IF NOT EXISTS schema_version (
             transaction.Rollback();
             throw;
         }
+    }
+
+    private static void DropTableIfExists(IDbConnection connection, IDbTransaction transaction, string tableName)
+    {
+        ExecuteNonQuery(connection, "DROP TABLE IF EXISTS " + tableName + ";", transaction);
     }
 
     private static void AddColumnIfMissing(

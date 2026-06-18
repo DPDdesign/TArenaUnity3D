@@ -15,9 +15,6 @@ public static class OfflineDatabaseSchemaV1
             TableArmySnapshots(),
             TableArmySnapshotStacks(),
             TableArmySnapshotStackSkills(),
-            TableRouteMaps(),
-            TableRoutePaths(),
-            TableRouteNodes(),
             TableMapNodes(),
             TableMapNodeConnections(),
             TableMapNodeRewards(),
@@ -121,6 +118,7 @@ CREATE TABLE IF NOT EXISTS map_nodes (
     route_map_id INTEGER,
     route_path_id INTEGER,
     catalog_entry_id TEXT,
+    catalog_path_id TEXT,
     node_type_id INTEGER NOT NULL,
     node_state_id INTEGER NOT NULL,
     stage_index INTEGER NOT NULL DEFAULT 0,
@@ -236,60 +234,6 @@ CREATE TABLE IF NOT EXISTS army_snapshot_stack_skills (
 );";
     }
 
-    private static string TableRouteMaps()
-    {
-        return @"
-CREATE TABLE IF NOT EXISTS route_maps (
-    route_map_id INTEGER PRIMARY KEY,
-    run_id INTEGER NOT NULL,
-    selected_route_choice_id TEXT NOT NULL,
-    created_from_catalog_id TEXT,
-    created_at_utc TEXT NOT NULL,
-    updated_at_utc TEXT NOT NULL,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    FOREIGN KEY (run_id) REFERENCES offline_runs(run_id)
-);";
-    }
-
-    private static string TableRoutePaths()
-    {
-        return @"
-CREATE TABLE IF NOT EXISTS route_paths (
-    route_path_id INTEGER PRIMARY KEY,
-    route_map_id INTEGER NOT NULL,
-    path_id TEXT NOT NULL,
-    display_name TEXT NOT NULL,
-    bias_description TEXT,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    FOREIGN KEY (route_map_id) REFERENCES route_maps(route_map_id)
-);";
-    }
-
-    private static string TableRouteNodes()
-    {
-        return @"
-CREATE TABLE IF NOT EXISTS route_nodes (
-    node_id INTEGER PRIMARY KEY,
-    route_map_id INTEGER NOT NULL,
-    route_path_id INTEGER NOT NULL,
-    node_type_id INTEGER NOT NULL,
-    node_state_id INTEGER NOT NULL,
-    stage_index INTEGER NOT NULL DEFAULT 0,
-    display_name TEXT NOT NULL,
-    possible_reward_hint TEXT,
-    expected_risk_hint TEXT,
-    encounter_id TEXT,
-    shop_visit_id INTEGER,
-    next_node_id INTEGER,
-    completed_at_utc TEXT,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    FOREIGN KEY (route_map_id) REFERENCES route_maps(route_map_id),
-    FOREIGN KEY (route_path_id) REFERENCES route_paths(route_path_id),
-    FOREIGN KEY (next_node_id) REFERENCES route_nodes(node_id)
-);";
-    }
-
     private static string TableRunEvents()
     {
         return @"
@@ -308,7 +252,7 @@ CREATE TABLE IF NOT EXISTS run_events (
     is_active INTEGER NOT NULL DEFAULT 1,
     FOREIGN KEY (run_id) REFERENCES offline_runs(run_id),
     FOREIGN KEY (account_id) REFERENCES offline_accounts(account_id),
-    FOREIGN KEY (node_id) REFERENCES route_nodes(node_id)
+    FOREIGN KEY (node_id) REFERENCES map_nodes(node_id)
 );";
     }
 
@@ -335,7 +279,7 @@ CREATE TABLE IF NOT EXISTS run_battles (
     is_active INTEGER NOT NULL DEFAULT 1,
     FOREIGN KEY (event_id) REFERENCES run_events(event_id),
     FOREIGN KEY (run_id) REFERENCES offline_runs(run_id),
-    FOREIGN KEY (node_id) REFERENCES route_nodes(node_id)
+    FOREIGN KEY (node_id) REFERENCES map_nodes(node_id)
 );";
     }
 
@@ -377,7 +321,7 @@ CREATE TABLE IF NOT EXISTS reward_choices (
     FOREIGN KEY (event_id) REFERENCES run_events(event_id),
     FOREIGN KEY (run_id) REFERENCES offline_runs(run_id),
     FOREIGN KEY (run_battle_id) REFERENCES run_battles(run_battle_id),
-    FOREIGN KEY (node_id) REFERENCES route_nodes(node_id)
+    FOREIGN KEY (node_id) REFERENCES map_nodes(node_id)
 );";
     }
 
@@ -423,7 +367,7 @@ CREATE TABLE IF NOT EXISTS shop_visits (
     left_at_utc TEXT,
     is_active INTEGER NOT NULL DEFAULT 1,
     FOREIGN KEY (run_id) REFERENCES offline_runs(run_id),
-    FOREIGN KEY (node_id) REFERENCES route_nodes(node_id)
+    FOREIGN KEY (node_id) REFERENCES map_nodes(node_id)
 );";
     }
 

@@ -9,6 +9,18 @@ public static class OfflineMaterializedRunMapDbStore
         IDbTransaction transaction,
         OfflineRouteMapSeedRecord seed)
     {
+        SaveMaterializedMap(connection, transaction, seed, null, null, 0, 35035);
+    }
+
+    public static void SaveMaterializedMap(
+        IDbConnection connection,
+        IDbTransaction transaction,
+        OfflineRouteMapSeedRecord seed,
+        IStartRunUnitPoolSource enemyUnitSource,
+        EnemyEncounterRuleCatalog enemyRuleCatalog,
+        int accountId,
+        int runSeed)
+    {
         if (connection == null || transaction == null || seed == null)
         {
             return;
@@ -28,6 +40,16 @@ public static class OfflineMaterializedRunMapDbStore
             }
         }
 
+        if (enemyUnitSource != null && enemyRuleCatalog == null)
+        {
+            throw new InvalidOperationException("Enemy army materialization requires an EnemyEncounterRuleCatalog.");
+        }
+
+        EnemyEncounterArmyMaterializer enemyMaterializer = enemyUnitSource == null || enemyRuleCatalog == null
+            ? null
+            : new EnemyEncounterArmyMaterializer(enemyUnitSource, enemyRuleCatalog);
+        OfflineArmySnapshotDbRepository snapshotRepository = new OfflineArmySnapshotDbRepository();
+
         for (int pathIndex = 0; pathIndex < seed.Paths.Count; pathIndex++)
         {
             OfflineRoutePathSeedRecord path = seed.Paths[pathIndex];
@@ -39,7 +61,7 @@ public static class OfflineMaterializedRunMapDbStore
             for (int nodeIndex = 0; nodeIndex < path.Nodes.Count; nodeIndex++)
             {
                 InsertConnections(connection, transaction, seed.RunId, path.Nodes[nodeIndex]);
-                InsertEnemyPlaceholder(connection, transaction, path.Nodes[nodeIndex]);
+                InsertEnemy(connection, transaction, snapshotRepository, enemyMaterializer, accountId, seed.RunId, runSeed, path.Nodes[nodeIndex]);
             }
         }
     }
@@ -66,6 +88,7 @@ INSERT INTO map_nodes (
     route_map_id,
     route_path_id,
     catalog_entry_id,
+    catalog_path_id,
     node_type_id,
     node_state_id,
     stage_index,
@@ -81,6 +104,7 @@ INSERT INTO map_nodes (
     @routeMapId,
     @routePathId,
     @catalogEntryId,
+    @catalogPathId,
     @nodeTypeId,
     @nodeStateId,
     @stageIndex,
@@ -97,6 +121,7 @@ INSERT INTO map_nodes (
             new OfflineDatabaseSqlParameter("@routeMapId", routeMapId),
             new OfflineDatabaseSqlParameter("@routePathId", routePathId),
             new OfflineDatabaseSqlParameter("@catalogEntryId", node.CatalogNodeId),
+            new OfflineDatabaseSqlParameter("@catalogPathId", node.CatalogPathId),
             new OfflineDatabaseSqlParameter("@nodeTypeId", node.NodeTypeId),
             new OfflineDatabaseSqlParameter("@nodeStateId", node.NodeStateId),
             new OfflineDatabaseSqlParameter("@stageIndex", node.StageIndex),
@@ -146,14 +171,26 @@ INSERT INTO map_node_connections (
         }
     }
 
-    private static void InsertEnemyPlaceholder(
+    private static void InsertEnemy(
         IDbConnection connection,
         IDbTransaction transaction,
+        OfflineArmySnapshotDbRepository snapshotRepository,
+        EnemyEncounterArmyMaterializer enemyMaterializer,
+        int accountId,
+        int runId,
+        int runSeed,
         OfflineRouteNodeSeedRecord node)
     {
-        if (node == null || node.NodeId <= 0 || string.IsNullOrEmpty(node.EncounterId))
+        if (node == null || node.NodeId <= 0 || string.IsNullOrEmpty(node.EncounterId) || !IsBattleNode(node))
         {
             return;
+        }
+
+        int snapshotId = 0;
+        if (enemyMaterializer != null && snapshotRepository != null)
+        {
+            OfflineArmySnapshotRecord snapshot = enemyMaterializer.BuildSnapshot(node, accountId, runId, runSeed);
+            snapshotId = snapshotRepository.SaveSnapshot(connection, transaction, snapshot);
         }
 
         OfflineDatabaseSql.ExecuteNonQuery(
@@ -170,7 +207,7 @@ INSERT INTO map_node_enemies (
 ) VALUES (
     @nodeId,
     @catalogEntryId,
-    NULL,
+    @armySnapshotId,
     @encounterId,
     @enemyRuleId,
     @riskBand,
@@ -179,9 +216,16 @@ INSERT INTO map_node_enemies (
             transaction,
             new OfflineDatabaseSqlParameter("@nodeId", node.NodeId),
             new OfflineDatabaseSqlParameter("@catalogEntryId", node.EncounterId),
+            new OfflineDatabaseSqlParameter("@armySnapshotId", snapshotId > 0 ? (object)snapshotId : DBNull.Value),
             new OfflineDatabaseSqlParameter("@encounterId", node.EncounterId),
-            new OfflineDatabaseSqlParameter("@enemyRuleId", node.EncounterId),
-            new OfflineDatabaseSqlParameter("@riskBand", node.ExpectedRiskHint));
+            new OfflineDatabaseSqlParameter("@enemyRuleId", node.EncounterDifficulty.ToString()),
+            new OfflineDatabaseSqlParameter("@riskBand", node.EncounterDifficulty.ToString()));
+    }
+
+    private static bool IsBattleNode(OfflineRouteNodeSeedRecord node)
+    {
+        return node != null &&
+            (node.NodeTypeId == (int)DBNodeTypeId.Battle || node.NodeTypeId == (int)DBNodeTypeId.FinalBoss);
     }
 
     private static string EmptyAsNull(string value)

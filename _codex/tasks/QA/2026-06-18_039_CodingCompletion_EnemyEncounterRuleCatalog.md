@@ -30,9 +30,6 @@ Out-of-scope items were intentionally not implemented:
   - `Medium`
   - `High`
   - `Boss`
-- Added `EnemyEncounterResolutionMode` enum:
-  - `Generated`
-  - `Predefined`
 - Added `EnemyEncounterRuleLookupError` enum for explicit lookup/validation
   failure states.
 - Added `EnemyEncounterRuleCatalog` ScriptableObject with Inspector-authored
@@ -41,10 +38,10 @@ Out-of-scope items were intentionally not implemented:
   - `Resolve(EnemyEncounterDifficulty difficulty)`
 - Added `EnemyEncounterRule` entry model with:
   - `Difficulty`
-  - `Mode`
   - `ArmyGeneratorRuleSet`
   - `PredefinedEnemyId`
-  - resolved accessors that ignore rulesets for predefined entries.
+  - resolved accessors that ignore rulesets when `PredefinedEnemyId` is
+    non-empty.
 - Added `EnemyEncounterRuleLookupResult` so callers can distinguish success
   from missing entries, duplicate entries, missing generated rulesets, and
   missing predefined ids.
@@ -54,7 +51,7 @@ Out-of-scope items were intentionally not implemented:
 - The catalog is independent from `RunMapNodeType`.
 - The existing `ArmyGeneratorRuleSet` remains usable by starting army generation
   and is only referenced by this catalog as an assignable ruleset type.
-- `Predefined` mode overrides generation. In predefined mode,
+- Non-empty `PredefinedEnemyId` overrides generation. In that case,
   `ArmyGeneratorRuleSet` may be null and is ignored even when assigned.
 - The predefined enemy reference is one generic string, as requested.
 - Duplicate difficulty entries fail resolution instead of silently choosing one.
@@ -69,9 +66,9 @@ Recommended post-QA tests:
 - generated entries resolve for `Low`, `Medium`, and `High`,
 - `Boss` predefined entry resolves with a null ruleset and non-empty predefined
   id,
-- predefined entries ignore assigned rulesets,
-- generated entries fail without a ruleset,
-- predefined entries fail without a predefined id,
+- entries with non-empty predefined ids ignore assigned rulesets,
+- entries with empty predefined ids use assigned rulesets,
+- entries with neither predefined id nor ruleset fail,
 - missing and duplicate entries fail clearly.
 
 ## Manual Unity Validation Needed

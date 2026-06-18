@@ -110,9 +110,8 @@ Notes:
 Tables:
 
 - `offline_runs`
-- `route_maps`
-- `route_paths`
-- `route_nodes`
+- `map_nodes`
+- `map_node_connections`
 
 Primary owners:
 
@@ -122,6 +121,7 @@ Primary owners:
 - `OfflineRunMapDbStore.cs`
 - `OfflineRouteMapSeedFactory.cs`
 - `OfflineRouteMapSeedModels.cs`
+- `OfflineMaterializedRunMapDbStore.cs`
 
 Data:
 
@@ -131,7 +131,7 @@ Data:
 - start/pre-final snapshot references,
 - current node,
 - stage and route progress,
-- three route paths and route nodes.
+- materialized route paths, route nodes, and node connections.
 
 Run-context read/write rule:
 
@@ -156,24 +156,24 @@ Important relations:
 offline_accounts.account_id
   -> offline_runs.account_id
 offline_runs.run_id
-  -> route_maps.run_id
-route_maps.route_map_id
-  -> route_paths.route_map_id
-route_maps.route_map_id
-  -> route_nodes.route_map_id
-route_paths.route_path_id
-  -> route_nodes.route_path_id
-route_nodes.next_node_id
-  -> route_nodes.node_id
+  -> map_nodes.run_id
+offline_runs.current_node_id
+  -> map_nodes.node_id
+map_nodes.node_id
+  -> map_node_connections.from_node_id
+map_nodes.node_id
+  -> map_node_connections.to_node_id
 ```
 
 Runtime node rule:
 
-- `route_nodes.node_id` is the canonical integer node id for persisted runtime
+- `map_nodes.node_id` is the canonical integer node id for persisted runtime
   flow.
 - authored node ids are seed/catalog input, not the DB relation authority.
 - UI-facing route node labels can be reconstructed from catalog/seed context,
   but DB writes should persist integer `node_id`.
+- `route_maps`, `route_paths`, and `route_nodes` are no longer schema/runtime
+  tables. If they exist in an old local DB, reset/rebuild the Offline DB.
 
 ### Army Snapshots
 
@@ -261,7 +261,7 @@ Important relation:
 ```text
 offline_runs.run_id
   -> run_events.run_id
-route_nodes.node_id
+map_nodes.node_id
   -> run_events.node_id
 run_events.event_id
   -> run_battles.event_id
@@ -386,7 +386,7 @@ Relations:
 ```text
 offline_runs.run_id
   -> shop_visits.run_id
-route_nodes.node_id
+map_nodes.node_id
   -> shop_visits.node_id
 shop_visits.shop_visit_id
   -> shop_offers.shop_visit_id
@@ -569,9 +569,9 @@ Writes:
 - `army_snapshots`
 - `army_snapshot_stacks`
 - `army_snapshot_stack_skills`
-- `route_maps`
-- `route_paths`
-- `route_nodes`
+- `map_nodes`
+- `map_node_connections`
+- `map_node_enemies`
 
 Primary code:
 
@@ -593,7 +593,8 @@ Rule:
 Reads/writes:
 
 - `offline_runs`
-- `route_nodes`
+- `map_nodes`
+- `map_node_connections`
 
 Primary code:
 
@@ -653,7 +654,7 @@ Writes:
 - `shop_purchases`
 - `army_snapshots`
 - `offline_runs`
-- `route_nodes`
+- `map_nodes`
 
 Primary code:
 
@@ -716,7 +717,7 @@ Primary code:
 | Foundation | `schema_version` | `OfflineDatabaseModule`, `OfflineDatabaseSchemaV1` |
 | Account | `offline_accounts`, `account_unlocks` | `OfflineDatabaseAccountBootstrap`, `OfflineBattleResultDbStore` |
 | Run | `offline_runs` | `OfflineRunContextDbReader`, `OfflineRunContextDbWriter` |
-| Route | `route_maps`, `route_paths`, `route_nodes` | `OfflineStartRunDbStore`, `OfflineRunMapDbStore` |
+| Route | `map_nodes`, `map_node_connections`, `map_node_enemies` | `OfflineStartRunDbStore`, `OfflineRunMapDbStore`, `OfflineMaterializedRunMapDbStore` |
 | Snapshot | `army_snapshots`, `army_snapshot_stacks`, `army_snapshot_stack_skills` | `OfflineArmySnapshotDbRepository`, `OfflineArmySnapshotMapper` |
 | Event | `run_events` | battle/reward/shop DB stores |
 | Battle | `run_battles`, `run_battle_losses` | `OfflineRunBattleDbStore` |

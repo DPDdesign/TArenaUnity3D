@@ -490,8 +490,8 @@ WHERE run_battle_id = @runBattleId;",
             : new RunBattleLaunchRecord(
                 source.LaunchRecord.BattleLaunchRecordId,
                 persistedRunBattleId,
-                source.LaunchRecord.LegacyPlayerArmyAdapterId,
-                source.LaunchRecord.LegacyEnemyArmyAdapterId,
+                source.LaunchRecord.PlayerArmyInputId,
+                source.LaunchRecord.EnemyArmyInputId,
                 source.LaunchRecord.AdapterSurface,
                 source.LaunchRecord.ResultSource);
 
@@ -595,6 +595,8 @@ INSERT INTO run_battle_losses (
     {
         switch (nextScreen)
         {
+            case RunBattleNextScreen.RunMap:
+                return (int)DBRunStatusId.InProgress;
             case RunBattleNextScreen.Reward:
                 return (int)DBRunStatusId.AwaitingReward;
             case RunBattleNextScreen.FinalSummary:
@@ -629,9 +631,8 @@ INSERT INTO run_battle_losses (
             connection,
             @"
 SELECT nodes.node_id
-FROM route_nodes nodes
-INNER JOIN route_maps maps ON maps.route_map_id = nodes.route_map_id
-WHERE maps.run_id = @runId
+FROM map_nodes nodes
+WHERE nodes.run_id = @runId
   AND nodes.encounter_id = @encounterId
   AND nodes.is_active = 1
 LIMIT 1;",

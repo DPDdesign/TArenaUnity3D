@@ -35,10 +35,10 @@ generation, battle preparation, and persistence code.
 Introduce an authored enemy encounter rule catalog for Offline Mode run
 generation.
 
-The catalog maps an encounter difficulty to one of two resolution modes:
+The catalog maps an encounter difficulty to one enemy source rule:
 
-- `Generated`: use an `ArmyGeneratorRuleSet` assigned in the catalog.
-- `Predefined`: use a single predefined enemy id assigned in the catalog.
+- if `predefinedEnemyId` is assigned, use that predefined enemy id;
+- if `predefinedEnemyId` is empty, use the assigned `ArmyGeneratorRuleSet`.
 
 The encounter difficulty set is:
 
@@ -48,10 +48,11 @@ The encounter difficulty set is:
 4. `Boss`
 
 Normal battle nodes use `Low`, `Medium`, or `High`. Boss encounters can use
-`Predefined`, which overrides any ruleset and allows the ruleset reference to be
-null. The predefined enemy id is intentionally one string. The implementation
-does not need to distinguish whether the id points to a boss, a boss army, or a
-special authored encounter; technically it resolves to an enemy army source.
+`predefinedEnemyId`, which overrides any ruleset and allows the ruleset
+reference to be null. The predefined enemy id is intentionally one string. The
+implementation does not need to distinguish whether the id points to a boss, a
+boss army, or a special authored encounter; technically it resolves to an enemy
+army source.
 
 The catalog should be a Unity `ScriptableObject` so designers can assign
 entries in the Inspector. It should be separate from the starting army
@@ -86,8 +87,8 @@ generation ruleset and should not depend on `RunMapNodeType`.
 11. As a developer, I want a single catalog lookup to resolve difficulty into an
     enemy rule, so that run generation and battle preparation do not duplicate
     selection logic.
-12. As a developer, I want generated and predefined modes to be explicit, so
-    that boss override behavior is visible and testable.
+12. As a developer, I want predefined enemy ids to override generator rulesets
+    explicitly, so that boss override behavior is visible and testable.
 13. As a developer, I want the catalog to avoid `RunMapNodeType` dependency, so
     that `Battle` and `FinalBoss` remain map semantics rather than enemy
     generator semantics.
@@ -99,7 +100,8 @@ generation ruleset and should not depend on `RunMapNodeType`.
 16. As a QA reviewer, I want tests for each difficulty lookup, so that low,
     medium, high, and boss mappings are all verified.
 17. As a QA reviewer, I want predefined entries tested with null rulesets, so
-    that boss-style entries do not regress into requiring generated mode data.
+    that boss-style entries do not regress into requiring generated ruleset
+    data.
 18. As a QA reviewer, I want generated entries tested with required rulesets, so
     that ordinary battle generation cannot proceed without configuration.
 19. As a future content author, I want this catalog to support more authored
@@ -115,12 +117,11 @@ generation ruleset and should not depend on `RunMapNodeType`.
   army ruleset to know about enemies or route nodes.
 - Add an `EnemyEncounterDifficulty` concept with four values: `Low`, `Medium`,
   `High`, and `Boss`.
-- Add an enemy rule resolution mode with two values: `Generated` and
-  `Predefined`.
-- A generated rule requires an `ArmyGeneratorRuleSet`.
-- A predefined rule requires a non-empty predefined enemy id.
-- A predefined rule overrides the generator ruleset. Its generator ruleset may
-  be null and should be ignored if assigned.
+- A rule with a non-empty predefined enemy id uses the predefined enemy id.
+- A rule with an empty predefined enemy id uses its `ArmyGeneratorRuleSet`.
+- A predefined enemy id overrides the generator ruleset. Its generator ruleset
+  may be null and should be ignored if assigned.
+- A rule with no predefined enemy id requires an `ArmyGeneratorRuleSet`.
 - Use one generic predefined enemy id string. Do not split it into separate boss
   id, army id, or encounter id fields in this PRD.
 - Store the catalog as a Unity `ScriptableObject` that can be authored in the
@@ -150,11 +151,10 @@ generation ruleset and should not depend on `RunMapNodeType`.
   `ArmyGeneratorRuleSet`.
 - Test that `Boss` can return a predefined entry with a null ruleset and a
   non-empty predefined enemy id.
-- Test that predefined mode ignores any assigned ruleset.
-- Test that generated mode reports invalid configuration when the ruleset is
-  missing.
-- Test that predefined mode reports invalid configuration when the predefined
-  enemy id is missing.
+- Test that a non-empty predefined enemy id ignores any assigned ruleset.
+- Test that an empty predefined enemy id uses the assigned ruleset.
+- Test that a rule with neither predefined enemy id nor ruleset reports invalid
+  configuration.
 - Test that missing difficulty entries are handled with a clear failure state.
 - Use existing ScriptableObject catalog tests as prior art for authoring-time
   lookup behavior.
@@ -186,8 +186,9 @@ generation ruleset and should not depend on `RunMapNodeType`.
 - The desired mental model is: route generation decides where battles are and
   how difficult they are; the enemy encounter rule catalog decides how that
   difficulty resolves into an enemy source.
-- `Predefined` is not a difficulty. It is a resolution mode that overrides
-  generated enemy rules for a difficulty entry, especially `Boss`.
+- `PredefinedEnemyId` is not a difficulty. It is a predefined source reference
+  that overrides generated enemy rules for a difficulty entry, especially
+  `Boss`.
 - Bosses are still technically armies. The single predefined enemy id should be
   broad enough to point to whatever future boss-army source is chosen.
 - This PRD intentionally keeps the authoring shape small so it can support the
@@ -204,25 +205,25 @@ generation ruleset and should not depend on `RunMapNodeType`.
   fail clearly, higher duplicated entries for the same difficulty fail as
   duplicates. Tuning hint: keep exactly one entry for each active difficulty.
 - `EnemyEncounterRuleCatalog.cs` / `EnemyEncounterRule`: added Inspector fields
-  `Difficulty`, `Mode`, `ArmyGeneratorRuleSet`, and `PredefinedEnemyId`.
-  `Difficulty` selects `Low`, `Medium`, `High`, or `Boss`; `Mode` selects
-  `Generated` or `Predefined`; generated entries require a ruleset; predefined
-  entries require one string id and ignore the ruleset. Tuning hint: use
-  generated mode for Low/Medium/High and predefined mode for Boss.
+  `Difficulty`, `ArmyGeneratorRuleSet`, and `PredefinedEnemyId`. `Difficulty`
+  selects `Low`, `Medium`, `High`, or `Boss`; non-empty `PredefinedEnemyId`
+  overrides the ruleset; empty `PredefinedEnemyId` uses the assigned ruleset.
+  Tuning hint: set only rulesets for Low/Medium/High and set only
+  `PredefinedEnemyId` for authored Boss entries.
 - `EnemyEncounterRuleCatalog.cs`: added lookup/result enums and result object:
-  `EnemyEncounterDifficulty`, `EnemyEncounterResolutionMode`,
-  `EnemyEncounterRuleLookupError`, and `EnemyEncounterRuleLookupResult`.
-  These affect code consumers, not Inspector wiring.
-- Removed fields: none.
+  `EnemyEncounterDifficulty`, `EnemyEncounterRuleLookupError`, and
+  `EnemyEncounterRuleLookupResult`. These affect code consumers, not Inspector
+  wiring.
+- Removed fields: `Mode` / `EnemyEncounterResolutionMode`.
 
 ### Automatic Test
 
 - Added `EnemyEncounterRuleCatalogTests`.
-- Tests check generated Low/Medium/High rules resolving assigned rulesets,
-  predefined Boss resolving with null ruleset and a predefined id, predefined
-  mode ignoring an assigned ruleset, generated mode failing without a ruleset,
-  predefined mode failing without an id, and missing/duplicate entries failing
-  clearly.
+- Tests check Low/Medium/High rules resolving assigned rulesets, Boss resolving
+  from a non-empty predefined id with null ruleset, predefined ids ignoring
+  assigned rulesets, empty predefined ids falling back to rulesets, entries with
+  neither predefined id nor ruleset failing, and missing/duplicate entries
+  failing clearly.
 - These tests create ScriptableObjects in memory and do not require scene,
   prefab, Resources, or database setup.
 - Run manually in Unity: `Window > General > Test Runner > EditMode`, then run
@@ -237,10 +238,10 @@ generation ruleset and should not depend on `RunMapNodeType`.
 - Create a catalog asset from `Assets > Create > TArena > Run Metagame > Enemy
   Encounter Rule Catalog`.
 - Add entries for `Low`, `Medium`, `High`, and `Boss`.
-- For Low/Medium/High, set `Mode = Generated` and assign an
+- For Low/Medium/High, leave `PredefinedEnemyId` empty and assign an
   `ArmyGeneratorRuleSet`.
-- For Boss, set `Mode = Predefined`, leave `ArmyGeneratorRuleSet` empty, and
-  set `PredefinedEnemyId` to a non-empty enemy id string.
+- For Boss, leave `ArmyGeneratorRuleSet` empty and set `PredefinedEnemyId` to a
+  non-empty enemy id string.
 
 #### Play Mode Test
 
@@ -276,3 +277,10 @@ generation ruleset and should not depend on `RunMapNodeType`.
 - Create a manual catalog asset in Unity and verify Inspector authoring.
 - Use a future task to consume the catalog from run generation and materialize
   enemy army data.
+
+## Fix - 2026-06-18
+
+- Removed the explicit generated/predefined mode field after user feedback.
+- New rule: non-empty `PredefinedEnemyId` wins; empty `PredefinedEnemyId` means
+  use `ArmyGeneratorRuleSet`.
+- Updated `EnemyEncounterRuleCatalogTests` to cover the simplified contract.

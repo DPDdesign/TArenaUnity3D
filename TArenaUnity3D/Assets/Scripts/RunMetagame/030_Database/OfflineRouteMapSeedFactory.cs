@@ -54,6 +54,7 @@ public static class OfflineRouteMapSeedFactory
                         node.PossibleRewardHint,
                         node.ExpectedRiskHint,
                         node.EncounterId,
+                        node.EncounterDifficulty,
                         0,
                         node.NodeId,
                         node.PathId));

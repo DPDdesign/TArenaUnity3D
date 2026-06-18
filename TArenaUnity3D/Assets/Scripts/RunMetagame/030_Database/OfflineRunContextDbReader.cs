@@ -199,6 +199,13 @@ LIMIT 1;");
             : OfflineArmySnapshotMapper.ToRunMap(context.CurrentArmySnapshot, resolver);
     }
 
+    public RunBattleArmySnapshot ToRunBattleCurrentArmy(OfflineRunContext context)
+    {
+        return context == null || context.CurrentArmySnapshot == null
+            ? null
+            : OfflineArmySnapshotMapper.ToRunBattle(context.CurrentArmySnapshot, resolver);
+    }
+
     public SummaryValueArmySnapshot ToSummaryValueStartArmy(OfflineRunContext context)
     {
         return context == null || context.StartArmySnapshot == null

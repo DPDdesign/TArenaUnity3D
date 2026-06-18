@@ -50,6 +50,7 @@ public class MouseControler : LocalNetworkBehaviour
     public MostStupidAIEver AI;
     public Camera c;
     public bool SYNC = false;
+    bool runBattleResultReported = false;
 
     public int STC, STR;
     public int GetSelectedSpellID()
@@ -148,6 +149,7 @@ public class MouseControler : LocalNetworkBehaviour
         {
             canvas.EndPanel.SetActive(true);
             canvas.EndText.text = "Left Player Win! ";
+            ReportRunBattleResult(true);
             if (isMulti)
             {
                 PlayFabControler.EnsureInstance().GetPhoton();
@@ -165,6 +167,7 @@ public class MouseControler : LocalNetworkBehaviour
         {
             canvas.EndPanel.SetActive(true);
             canvas.EndText.text = "Right Player Win! ";
+            ReportRunBattleResult(false);
             if (isMulti)
             {
                 PlayFabControler.EnsureInstance().GetPhoton();
@@ -364,12 +367,14 @@ public class MouseControler : LocalNetworkBehaviour
         {
             canvas.EndPanel.SetActive(true);
             canvas.EndText.text = "Left Player Win! ";
+            ReportRunBattleResult(true);
         }
         else
         if (TM.isAnyoneAlive() == 1)
         {
             canvas.EndPanel.SetActive(true);
             canvas.EndText.text = "Right Player Win! ";
+            ReportRunBattleResult(false);
         }
 
         SelectedToster = TM.AskWhosTurn();
@@ -2170,6 +2175,19 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
 
 
+
+    void ReportRunBattleResult(bool playerWon)
+    {
+        if (runBattleResultReported)
+        {
+            return;
+        }
+
+        if (RunBattleTacticalResultBridge.ReportBattleFinished(playerWon, hexMap))
+        {
+            runBattleResultReported = true;
+        }
+    }
 
     //////////////////////////////////UI FUNCTIONS
     ///

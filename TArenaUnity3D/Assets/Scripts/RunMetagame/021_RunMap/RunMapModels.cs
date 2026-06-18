@@ -53,6 +53,7 @@ public class RunMapNodeDefinition
     public string PossibleRewardHint;
     public string ExpectedRiskHint;
     public string EncounterId;
+    public EnemyEncounterDifficulty EncounterDifficulty;
     public string NextNodeId;
     public List<string> NextNodeIds;
 
@@ -66,7 +67,7 @@ public class RunMapNodeDefinition
         string expectedRiskHint,
         string encounterId,
         string nextNodeId)
-        : this(nodeId, pathId, nodeType, stageIndex, displayName, possibleRewardHint, expectedRiskHint, encounterId, BuildSingleNextNodeList(nextNodeId))
+        : this(nodeId, pathId, nodeType, stageIndex, displayName, possibleRewardHint, expectedRiskHint, encounterId, InferEncounterDifficulty(nodeType, expectedRiskHint), BuildSingleNextNodeList(nextNodeId))
     {
     }
 
@@ -80,6 +81,36 @@ public class RunMapNodeDefinition
         string expectedRiskHint,
         string encounterId,
         List<string> nextNodeIds)
+        : this(nodeId, pathId, nodeType, stageIndex, displayName, possibleRewardHint, expectedRiskHint, encounterId, InferEncounterDifficulty(nodeType, expectedRiskHint), nextNodeIds)
+    {
+    }
+
+    public RunMapNodeDefinition(
+        string nodeId,
+        string pathId,
+        RunMapNodeType nodeType,
+        int stageIndex,
+        string displayName,
+        string possibleRewardHint,
+        string expectedRiskHint,
+        string encounterId,
+        EnemyEncounterDifficulty encounterDifficulty,
+        string nextNodeId)
+        : this(nodeId, pathId, nodeType, stageIndex, displayName, possibleRewardHint, expectedRiskHint, encounterId, encounterDifficulty, BuildSingleNextNodeList(nextNodeId))
+    {
+    }
+
+    public RunMapNodeDefinition(
+        string nodeId,
+        string pathId,
+        RunMapNodeType nodeType,
+        int stageIndex,
+        string displayName,
+        string possibleRewardHint,
+        string expectedRiskHint,
+        string encounterId,
+        EnemyEncounterDifficulty encounterDifficulty,
+        List<string> nextNodeIds)
     {
         NodeId = nodeId;
         PathId = pathId;
@@ -89,6 +120,7 @@ public class RunMapNodeDefinition
         PossibleRewardHint = possibleRewardHint;
         ExpectedRiskHint = expectedRiskHint;
         EncounterId = encounterId;
+        EncounterDifficulty = encounterDifficulty;
         NextNodeIds = NormalizeNextNodeIds(nextNodeIds);
         NextNodeId = NextNodeIds.Count == 0 ? string.Empty : NextNodeIds[0];
     }
@@ -122,6 +154,27 @@ public class RunMapNodeDefinition
         }
 
         return result;
+    }
+
+    private static EnemyEncounterDifficulty InferEncounterDifficulty(RunMapNodeType nodeType, string expectedRiskHint)
+    {
+        if (nodeType == RunMapNodeType.FinalBoss)
+        {
+            return EnemyEncounterDifficulty.Boss;
+        }
+
+        string value = string.IsNullOrEmpty(expectedRiskHint) ? string.Empty : expectedRiskHint.ToLowerInvariant();
+        if (value.Contains("high"))
+        {
+            return EnemyEncounterDifficulty.High;
+        }
+
+        if (value.Contains("medium"))
+        {
+            return EnemyEncounterDifficulty.Medium;
+        }
+
+        return EnemyEncounterDifficulty.Low;
     }
 }
 

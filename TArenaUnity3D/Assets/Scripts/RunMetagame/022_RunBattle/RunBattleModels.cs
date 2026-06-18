@@ -37,6 +37,7 @@ public enum RunBattleOutcome
 public enum RunBattleNextScreen
 {
     Battle,
+    RunMap,
     Reward,
     RunLoss,
     FinalSummary
@@ -215,23 +216,23 @@ public class RunBattleLaunchRecord
 {
     public string BattleLaunchRecordId;
     public string RunBattleId;
-    public string LegacyPlayerArmyAdapterId;
-    public string LegacyEnemyArmyAdapterId;
+    public string PlayerArmyInputId;
+    public string EnemyArmyInputId;
     public string AdapterSurface;
     public string ResultSource;
 
     public RunBattleLaunchRecord(
         string battleLaunchRecordId,
         string runBattleId,
-        string legacyPlayerArmyAdapterId,
-        string legacyEnemyArmyAdapterId,
+        string playerArmyInputId,
+        string enemyArmyInputId,
         string adapterSurface,
         string resultSource)
     {
         BattleLaunchRecordId = battleLaunchRecordId;
         RunBattleId = runBattleId;
-        LegacyPlayerArmyAdapterId = legacyPlayerArmyAdapterId;
-        LegacyEnemyArmyAdapterId = legacyEnemyArmyAdapterId;
+        PlayerArmyInputId = playerArmyInputId;
+        EnemyArmyInputId = enemyArmyInputId;
         AdapterSurface = adapterSurface;
         ResultSource = resultSource;
     }

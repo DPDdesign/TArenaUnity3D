@@ -30,7 +30,7 @@ public class EnemyEncounterRuleCatalogTests
     }
 
     [Test]
-    public void Resolve_PredefinedBoss_AllowsNullRuleSetAndReturnsPredefinedId()
+    public void Resolve_NonEmptyPredefinedId_AllowsNullRuleSetAndReturnsPredefinedId()
     {
         EnemyEncounterRuleCatalog catalog = ScriptableObject.CreateInstance<EnemyEncounterRuleCatalog>();
         catalog.Entries = new List<EnemyEncounterRule>
@@ -49,7 +49,7 @@ public class EnemyEncounterRuleCatalogTests
     }
 
     [Test]
-    public void Resolve_PredefinedRule_IgnoresAssignedRuleSet()
+    public void Resolve_NonEmptyPredefinedId_IgnoresAssignedRuleSet()
     {
         EnemyEncounterRuleCatalog catalog = ScriptableObject.CreateInstance<EnemyEncounterRuleCatalog>();
         ArmyGeneratorRuleSet assignedRules = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
@@ -70,12 +70,34 @@ public class EnemyEncounterRuleCatalogTests
     }
 
     [Test]
-    public void Resolve_GeneratedWithoutRuleSet_FailsClearly()
+    public void Resolve_EmptyPredefinedId_UsesAssignedRuleSet()
+    {
+        EnemyEncounterRuleCatalog catalog = ScriptableObject.CreateInstance<EnemyEncounterRuleCatalog>();
+        ArmyGeneratorRuleSet assignedRules = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
+        catalog.Entries = new List<EnemyEncounterRule>
+        {
+            new EnemyEncounterRule(EnemyEncounterDifficulty.Boss, assignedRules, "   ")
+        };
+
+        EnemyEncounterRuleLookupResult result = catalog.Resolve(EnemyEncounterDifficulty.Boss);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Error, Is.EqualTo(EnemyEncounterRuleLookupError.None));
+        Assert.That(result.Rule.IsGenerated, Is.True);
+        Assert.That(result.Rule.ResolvedArmyGeneratorRuleSet, Is.EqualTo(assignedRules));
+        Assert.That(result.Rule.ResolvedPredefinedEnemyId, Is.EqualTo(string.Empty));
+
+        Object.DestroyImmediate(catalog);
+        Object.DestroyImmediate(assignedRules);
+    }
+
+    [Test]
+    public void Resolve_NoPredefinedIdAndNoRuleSet_FailsClearly()
     {
         EnemyEncounterRuleCatalog catalog = ScriptableObject.CreateInstance<EnemyEncounterRuleCatalog>();
         catalog.Entries = new List<EnemyEncounterRule>
         {
-            Generated(EnemyEncounterDifficulty.Low, null)
+            new EnemyEncounterRule(EnemyEncounterDifficulty.Low, null, string.Empty)
         };
 
         EnemyEncounterRuleLookupResult result = catalog.Resolve(EnemyEncounterDifficulty.Low);
@@ -83,24 +105,6 @@ public class EnemyEncounterRuleCatalogTests
         Assert.That(result.Success, Is.False);
         Assert.That(result.Rule, Is.Null);
         Assert.That(result.Error, Is.EqualTo(EnemyEncounterRuleLookupError.MissingArmyGeneratorRuleSet));
-
-        Object.DestroyImmediate(catalog);
-    }
-
-    [Test]
-    public void Resolve_PredefinedWithoutEnemyId_FailsClearly()
-    {
-        EnemyEncounterRuleCatalog catalog = ScriptableObject.CreateInstance<EnemyEncounterRuleCatalog>();
-        catalog.Entries = new List<EnemyEncounterRule>
-        {
-            Predefined(EnemyEncounterDifficulty.Boss, null, "   ")
-        };
-
-        EnemyEncounterRuleLookupResult result = catalog.Resolve(EnemyEncounterDifficulty.Boss);
-
-        Assert.That(result.Success, Is.False);
-        Assert.That(result.Rule, Is.Null);
-        Assert.That(result.Error, Is.EqualTo(EnemyEncounterRuleLookupError.MissingPredefinedEnemyId));
 
         Object.DestroyImmediate(catalog);
     }
@@ -138,7 +142,6 @@ public class EnemyEncounterRuleCatalogTests
     {
         return new EnemyEncounterRule(
             difficulty,
-            EnemyEncounterResolutionMode.Generated,
             rules,
             string.Empty);
     }
@@ -150,7 +153,6 @@ public class EnemyEncounterRuleCatalogTests
     {
         return new EnemyEncounterRule(
             difficulty,
-            EnemyEncounterResolutionMode.Predefined,
             rules,
             predefinedEnemyId);
     }

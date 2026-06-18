@@ -10,11 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 63f80311413813c449ec891bac1f0ed1, type: 3}
-  m_Name: EnemyEncounterRuleCatalog
+  m_Name: Mock_EnemyEncounters
   m_EditorClassIdentifier: Assembly-CSharp::EnemyEncounterRuleCatalog
   entries:
   - Difficulty: 0
-    Mode: 0
+    ArmyGeneratorRuleSet: {fileID: 11400000, guid: 760d07345d09d6e4abe765dd0d6b738f,
+      type: 2}
+    PredefinedEnemyId: 
+  - Difficulty: 1
+    ArmyGeneratorRuleSet: {fileID: 11400000, guid: 760d07345d09d6e4abe765dd0d6b738f,
+      type: 2}
+    PredefinedEnemyId: 
+  - Difficulty: 2
+    ArmyGeneratorRuleSet: {fileID: 11400000, guid: 760d07345d09d6e4abe765dd0d6b738f,
+      type: 2}
+    PredefinedEnemyId: 
+  - Difficulty: 3
     ArmyGeneratorRuleSet: {fileID: 11400000, guid: 760d07345d09d6e4abe765dd0d6b738f,
       type: 2}
     PredefinedEnemyId: 

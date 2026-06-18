@@ -4,7 +4,7 @@ using NUnit.Framework;
 public class RunBattleServiceTests
 {
     [Test]
-    public void PrepareBattle_ReturnsOfflineLaunchPayloadAndLegacyAdapterRecord()
+    public void PrepareBattle_ReturnsOfflineLaunchPayloadAndRuntimeInputRecord()
     {
         InMemoryRunBattleStore store = new InMemoryRunBattleStore();
         RunBattleService service = CreateService(store);
@@ -24,7 +24,7 @@ public class RunBattleServiceTests
         Assert.That(launch.LaunchPayload.RunId, Is.EqualTo("run-1"));
         Assert.That(launch.LaunchPayload.RouteNodeId, Is.EqualTo("node-battle-1"));
         Assert.That(launch.LaunchPayload.CurrentArmySnapshotId, Is.EqualTo("army-before"));
-        Assert.That(launch.LaunchRecord.AdapterSurface, Does.Contain("PlayerPrefs/local files are adapter surfaces only"));
+        Assert.That(launch.LaunchRecord.AdapterSurface, Does.Contain("runtime snapshot battle input"));
         Assert.That(store.PreparedBattles.Count, Is.EqualTo(1));
     }
 
@@ -51,7 +51,7 @@ public class RunBattleServiceTests
 
         Assert.That(result.Success, Is.True);
         Assert.That(result.CompletionRecord.Outcome, Is.EqualTo(RunBattleOutcome.Win));
-        Assert.That(result.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.Reward));
+        Assert.That(result.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.RunMap));
         Assert.That(result.CompletionRecord.TotalLosses, Is.EqualTo(10));
         Assert.That(result.CompletionRecord.RunGoldGained, Is.EqualTo(45));
         Assert.That(FindLoss(result.CompletionRecord.Losses, "stack-rusher").LostAmount, Is.EqualTo(7));
@@ -60,7 +60,7 @@ public class RunBattleServiceTests
     }
 
     [Test]
-    public void CompleteBattle_RoutesFinalWinToSummaryAndLossToRunLoss()
+    public void CompleteBattle_RoutesWinToRunMapAndLossToRunLoss()
     {
         InMemoryRunBattleStore store = new InMemoryRunBattleStore();
         RunBattleService service = CreateService(store);
@@ -95,7 +95,7 @@ public class RunBattleServiceTests
             "test-local-completion"));
 
         Assert.That(finalResult.Success, Is.True);
-        Assert.That(finalResult.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.FinalSummary));
+        Assert.That(finalResult.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.RunMap));
         Assert.That(lossResult.Success, Is.True);
         Assert.That(lossResult.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.RunLoss));
     }

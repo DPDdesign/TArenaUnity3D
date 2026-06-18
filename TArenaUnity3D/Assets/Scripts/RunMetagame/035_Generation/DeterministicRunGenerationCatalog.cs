@@ -309,22 +309,22 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
         return new List<RunMapPathDefinition>
         {
             Path(pathPrefix + "-main", selectedRouteChoiceId, "Mission Approach", "Fixed opening: battle, event, battle before branch.",
-                Node("node-1", pathPrefix + "-main", RunMapNodeType.Battle, 1, "Outer Guard", "Battle reward", "Low risk", Encounter(campaignId, missionIndex, "node-1", "low", seed), "node-2"),
+                Node("node-1", pathPrefix + "-main", RunMapNodeType.Battle, EnemyEncounterDifficulty.Low, 1, "Outer Guard", "Battle reward", "Low risk", Encounter(campaignId, missionIndex, "node-1", "low", seed), "node-2"),
                 Node("node-2", pathPrefix + "-main", RunMapNodeType.RandomEvent, 2, "Unmarked Detour", "Event outcome", "No direct battle risk", string.Empty, "node-3"),
-                Node("node-3", pathPrefix + "-main", RunMapNodeType.Battle, 3, "Broken Road Fight", "Battle reward", "Medium risk", Encounter(campaignId, missionIndex, "node-3", "medium", seed), new List<string> { "node-4a", "node-4b" })),
+                Node("node-3", pathPrefix + "-main", RunMapNodeType.Battle, EnemyEncounterDifficulty.Medium, 3, "Broken Road Fight", "Battle reward", "Medium risk", Encounter(campaignId, missionIndex, "node-3", "medium", seed), new List<string> { "node-4a", "node-4b" })),
             Path(pathPrefix + "-safe", selectedRouteChoiceId, "Safer Branch", "Lower pressure branch with fewer battle checks.",
-                Node("node-4a", pathPrefix + "-safe", RunMapNodeType.Battle, 4, "Cautious Push", "Battle reward", "Medium risk", Encounter(campaignId, missionIndex, "node-4a", "medium", seed), "node-5a"),
+                Node("node-4a", pathPrefix + "-safe", RunMapNodeType.Battle, EnemyEncounterDifficulty.Medium, 4, "Cautious Push", "Battle reward", "Medium risk", Encounter(campaignId, missionIndex, "node-4a", "medium", seed), "node-5a"),
                 Node("node-5a", pathPrefix + "-safe", RunMapNodeType.RandomEvent, 5, "Camp Rumor", "Event outcome", "No direct battle risk", string.Empty, "node-6a"),
-                Node("node-6a", pathPrefix + "-safe", RunMapNodeType.Battle, 6, "Supply Guard", "Battle reward", "Medium risk", Encounter(campaignId, missionIndex, "node-6a", "medium", seed), "node-9")),
+                Node("node-6a", pathPrefix + "-safe", RunMapNodeType.Battle, EnemyEncounterDifficulty.Medium, 6, "Supply Guard", "Battle reward", "Medium risk", Encounter(campaignId, missionIndex, "node-6a", "medium", seed), "node-9")),
             Path(pathPrefix + "-risk", selectedRouteChoiceId, "Risk Branch", "Harder pressure branch with better reward hints.",
-                Node("node-4b", pathPrefix + "-risk", RunMapNodeType.Battle, 4, "Elite Roadblock", "Improved battle reward", "High risk", Encounter(campaignId, missionIndex, "node-4b", "high", seed), "node-5b"),
+                Node("node-4b", pathPrefix + "-risk", RunMapNodeType.Battle, EnemyEncounterDifficulty.High, 4, "Elite Roadblock", "Improved battle reward", "High risk", Encounter(campaignId, missionIndex, "node-4b", "high", seed), "node-5b"),
                 Node("node-5b", pathPrefix + "-risk", RunMapNodeType.RandomEvent, 5, "Strange Shrine", "Event outcome", "Uncertain risk", string.Empty, "node-6b"),
-                Node("node-6b", pathPrefix + "-risk", RunMapNodeType.Battle, 6, "Punishing Patrol", "Battle reward", "High risk", Encounter(campaignId, missionIndex, "node-6b", "high", seed), "node-7b"),
+                Node("node-6b", pathPrefix + "-risk", RunMapNodeType.Battle, EnemyEncounterDifficulty.High, 6, "Punishing Patrol", "Battle reward", "High risk", Encounter(campaignId, missionIndex, "node-6b", "high", seed), "node-7b"),
                 Node("node-7b", pathPrefix + "-risk", RunMapNodeType.RandomEvent, 7, "Risk Bargain", "Event outcome", "Uncertain risk", string.Empty, "node-8b"),
-                Node("node-8b", pathPrefix + "-risk", RunMapNodeType.Battle, 8, "Prize Escort", "Improved battle reward", "High risk", Encounter(campaignId, missionIndex, "node-8b", "high", seed), "node-9")),
+                Node("node-8b", pathPrefix + "-risk", RunMapNodeType.Battle, EnemyEncounterDifficulty.High, 8, "Prize Escort", "Improved battle reward", "High risk", Encounter(campaignId, missionIndex, "node-8b", "high", seed), "node-9")),
             Path(pathPrefix + "-finale", selectedRouteChoiceId, "Mission Finale", "Shared shop and final battle.",
                 Node("node-9", pathPrefix + "-finale", RunMapNodeType.Shop, 9, "Run Shop", "Shop offers", "No battle risk", string.Empty, "node-10"),
-                Node("node-10", pathPrefix + "-finale", RunMapNodeType.FinalBoss, 10, "Mission Final Battle", "Saved army eligibility", "Final danger", Encounter(campaignId, missionIndex, "node-10", "final", seed), string.Empty))
+                Node("node-10", pathPrefix + "-finale", RunMapNodeType.FinalBoss, EnemyEncounterDifficulty.Boss, 10, "Mission Final Battle", "Saved army eligibility", "Final danger", Encounter(campaignId, missionIndex, "node-10", "final", seed), string.Empty))
         };
     }
 
@@ -1002,6 +1002,36 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
     private static RunMapPathDefinition Path(string pathId, string routeChoiceId, string displayName, string bias, params RunMapNodeDefinition[] nodes)
     {
         return new RunMapPathDefinition(pathId, routeChoiceId, displayName, bias, new List<RunMapNodeDefinition>(nodes));
+    }
+
+    private static RunMapNodeDefinition Node(
+        string nodeId,
+        string pathId,
+        RunMapNodeType nodeType,
+        EnemyEncounterDifficulty difficulty,
+        int stage,
+        string displayName,
+        string rewardHint,
+        string riskHint,
+        string encounterId,
+        string nextNodeId)
+    {
+        return new RunMapNodeDefinition(nodeId, pathId, nodeType, stage, displayName, rewardHint, riskHint, encounterId, difficulty, nextNodeId);
+    }
+
+    private static RunMapNodeDefinition Node(
+        string nodeId,
+        string pathId,
+        RunMapNodeType nodeType,
+        EnemyEncounterDifficulty difficulty,
+        int stage,
+        string displayName,
+        string rewardHint,
+        string riskHint,
+        string encounterId,
+        List<string> nextNodeIds)
+    {
+        return new RunMapNodeDefinition(nodeId, pathId, nodeType, stage, displayName, rewardHint, riskHint, encounterId, difficulty, nextNodeIds);
     }
 
     private static RunMapNodeDefinition Node(

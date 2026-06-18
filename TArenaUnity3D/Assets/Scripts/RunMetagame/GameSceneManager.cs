@@ -146,9 +146,23 @@ public class GameSceneManager : MonoBehaviour
 
     public void EnterBattle()
     {
+        EnterBattleFrom(currentScreen);
+    }
+
+    public void EnterBattleFromRunMap()
+    {
+        EnterBattleFrom(RunMetagameScreen.RunMap);
+    }
+
+    private void EnterBattleFrom(RunMetagameScreen returnScreen)
+    {
+        RunBattleTacticalResultBridge.ResetRuntimeResultLatch();
+
         if (currentScreen != RunMetagameScreen.Battle)
         {
-            screenBeforeBattle = currentScreen;
+            screenBeforeBattle = returnScreen == RunMetagameScreen.None || returnScreen == RunMetagameScreen.Battle
+                ? currentScreen
+                : returnScreen;
         }
 
         currentScreen = RunMetagameScreen.Battle;
@@ -172,6 +186,33 @@ public class GameSceneManager : MonoBehaviour
             : screenBeforeBattle;
 
         screenBeforeBattle = RunMetagameScreen.None;
+        Show(target);
+    }
+
+    public void ReturnFromBattleWon()
+    {
+        ReturnFromBattleTo(RunMetagameScreen.RunMap);
+    }
+
+    public void ReturnFromBattleLost()
+    {
+        ReturnFromBattleTo(defaultScreen);
+    }
+
+    private void ReturnFromBattleTo(RunMetagameScreen target)
+    {
+        if (unloadBattleSceneOnReturn)
+        {
+            UnloadBattleScene();
+        }
+
+        screenBeforeBattle = RunMetagameScreen.None;
+        if (target == RunMetagameScreen.StartRun)
+        {
+            ShowStartRun();
+            return;
+        }
+
         Show(target);
     }
 

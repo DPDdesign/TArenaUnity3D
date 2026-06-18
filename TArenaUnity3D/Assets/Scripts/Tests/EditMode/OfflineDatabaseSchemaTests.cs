@@ -13,7 +13,8 @@ public class OfflineDatabaseSchemaTests
         Assert.That(statements.Count, Is.GreaterThanOrEqualTo(20));
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS offline_runs"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS army_snapshots"), Is.True);
-        Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS route_nodes"), Is.True);
+        Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS map_nodes"), Is.True);
+        Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS route_nodes"), Is.False);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS run_events"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS shop_offers"), Is.True);
         Assert.That(ContainsSql(statements, "offer_id TEXT NOT NULL"), Is.True);
@@ -62,6 +63,8 @@ public class OfflineDatabaseSchemaTests
                 Assert.That(ColumnExists(connection, "offline_runs", "run_seed_version"), Is.True);
                 Assert.That(TableExists(connection, "map_nodes"), Is.True);
                 Assert.That(TableExists(connection, "map_node_rewards"), Is.True);
+                Assert.That(ColumnExists(connection, "map_nodes", "catalog_path_id"), Is.True);
+                Assert.That(TableExists(connection, "route_nodes"), Is.False);
             }
         }
         finally

@@ -40,12 +40,13 @@ public static class OfflineModeDatabaseComposition
         {
             DataMapperStartRunUnitSource unitSource = new DataMapperStartRunUnitSource();
             StartRunGenerationUnlockContext unlockContext = new OfflineStartRunUnlockContextSource().LoadUnlockContext("offline-player");
-            DeterministicRunGenerationCatalog catalog = CreateRuntimeRunGenerationCatalog(unitSource, unlockContext);
+            RunGenerationSession session = CreateRuntimeRunGenerationSession(unitSource, unlockContext);
+            DeterministicRunGenerationCatalog catalog = session.Catalog;
             runtimeStartRunService = new StartRunService(
                 catalog,
                 catalog,
                 unitSource,
-                new OfflineStartRunDbStore(null, catalog, CreateSnapshotResolver()),
+                new OfflineStartRunDbStore(null, catalog, CreateSnapshotResolver(), unitSource, session.EnemyEncounterRuleCatalog),
                 new OfflineStartRunSlotAvailabilitySource());
         }
 
@@ -72,11 +73,11 @@ public static class OfflineModeDatabaseComposition
     public static RunBattleService CreateRunBattleService()
     {
         EnsureDefaultDatabase();
-        DefaultRunBattleEncounterCatalog encounterCatalog = new DefaultRunBattleEncounterCatalog();
+        IRunBattleEncounterSource encounterCatalog = new OfflineRunBattleEncounterCatalog(null, new DefaultRunBattleEncounterCatalog());
         RewardMapDataMapperUnitSource rewardUnitSource = new RewardMapDataMapperUnitSource(DataMapper.Instance);
         return new RunBattleService(
             encounterCatalog,
-            new OfflineRunBattleLaunchAdapter(),
+            new OfflineRunBattleLaunchAdapter(null, new OfflineArmySnapshotDbRepository(), CreateSnapshotResolver(), DataMapper.Instance),
             new OfflineRunBattleDbStore(null, CreateSnapshotResolver(), encounterCatalog, rewardUnitSource));
     }
 
@@ -181,8 +182,14 @@ public static class OfflineModeDatabaseComposition
         DataMapperStartRunUnitSource unitSource,
         StartRunGenerationUnlockContext unlockContext)
     {
-        RunGenerationSession session = RunGenerationSession.EnsureActive(unitSource, unlockContext);
-        return session.Catalog;
+        return CreateRuntimeRunGenerationSession(unitSource, unlockContext).Catalog;
+    }
+
+    private static RunGenerationSession CreateRuntimeRunGenerationSession(
+        DataMapperStartRunUnitSource unitSource,
+        StartRunGenerationUnlockContext unlockContext)
+    {
+        return RunGenerationSession.EnsureActive(unitSource, unlockContext);
     }
 
     private static void EnsureDefaultDatabase()

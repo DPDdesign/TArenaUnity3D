@@ -54,7 +54,7 @@ public class OfflineRunBattleRewardDbTests
                 "db-test"));
 
             Assert.That(completion.Success, Is.True);
-            Assert.That(completion.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.Reward));
+            Assert.That(completion.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.RunMap));
             Assert.That(completion.CompletionRecord.ArmyAfterBattle.SnapshotId, Does.StartWith("snapshot-"));
 
             RewardMapService rewardService = new RewardMapService(

@@ -67,7 +67,6 @@ public class RunMapController : MonoBehaviour
         screen = null;
         currentArmySnapshot = null;
         hoveredNodeId = string.Empty;
-        armyStackRowInstances.Clear();
         InitializeRunMap();
     }
 
@@ -195,6 +194,14 @@ public class RunMapController : MonoBehaviour
 
         if (result != null && result.Success)
         {
+            if (IsBattleNode(result.TraveledNode))
+            {
+                if (PrepareAndEnterBattle(result.TraveledNode))
+                {
+                    return;
+                }
+            }
+
             focusedNodeId = string.Empty;
             hoveredNodeId = string.Empty;
             detailMode = DetailMode.RouteSummary;
@@ -205,6 +212,41 @@ public class RunMapController : MonoBehaviour
 
         string message = result == null ? "Travel failed." : result.Message;
         RenderScreen(message);
+    }
+
+    private bool PrepareAndEnterBattle(RunMapNodeViewData traveledNode)
+    {
+        OfflineRunContext battleContext = contextReader == null ? null : contextReader.LoadLatestRunForNextScreen("RunBattle");
+        if (battleContext == null)
+        {
+            RenderScreen("Travel accepted, but persisted battle context was not found.");
+            return false;
+        }
+
+        RunBattleArmySnapshot currentArmy = contextReader.ToRunBattleCurrentArmy(battleContext);
+        OfflineRunBattleAdapter battleAdapter = OfflineModeDatabaseComposition.CreateRunBattleAdapter();
+        RunBattleLaunchViewData launch = battleAdapter.PrepareBattle(new RunBattlePrepareRequest(
+            battleContext.RunIdText,
+            battleContext.CurrentNodeIdText,
+            traveledNode == null ? string.Empty : traveledNode.EncounterId,
+            traveledNode == null ? 0 : traveledNode.StageIndex,
+            battleContext.CurrentRunGold,
+            currentArmy));
+
+        if (launch == null || !launch.CanLaunch)
+        {
+            RenderScreen(launch == null ? "Battle preparation failed." : launch.Message);
+            return false;
+        }
+
+        if (GameSceneManager.Instance == null)
+        {
+            RenderScreen("Battle prepared, but GameSceneManager is not available.");
+            return false;
+        }
+
+        GameSceneManager.Instance.EnterBattleFromRunMap();
+        return true;
     }
 
     public void OnBackClicked()
@@ -308,7 +350,7 @@ public class RunMapController : MonoBehaviour
             return null;
         }
 
-        OfflineRunContext context = contextReader.LoadLatestRunForNextScreen("RunMap");
+        OfflineRunContext context = contextReader.LoadLatestRunForNextScreen("RunMap") ?? contextReader.LoadLatestActiveRun();
         if (context == null || string.IsNullOrEmpty(context.RunIdText) || string.IsNullOrEmpty(context.SelectedRouteChoiceId))
         {
             currentArmySnapshot = null;
@@ -671,6 +713,11 @@ public class RunMapController : MonoBehaviour
         }
 
         return string.Empty;
+    }
+
+    private static bool IsBattleNode(RunMapNodeViewData node)
+    {
+        return node != null && (node.NodeType == RunMapNodeType.Battle || node.NodeType == RunMapNodeType.FinalBoss);
     }
 
     private static string EmptyAs(string value, string fallback)

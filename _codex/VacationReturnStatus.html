@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[TARENA] Status po urlopie</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #151617;
+      --panel: #202326;
+      --panel-2: #292d31;
+      --text: #f0ece2;
+      --muted: #b9b2a4;
+      --ok: #7fd38b;
+      --warn: #f0bd62;
+      --bad: #f07f6f;
+      --info: #80b7f2;
+      --line: #3a3f44;
+    }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: 30px;
+    }
+    h2 {
+      font-size: 20px;
+      margin-top: 28px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
+    }
+    h3 {
+      font-size: 16px;
+      color: var(--text);
+    }
+    p {
+      margin: 8px 0;
+      color: var(--muted);
+    }
+    .hero {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      margin-right: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #101214;
+    }
+    .ok { background: var(--ok); }
+    .warn { background: var(--warn); }
+    .bad { background: var(--bad); }
+    .info { background: var(--info); }
+    ul, ol {
+      margin: 8px 0 0 20px;
+      padding: 0;
+    }
+    li {
+      margin: 6px 0;
+    }
+    code {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: var(--text);
+    }
+    .next {
+      border-left: 4px solid var(--info);
+    }
+    .risk {
+      border-left: 4px solid var(--warn);
+    }
+    .missing {
+      border-left: 4px solid var(--bad);
+    }
+    .done {
+      border-left: 4px solid var(--ok);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>[TARENA] Status po urlopie</h1>
+      <p>Data przegladu: 2026-06-18. Zrodla: lokalne PRD019/030, PRD035, PRD037, PRD038, PRD039, QA oraz kod RunMetagame.</p>
+      <p><strong>Najwazniejsze:</strong> Offline run metagame ma juz duzo kodu domeny i DB. Najlepszy nastepny krok to mapa/misja jako ScriptableObject: <code>nodeId</code>, <code>type</code>, <code>difficulty</code>, <code>connectsTo</code>.</p>
+    </section>
+
+    <h2>Stan ogolny</h2>
+    <div class="grid">
+      <article class="card done">
+        <h3><span class="tag ok">Jest</span>PRD019/030 architektura</h3>
+        <p>Service, adapter, DB store, snapshoty armii, SQLite, kompozycja Offline Mode.</p>
+      </article>
+      <article class="card done">
+        <h3><span class="tag ok">Jest</span>Materializowana mapa</h3>
+        <p><code>map_nodes</code>, <code>map_node_connections</code>, <code>map_node_rewards</code>, <code>map_node_enemies</code> istnieja w schemacie i zastapily tabele <code>route_*</code>.</p>
+      </article>
+      <article class="card done">
+        <h3><span class="tag ok">Jest</span>Node UI binding</h3>
+        <p><code>RunMapNodeRepresentation</code> odciaza <code>RunMapController</code>; hover i click sa rozdzielone.</p>
+      </article>
+      <article class="card risk">
+        <h3><span class="tag warn">Manual</span>Unity validation</h3>
+        <p>Dokumenty mowia, ze Unity tests i Play Mode byly zostawione do recznego uruchomienia.</p>
+      </article>
+    </div>
+
+    <h2>Co dziala jako kod</h2>
+    <ul>
+      <li>Da sie wystartowac runa ze starting army.</li>
+      <li>Da sie przejsc do node typu Battle i zagrac bitwe.</li>
+      <li>Widok bitwy dziala, ale UI i swiatlo sa do poprawy.</li>
+      <li>Armia startowa idzie z katalogu <code>Mock_startingArmyRuleSet</code>.</li>
+      <li>Armia przeciwnikow idzie z <code>EnemyArmyGenerator</code>.</li>
+      <li>Encountery ida z <code>Mock_EnemyEncounters</code>.</li>
+      <li>Run Map ma typy: Start, Battle, Shop, RecruitReward, FinalBoss, RandomEvent, Empty.</li>
+      <li>PRD037 materializuje seed, node'y, connections i enemy placeholders.</li>
+      <li><code>EnemyEncounterRuleCatalog</code> istnieje jako SO dla Low/Medium/High/Boss.</li>
+      <li>Runtime SQL nie zapisuje juz <code>route_maps</code>, <code>route_paths</code>, ani <code>route_nodes</code>.</li>
+    </ul>
+
+    <h2>Czego brakuje</h2>
+    <div class="grid">
+      <article class="card missing">
+        <h3><span class="tag bad">Brak</span>Mapa jako SO</h3>
+        <p>Topologia jest nadal w <code>DeterministicRunGenerationCatalog.BuildPaths</code>.</p>
+      </article>
+      <article class="card missing">
+        <h3><span class="tag bad">Brak</span>Enemy catalog integration</h3>
+        <p>Katalog trudnosci nie jest jeszcze uzywany przez generator, <code>map_node_enemies</code> ani Run Battle.</p>
+      </article>
+      <article class="card missing">
+        <h3><span class="tag bad">Brak</span>Predefined armies catalog</h3>
+        <p>Nie ma jeszcze katalogu, ktory mapuje <code>PredefinedEnemyId</code> na konkretna armie wroga, bossa albo special encounter.</p>
+      </article>
+      <article class="card missing">
+        <h3><span class="tag bad">Brak</span>Real enemy materialization</h3>
+        <p><code>map_node_enemies</code> ma placeholdery, nie realne snapshoty armii przeciwnika.</p>
+      </article>
+      <article class="card missing">
+        <h3><span class="tag bad">Brak</span>Rewards playable flow</h3>
+        <p>Rewards nie sa jeszcze w faktycznie przechodzonym flow gry.</p>
+      </article>
+      <article class="card missing">
+        <h3><span class="tag bad">Brak</span>Random Events</h3>
+        <p><code>RandomEvent</code> istnieje jako typ mapy, ale nie ma jeszcze gameplay flow.</p>
+      </article>
+    </div>
+
+    <h2>Nastepny task</h2>
+    <article class="card next">
+      <h3>[TARENA] PRD040 Run Map ScriptableObject Definition</h3>
+      <p>Cel: stworzyc <code>RunMapDefinition</code> albo <code>MissionMapDefinition</code> jako ScriptableObject i uzyc go jako zrodla dla materializacji DB.</p>
+      <p>Minimalne pola node'a: <code>nodeId</code>, <code>displayName</code>, <code>nodeType</code>, <code>encounterDifficulty</code>, <code>possibleRewardHint</code>, <code>expectedRiskHint</code>, <code>connectsToNodeIds[]</code>.</p>
+    </article>
+
+    <h2>Drugie do zrobienia</h2>
+    <article class="card next">
+      <h3>Predefined Armies Catalog</h3>
+      <p>Cel: katalog authored armii dla <code>PredefinedEnemyId</code>, bossow i special encounterow. Pozniej ma zasilac <code>map_node_enemies.army_snapshot_id</code>.</p>
+      <p>Minimalne pola: <code>predefinedArmyId</code>, <code>displayName</code>, <code>role</code>, <code>stacks[]</code>, a w stacku <code>unitId</code>, <code>amount</code>, <code>formationSlot</code>, <code>skillIds[]</code>.</p>
+    </article>
+    <article class="card next">
+      <h3>Runtime Snapshot -> Battle Scene Bridge</h3>
+      <p>Cel: battle launch ma brac <code>player army_snapshot_id</code> i <code>enemy army_snapshot_id</code>, a maly adapter ma przygotowac format, ktory obecna scena walki potrafi przyjac.</p>
+      <p>RunMetagame launch record nie uzywa juz <code>legacy-*</code> handoff labeli. Do usuniecia zostaje fizyczny odczyt <code>PlayerPrefs EnemyArmy</code> / build-file w starej scenie walki.</p>
+    </article>
+    <article class="card next">
+      <h3>Battle Map UI -> UI Shared Canvas</h3>
+      <p>Do przerobienia po powrocie: UI battle map nie powinno siedziec w scenie battle. Ma byc przeniesione do <code>UI Shared Canvas</code> jak inne wspolne komponenty UI.</p>
+      <p>Na teraz tylko zapis statusu, bez ruszania scen, prefabow i wiringow Unity.</p>
+    </article>
+
+    <h2>Manualna kolejka po powrocie</h2>
+    <ol>
+      <li>Uruchom Unity compile/import.</li>
+      <li>Uruchom EditMode: PRD35, PRD37, RunMap representation/controller, EnemyEncounterRuleCatalog, Offline DB/service tests.</li>
+      <li>Zresetuj lub przebuduj lokalna Offline DB przed testem PRD037 flow.</li>
+      <li>Smoke: Start Run -> Run Map -> battle win -> Reward Map -> click apply -> Run Map.</li>
+    </ol>
+
+    <h2>Pytania po powrocie</h2>
+    <p>Nie pytac teraz. To lista do odpalenia po urlopie przed PRD040 i katalogiem predefined armies.</p>
+    <ol>
+      <li>Czy SO ma opisywac jedna misje, czy kampanie z trzema misjami?</li>
+      <li>Czy node id wpisujemy recznie jako <code>node-1</code>, <code>node-4a</code>, czy generujemy ze stabilnych nazw?</li>
+      <li>Czy difficulty ma znaczyc tylko trudnosc wroga, czy tez ryzyko/nagrode sciezki?</li>
+      <li>Czy <code>RandomEvent</code> i <code>Empty</code> sa V1, czy placeholdery?</li>
+      <li>Czy battle node ma wskazywac difficulty, katalog enemy rule, czy konkretny predefined encounter id?</li>
+      <li>Czy pierwszy task moze tworzyc assety Unity, czy tylko kod + testy?</li>
+      <li>Czy zostajemy przy 10-node shape z PRD035?</li>
+      <li>Czy seeded offline run moze zapisac saved army?</li>
+      <li>Czy predefined armies catalog ma obslugiwac tylko enemies/bosses, czy tez player/dev/test armies?</li>
+      <li>Czy predefined army ma trzymac stacki bezposrednio, czy wskazywac przyszly asset armii?</li>
+      <li>Czy pierwszy battle bridge tylko tlumaczy runtime snapshoty na obecny legacy input, czy od razu usuwa konkretne odczyty PlayerPrefs/build-file ze sceny walki?</li>
+    </ol>
+  </main>
+</body>
+</html>

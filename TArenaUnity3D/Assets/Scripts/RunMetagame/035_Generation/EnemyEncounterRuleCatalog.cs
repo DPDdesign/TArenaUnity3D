@@ -10,19 +10,12 @@ public enum EnemyEncounterDifficulty
     Boss
 }
 
-public enum EnemyEncounterResolutionMode
-{
-    Generated,
-    Predefined
-}
-
 public enum EnemyEncounterRuleLookupError
 {
     None,
     MissingEntry,
     DuplicateEntry,
-    MissingArmyGeneratorRuleSet,
-    MissingPredefinedEnemyId
+    MissingArmyGeneratorRuleSet
 }
 
 [CreateAssetMenu(fileName = "EnemyEncounterRuleCatalog", menuName = "TArena/Run Metagame/Enemy Encounter Rule Catalog")]
@@ -92,9 +85,7 @@ public class EnemyEncounterRuleCatalog : ScriptableObject
         switch (error)
         {
             case EnemyEncounterRuleLookupError.MissingArmyGeneratorRuleSet:
-                return "Generated enemy encounter rule requires an ArmyGeneratorRuleSet.";
-            case EnemyEncounterRuleLookupError.MissingPredefinedEnemyId:
-                return "Predefined enemy encounter rule requires a predefined enemy id.";
+                return "Enemy encounter rule requires an ArmyGeneratorRuleSet when no predefined enemy id is assigned.";
             case EnemyEncounterRuleLookupError.DuplicateEntry:
                 return "Enemy encounter rule has duplicate entries.";
             case EnemyEncounterRuleLookupError.MissingEntry:
@@ -109,30 +100,27 @@ public class EnemyEncounterRuleCatalog : ScriptableObject
 public class EnemyEncounterRule
 {
     public EnemyEncounterDifficulty Difficulty;
-    public EnemyEncounterResolutionMode Mode;
     public ArmyGeneratorRuleSet ArmyGeneratorRuleSet;
     public string PredefinedEnemyId;
 
     public EnemyEncounterRule(
         EnemyEncounterDifficulty difficulty,
-        EnemyEncounterResolutionMode mode,
         ArmyGeneratorRuleSet armyGeneratorRuleSet,
         string predefinedEnemyId)
     {
         Difficulty = difficulty;
-        Mode = mode;
         ArmyGeneratorRuleSet = armyGeneratorRuleSet;
         PredefinedEnemyId = predefinedEnemyId;
     }
 
     public bool IsGenerated
     {
-        get { return Mode == EnemyEncounterResolutionMode.Generated; }
+        get { return !IsPredefined; }
     }
 
     public bool IsPredefined
     {
-        get { return Mode == EnemyEncounterResolutionMode.Predefined; }
+        get { return !string.IsNullOrEmpty(TrimmedPredefinedEnemyId); }
     }
 
     public ArmyGeneratorRuleSet ResolvedArmyGeneratorRuleSet
@@ -150,11 +138,6 @@ public class EnemyEncounterRule
         if (IsGenerated && ArmyGeneratorRuleSet == null)
         {
             return EnemyEncounterRuleLookupError.MissingArmyGeneratorRuleSet;
-        }
-
-        if (IsPredefined && string.IsNullOrEmpty(TrimmedPredefinedEnemyId))
-        {
-            return EnemyEncounterRuleLookupError.MissingPredefinedEnemyId;
         }
 
         return EnemyEncounterRuleLookupError.None;

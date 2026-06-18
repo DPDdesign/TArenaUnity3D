@@ -61,6 +61,7 @@ public class OfflineRouteNodeSeedRecord
     public string PossibleRewardHint;
     public string ExpectedRiskHint;
     public string EncounterId;
+    public EnemyEncounterDifficulty EncounterDifficulty;
     public int NextNodeId;
     public List<int> NextNodeIds;
     public string CatalogNodeId;
@@ -77,6 +78,7 @@ public class OfflineRouteNodeSeedRecord
         string possibleRewardHint,
         string expectedRiskHint,
         string encounterId,
+        EnemyEncounterDifficulty encounterDifficulty,
         int nextNodeId,
         string catalogNodeId,
         string catalogPathId)
@@ -91,6 +93,7 @@ public class OfflineRouteNodeSeedRecord
         PossibleRewardHint = possibleRewardHint;
         ExpectedRiskHint = expectedRiskHint;
         EncounterId = encounterId;
+        EncounterDifficulty = encounterDifficulty;
         NextNodeId = Math.Max(0, nextNodeId);
         NextNodeIds = new List<int>();
         if (NextNodeId > 0)

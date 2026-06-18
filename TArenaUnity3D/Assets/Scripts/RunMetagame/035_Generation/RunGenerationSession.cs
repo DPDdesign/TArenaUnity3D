@@ -6,6 +6,7 @@ public class RunGenerationSession : MonoBehaviour
     public static RunGenerationSession Instance { get; private set; }
 
     [SerializeField] private ArmyGeneratorRuleSet startingArmyRuleSet;
+    [SerializeField] private EnemyEncounterRuleCatalog enemyEncounterRuleCatalog;
 
     private DeterministicRunGenerationCatalog catalog;
 
@@ -17,6 +18,11 @@ public class RunGenerationSession : MonoBehaviour
     public ArmyGeneratorRuleSet StartingArmyRuleSet
     {
         get { return startingArmyRuleSet; }
+    }
+
+    public EnemyEncounterRuleCatalog EnemyEncounterRuleCatalog
+    {
+        get { return enemyEncounterRuleCatalog; }
     }
 
     public static RunGenerationSession CreateNew(

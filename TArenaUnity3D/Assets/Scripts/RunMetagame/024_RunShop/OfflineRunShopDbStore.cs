@@ -378,16 +378,6 @@ INSERT INTO shop_visits (
         Dictionary<string, int> formationSlotByStackId = BuildFormationSlotLookup(visit.CurrentArmy);
         SaveOffers(connection, transaction, shopVisitId, visit.Offers, formationSlotByStackId, snapshotStackIdsByFormationSlot);
 
-        OfflineDatabaseSql.ExecuteNonQuery(
-            connection,
-            @"
-UPDATE route_nodes
-SET shop_visit_id = @shopVisitId
-WHERE node_id = @nodeId;",
-            transaction,
-            new OfflineDatabaseSqlParameter("@shopVisitId", shopVisitId),
-            new OfflineDatabaseSqlParameter("@nodeId", nodeId));
-
         runContextWriter.UpdateNodeArmyGoldScreen(connection, transaction, run.RunId, nodeId, initialSnapshotId, visit.RunCurrency, (int)DBRunStatusId.InShop, "RunShop");
     }
 
@@ -963,17 +953,19 @@ ORDER BY offers.sort_order, offers.shop_offer_id;",
         return OfflineDatabaseSql.Query(
             connection,
             @"
-SELECT route_path_id, path_id, sort_order
-FROM route_paths
+SELECT route_path_id, catalog_path_id, MIN(route_path_id) AS sort_order
+FROM map_nodes
 WHERE route_map_id = @routeMapId
   AND is_active = 1
-ORDER BY sort_order, route_path_id;",
+GROUP BY route_path_id, catalog_path_id
+ORDER BY route_path_id;",
             delegate(IDataRecord row)
             {
+                string pathId = OfflineDatabaseSql.ReadText(row["catalog_path_id"]);
                 return new PersistedPathRow
                 {
                     RoutePathId = OfflineDatabaseSql.ReadInt(row["route_path_id"]),
-                    PathId = OfflineDatabaseSql.ReadText(row["path_id"]),
+                    PathId = string.IsNullOrEmpty(pathId) ? "path-" + OfflineDatabaseSql.ReadInt(row["route_path_id"]) : pathId,
                     SortOrder = OfflineDatabaseSql.ReadInt(row["sort_order"])
                 };
             },
@@ -987,7 +979,7 @@ ORDER BY sort_order, route_path_id;",
             connection,
             @"
 SELECT node_id, route_path_id, stage_index
-FROM route_nodes
+FROM map_nodes
 WHERE route_map_id = @routeMapId
   AND is_active = 1
 ORDER BY route_path_id, stage_index, node_id;",

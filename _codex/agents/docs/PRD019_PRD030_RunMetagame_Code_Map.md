@@ -198,8 +198,8 @@ Main code:
 - `StartRunService.cs` - screen data and begin-run command.
 - `OfflineStartRunAdapter.cs` - UI/service facade.
 - `OfflineStartRunDbStore.cs` - persists Start Run detail flow through shared
-  run context writer, shared snapshot repository, `route_maps`, `route_paths`,
-  and `route_nodes`.
+  run context writer, shared snapshot repository, `map_nodes`,
+  `map_node_connections`, and `map_node_enemies`.
 - `StartRunScreenController.cs` - Unity UI controller.
 - `StartRunArmyCardView.cs` - starting-army card view; binds one
   `StartingArmyOptionViewData` into the instantiated card and displays its
@@ -215,6 +215,8 @@ DB handoff:
 - reloads the returned `CreatedRunRecord` through
   `OfflineRunContextDbReader.ToStartRunCreatedRecord`,
 - returns legacy-facing ids such as `run-<id>` for screen DTO compatibility.
+- does not create or write legacy `route_maps`, `route_paths`, or
+  `route_nodes` tables.
 - selected army details and army cards display live `StartRunStackViewData`
   through the two prefabs selected on `StartRunScreenController`: whole
   `startingArmyPrefab` cards for each starting-army option and
@@ -252,7 +254,7 @@ DB handoff:
   context, route choice, current gold, and current army snapshot summary,
 - controller renders the army panel from hydrated current snapshot stacks into
   `StackRepresentation` row prefab instances,
-- updates `route_nodes.node_state_id`,
+- updates `map_nodes.node_state_id`,
 - updates `offline_runs.current_node_id`, `stage_progress`, and
   `route_progress` through `OfflineRunContextDbWriter.UpdateRunMapState`.
 
@@ -272,7 +274,7 @@ Main code:
 - `RunBattleModels.cs` - battle launch, completion, losses, transition DTOs.
 - `RunBattleContracts.cs` - encounter source, launch adapter, store interface.
 - `DefaultRunBattleEncounterCatalog.cs` - small V1 local encounter catalog.
-- `OfflineRunBattleLaunchAdapter.cs` - legacy battle-launch surface label.
+- `OfflineRunBattleLaunchAdapter.cs` - runtime snapshot battle input label.
 - `RunBattleService.cs` - prepare/complete battle behavior.
 - `OfflineRunBattleAdapter.cs` - service facade.
 - `OfflineRunBattleDbStore.cs` - DB persistence for prepared/completed battles.
@@ -484,14 +486,14 @@ StartRunScreenController
   -> OfflineStartRunDbStore
   -> OfflineRunContextDbWriter + OfflineArmySnapshotDbRepository
   -> OfflineRunContextDbReader
-  -> offline_runs + army_snapshots + route_maps/paths/nodes
+  -> offline_runs + army_snapshots + map_nodes/map_node_connections/map_node_enemies
 
 RunMapController
   -> OfflineRunMapAdapter
   -> RunMapService
   -> OfflineRunMapDbStore
   -> OfflineRunContextDbWriter
-  -> offline_runs + route_nodes
+  -> offline_runs + map_nodes/map_node_connections
 
 RunBattle caller/future screen
   -> OfflineRunBattleAdapter

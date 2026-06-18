@@ -34,16 +34,16 @@ reference `RunMapNodeType`. This matches the user decision that battle nodes
 should carry difficulty/risk semantics, while the catalog decides which enemy
 source rule to use.
 
-### Generated And Predefined Modes
+### Generated And Predefined Resolution
 
-The model explicitly separates:
+The model resolves source by data presence:
 
-- `Generated`: requires `ArmyGeneratorRuleSet`.
-- `Predefined`: requires one generic `PredefinedEnemyId`.
+- non-empty `PredefinedEnemyId` uses predefined enemy source,
+- empty `PredefinedEnemyId` uses `ArmyGeneratorRuleSet`.
 
-`EnemyEncounterRule.ResolvedArmyGeneratorRuleSet` returns null for predefined
-entries, so predefined mode correctly overrides generation even if a ruleset is
-assigned in the Inspector.
+`EnemyEncounterRule.ResolvedArmyGeneratorRuleSet` returns null when
+`PredefinedEnemyId` is non-empty, so predefined source correctly overrides
+generation even if a ruleset is assigned in the Inspector.
 
 ### Failure States
 
@@ -51,8 +51,7 @@ The lookup result exposes clear failure states for:
 
 - missing entries,
 - duplicate entries,
-- generated entries missing rulesets,
-- predefined entries missing predefined ids.
+- entries missing both predefined id and ruleset.
 
 Duplicate difficulty entries failing resolution is a useful authoring guard and
 does not conflict with the PRD.
@@ -87,7 +86,7 @@ Post-QA EditMode tests should cover:
 
 - generated Low/Medium/High rules resolving assigned rulesets,
 - predefined Boss resolving with null ruleset and non-empty id,
-- predefined mode ignoring assigned rulesets,
-- generated mode failing without a ruleset,
-- predefined mode failing without an id,
+- predefined id ignoring assigned rulesets,
+- empty predefined id using assigned rulesets,
+- entries with neither predefined id nor ruleset failing,
 - missing and duplicate difficulty entries failing clearly.

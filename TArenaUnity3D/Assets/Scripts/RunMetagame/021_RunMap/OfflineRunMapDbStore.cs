@@ -17,6 +17,7 @@ public class OfflineRunMapDbStore : IRunMapStore
     {
         public int NodeId;
         public int RoutePathId;
+        public string CatalogPathId;
         public int NodeTypeId;
         public int NodeStateId;
         public int StageIndex;
@@ -24,7 +25,7 @@ public class OfflineRunMapDbStore : IRunMapStore
         public string PossibleRewardHint;
         public string ExpectedRiskHint;
         public string EncounterId;
-        public int NextNodeId;
+        public List<int> NextNodeIds = new List<int>();
         public string CatalogNodeId;
     }
 
@@ -176,7 +177,7 @@ LIMIT 1;",
         {
             object existing = OfflineDatabaseSql.ExecuteScalar(
                 connection,
-                "SELECT route_map_id FROM route_maps WHERE route_map_id = @routeMapId LIMIT 1;",
+                "SELECT node_id FROM map_nodes WHERE route_map_id = @routeMapId AND is_active = 1 LIMIT 1;",
                 transaction,
                 new OfflineDatabaseSqlParameter("@routeMapId", routeMapId));
             if (existing != null && existing != DBNull.Value)
@@ -196,70 +197,10 @@ LIMIT 1;",
             return routeMapId;
         }
 
-        string now = OfflineDatabaseSql.UtcNowText();
-        OfflineDatabaseSql.ExecuteNonQuery(
-            connection,
-            @"
-INSERT INTO route_maps (
-    run_id,
-    selected_route_choice_id,
-    created_from_catalog_id,
-    created_at_utc,
-    updated_at_utc,
-    is_active
-) VALUES (
-    @runId,
-    @selectedRouteChoiceId,
-    @createdFromCatalogId,
-    @createdAtUtc,
-    @updatedAtUtc,
-    1
-);",
-            transaction,
-            new OfflineDatabaseSqlParameter("@runId", runId),
-            new OfflineDatabaseSqlParameter("@selectedRouteChoiceId", state.SelectedRouteChoiceId),
-            new OfflineDatabaseSqlParameter("@createdFromCatalogId", state.SelectedRouteChoiceId),
-            new OfflineDatabaseSqlParameter("@createdAtUtc", now),
-            new OfflineDatabaseSqlParameter("@updatedAtUtc", now));
-        routeMapId = (int)OfflineDatabaseSql.ReadLastInsertRowId(connection, transaction);
-
-        int nextRoutePathId = ReadNextId(connection, "route_paths", "route_path_id", transaction);
-        int nextNodeId = ReadNextId(connection, "route_nodes", "node_id", transaction);
+        routeMapId = runId;
+        int nextRoutePathId = 1;
+        int nextNodeId = ReadNextId(connection, "map_nodes", "node_id", transaction);
         OfflineRouteMapSeedRecord seed = OfflineRouteMapSeedFactory.Create(runId, routeMapId, state.SelectedRouteChoiceId, state.Paths, nextRoutePathId, nextNodeId);
-        for (int pathIndex = 0; pathIndex < seed.Paths.Count; pathIndex++)
-        {
-            OfflineRoutePathSeedRecord path = seed.Paths[pathIndex];
-            OfflineDatabaseSql.ExecuteNonQuery(
-                connection,
-                @"
-INSERT INTO route_paths (
-    route_path_id,
-    route_map_id,
-    path_id,
-    display_name,
-    bias_description,
-    sort_order,
-    is_active
-) VALUES (
-    @routePathId,
-    @routeMapId,
-    @pathId,
-    @displayName,
-    @biasDescription,
-    @sortOrder,
-    1
-);",
-                transaction,
-                new OfflineDatabaseSqlParameter("@routePathId", path.RoutePathId),
-                new OfflineDatabaseSqlParameter("@routeMapId", path.RouteMapId),
-                new OfflineDatabaseSqlParameter("@pathId", path.PathId),
-                new OfflineDatabaseSqlParameter("@displayName", path.DisplayName),
-                new OfflineDatabaseSqlParameter("@biasDescription", path.BiasDescription),
-                new OfflineDatabaseSqlParameter("@sortOrder", path.SortOrder));
-        }
-
-        InsertRouteNodes(connection, transaction, seed);
-        UpdateRouteNodeLinks(connection, transaction, seed);
         OfflineMaterializedRunMapDbStore.SaveMaterializedMap(connection, transaction, seed);
 
         return routeMapId;
@@ -291,18 +232,6 @@ INSERT INTO route_paths (
                 }
 
                 int nodeStateId = ToDbNodeStateId(DetermineNodeState(state, node));
-                OfflineDatabaseSql.ExecuteNonQuery(
-                    connection,
-                    @"
-UPDATE route_nodes
-SET node_state_id = @nodeStateId,
-    completed_at_utc = @completedAtUtc
-WHERE node_id = @nodeId;",
-                    transaction,
-                    new OfflineDatabaseSqlParameter("@nodeStateId", nodeStateId),
-                    new OfflineDatabaseSqlParameter("@completedAtUtc", nodeStateId == (int)DBNodeStateId.Completed ? (object)now : DBNull.Value),
-                    new OfflineDatabaseSqlParameter("@nodeId", persistedNode.NodeId));
-
                 OfflineDatabaseSql.ExecuteNonQuery(
                     connection,
                     @"
@@ -357,35 +286,38 @@ WHERE node_id = @nodeId;",
 
     private static List<PersistedPathRow> LoadPaths(IDbConnection connection, int routeMapId, IDbTransaction transaction = null)
     {
-        return OfflineDatabaseSql.Query(
+        List<PersistedPathRow> rows = OfflineDatabaseSql.Query(
             connection,
             @"
-SELECT route_path_id, path_id, display_name, bias_description, sort_order
-FROM route_paths
+SELECT route_path_id, catalog_path_id, MIN(route_path_id) AS sort_order
+FROM map_nodes
 WHERE route_map_id = @routeMapId AND is_active = 1
-ORDER BY sort_order, route_path_id;",
+GROUP BY route_path_id, catalog_path_id
+ORDER BY route_path_id;",
             delegate(IDataRecord row)
             {
+                string pathId = OfflineDatabaseSql.ReadText(row["catalog_path_id"]);
                 return new PersistedPathRow
                 {
                     RoutePathId = OfflineDatabaseSql.ReadInt(row["route_path_id"]),
-                    PathId = OfflineDatabaseSql.ReadText(row["path_id"]),
-                    DisplayName = OfflineDatabaseSql.ReadText(row["display_name"]),
-                    BiasDescription = OfflineDatabaseSql.ReadText(row["bias_description"]),
+                    PathId = string.IsNullOrEmpty(pathId) ? "path-" + OfflineDatabaseSql.ReadInt(row["route_path_id"]) : pathId,
+                    DisplayName = string.Empty,
+                    BiasDescription = string.Empty,
                     SortOrder = OfflineDatabaseSql.ReadInt(row["sort_order"])
                 };
             },
             transaction,
             new OfflineDatabaseSqlParameter("@routeMapId", routeMapId));
+        return rows;
     }
 
     private static List<PersistedNodeRow> LoadNodes(IDbConnection connection, int routeMapId, IDbTransaction transaction = null)
     {
-        return OfflineDatabaseSql.Query(
+        List<PersistedNodeRow> nodes = OfflineDatabaseSql.Query(
             connection,
             @"
-SELECT node_id, route_path_id, node_type_id, node_state_id, stage_index, display_name, possible_reward_hint, expected_risk_hint, encounter_id, next_node_id
-FROM route_nodes
+SELECT node_id, route_path_id, catalog_path_id, catalog_entry_id, node_type_id, node_state_id, stage_index, display_name, possible_reward_hint, expected_risk_hint, encounter_id
+FROM map_nodes
 WHERE route_map_id = @routeMapId AND is_active = 1
 ORDER BY route_path_id, stage_index, node_id;",
             delegate(IDataRecord row)
@@ -394,18 +326,77 @@ ORDER BY route_path_id, stage_index, node_id;",
                 {
                     NodeId = OfflineDatabaseSql.ReadInt(row["node_id"]),
                     RoutePathId = OfflineDatabaseSql.ReadInt(row["route_path_id"]),
+                    CatalogPathId = OfflineDatabaseSql.ReadText(row["catalog_path_id"]),
+                    CatalogNodeId = OfflineDatabaseSql.ReadText(row["catalog_entry_id"]),
                     NodeTypeId = OfflineDatabaseSql.ReadInt(row["node_type_id"]),
                     NodeStateId = OfflineDatabaseSql.ReadInt(row["node_state_id"]),
                     StageIndex = OfflineDatabaseSql.ReadInt(row["stage_index"]),
                     DisplayName = OfflineDatabaseSql.ReadText(row["display_name"]),
                     PossibleRewardHint = OfflineDatabaseSql.ReadText(row["possible_reward_hint"]),
                     ExpectedRiskHint = OfflineDatabaseSql.ReadText(row["expected_risk_hint"]),
-                    EncounterId = OfflineDatabaseSql.ReadText(row["encounter_id"]),
-                    NextNodeId = OfflineDatabaseSql.ReadInt(row["next_node_id"])
+                    EncounterId = OfflineDatabaseSql.ReadText(row["encounter_id"])
                 };
             },
             transaction,
             new OfflineDatabaseSqlParameter("@routeMapId", routeMapId));
+
+        Dictionary<int, List<int>> connections = LoadConnections(connection, routeMapId, transaction);
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            List<int> nextNodeIds;
+            if (connections.TryGetValue(nodes[i].NodeId, out nextNodeIds))
+            {
+                nodes[i].NextNodeIds = nextNodeIds;
+            }
+        }
+
+        return nodes;
+    }
+
+    private static Dictionary<int, List<int>> LoadConnections(IDbConnection connection, int routeMapId, IDbTransaction transaction = null)
+    {
+        Dictionary<int, List<int>> result = new Dictionary<int, List<int>>();
+        List<int[]> rows = OfflineDatabaseSql.Query(
+            connection,
+            @"
+SELECT from_node_id, to_node_id
+FROM map_node_connections
+WHERE run_id = @runId AND is_active = 1
+ORDER BY connection_id;",
+            delegate(IDataRecord row)
+            {
+                return new[]
+                {
+                    OfflineDatabaseSql.ReadInt(row["from_node_id"]),
+                    OfflineDatabaseSql.ReadInt(row["to_node_id"])
+                };
+            },
+            transaction,
+            new OfflineDatabaseSqlParameter("@runId", routeMapId));
+
+        for (int i = 0; i < rows.Count; i++)
+        {
+            int fromNodeId = rows[i][0];
+            int toNodeId = rows[i][1];
+            if (fromNodeId <= 0 || toNodeId <= 0)
+            {
+                continue;
+            }
+
+            List<int> nextNodeIds;
+            if (!result.TryGetValue(fromNodeId, out nextNodeIds))
+            {
+                nextNodeIds = new List<int>();
+                result.Add(fromNodeId, nextNodeIds);
+            }
+
+            if (!nextNodeIds.Contains(toNodeId))
+            {
+                nextNodeIds.Add(toNodeId);
+            }
+        }
+
+        return result;
     }
 
     private List<RunMapPathDefinition> BuildDefinitionsFromPersistence(
@@ -426,6 +417,12 @@ ORDER BY route_path_id, stage_index, node_id;",
         {
             PersistedPathRow path = persistedPaths[pathIndex];
             RunMapPathDefinition catalogPath = FindCatalogPath(catalogPaths, path.PathId);
+            if (catalogPath != null)
+            {
+                path.DisplayName = catalogPath.DisplayName;
+                path.BiasDescription = catalogPath.BiasDescription;
+            }
+
             List<PersistedNodeRow> nodes = FilterNodesForPath(persistedNodes, path.RoutePathId);
             List<RunMapNodeDefinition> definitions = new List<RunMapNodeDefinition>();
             for (int nodeIndex = 0; nodeIndex < nodes.Count; nodeIndex++)
@@ -434,7 +431,11 @@ ORDER BY route_path_id, stage_index, node_id;",
                 RunMapNodeDefinition catalogNode = catalogPath != null && catalogPath.Nodes != null && nodeIndex < catalogPath.Nodes.Count
                     ? catalogPath.Nodes[nodeIndex]
                     : null;
-                node.CatalogNodeId = catalogNode == null ? "node-" + node.NodeId.ToString() : catalogNode.NodeId;
+                if (string.IsNullOrEmpty(node.CatalogNodeId))
+                {
+                    node.CatalogNodeId = catalogNode == null ? "node-" + node.NodeId.ToString() : catalogNode.NodeId;
+                }
+
                 catalogNodeByDb[node.NodeId] = node.CatalogNodeId;
                 catalogNodeIdByDbNodeId[node.NodeId] = node.CatalogNodeId;
             }
@@ -458,7 +459,7 @@ ORDER BY route_path_id, stage_index, node_id;",
                         BuildNextNodeIds(node, catalogNode, catalogNodeByDb)));
             }
 
-            result.Add(new RunMapPathDefinition(path.PathId, string.Empty, path.DisplayName, path.BiasDescription, definitions));
+            result.Add(new RunMapPathDefinition(path.PathId, string.Empty, string.IsNullOrEmpty(path.DisplayName) ? path.PathId : path.DisplayName, path.BiasDescription, definitions));
         }
 
         return result;
@@ -481,7 +482,9 @@ ORDER BY route_path_id, stage_index, node_id;",
                 RunMapNodeDefinition catalogNode = catalogPath != null && catalogPath.Nodes != null && nodeIndex < catalogPath.Nodes.Count
                     ? catalogPath.Nodes[nodeIndex]
                     : null;
-                string catalogNodeId = catalogNode == null ? "node-" + node.NodeId.ToString() : catalogNode.NodeId;
+                string catalogNodeId = string.IsNullOrEmpty(node.CatalogNodeId)
+                    ? (catalogNode == null ? "node-" + node.NodeId.ToString() : catalogNode.NodeId)
+                    : node.CatalogNodeId;
                 if (!result.ContainsKey(catalogNodeId))
                 {
                     result.Add(catalogNodeId, node);
@@ -527,9 +530,16 @@ ORDER BY route_path_id, stage_index, node_id;",
         Dictionary<int, string> catalogNodeByDb)
     {
         List<string> result = new List<string>();
-        if (node != null && node.NextNodeId > 0 && catalogNodeByDb.ContainsKey(node.NextNodeId))
+        if (node != null && node.NextNodeIds != null)
         {
-            result.Add(catalogNodeByDb[node.NextNodeId]);
+            for (int i = 0; i < node.NextNodeIds.Count; i++)
+            {
+                int nextNodeId = node.NextNodeIds[i];
+                if (nextNodeId > 0 && catalogNodeByDb.ContainsKey(nextNodeId) && !result.Contains(catalogNodeByDb[nextNodeId]))
+                {
+                    result.Add(catalogNodeByDb[nextNodeId]);
+                }
+            }
         }
 
         if (catalogNode != null && catalogNode.NextNodeIds != null)
@@ -572,90 +582,6 @@ ORDER BY route_path_id, stage_index, node_id;",
             "SELECT COALESCE(MAX(" + keyColumn + "), 0) + 1 FROM " + tableName + ";",
             transaction);
         return OfflineDatabaseSql.ReadInt(result, 1);
-    }
-
-    private static string EmptyAsNull(string value)
-    {
-        return string.IsNullOrEmpty(value) ? null : value;
-    }
-
-    private static void InsertRouteNodes(IDbConnection connection, IDbTransaction transaction, OfflineRouteMapSeedRecord seed)
-    {
-        for (int pathIndex = 0; pathIndex < seed.Paths.Count; pathIndex++)
-        {
-            OfflineRoutePathSeedRecord path = seed.Paths[pathIndex];
-            for (int nodeIndex = 0; nodeIndex < path.Nodes.Count; nodeIndex++)
-            {
-                OfflineRouteNodeSeedRecord node = path.Nodes[nodeIndex];
-                OfflineDatabaseSql.ExecuteNonQuery(
-                    connection,
-                    @"
-INSERT INTO route_nodes (
-    node_id,
-    route_map_id,
-    route_path_id,
-    node_type_id,
-    node_state_id,
-    stage_index,
-    display_name,
-    possible_reward_hint,
-    expected_risk_hint,
-    encounter_id,
-    next_node_id,
-    is_active
-) VALUES (
-    @nodeId,
-    @routeMapId,
-    @routePathId,
-    @nodeTypeId,
-    @nodeStateId,
-    @stageIndex,
-    @displayName,
-    @possibleRewardHint,
-    @expectedRiskHint,
-    @encounterId,
-    NULL,
-    1
-);",
-                    transaction,
-                    new OfflineDatabaseSqlParameter("@nodeId", node.NodeId),
-                    new OfflineDatabaseSqlParameter("@routeMapId", node.RouteMapId),
-                    new OfflineDatabaseSqlParameter("@routePathId", node.RoutePathId),
-                    new OfflineDatabaseSqlParameter("@nodeTypeId", node.NodeTypeId),
-                    new OfflineDatabaseSqlParameter("@nodeStateId", node.NodeStateId),
-                    new OfflineDatabaseSqlParameter("@stageIndex", node.StageIndex),
-                    new OfflineDatabaseSqlParameter("@displayName", node.DisplayName),
-                    new OfflineDatabaseSqlParameter("@possibleRewardHint", node.PossibleRewardHint),
-                    new OfflineDatabaseSqlParameter("@expectedRiskHint", node.ExpectedRiskHint),
-                    new OfflineDatabaseSqlParameter("@encounterId", EmptyAsNull(node.EncounterId)));
-            }
-        }
-    }
-
-    private static void UpdateRouteNodeLinks(IDbConnection connection, IDbTransaction transaction, OfflineRouteMapSeedRecord seed)
-    {
-        for (int pathIndex = 0; pathIndex < seed.Paths.Count; pathIndex++)
-        {
-            OfflineRoutePathSeedRecord path = seed.Paths[pathIndex];
-            for (int nodeIndex = 0; nodeIndex < path.Nodes.Count; nodeIndex++)
-            {
-                OfflineRouteNodeSeedRecord node = path.Nodes[nodeIndex];
-                if (node.NextNodeId <= 0)
-                {
-                    continue;
-                }
-
-                OfflineDatabaseSql.ExecuteNonQuery(
-                    connection,
-                    @"
-UPDATE route_nodes
-SET next_node_id = @nextNodeId
-WHERE node_id = @nodeId;",
-                    transaction,
-                    new OfflineDatabaseSqlParameter("@nextNodeId", node.NextNodeId),
-                    new OfflineDatabaseSqlParameter("@nodeId", node.NodeId));
-            }
-        }
     }
 
     private static RunMapAuthoritySource ToAuthoritySource(int authoritySourceId)
