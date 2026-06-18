@@ -24,6 +24,26 @@ TArenaUnity3D uses TextMesh Pro only. Use TMP components such as `TMP_Text` and
 `TextMeshProUGUI` for all text content. Do not introduce or keep legacy
 `UnityEngine.UI.Text`.
 
+## UI Architecture Contract
+
+Follow `_codex/Context/11_UI_Context.md` for all mockups and prototypes.
+
+- Screen controllers/screen views own flow, data-source calls, and top-level
+  controls.
+- Complex panels, rows, cards, slots, buttons, and repeated items must be view
+  classes with their own internal serialized fields.
+- Repeated UI defaults to `Transform parent + prefab`; configure layout on the
+  parent with Unity layout components, anchors, spacing, padding, and
+  `LayoutElement` sizes.
+- Do not model repeated UI as screen-level serialized arrays unless a fixed
+  authored positional layout explicitly requires it.
+- Do not hand-copy repeated prefab children into the parent screen.
+- If an item prefab changes visuals by type/state/category, add or use a
+  presentation catalog and wire it to the owning view. Do not hardcode those
+  visual choices in the screen controller.
+- Start Run may remain a working legacy exception. Do not use its current broad
+  controller wiring style as the target pattern for new mockups.
+
 Read `_codex/Context/CONTEXT-MAP.md`, then `_codex/Context/11_UI_Context.md`.
 For exact project asset folders, workflow rules, and known pitfalls, read
 `references/mock-ui-rules.md`.
@@ -51,8 +71,8 @@ If editing or checking prefab YAML outside Unity, also use
    `TArenaUnity3D/Assets/Resources/UI/PRD_19/<TaskNumber_FeatureName>/`.
 9. Store reusable generated section/repeated-item prefabs under
    `TArenaUnity3D/Assets/Resources/UI/PRD_19/<TaskNumber_FeatureName>/Prefabs/`.
-10. Build obvious repeated UI as prefabs, nested prefabs, prefab variants, or
-   clearly named prefab templates.
+10. Build repeated UI as prefabs, nested prefabs, prefab variants, or clearly
+   named prefab templates.
 11. In the final screen prefab, instantiate existing row/card/button/section
    prefabs as nested prefab instances. Do not manually recreate or expand their
    child hierarchy inside the parent prefab.
@@ -61,13 +81,17 @@ If editing or checking prefab YAML outside Unity, also use
 13. Keep static decoration, dynamic lists, and interactive controls in separate
    named sections.
 14. Prefix GameObjects that own scripts with `Script_`.
-15. Wire controller/view references through serialized fields in the prefab.
-16. Wire buttons, toggles, and other controls to real scripts or documented
-   placeholder hooks.
-17. Wire existing backend/service/data-source dependencies when the task
-   requires them. Do not invent backend work when none exists.
-18. Validate YAML and reference graph after prefab edits.
-19. End with the required short setup and test report.
+15. Wire screen-level references to top-level view classes, list parents,
+    repeated-item prefabs, and global controls. Wire child fields inside the
+    owning view prefab, not on the screen controller.
+16. Wire presentation catalogs for prefab visuals that depend on type, state,
+    role, rarity, unit id, skill id, route node type, or similar keys.
+17. Wire buttons, toggles, and other controls to real scripts or documented
+    placeholder hooks.
+18. Wire existing backend/service/data-source dependencies when the task
+    requires them. Do not invent backend work when none exists.
+19. Validate YAML and reference graph after prefab edits.
+20. End with the required short setup and test report.
 
 If the PRD number cannot be identified, do not invent a final PRD folder. Ask
 the user or report the missing PRD number before creating final prefabs.
@@ -93,6 +117,12 @@ the user or report the missing PRD number before creating final prefabs.
   `Mock_RunRewardScreen` or `Mock_BattleHud`.
 - Script owner: one obvious `Script_*` GameObject for each controller/view
   script. Avoid hiding scripts on decorative objects.
+- Screen controller fields: top-level view classes, list parents, item prefabs,
+  global buttons/status/progress, and data-source placeholders only.
+- Panel/item view fields: the panel's own `Image`, `Button`, `Slider`,
+  `TMP_Text`, child views, state overlays, and local content roots.
+- Presentation catalog fields: optional catalogs used by a view to map data
+  keys to icons, frame sprites, state colors, badges, or short labels.
 - Sections: use `Section_*` for large functional regions.
 - Lists: use `List_*` or `*_List` on parents that own repeated children and
   layout groups.
@@ -110,8 +140,10 @@ the user or report the missing PRD number before creating final prefabs.
 - Do not add `Find`, `transform.Find`, or automatic child discovery just to make
   a mockup work.
 - Prefer explicit serialized fields and Inspector/prefab wiring.
-- Add or use serialized arrays/lists for repeated UI slots when the data source
-  is not implemented yet, then fill them with mock references.
+- For repeated UI, expose a list parent and item prefab on the owning view. Use
+  serialized mock/sample data when the live data source is not implemented yet.
+- Do not expose repeated child views as screen-level arrays unless a fixed
+  authored positional layout is the real design.
 - Required script references should not remain `{fileID: 0}` in prefab YAML.
 - Keep public and serialized field names stable unless the user explicitly
   approves a rename.

@@ -2,7 +2,7 @@
 
 Status: active
 Project: TArenaUnity3D
-Last updated: 2026-06-15
+Last updated: 2026-06-18
 
 ## Purpose
 
@@ -13,6 +13,11 @@ project-consistent UI.
 This is visual guidance only. Do not break script wiring, button callbacks,
 nested prefab instances, backend/data bindings, or serialized field contracts
 to make UI prettier.
+
+Visual polish must preserve the UI Architecture Contract from
+`_codex/Context/11_UI_Context.md`: screen-level objects keep only top-level
+controls and view-class references, complex panels/items are view classes, and
+repeated UI uses `parent + prefab` under a configured layout parent.
 
 ## Identity Direction
 
@@ -96,6 +101,11 @@ For battle HUD:
 - inspection/info panel: `320-420` wide,
 - skill button row gap: `8-12`.
 
+For PRD019 Run Map UI, use `_codex/Context/RunMap_UI_Context.md` before doing
+visual polish. Run Map has stricter requirements for connected paths, current
+party marker, node states, symbolic node icons, and map-background context than
+generic UI panels.
+
 ## Element Sizes
 
 Unit and skill icons:
@@ -155,6 +165,10 @@ Use `TextMeshProUGUI`. Do not use legacy `Text`.
 - Use Old Paper GUI for larger panels, shop/reward surfaces, and readable
   content backgrounds.
 - Keep repeated rows/cards visually identical except state overlays and content.
+- Repeated rows/cards/buttons are prefab-owned view classes, not loose copied
+  children in the screen root.
+- Place selected, disabled, locked, cooldown, owned, and purchased states inside
+  the repeated prefab/view class that owns that item.
 - Keep all section headers aligned to the same inset within a screen.
 - Keep button rows aligned and evenly spaced.
 - Use nested prefab instances for repeated rows/cards/buttons.

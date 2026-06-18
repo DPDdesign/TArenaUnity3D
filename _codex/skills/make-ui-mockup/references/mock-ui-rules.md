@@ -5,6 +5,11 @@ prefabs, or reusable UI template prefabs.
 
 These rules are grounded in TArena project context and Unity UGUI practice:
 
+- follow the UI Architecture Contract from `_codex/Context/11_UI_Context.md`,
+- use view classes for complex panels/items and `parent + prefab` for repeated
+  UI,
+- use presentation catalogs when prefab visuals depend on data type, state,
+  role, rarity, unit id, skill id, route node type, or similar keys,
 - split large UI by update frequency when canvases become large,
 - avoid unnecessary `GraphicRaycaster` and `Raycast Target` work,
 - use layout groups where they describe real child layout,
@@ -78,6 +83,9 @@ Then build around that main action.
   state, selected state, disabled state, cost, reward rarity, or route danger.
 - Put state overlays inside the repeated item prefab, not scattered in the main
   screen root.
+- For data-driven visuals such as node-type icons, reward rarity badges, button
+  roles, unit/skill icons, or state frames, use a serialized presentation
+  catalog on the owning view instead of hardcoded controller switches.
 
 ## How To Make Mock UI
 
@@ -89,6 +97,12 @@ Build the UI like a future production prefab, not like a flat drawing.
 - Start from a clear root and named sections.
 - Prefix script-owner objects with `Script_`, for example
   `Script_StartRunScreenController`.
+- Screen-level scripts should reference top-level view classes, list parents,
+  repeated-item prefabs, and global controls only.
+- Complex panels/items should have their own view scripts and own their
+  internal child fields.
+- If an item prefab changes icon/frame/color/label by data type or state, add a
+  catalog field to that view script and wire the catalog in the prefab.
 - Keep visual sections as normal named objects, for example
   `Section_StartingArmies`, `ArmyPreview_StackRowsList`,
   `RoutePreview_RoutesList`.
@@ -111,6 +125,11 @@ Build the UI like a future production prefab, not like a flat drawing.
 - Add prefab assets for every repeated element: `ArmyCard`, `ArmyCard_UnitFrame`,
   `ArmyPreview_StackRow`, `RouteOption`, `RouteNode`, `RouteEdge`, reward cards,
   skill buttons, or similar.
+- Add catalog assets for repeated prefabs whose visuals are type-driven, such
+  as `RunMapNodeTypeIconCatalog`.
+- Repeated UI is normally instantiated from item prefabs under a configured
+  parent. Do not use screen-level serialized arrays of repeated child views as
+  the default mockup shape.
 - Use nested prefabs when the parent screen should keep links to repeated child
   prefab assets. This is required for repeated rows, cards, buttons, route
   nodes, route edges, and separate reusable sections.
@@ -230,12 +249,16 @@ Mock_RunShopScreen
   C# scripts it created or changed. The mock UI must be wired to those scripts
   when they are UI-facing.
 - Script-owner GameObjects must be obvious in hierarchy by name.
-- Wire all script references in prefab/Inspector fields.
+- Wire all script references in prefab/Inspector fields. Screen-level fields
+  should stay at the top-level view/control boundary; child fields belong to
+  the child view prefab.
+- Wire presentation catalogs on the view that consumes them. Screen controllers
+  should pass DTOs/ids, not choose child prefab icons directly.
 - Do not use name-based lookup as a substitute for proper wiring.
 - Do not add `Find`, `transform.Find`, `GameObject.Find`, runtime
   `AddComponent`, or child discovery caches for mock UI.
-- If a mock needs dynamic data later, expose serialized arrays/lists for now and
-  fill them with mock references.
+- If a mock needs dynamic list data later, expose serialized mock/sample data,
+  a list parent, and an item prefab on the owning view.
 - Keep public/serialized field names stable unless the user explicitly approves
   a rename.
 - For a screen-level view/controller, serialized fields should point to section

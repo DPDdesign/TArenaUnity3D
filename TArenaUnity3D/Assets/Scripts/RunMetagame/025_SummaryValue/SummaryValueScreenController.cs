@@ -6,9 +6,7 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class SummaryValueScreenController : MonoBehaviour
 {
-    [Header("Sample Summary")]
-    [SerializeField] private string runId = "offline-run-final-win";
-    [SerializeField] private int unlockedSlotCount = 2;
+    [Header("Selection")]
     [SerializeField] private string selectedSlotId = "slot-02";
 
     [Header("Header")]
@@ -37,11 +35,9 @@ public class SummaryValueScreenController : MonoBehaviour
 
     private ISummaryValueRosterStore rosterStore;
     private OfflineSummaryValueAdapter adapter;
+    private OfflineRunContextDbReader runContextReader;
+    private OfflineRunContext runContext;
     private SummaryValueScreenViewData currentScreen;
-    private SummaryValueArmySnapshot startArmy;
-    private SummaryValueArmySnapshot preFinalArmy;
-    private SummaryValueArmySnapshot postFinalArmy;
-    private List<SummaryValueTimelineEntry> timelineEntries;
     private bool initialized;
     private bool pendingOverwriteConfirmation;
     private string pendingOverwriteSlotId;
@@ -147,11 +143,7 @@ public class SummaryValueScreenController : MonoBehaviour
         initialized = true;
         rosterStore = OfflineModeDatabaseComposition.CreateSummaryValueStore();
         adapter = OfflineModeDatabaseComposition.CreateSummaryValueAdapter(rosterStore);
-        startArmy = BuildStartArmy();
-        preFinalArmy = BuildPreFinalArmy();
-        postFinalArmy = BuildPostFinalArmy();
-        timelineEntries = BuildTimelineEntries();
-        SeedExistingSaveSlots();
+        runContextReader = OfflineModeDatabaseComposition.CreateRunContextReader();
         WireNestedOwners();
     }
 
@@ -165,14 +157,22 @@ public class SummaryValueScreenController : MonoBehaviour
 
     private void RefreshSummary(string statusOverride)
     {
+        runContext = runContextReader == null ? null : runContextReader.LoadLatestRunWithSummary();
+        if (runContext == null)
+        {
+            currentScreen = null;
+            RenderUnavailable("Summary Value requires a persisted run summary.");
+            return;
+        }
+
         currentScreen = adapter.BuildSummary(new SummaryValueBuildRequest(
-            runId,
-            SummaryValueFinalResult.Won,
-            startArmy,
-            preFinalArmy,
-            postFinalArmy,
-            timelineEntries,
-            unlockedSlotCount,
+            runContext.RunIdText,
+            SummaryValueFinalResult.Pending,
+            null,
+            null,
+            null,
+            new List<SummaryValueTimelineEntry>(),
+            runContext.UnlockedSavedArmySlots,
             selectedSlotId));
 
         Render(statusOverride);
@@ -191,7 +191,7 @@ public class SummaryValueScreenController : MonoBehaviour
         SetText(finalValueText, "Pre-Final Candidate: " + SafeArmyValue(currentScreen.PreFinalArmySnapshot));
 
         int accountXp = currentScreen.AccountProgressReward == null ? 0 : currentScreen.AccountProgressReward.AccountXp;
-        int totalXp = 3420 + accountXp;
+        int totalXp = (runContext == null ? 0 : runContext.AccountXp) + accountXp;
         SetText(accountProgressText, "+" + accountXp.ToString("N0") + " XP  |  " + totalXp.ToString("N0") + " / 5,500");
         SetText(nextUnlockText, currentScreen.AccountProgressReward == null ? string.Empty : currentScreen.AccountProgressReward.NextUnlockPreview);
         if (accountProgressSlider != null)
@@ -334,108 +334,6 @@ public class SummaryValueScreenController : MonoBehaviour
         }
     }
 
-    private void SeedExistingSaveSlots()
-    {
-        List<SummaryValueSaveSlotViewData> slots = rosterStore.ListSlots(unlockedSlotCount, "slot-01");
-        SummaryValueSaveSlotViewData slot = slots != null && slots.Count > 0 ? slots[0] : null;
-        if (slot != null && slot.State == SummaryValueSlotState.Taken)
-        {
-            return;
-        }
-
-        rosterStore.SaveCandidate(
-            "slot-01",
-            new SummaryValueSavedArmyCandidate(
-                "saved-army-slot-01",
-                "past-run-17",
-                "past-pre-final-17",
-                BuildExistingSavedArmy(),
-                1180));
-    }
-
-    private static SummaryValueArmySnapshot BuildStartArmy()
-    {
-        return new SummaryValueArmySnapshot(
-            "start-army",
-            420,
-            new List<SummaryValueStackSnapshot>
-            {
-                Stack("start-rusher", "Rusher", "Rusher", "I", 1, 38, 260, "Chope"),
-                Stack("start-thrower", "Thrower", "Thrower", "I", 1, 16, 160, "Axe_Throw")
-            });
-    }
-
-    private static SummaryValueArmySnapshot BuildPreFinalArmy()
-    {
-        return new SummaryValueArmySnapshot(
-            "pre-final-army",
-            1245,
-            new List<SummaryValueStackSnapshot>
-            {
-                Stack("stack-rusher", "Rusher", "Rusher", "I", 1, 70, 420, "Chope", "Rush"),
-                Stack("stack-thrower", "Thrower", "Thrower", "II", 2, 45, 270, "Axe_Throw", "Double_Throw"),
-                Stack("stack-axeman", "Axeman", "Axeman", "II", 2, 35, 210, "Cleave", "Guard_Break"),
-                Stack("stack-tank", "Tank", "Tank", "III", 3, 22, 132, "Defence_Ritual", "Stone_Wall"),
-                Stack("stack-wisp", "Wisp", "Wisp", "III", 3, 28, 168, "Blind_by_light", "Unstoppable_Light"),
-                Stack("stack-fire", "Fire_Elemental", "Fire Elemental", "IV", 4, 12, 45, "Fireball", "Burning_Ground")
-            });
-    }
-
-    private static SummaryValueArmySnapshot BuildPostFinalArmy()
-    {
-        return new SummaryValueArmySnapshot(
-            "post-final-battle-result",
-            1088,
-            new List<SummaryValueStackSnapshot>
-            {
-                Stack("post-rusher", "Rusher", "Rusher", "I", 1, 61, 366, "Chope", "Rush"),
-                Stack("post-thrower", "Thrower", "Thrower", "II", 2, 42, 252, "Axe_Throw", "Double_Throw"),
-                Stack("post-axeman", "Axeman", "Axeman", "II", 2, 31, 186, "Cleave", "Guard_Break"),
-                Stack("post-tank", "Tank", "Tank", "III", 3, 20, 120, "Defence_Ritual", "Stone_Wall"),
-                Stack("post-wisp", "Wisp", "Wisp", "III", 3, 24, 144, "Blind_by_light", "Unstoppable_Light"),
-                Stack("post-fire", "Fire_Elemental", "Fire Elemental", "IV", 4, 5, 20, "Fireball", "Burning_Ground")
-            });
-    }
-
-    private static SummaryValueArmySnapshot BuildExistingSavedArmy()
-    {
-        return new SummaryValueArmySnapshot(
-            "existing-slot-01-army",
-            1180,
-            new List<SummaryValueStackSnapshot>
-            {
-                Stack("existing-rusher", "Rusher", "Rusher", "I", 1, 64, 384, "Chope", "Rush"),
-                Stack("existing-thrower", "Thrower", "Thrower", "II", 2, 42, 252, "Axe_Throw", "Double_Throw"),
-                Stack("existing-tank", "Tank", "Tank", "III", 3, 26, 156, "Defence_Ritual", "Stone_Wall"),
-                Stack("existing-wisp", "Wisp", "Wisp", "III", 3, 31, 186, "Blind_by_light", "Unstoppable_Light"),
-                Stack("existing-fire", "Fire_Elemental", "Fire Elemental", "IV", 4, 18, 202, "Fireball", "Burning_Ground")
-            });
-    }
-
-    private static List<SummaryValueTimelineEntry> BuildTimelineEntries()
-    {
-        return new List<SummaryValueTimelineEntry>
-        {
-            new SummaryValueTimelineEntry("stage-start", 0, "Start Army", "Initial saved route army", 420, 0),
-            new SummaryValueTimelineEntry("stage-battle-1", 1, "Battle 1", "Victory reward: Mass", 780, 75),
-            new SummaryValueTimelineEntry("stage-shop", 2, "Shop", "Healed 120 / spent 150", 850, 0),
-            new SummaryValueTimelineEntry("stage-battle-2", 3, "Battle 2", "Victory reward: Skill", 1010, 35),
-            new SummaryValueTimelineEntry("stage-battle-3", 4, "Battle 3", "Victory reward: Quality", 1130, 55),
-            new SummaryValueTimelineEntry("stage-final", 5, "Final Encounter", "Victory proof", 1245, 0)
-        };
-    }
-
-    private static SummaryValueStackSnapshot Stack(string stackId, string unitId, string displayName, string tier, int level, int amount, int combatValue, params string[] skillIds)
-    {
-        List<SummaryValueSkillState> skills = new List<SummaryValueSkillState>();
-        for (int i = 0; i < skillIds.Length; i++)
-        {
-            skills.Add(new SummaryValueSkillState(skillIds[i], i == 0));
-        }
-
-        return new SummaryValueStackSnapshot(stackId, unitId, displayName, tier, level, amount, combatValue, skills);
-    }
-
     private static string SafeArmyValue(SummaryValueArmySnapshot army)
     {
         return army == null ? "0" : army.TotalArmyValue.ToString("N0");
@@ -456,6 +354,29 @@ public class SummaryValueScreenController : MonoBehaviour
         if (text != null)
         {
             text.text = value ?? string.Empty;
+        }
+    }
+
+    private void RenderUnavailable(string message)
+    {
+        SetText(resultHeaderText, "RUN SUMMARY");
+        SetText(resultSubheaderText, "No persisted run summary");
+        SetText(startValueText, "Start Army: 0");
+        SetText(finalValueText, "Pre-Final Candidate: 0");
+        SetText(accountProgressText, "+0 XP  |  0 / 5,500");
+        SetText(nextUnlockText, string.Empty);
+        SetText(candidateTitleText, "Save This Army");
+        SetText(candidateMetaText, "No candidate");
+        SetText(armyValueText, "Army Value 0");
+        SetText(statusText, message);
+        if (primaryCommandButton != null)
+        {
+            primaryCommandButton.Bind("Unavailable", false);
+        }
+
+        if (returnCommandButton != null)
+        {
+            returnCommandButton.Bind("Return", true);
         }
     }
 }

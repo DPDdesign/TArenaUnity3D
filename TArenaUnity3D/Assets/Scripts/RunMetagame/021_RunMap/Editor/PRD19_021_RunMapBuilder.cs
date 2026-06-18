@@ -6,16 +6,18 @@ using UnityEngine;
 using UnityEngine.UI;
 
 [InitializeOnLoad]
-public static class PRD19_021_RunMapMockupBuilder
+public static class PRD19_021_RunMapBuilder
 {
-    private const string BuildSessionKey = "TArena.PRD19.021.RunMapMockupBuilt.v4";
+    private const string BuildSessionKey = "TArena.PRD19.021.RunMapBuilt.v8";
     private const string BaseFolder = "Assets/Resources/UI/PRD_19/021_RunMap";
     private const string PrefabFolder = BaseFolder + "/Prefabs";
     private const string ScreenPath = BaseFolder + "/PRD_19_021_RunMap.prefab";
     private const string RouteNodePath = PrefabFolder + "/PRD_19_021_RunMap_RouteNode.prefab";
+    private const string PolishedRouteNodePath = PrefabFolder + "/PRD_19_021_RunMap_RouteNode_Polished.prefab";
     private const string RouteEdgePath = PrefabFolder + "/PRD_19_021_RunMap_RouteEdge.prefab";
     private const string ArmyRowPath = PrefabFolder + "/PRD_19_021_RunMap_ArmyRow.prefab";
     private const string CommandButtonPath = PrefabFolder + "/PRD_19_021_RunMap_CommandButton.prefab";
+    private const string NodeTypeIconCatalogPath = "Assets/Resources/0_Data/RunMapNodeTypeIconCatalog.asset";
 
     private static readonly Color Ink = new Color(0.16f, 0.10f, 0.05f, 1f);
     private static readonly Color Gold = new Color(0.95f, 0.72f, 0.32f, 1f);
@@ -23,15 +25,34 @@ public static class PRD19_021_RunMapMockupBuilder
     private static readonly Color Parchment = new Color(0.64f, 0.48f, 0.25f, 1f);
     private static readonly Color PanelDark = new Color(0.08f, 0.07f, 0.06f, 0.98f);
 
-    static PRD19_021_RunMapMockupBuilder()
+    static PRD19_021_RunMapBuilder()
     {
         EditorApplication.delayCall += BuildOnceAfterCompile;
     }
 
-    [MenuItem("TArena/Mockups/Rebuild PRD 19 021 Run Map Prefab")]
+    [MenuItem("TArena/Run Metagame/Rebuild PRD 19 021 Run Map Prefab")]
     public static void RebuildFromMenu()
     {
         BuildRunMap();
+    }
+
+    [MenuItem("TArena/Run Metagame/Rebuild PRD 19 021 Polished Route Node Prefab")]
+    public static void RebuildPolishedRouteNodeFromMenu()
+    {
+        EnsureFolder(PrefabFolder);
+        EnsureNodeTypeIconCatalogAsset();
+        SavePrefab(BuildPolishedRouteNodeTemplate(), PolishedRouteNodePath);
+        AssetDatabase.ImportAsset(PolishedRouteNodePath);
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+    }
+
+    [MenuItem("TArena/Run Metagame/Rebuild Run Map Node Type Icon Catalog")]
+    public static void RebuildNodeTypeIconCatalogFromMenu()
+    {
+        EnsureNodeTypeIconCatalogAsset();
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
     }
 
     private static void BuildOnceAfterCompile()
@@ -48,13 +69,16 @@ public static class PRD19_021_RunMapMockupBuilder
     private static void BuildRunMap()
     {
         EnsureFolder(PrefabFolder);
+        EnsureNodeTypeIconCatalogAsset();
 
         SavePrefab(BuildRouteNodeTemplate(), RouteNodePath);
+        SavePrefab(BuildPolishedRouteNodeTemplate(), PolishedRouteNodePath);
         SavePrefab(BuildRouteEdgeTemplate(), RouteEdgePath);
         SavePrefab(BuildArmyRowTemplate(), ArmyRowPath);
         SavePrefab(BuildCommandButtonTemplate(), CommandButtonPath);
 
         AssetDatabase.ImportAsset(RouteNodePath);
+        AssetDatabase.ImportAsset(PolishedRouteNodePath);
         AssetDatabase.ImportAsset(RouteEdgePath);
         AssetDatabase.ImportAsset(ArmyRowPath);
         AssetDatabase.ImportAsset(CommandButtonPath);
@@ -65,16 +89,16 @@ public static class PRD19_021_RunMapMockupBuilder
         rootRect.anchorMax = new Vector2(0.5f, 0.5f);
         rootRect.pivot = new Vector2(0.5f, 0.5f);
 
-        GameObject scriptOwner = CreateRect("Script_PRD_19_021_RunMapMockupController", root.transform, Vector2.zero);
-        PRD19_021_RunMapMockupController controller = scriptOwner.AddComponent<PRD19_021_RunMapMockupController>();
+        GameObject scriptOwner = CreateRect("Script_RunMapController", root.transform, Vector2.zero);
+        RunMapController controller = scriptOwner.AddComponent<RunMapController>();
 
         AddHeader(root.transform);
-        Button viewArmyButton = BuildArmyPanel(root.transform, controller);
+        ArmyPanelReferences armyPanel = BuildArmyPanel(root.transform, controller);
         RouteNodeReferences routeRefs = BuildRouteMapPanel(root.transform, controller);
         DetailReferences details = BuildDetailsPanel(root.transform);
         BottomReferences bottom = BuildBottomBar(root.transform, controller);
 
-        WireController(controller, routeRefs, details, bottom, viewArmyButton);
+        WireController(controller, routeRefs, details, bottom, armyPanel);
 
         SavePrefab(root, ScreenPath);
         AssetDatabase.SaveAssets();
@@ -89,13 +113,13 @@ public static class PRD19_021_RunMapMockupBuilder
         AddText("Text_Subtitle", titleBar.transform, "Route choice: Balanced Frontier", 16, TextAlignmentOptions.Center, new Vector2(360f, 24f), new Vector2(0f, -42f), WarmText);
     }
 
-    private static Button BuildArmyPanel(Transform root, PRD19_021_RunMapMockupController controller)
+    private static ArmyPanelReferences BuildArmyPanel(Transform root, RunMapController controller)
     {
         GameObject panel = CreatePanel("Section_Left_YourArmy", root, new Vector2(300f, 760f), PanelDark, LoadSprite("Assets/Classic_RPG_GUI/Parts/info_window.png"), false);
         Place(panel, new Vector2(-634f, 46f));
 
         AddText("Text_YourArmyTitle", panel.transform, "YOUR ARMY", 27, TextAlignmentOptions.Center, new Vector2(260f, 38f), new Vector2(0f, 342f), Gold);
-        AddText("Text_ArmySummary", panel.transform, "Army Value\n2,850", 22, TextAlignmentOptions.Center, new Vector2(230f, 66f), new Vector2(0f, 280f), WarmText);
+        TextMeshProUGUI armySummary = AddText("Text_ArmySummary", panel.transform, "Army Value\n0", 22, TextAlignmentOptions.Center, new Vector2(230f, 66f), new Vector2(0f, 280f), WarmText);
 
         GameObject list = CreateRect("List_ArmyRows", panel.transform, new Vector2(260f, 460f));
         Place(list, new Vector2(0f, 12f));
@@ -108,12 +132,6 @@ public static class PRD19_021_RunMapMockupBuilder
         layout.childForceExpandHeight = false;
         layout.childForceExpandWidth = false;
 
-        AddArmyRow(list.transform, "ArmyRow_01_Rusher", "Rusher", "70 units", "Value 910", "Assets/Resources/UI/Unit_Icons/Brb_Rusher_sprite.png");
-        AddArmyRow(list.transform, "ArmyRow_02_Thrower", "Thrower", "50 units", "Value 700", "Assets/Resources/UI/Unit_Icons/Brb_Thrower_sprite.png");
-        AddArmyRow(list.transform, "ArmyRow_03_Axeman", "Axeman", "30 units", "Value 540", "Assets/Resources/UI/Unit_Icons/Brb_Axeman_sprite.png");
-        AddArmyRow(list.transform, "ArmyRow_04_Trapper", "Trapper", "25 units", "Value 410", "Assets/Resources/UI/Unit_Icons/Liz_Trapper_sprite.png");
-        AddArmyRow(list.transform, "ArmyRow_05_Wisp", "Wisp", "15 units", "Value 290", "Assets/Resources/UI/Unit_Icons/Gol_W_sprite.png");
-
         GameObject armyButton = InstantiateNested(CommandButtonPath, "Button_ViewArmy", panel.transform);
         Place(armyButton, new Vector2(0f, -336f));
         SetLabel(armyButton, "VIEW ARMY");
@@ -123,10 +141,11 @@ public static class PRD19_021_RunMapMockupBuilder
             UnityEventTools.AddPersistentListener(button.onClick, controller.OnViewArmyClicked);
         }
 
-        return button;
+        GameObject rowPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ArmyRowPath);
+        return new ArmyPanelReferences(armySummary, list.transform, rowPrefab, button);
     }
 
-    private static RouteNodeReferences BuildRouteMapPanel(Transform root, PRD19_021_RunMapMockupController controller)
+    private static RouteNodeReferences BuildRouteMapPanel(Transform root, RunMapController controller)
     {
         GameObject panel = CreatePanel("Section_Center_ParchmentRouteMap", root, new Vector2(880f, 760f), Parchment, LoadSprite("Assets/Old_Paper_Gui/paper/old_paper_vintage0.png"), false);
         Place(panel, new Vector2(-34f, 46f));
@@ -175,21 +194,7 @@ public static class PRD19_021_RunMapMockupBuilder
             Place(node, slots[i].Position);
             SetLabel(node, slots[i].Label);
 
-            Button button = node.GetComponent<Button>();
-            if (button != null)
-            {
-                UnityEventTools.AddStringPersistentListener(button.onClick, controller.OnRouteNodeClicked, slots[i].NodeId);
-            }
-
-            references.Items[i] = new RouteNodeReference(
-                slots[i].NodeId,
-                button,
-                node.GetComponent<Image>(),
-                ChildImage(node, "State_Selected"),
-                ChildImage(node, "State_Locked"),
-                ChildText(node, "Text_Title"),
-                ChildText(node, "Text_Type"),
-                ChildText(node, "Text_State"));
+            references.Items[i] = node.GetComponent<RunMapNodeRepresentation>();
         }
 
         return references;
@@ -225,7 +230,7 @@ public static class PRD19_021_RunMapMockupBuilder
         return new DetailReferences(sectionTitle, title, type, encounter, rewards, risk, current, status);
     }
 
-    private static BottomReferences BuildBottomBar(Transform root, PRD19_021_RunMapMockupController controller)
+    private static BottomReferences BuildBottomBar(Transform root, RunMapController controller)
     {
         GameObject panel = CreatePanel("Section_Bottom_RunMapCommands", root, new Vector2(1568f, 96f), new Color(0.07f, 0.055f, 0.04f, 1f), LoadSprite("Assets/Classic_RPG_GUI/Parts/big_bar_bg.png"), false);
         Place(panel, new Vector2(0f, -386f));
@@ -268,8 +273,104 @@ public static class PRD19_021_RunMapMockupBuilder
         Place(locked, Vector2.zero);
 
         AddText("Text_Title", root.transform, "Route Node", 15, TextAlignmentOptions.Center, new Vector2(96f, 42f), new Vector2(0f, 18f), Color.white);
-        AddText("Text_Type", root.transform, "Battle", 12, TextAlignmentOptions.Center, new Vector2(90f, 22f), new Vector2(0f, -16f), WarmText);
-        AddText("Text_State", root.transform, "Available", 10, TextAlignmentOptions.Center, new Vector2(88f, 18f), new Vector2(0f, -39f), Gold);
+        TextMeshProUGUI type = AddText("Text_Type", root.transform, "Battle", 12, TextAlignmentOptions.Center, new Vector2(90f, 22f), new Vector2(0f, -16f), WarmText);
+        TextMeshProUGUI state = AddText("Text_State", root.transform, "Available", 10, TextAlignmentOptions.Center, new Vector2(88f, 18f), new Vector2(0f, -39f), Gold);
+        TextMeshProUGUI nodeId = AddText("Text_NodeId", root.transform, "node-id", 8, TextAlignmentOptions.Center, new Vector2(92f, 14f), new Vector2(0f, -52f), new Color(0.95f, 0.72f, 0.32f, 0.72f));
+
+        RunMapNodeRepresentation representation = root.AddComponent<RunMapNodeRepresentation>();
+        representation.NodeTypeIconCatalog = LoadNodeTypeIconCatalog();
+        representation.Button = button;
+        representation.Background = root.GetComponent<Image>();
+        representation.SelectionFrame = selected.GetComponent<Image>();
+        representation.LockedOverlay = locked.GetComponent<Image>();
+        representation.TitleText = ChildText(root, "Text_Title");
+        representation.TypeText = type;
+        representation.StateText = state;
+        representation.NodeIdText = nodeId;
+        return root;
+    }
+
+    private static GameObject BuildPolishedRouteNodeTemplate()
+    {
+        GameObject root = CreatePanel(
+            "Script_PRD_19_021_RunMap_RouteNode_Polished",
+            null,
+            new Vector2(148f, 148f),
+            new Color(0.22f, 0.13f, 0.07f, 1f),
+            LoadSprite("Assets/Old_Paper_Gui/button/circle/button_circle0.png"),
+            true);
+        Button button = root.AddComponent<Button>();
+        button.targetGraphic = root.GetComponent<Image>();
+
+        LayoutElement layoutElement = root.AddComponent<LayoutElement>();
+        layoutElement.preferredWidth = 148f;
+        layoutElement.preferredHeight = 148f;
+
+        GameObject outerFrame = CreatePanel(
+            "Frame_GoldOuter",
+            root.transform,
+            new Vector2(158f, 158f),
+            new Color(0.98f, 0.72f, 0.24f, 0.82f),
+            LoadSprite("Assets/Old_Paper_Gui/button/circle/button_circle2.png"),
+            false);
+        Place(outerFrame, Vector2.zero);
+
+        GameObject innerSurface = CreatePanel(
+            "Surface_NodeFill",
+            root.transform,
+            new Vector2(126f, 126f),
+            new Color(0.46f, 0.20f, 0.10f, 1f),
+            LoadSprite("Assets/Old_Paper_Gui/button/circle/button_circle0.png"),
+            false);
+        Place(innerSurface, Vector2.zero);
+
+        GameObject iconSlot = CreatePanel(
+            "Icon_NodeType",
+            root.transform,
+            new Vector2(54f, 54f),
+            new Color(0.11f, 0.07f, 0.04f, 0.92f),
+            LoadSprite("Assets/Classic_RPG_GUI/Parts/inventory_frame_little.png"),
+            false);
+        Place(iconSlot, new Vector2(0f, 24f));
+
+        AddText("Text_TypeGlyph", iconSlot.transform, "!", 32, TextAlignmentOptions.Center, new Vector2(46f, 42f), Vector2.zero, Gold);
+        TextMeshProUGUI title = AddText("Text_Title", root.transform, "Route Node", 14, TextAlignmentOptions.Center, new Vector2(112f, 28f), new Vector2(0f, -24f), Color.white);
+        TextMeshProUGUI type = AddText("Text_Type", root.transform, "Battle", 11, TextAlignmentOptions.Center, new Vector2(104f, 18f), new Vector2(0f, -44f), WarmText);
+        TextMeshProUGUI state = AddText("Text_State", root.transform, "Available", 10, TextAlignmentOptions.Center, new Vector2(104f, 16f), new Vector2(0f, -61f), Gold);
+        TextMeshProUGUI nodeId = AddText("Text_NodeId_Debug", root.transform, "node-id", 8, TextAlignmentOptions.Center, new Vector2(110f, 14f), new Vector2(0f, -76f), new Color(0.95f, 0.72f, 0.32f, 0.66f));
+
+        GameObject selected = CreatePanel(
+            "State_Selected",
+            root.transform,
+            new Vector2(168f, 168f),
+            new Color(1f, 0.78f, 0.18f, 0.62f),
+            LoadSprite("Assets/Old_Paper_Gui/button/circle/button_circle2.png"),
+            false);
+        Place(selected, Vector2.zero);
+        selected.SetActive(false);
+
+        GameObject locked = CreatePanel(
+            "State_Locked",
+            root.transform,
+            new Vector2(148f, 148f),
+            new Color(0f, 0f, 0f, 0.58f),
+            null,
+            false);
+        Place(locked, Vector2.zero);
+        AddText("Text_Locked", locked.transform, "LOCKED", 14, TextAlignmentOptions.Center, new Vector2(104f, 26f), Vector2.zero, new Color(0.78f, 0.66f, 0.54f, 1f));
+        locked.SetActive(false);
+
+        RunMapNodeRepresentation representation = root.AddComponent<RunMapNodeRepresentation>();
+        representation.NodeTypeIconCatalog = LoadNodeTypeIconCatalog();
+        representation.Button = button;
+        representation.Background = innerSurface.GetComponent<Image>();
+        representation.Icon = iconSlot.GetComponent<Image>();
+        representation.SelectionFrame = selected.GetComponent<Image>();
+        representation.LockedOverlay = locked.GetComponent<Image>();
+        representation.TitleText = title;
+        representation.TypeText = type;
+        representation.StateText = state;
+        representation.NodeIdText = nodeId;
         return root;
     }
 
@@ -288,9 +389,20 @@ public static class PRD19_021_RunMapMockupBuilder
 
         GameObject portrait = CreatePanel("Image_Portrait", root.transform, new Vector2(58f, 58f), new Color(0.22f, 0.19f, 0.15f, 1f), LoadSprite("Assets/Classic_RPG_GUI/Parts/Hero_icon_frame_bg.png"), false);
         Place(portrait, new Vector2(-96f, 0f));
-        AddText("Text_Name", root.transform, "Unit", 18, TextAlignmentOptions.MidlineLeft, new Vector2(120f, 26f), new Vector2(-20f, 18f), Gold);
-        AddText("Text_Count", root.transform, "00 units", 14, TextAlignmentOptions.MidlineLeft, new Vector2(120f, 22f), new Vector2(-20f, -6f), WarmText);
-        AddText("Text_Value", root.transform, "Value 000", 13, TextAlignmentOptions.MidlineRight, new Vector2(82f, 22f), new Vector2(74f, -22f), WarmText);
+        TextMeshProUGUI name = AddText("Text_Name", root.transform, "Unit", 18, TextAlignmentOptions.MidlineLeft, new Vector2(120f, 26f), new Vector2(-20f, 18f), Gold);
+        TextMeshProUGUI count = AddText("Text_Count", root.transform, "0", 14, TextAlignmentOptions.MidlineLeft, new Vector2(120f, 22f), new Vector2(-20f, -6f), WarmText);
+        TextMeshProUGUI value = AddText("Text_Value", root.transform, "0", 13, TextAlignmentOptions.MidlineRight, new Vector2(82f, 22f), new Vector2(74f, -22f), WarmText);
+
+        Image portraitImage = portrait.GetComponent<Image>();
+        UnitRepresentation unitRepresentation = root.AddComponent<UnitRepresentation>();
+        unitRepresentation.Icon = portraitImage;
+        unitRepresentation.Name = name;
+
+        StackRepresentation stackRepresentation = root.AddComponent<StackRepresentation>();
+        stackRepresentation.Icon = portraitImage;
+        stackRepresentation.Name = name;
+        stackRepresentation.Count = count;
+        stackRepresentation.StackValue = value;
         return root;
     }
 
@@ -325,21 +437,6 @@ public static class PRD19_021_RunMapMockupBuilder
         rect.anchoredPosition = (from + to) * 0.5f;
         rect.sizeDelta = new Vector2(delta.magnitude, 10f);
         rect.localEulerAngles = new Vector3(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
-    }
-
-    private static void AddArmyRow(Transform parent, string name, string unitName, string count, string value, string spritePath)
-    {
-        GameObject row = InstantiateNested(ArmyRowPath, name, parent);
-        SetChildText(row, "Text_Name", unitName);
-        SetChildText(row, "Text_Count", count);
-        SetChildText(row, "Text_Value", value);
-
-        Image portrait = ChildImage(row, "Image_Portrait");
-        if (portrait != null)
-        {
-            portrait.sprite = LoadSprite(spritePath);
-            portrait.preserveAspect = true;
-        }
     }
 
     private static void AddRewardIcon(Transform parent, string name, Vector2 position, string label)
@@ -379,7 +476,7 @@ public static class PRD19_021_RunMapMockupBuilder
         return slider;
     }
 
-    private static void WireController(PRD19_021_RunMapMockupController controller, RouteNodeReferences routeRefs, DetailReferences details, BottomReferences bottom, Button viewArmyButton)
+    private static void WireController(RunMapController controller, RouteNodeReferences routeRefs, DetailReferences details, BottomReferences bottom, ArmyPanelReferences armyPanel)
     {
         SerializedObject serialized = new SerializedObject(controller);
 
@@ -397,24 +494,19 @@ public static class PRD19_021_RunMapMockupBuilder
         SetObject(serialized, "armyValueText", bottom.ArmyValue);
         SetObject(serialized, "travelButton", bottom.TravelButton);
         SetObject(serialized, "backButton", bottom.BackButton);
-        SetObject(serialized, "viewArmyButton", viewArmyButton);
+        SetObject(serialized, "viewArmyButton", armyPanel.ViewArmyButton);
+        SetObject(serialized, "armySummaryText", armyPanel.ArmySummary);
+        SetObject(serialized, "armyStackRowPrefab", armyPanel.RowPrefab);
+        SetObject(serialized, "armyStackRows", armyPanel.RowsParent);
 
-        SerializedProperty nodes = serialized.FindProperty("routeNodes");
+        SerializedProperty nodes = serialized.FindProperty("routeNodeRepresentations");
         if (nodes != null)
         {
             nodes.arraySize = routeRefs.Items.Length;
             for (int i = 0; i < routeRefs.Items.Length; i++)
             {
                 SerializedProperty item = nodes.GetArrayElementAtIndex(i);
-                RouteNodeReference reference = routeRefs.Items[i];
-                SetRelativeString(item, "nodeId", reference.NodeId);
-                SetRelativeObject(item, "button", reference.Button);
-                SetRelativeObject(item, "background", reference.Background);
-                SetRelativeObject(item, "selectionFrame", reference.SelectionFrame);
-                SetRelativeObject(item, "lockedOverlay", reference.LockedOverlay);
-                SetRelativeObject(item, "titleText", reference.Title);
-                SetRelativeObject(item, "typeText", reference.Type);
-                SetRelativeObject(item, "stateText", reference.State);
+                item.objectReferenceValue = routeRefs.Items[i];
             }
         }
 
@@ -547,6 +639,37 @@ public static class PRD19_021_RunMapMockupBuilder
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
+    private static RunMapNodeTypeIconCatalog LoadNodeTypeIconCatalog()
+    {
+        return AssetDatabase.LoadAssetAtPath<RunMapNodeTypeIconCatalog>(NodeTypeIconCatalogPath);
+    }
+
+    private static void EnsureNodeTypeIconCatalogAsset()
+    {
+        EnsureFolder("Assets/Resources/0_Data");
+
+        RunMapNodeTypeIconCatalog catalog = LoadNodeTypeIconCatalog();
+        if (catalog == null)
+        {
+            catalog = ScriptableObject.CreateInstance<RunMapNodeTypeIconCatalog>();
+            AssetDatabase.CreateAsset(catalog, NodeTypeIconCatalogPath);
+        }
+
+        catalog.Entries = new System.Collections.Generic.List<RunMapNodeTypeIconEntry>
+        {
+            new RunMapNodeTypeIconEntry(RunMapNodeType.Start, LoadSprite("Assets/Old_Paper_Gui/icon/simple/home.png")),
+            new RunMapNodeTypeIconEntry(RunMapNodeType.Battle, LoadSprite("Assets/Old_Paper_Gui/icon/simple/sword.png")),
+            new RunMapNodeTypeIconEntry(RunMapNodeType.Shop, LoadSprite("Assets/Old_Paper_Gui/icon/simple/shopping.png")),
+            new RunMapNodeTypeIconEntry(RunMapNodeType.RecruitReward, LoadSprite("Assets/Old_Paper_Gui/icon/simple/chest.png")),
+            new RunMapNodeTypeIconEntry(RunMapNodeType.FinalBoss, LoadSprite("Assets/Classic_RPG_GUI/Icons/Scull2.png")),
+            new RunMapNodeTypeIconEntry(RunMapNodeType.RandomEvent, LoadSprite("Assets/Old_Paper_Gui/icon/simple/question.png")),
+            new RunMapNodeTypeIconEntry(RunMapNodeType.Empty, LoadSprite("Assets/Old_Paper_Gui/icon/simple/minus.png"))
+        };
+
+        EditorUtility.SetDirty(catalog);
+        AssetDatabase.ImportAsset(NodeTypeIconCatalogPath);
+    }
+
     private static void SavePrefab(GameObject root, string path)
     {
         PrefabUtility.SaveAsPrefabAsset(root, path);
@@ -611,37 +734,13 @@ public static class PRD19_021_RunMapMockupBuilder
         }
     }
 
-    private struct RouteNodeReference
-    {
-        public readonly string NodeId;
-        public readonly Button Button;
-        public readonly Image Background;
-        public readonly Image SelectionFrame;
-        public readonly Image LockedOverlay;
-        public readonly TextMeshProUGUI Title;
-        public readonly TextMeshProUGUI Type;
-        public readonly TextMeshProUGUI State;
-
-        public RouteNodeReference(string nodeId, Button button, Image background, Image selectionFrame, Image lockedOverlay, TextMeshProUGUI title, TextMeshProUGUI type, TextMeshProUGUI state)
-        {
-            NodeId = nodeId;
-            Button = button;
-            Background = background;
-            SelectionFrame = selectionFrame;
-            LockedOverlay = lockedOverlay;
-            Title = title;
-            Type = type;
-            State = state;
-        }
-    }
-
     private class RouteNodeReferences
     {
-        public readonly RouteNodeReference[] Items;
+        public readonly RunMapNodeRepresentation[] Items;
 
         public RouteNodeReferences(int count)
         {
-            Items = new RouteNodeReference[count];
+            Items = new RunMapNodeRepresentation[count];
         }
     }
 
@@ -686,6 +785,22 @@ public static class PRD19_021_RunMapMockupBuilder
             ArmyValue = armyValue;
             TravelButton = travelButton;
             BackButton = backButton;
+        }
+    }
+
+    private struct ArmyPanelReferences
+    {
+        public readonly TMP_Text ArmySummary;
+        public readonly Transform RowsParent;
+        public readonly GameObject RowPrefab;
+        public readonly Button ViewArmyButton;
+
+        public ArmyPanelReferences(TMP_Text armySummary, Transform rowsParent, GameObject rowPrefab, Button viewArmyButton)
+        {
+            ArmySummary = armySummary;
+            RowsParent = rowsParent;
+            RowPrefab = rowPrefab;
+            ViewArmyButton = viewArmyButton;
         }
     }
 }

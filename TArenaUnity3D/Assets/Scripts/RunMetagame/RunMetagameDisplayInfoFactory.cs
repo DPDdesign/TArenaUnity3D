@@ -130,6 +130,10 @@ public static class RunMetagameDisplayInfoFactory
             return null;
         }
 
+        DataMapper mapper = dataMapper == null ? DataMapper.Instance : dataMapper;
+        DataMapper.UnitDefinition definition = mapper == null ? null : mapper.FindUnit(stack.UnitId);
+        int stackValue = definition == null ? 0 : stack.Amount * definition.Cost;
+
         return BuildStackInfo(
             stack.SnapshotStackId.ToString(),
             stack.UnitId,
@@ -138,9 +142,9 @@ public static class RunMetagameDisplayInfoFactory
             0,
             stack.Amount,
             0,
-            0,
+            stackValue,
             ToSkillInfo(stack.Skills),
-            dataMapper);
+            mapper);
     }
 
     public static UnitInfoData BuildUnitInfo(string unitId, DataMapper dataMapper)

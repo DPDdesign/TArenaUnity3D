@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <title>Run StackRepresentation Prefab Flow</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 32px; line-height: 1.45; color: #1f2328; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    h2 { font-size: 18px; margin-top: 24px; }
+    code { background: #f3f4f6; padding: 2px 5px; border-radius: 4px; }
+    li { margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <h1>Run StackRepresentation Prefab Flow</h1>
+  <p>
+    Zasada dla Start Run UI: <code>StartRunScreenController</code> wybiera dwa
+    prefaby. <code>startingArmyPrefab</code> to caly prefab karty armii
+    (<code>StartRunArmyCardView</code>) instancjowany raz na kazda starting
+    army. <code>armyDetailsPrefab</code> to prefab jednego stack-rowa z
+    <code>StackRepresentation</code>, instancjowany raz na kazdy stack wybranej
+    armii.
+  </p>
+
+  <h2>Flow danych</h2>
+  <ol>
+    <li>DB/service zwraca DTO lub snapshot stackow armii.</li>
+    <li><code>RunMetagameDisplayInfoFactory</code> mapuje stack na <code>StackInfoData</code>.</li>
+    <li><code>RunMetagameStackListPresenter.DisplayStackInfo</code> czysci stare sample rows, instancjuje prefab i znajduje <code>StackRepresentation</code>.</li>
+    <li><code>StackRepresentation.DisplayStackInfo</code> renderuje ikone, liczbe, wartosc i dane unitow.</li>
+  </ol>
+
+  <h2>Zmienione ekrany</h2>
+  <ul>
+    <li><code>020_StartRun</code>: <code>StartRunScreenController</code> instancjuje army cards z <code>startingArmyPrefab</code> i stack details z <code>armyDetailsPrefab</code>.</li>
+    <li><code>021_RunMap</code>: army panel uzywa DB snapshotu i tego samego helpera prefabowego.</li>
+  </ul>
+
+  <h2>Regula programowania</h2>
+  <p>
+    Nie budujemy produkcyjnych list stackow z child-name lookupow, mock-rowow ani
+    statycznych tablic sample row. Static rows moga istniec tylko jako template
+    prefabow, nie jako zrodlo danych UI.
+  </p>
+</body>
+</html>

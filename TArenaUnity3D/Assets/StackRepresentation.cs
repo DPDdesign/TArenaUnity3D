@@ -90,6 +90,11 @@ public class StackRepresentation : MonoBehaviour
         }
     }
 
+    public void DisplayStackInfo(StackInfoData info)
+    {
+        DisplayInfo(info);
+    }
+
     public StackInfoData GetCurrentInfo()
     {
         return currentInfo;

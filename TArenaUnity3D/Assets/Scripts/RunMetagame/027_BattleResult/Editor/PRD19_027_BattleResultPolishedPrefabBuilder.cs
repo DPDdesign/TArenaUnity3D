@@ -147,7 +147,7 @@ public static class PRD19_027_BattleResultPolishedPrefabBuilder
         TextMeshProUGUI summaryText = AddText(
             "Text_ResultSummary",
             header.transform,
-            "Victory / Offline / LocalOfflineAdapter / offline-async-result-027",
+            "Battle Result / Offline / LocalOfflineAdapter / persisted DB result",
             17,
             TextAlignmentOptions.Midline,
             new Vector2(604f, 34f),
@@ -461,9 +461,6 @@ public static class PRD19_027_BattleResultPolishedPrefabBuilder
             FrameColor(0.08f));
 
         SerializedObject serialized = new SerializedObject(controller);
-        SetString(serialized, "sampleResultId", "offline-async-result-027");
-        SetInt(serialized, "playerRankBefore", 1520);
-        SetInt(serialized, "accountXpBefore", 2170);
         SetObject(serialized, "attackerArmyCard", attackerCard);
         SetObject(serialized, "defenderArmyCard", defenderCard);
         SetObject(serialized, "rankDeltaPanel", rankPanel);
@@ -501,7 +498,7 @@ public static class PRD19_027_BattleResultPolishedPrefabBuilder
             UnityEventTools.AddPersistentListener(viewArmiesCommand.Button.onClick, controller.OnViewArmiesClicked);
         }
 
-        controller.BuildAndRenderSampleResult();
+        controller.LoadAndRenderLatestResult();
         return root;
     }
 

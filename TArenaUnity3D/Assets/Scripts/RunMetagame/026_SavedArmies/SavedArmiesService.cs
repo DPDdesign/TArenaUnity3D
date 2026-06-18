@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 public class SavedArmiesService
@@ -79,7 +78,6 @@ public class SavedArmiesService
         }
 
         SavedArmy savedArmy = rosterStore == null ? null : rosterStore.SaveArmyToSlot(command.SlotId, copiedStacks);
-        SeedSampleHistory(savedArmy);
         return new SavedArmyCommandResult(true, SavedArmiesError.None, state == SavedArmySlotState.Taken ? "Seed army loaded and previous defence cleared if needed." : "Seed army loaded into empty slot.", savedArmy == null ? string.Empty : savedArmy.SavedArmyId);
     }
 
@@ -193,18 +191,6 @@ public class SavedArmiesService
     private bool CanSetDefence(SavedArmy army)
     {
         return army != null && army.IsValid && SavedArmiesValueCalculator.CalculateArmyValue(army.Stacks, unitSource) > 0;
-    }
-
-    private void SeedSampleHistory(SavedArmy savedArmy)
-    {
-        if (savedArmy == null || attackHistoryStore == null)
-        {
-            return;
-        }
-
-        int value = SavedArmiesValueCalculator.CalculateArmyValue(savedArmy.Stacks, unitSource);
-        attackHistoryStore.AddHistory(new SavedArmyAttackHistoryEntry("history-" + Guid.NewGuid().ToString("N"), savedArmy.SavedArmyId, SavedArmyBattleResultKind.DefenceWin, "Training Raider", value, Math.Max(1, value - 120)));
-        attackHistoryStore.AddHistory(new SavedArmyAttackHistoryEntry("history-" + Guid.NewGuid().ToString("N"), savedArmy.SavedArmyId, SavedArmyBattleResultKind.OffenceLoss, "Mock Fortress", value, value + 180));
     }
 
     private static int CommandUnlockedSlotCount(int unlockedSlotCount)

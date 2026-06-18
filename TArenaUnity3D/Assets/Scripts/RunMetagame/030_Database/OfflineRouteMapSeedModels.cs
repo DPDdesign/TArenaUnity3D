@@ -62,6 +62,7 @@ public class OfflineRouteNodeSeedRecord
     public string ExpectedRiskHint;
     public string EncounterId;
     public int NextNodeId;
+    public List<int> NextNodeIds;
     public string CatalogNodeId;
     public string CatalogPathId;
 
@@ -91,6 +92,11 @@ public class OfflineRouteNodeSeedRecord
         ExpectedRiskHint = expectedRiskHint;
         EncounterId = encounterId;
         NextNodeId = Math.Max(0, nextNodeId);
+        NextNodeIds = new List<int>();
+        if (NextNodeId > 0)
+        {
+            NextNodeIds.Add(NextNodeId);
+        }
         CatalogNodeId = catalogNodeId;
         CatalogPathId = catalogPathId;
     }

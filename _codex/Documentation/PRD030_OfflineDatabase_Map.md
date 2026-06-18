@@ -1,7 +1,7 @@
 # [TARENA] PRD030 Offline Database Map
 
 Status: active
-Last updated: 2026-06-16
+Last updated: 2026-06-17
 
 ## Purpose
 
@@ -98,6 +98,9 @@ Data:
 
 Notes:
 
+- default account bootstrap seeds the baseline Start Run unit unlocks used by
+  the generator, so later progression unlock rows extend the roster instead of
+  becoming the entire allowed roster,
 - default unlocked saved-army slots is 2,
 - physical roster capacity can still be 8 slots,
 - Battle Result currently updates XP/rank and writes unlock progress.
@@ -113,6 +116,8 @@ Tables:
 
 Primary owners:
 
+- `OfflineRunContextDbReader.cs`
+- `OfflineRunContextDbWriter.cs`
 - `OfflineStartRunDbStore.cs`
 - `OfflineRunMapDbStore.cs`
 - `OfflineRouteMapSeedFactory.cs`
@@ -127,6 +132,23 @@ Data:
 - current node,
 - stage and route progress,
 - three route paths and route nodes.
+
+Run-context read/write rule:
+
+- `OfflineRunContextDbWriter` is the only runtime code surface that should
+  insert or update `offline_runs`.
+- `OfflineRunContextDbReader` is the shared read side for active run context,
+  `next_screen` lookup, current/start/pre-final snapshots, Start Run record
+  reload, summary lookup, and latest async battle result id lookup.
+- Slice stores may own their detail tables, but they must update
+  `offline_runs` through the writer.
+- UI controllers must not query SQLite directly; they should use services,
+  adapters, and `OfflineRunContextDbReader`.
+- Run Map UI loads the latest persisted `RunMap` context and builds
+  `RunMapCreateRequest` from DB run id, selected route choice, current gold,
+  and current army snapshot summary. Its army panel renders row data from the
+  same hydrated `current_army_snapshot` by instantiating a configured prefab
+  containing `StackRepresentation` for each stack.
 
 Important relations:
 
@@ -150,6 +172,8 @@ Runtime node rule:
 - `route_nodes.node_id` is the canonical integer node id for persisted runtime
   flow.
 - authored node ids are seed/catalog input, not the DB relation authority.
+- UI-facing route node labels can be reconstructed from catalog/seed context,
+  but DB writes should persist integer `node_id`.
 
 ### Army Snapshots
 
@@ -303,6 +327,7 @@ Primary owner:
 
 Writes:
 
+- materialized generated reward choices for the run/current node,
 - reward event,
 - choice status,
 - focused reward id,
@@ -325,7 +350,11 @@ army_snapshot_stacks.snapshot_stack_id
 
 Rule:
 
-- reward templates remain authored code/catalog data,
+- reward ruleset/catalog configuration remains authored code/assets data,
+- reward choices are generated upfront when the run begins and stored as
+  runtime rows keyed by run/node/catalog position identity,
+- Reward Map loads the materialized runtime choice; it must not roll fallback
+  screen-time rewards in production,
 - DB stores the generated runtime choice and selected/applied result,
 - applying the same choice twice must be rejected.
 
@@ -547,6 +576,17 @@ Writes:
 Primary code:
 
 - `OfflineStartRunDbStore.SaveCreatedRun(...)`
+- `OfflineRunContextDbWriter.InsertStartRun(...)`
+- `OfflineRunContextDbWriter.AttachStartRunRouteAndArmy(...)`
+- `OfflineRunContextDbReader.ToStartRunCreatedRecord(...)`
+
+Rule:
+
+- Start Run creates the `offline_runs` row through the shared writer.
+- Start Run persists the starting army through `OfflineArmySnapshotDbRepository`.
+- Start Run reloads the returned `CreatedRunRecord` through
+  `OfflineRunContextDbReader` after transaction commit, so the frontend receives
+  DB-backed ids and snapshot state.
 
 ### Travel On Run Map
 
@@ -559,6 +599,7 @@ Primary code:
 
 - `OfflineRunMapDbStore.Save(...)`
 - `OfflineRunMapDbStore.Find(...)`
+- `OfflineRunContextDbWriter.UpdateRunMapState(...)`
 
 ### Prepare And Complete Battle
 
@@ -574,6 +615,8 @@ Primary code:
 
 - `OfflineRunBattleDbStore.SavePreparedBattle(...)`
 - `OfflineRunBattleDbStore.SaveCompletion(...)`
+- `OfflineRunContextDbWriter.UpdateNodeArmyGoldScreen(...)`
+- `OfflineRunContextDbWriter.UpdateArmyGoldScreen(...)`
 
 ### Generate And Apply Reward
 
@@ -589,6 +632,16 @@ Primary code:
 
 - `OfflineRewardMapDbStore.SaveChoice(...)`
 - `OfflineRewardMapDbStore.SaveAppliedReward(...)`
+- `OfflineRunContextDbWriter.UpdateNodeArmyGoldScreen(...)`
+- `OfflineRunContextDbWriter.UpdateArmyGoldScreen(...)`
+
+Rule:
+
+- reward choice/card rows should already exist from Begin Run/run generation
+  for reward-producing nodes; Reward Map applies the current materialized
+  choice rather than generating a new fallback choice,
+- Reward screen handoff uses `offline_runs.next_screen = Reward`, matching
+  `RunBattleNextScreen.Reward` and `RewardMapScreenController` lookup.
 
 ### Open Shop, Buy, Leave
 
@@ -607,6 +660,7 @@ Primary code:
 - `OfflineRunShopDbStore.SaveVisit(...)`
 - `OfflineRunShopDbStore.SavePurchase(...)`
 - `OfflineRunShopDbStore.LeaveVisit(...)`
+- `OfflineRunContextDbWriter.UpdateNodeArmyGoldScreen(...)`
 
 ### Summary And Save Army
 
@@ -624,6 +678,7 @@ Primary code:
 - `OfflineSummaryValueDbStore.PersistAndLoad(...)`
 - `OfflineSummaryValueDbStore.SaveCandidate(...)`
 - `OfflineSavedArmyDbRepository.SaveSnapshotToSlot(...)`
+- `OfflineRunContextDbWriter.UpdateSummarySnapshots(...)`
 
 ### Saved Armies Roster
 
@@ -660,7 +715,7 @@ Primary code:
 | --- | --- | --- |
 | Foundation | `schema_version` | `OfflineDatabaseModule`, `OfflineDatabaseSchemaV1` |
 | Account | `offline_accounts`, `account_unlocks` | `OfflineDatabaseAccountBootstrap`, `OfflineBattleResultDbStore` |
-| Run | `offline_runs` | `OfflineStartRunDbStore`, `OfflineRunMapDbStore` |
+| Run | `offline_runs` | `OfflineRunContextDbReader`, `OfflineRunContextDbWriter` |
 | Route | `route_maps`, `route_paths`, `route_nodes` | `OfflineStartRunDbStore`, `OfflineRunMapDbStore` |
 | Snapshot | `army_snapshots`, `army_snapshot_stacks`, `army_snapshot_stack_skills` | `OfflineArmySnapshotDbRepository`, `OfflineArmySnapshotMapper` |
 | Event | `run_events` | battle/reward/shop DB stores |
@@ -674,10 +729,15 @@ Primary code:
 ## Safe Change Rules
 
 - Add new DB behavior in the owning DB store or shared repository.
+- Add new `offline_runs` writes only through `OfflineRunContextDbWriter`.
+- Add new run-context reads only through `OfflineRunContextDbReader` unless a
+  slice store is loading its own detail row as part of the same transaction.
 - Add new schema tables through an explicit migration/version plan.
 - Use stable enum ids from `DB Enums.cs`; do not depend on enum declaration
   order.
 - Do not write direct SQLite queries in UI controllers.
+- Do not duplicate `INSERT INTO offline_runs` or `UPDATE offline_runs` SQL in
+  screen-specific stores.
 - Do not store authored unit/skill/reward/shop/route catalog truth in SQLite
   unless a future PRD explicitly changes the storage model.
 - Do not change gameplay balance or float values as part of persistence work.

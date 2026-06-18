@@ -50,8 +50,8 @@ public class RunShopService
 
         RunShopVisitViewData visit = new RunShopVisitViewData(
             visitId,
-            string.IsNullOrEmpty(request.RunId) ? "offline-run" : request.RunId,
-            string.IsNullOrEmpty(request.RouteNodeId) ? "offline-shop-node" : request.RouteNodeId,
+            request.RunId,
+            request.RouteNodeId,
             RunShopGameMode.Offline,
             RunShopAuthoritySource.LocalOfflineAdapter,
             request.RunCurrency,

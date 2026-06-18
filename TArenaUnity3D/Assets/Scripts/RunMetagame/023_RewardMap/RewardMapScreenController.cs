@@ -1,15 +1,8 @@
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
 public class RewardMapScreenController : MonoBehaviour
 {
-    [Header("Sample Request")]
-    [SerializeField] private string runId = "offline-run";
-    [SerializeField] private int stageIndex = 2;
-    [SerializeField] private int startingRunGoldBeforeReward = 360;
-    [SerializeField] private int sampleInventorySupplies = 2;
-
     [Header("Sections")]
     [SerializeField] private RewardMapResultGainedPanelView resultGainedPanel;
     [SerializeField] private RewardMapRewardCardView[] rewardCards = new RewardMapRewardCardView[0];
@@ -22,16 +15,15 @@ public class RewardMapScreenController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI focusedRewardPreviewText;
     [SerializeField] private TextMeshProUGUI statusText;
 
-    [Header("Commands")]
-    [SerializeField] private RewardMapCommandButtonView selectCommandButton;
-    [SerializeField] private RewardMapCommandButtonView continueCommandButton;
-
     private DataMapper dataMapper;
     private OfflineRewardMapAdapter adapter;
+    private OfflineRunContextDbReader runContextReader;
+    private OfflineRunContext runContext;
     private RewardMapArmySnapshot currentArmy;
     private RewardMapChoiceViewData choice;
     private RewardMapApplyResult lastApplyResult;
     private int runGold;
+    private int stageIndex;
     private string focusedRewardId;
     private bool rewardApplied;
 
@@ -39,9 +31,12 @@ public class RewardMapScreenController : MonoBehaviour
     {
         dataMapper = DataMapper.Instance;
         adapter = OfflineModeDatabaseComposition.CreateRewardMapAdapter();
-        currentArmy = BuildSampleArmy();
-        runGold = Mathf.Max(0, startingRunGoldBeforeReward);
-        WireStaticButtons();
+        runContextReader = OfflineModeDatabaseComposition.CreateRunContextReader();
+        if (!LoadRunState())
+        {
+            return;
+        }
+
         RefreshChoice(string.Empty);
     }
 
@@ -62,17 +57,32 @@ public class RewardMapScreenController : MonoBehaviour
         RefreshChoice(string.Empty);
     }
 
-    public void SelectFocusedReward()
+    public void ApplyReward(string rewardId)
     {
-        if (choice == null || choice.FocusedCard == null)
+        if (choice == null)
         {
-            SetText(statusText, "Select blocked: no focused reward.");
+            SetText(statusText, "Reward blocked: no materialized choice.");
+            return;
+        }
+
+        if (rewardApplied)
+        {
+            SetText(statusText, "Reward already applied.");
+            return;
+        }
+
+        focusedRewardId = rewardId;
+        RefreshChoice(string.Empty);
+        RewardMapCardViewData reward = choice.FocusedCard;
+        if (reward == null || reward.RewardId != rewardId)
+        {
+            SetText(statusText, "Reward blocked: selected reward was not found.");
             return;
         }
 
         RewardMapApplyResult result = adapter.Apply(new RewardMapApplyCommand(
             choice.ChoiceId,
-            choice.FocusedCard.RewardId,
+            reward.RewardId,
             choice.RunGoldBeforeReward,
             choice.ArmyBeforeReward));
 
@@ -88,35 +98,70 @@ public class RewardMapScreenController : MonoBehaviour
         rewardApplied = true;
         focusedRewardId = result.Reward == null ? focusedRewardId : result.Reward.RewardId;
         RenderAppliedResult(result);
+        ShowRunMap();
+    }
+
+    public void SelectFocusedReward()
+    {
+        if (choice == null || choice.FocusedCard == null)
+        {
+            SetText(statusText, "Reward blocked: no focused reward.");
+            return;
+        }
+
+        ApplyReward(choice.FocusedCard.RewardId);
     }
 
     public void ContinueAfterReward()
     {
         if (!rewardApplied)
         {
-            SetText(statusText, "Continue blocked: select one reward before leaving this screen.");
+            SetText(statusText, "Continue blocked: apply one reward first.");
             return;
         }
 
-        string rewardLabel = lastApplyResult != null && lastApplyResult.Reward != null
-            ? lastApplyResult.Reward.Title
-            : "no reward applied yet";
-        SetText(statusText, "Continue selected. " + rewardLabel + " is committed for the next run node.");
+        ShowRunMap();
     }
 
     private void RefreshChoice(string statusMessage)
     {
+        if (currentArmy == null && !LoadRunState())
+        {
+            return;
+        }
+
         choice = adapter.BuildChoice(
             new RewardMapChoiceRequest(
-                runId,
+                runContext.RunIdText,
                 stageIndex,
                 runGold,
                 currentArmy,
-                new RewardMapBattleResultSummary("Stage " + stageIndex + " - Road Battle", "Victory", 12, 120)),
+                new RewardMapBattleResultSummary(runContext.CurrentNodeIdText, "Victory", 0, 0)),
             focusedRewardId);
 
         focusedRewardId = choice.FocusedCard == null ? focusedRewardId : choice.FocusedCard.RewardId;
         RenderChoice(statusMessage);
+    }
+
+    private bool LoadRunState()
+    {
+        runContext = runContextReader == null ? null : runContextReader.LoadLatestRunForNextScreen("Reward");
+        if (runContext == null)
+        {
+            RenderUnavailable("Reward Map requires a persisted offline run whose next_screen is Reward.");
+            return false;
+        }
+
+        currentArmy = runContextReader.ToRewardMapCurrentArmy(runContext);
+        if (currentArmy == null || currentArmy.Stacks == null || currentArmy.Stacks.Count == 0)
+        {
+            RenderUnavailable("Reward Map requires current_army_snapshot_id on the active run.");
+            return false;
+        }
+
+        runGold = Mathf.Max(0, runContext.CurrentRunGold);
+        stageIndex = Mathf.Max(0, runContext.StageProgress);
+        return true;
     }
 
     private void RenderChoice(string statusMessage)
@@ -158,7 +203,6 @@ public class RewardMapScreenController : MonoBehaviour
             focusedRewardPreviewText,
             result.Reward == null ? result.Message : result.Reward.BeforeText + " -> " + result.Reward.AfterText);
         SetText(statusText, "Reward applied. Army preview and run gold are committed.");
-        BindCommandButtons(false);
     }
 
     private void BindRewardCards()
@@ -166,12 +210,13 @@ public class RewardMapScreenController : MonoBehaviour
         for (int i = 0; i < rewardCards.Length; i++)
         {
             RewardMapRewardCardView cardView = rewardCards[i];
-            RewardMapCardViewData card = choice.Cards != null && i < choice.Cards.Count ? choice.Cards[i] : null;
+            RewardMapCardViewData card = choice != null && choice.Cards != null && i < choice.Cards.Count ? choice.Cards[i] : null;
             if (cardView == null)
             {
                 continue;
             }
 
+            cardView.FocusRequested = FocusReward;
             cardView.Bind(card, card != null && card.RewardId == focusedRewardId);
             if (cardView.Button != null)
             {
@@ -180,7 +225,7 @@ public class RewardMapScreenController : MonoBehaviour
                 if (card != null && card.Legal && !rewardApplied)
                 {
                     string rewardId = card.RewardId;
-                    cardView.Button.onClick.AddListener(delegate { FocusReward(rewardId); });
+                    cardView.Button.onClick.AddListener(delegate { ApplyReward(rewardId); });
                 }
             }
         }
@@ -212,19 +257,13 @@ public class RewardMapScreenController : MonoBehaviour
         SetText(
             focusedRewardPreviewText,
             card == null ? string.Empty : card.BeforeText + " -> " + card.AfterText);
-        BindCommandButtons(card != null && preview != null && preview.Error == RewardMapError.None && !rewardApplied);
     }
 
-    private void BindCommandButtons(bool canSelect)
+    private static void ShowRunMap()
     {
-        if (selectCommandButton != null)
+        if (GameSceneManager.Instance != null)
         {
-            selectCommandButton.Bind("Select", canSelect, true);
-        }
-
-        if (continueCommandButton != null)
-        {
-            continueCommandButton.Bind("Continue", true, false);
+            GameSceneManager.Instance.ShowRunMap();
         }
     }
 
@@ -241,70 +280,7 @@ public class RewardMapScreenController : MonoBehaviour
 
     private string BuildInventorySummary()
     {
-        return "Inventory: " + Mathf.Max(0, sampleInventorySupplies) + " reward supplies";
-    }
-
-    private RewardMapArmySnapshot BuildSampleArmy()
-    {
-        List<RewardMapStackSnapshot> stacks = new List<RewardMapStackSnapshot>
-        {
-            Stack("stack-rusher", "Rusher", 40, 12, Skill("Chope", true), Skill("Rush", false)),
-            Stack("stack-thrower", "Thrower", 28, 0, Skill("Range_Stance_Barb", true), Skill("Double_Throw", false)),
-            Stack("stack-healer", "Healer", 20, 3, Skill("Tough_Skin", true), Skill("Defence_Ritual", false)),
-            Stack("stack-wisp", "Wisp", 22, 0, Skill("Blind_by_light", true)),
-            Stack("stack-stonegolem", "StoneGolem", 30, 0, Skill("Stone_Throw", true)),
-            Stack("stack-fireelemental", "FireElemental", 12, 0, Skill("Fire_Ball", true))
-        };
-
-        int total = 0;
-        for (int i = 0; i < stacks.Count; i++)
-        {
-            total += stacks[i].CombatValue;
-        }
-
-        return new RewardMapArmySnapshot("mock-post-battle-army", total, stacks);
-    }
-
-    private RewardMapStackSnapshot Stack(string stackId, string unitId, int amount, int lost, params RewardMapSkillState[] skills)
-    {
-        RunShopUnitDefinition unit = new RewardMapDataMapperUnitSource(dataMapper).FindUnit(unitId);
-        int unlockedSkillValue = 0;
-        for (int i = 0; i < skills.Length; i++)
-        {
-            if (skills[i] != null && skills[i].Unlocked)
-            {
-                unlockedSkillValue += 18;
-            }
-        }
-
-        return new RewardMapStackSnapshot(
-            stackId,
-            unitId,
-            unit == null ? unitId : unit.DisplayName,
-            unit == null ? "I" : unit.Tier,
-            1,
-            amount,
-            lost,
-            amount * (unit == null ? 0 : unit.Cost) + unlockedSkillValue,
-            new List<RewardMapSkillState>(skills));
-    }
-
-    private static RewardMapSkillState Skill(string skillId, bool unlocked)
-    {
-        return new RewardMapSkillState(skillId, unlocked);
-    }
-
-    private void WireStaticButtons()
-    {
-        if (selectCommandButton != null && selectCommandButton.Button != null && selectCommandButton.Button.onClick.GetPersistentEventCount() == 0)
-        {
-            selectCommandButton.Button.onClick.AddListener(SelectFocusedReward);
-        }
-
-        if (continueCommandButton != null && continueCommandButton.Button != null && continueCommandButton.Button.onClick.GetPersistentEventCount() == 0)
-        {
-            continueCommandButton.Button.onClick.AddListener(ContinueAfterReward);
-        }
+        return "Inventory: persisted run state";
     }
 
     private static void SetText(TextMeshProUGUI text, string value)
@@ -313,5 +289,16 @@ public class RewardMapScreenController : MonoBehaviour
         {
             text.text = value ?? string.Empty;
         }
+    }
+
+    private void RenderUnavailable(string message)
+    {
+        SetText(walletText, "0 RUN GOLD");
+        SetText(inventoryText, "Inventory: unavailable");
+        SetText(focusedRewardTitleText, "Reward unavailable");
+        SetText(focusedRewardPreviewText, string.Empty);
+        SetText(statusText, message);
+        BindArmyPreview(null, string.Empty);
+        BindRewardCards();
     }
 }

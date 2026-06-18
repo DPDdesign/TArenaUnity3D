@@ -320,6 +320,28 @@ public static class OfflineArmySnapshotMapper
         return new RunShopArmySnapshot(ToSnapshotIdText(snapshot), CalculateArmyValue(snapshot, resolver), stacks);
     }
 
+    public static RunMapArmySummary ToRunMap(OfflineArmySnapshotRecord snapshot, IOfflineArmySnapshotCatalogResolver resolver)
+    {
+        int stackCount = 0;
+        List<OfflineArmySnapshotStackRecord> source = snapshot == null ? null : snapshot.Stacks;
+        if (source != null)
+        {
+            for (int i = 0; i < source.Count; i++)
+            {
+                if (source[i] != null && source[i].IsActive && source[i].Amount > 0)
+                {
+                    stackCount++;
+                }
+            }
+        }
+
+        return new RunMapArmySummary(
+            ToSnapshotIdText(snapshot),
+            CalculateArmyValue(snapshot, resolver),
+            stackCount,
+            stackCount.ToString(CultureInfo.InvariantCulture) + " persisted stacks loaded from current run snapshot.");
+    }
+
     public static SummaryValueArmySnapshot ToSummaryValue(OfflineArmySnapshotRecord snapshot, IOfflineArmySnapshotCatalogResolver resolver)
     {
         List<SummaryValueStackSnapshot> stacks = new List<SummaryValueStackSnapshot>();

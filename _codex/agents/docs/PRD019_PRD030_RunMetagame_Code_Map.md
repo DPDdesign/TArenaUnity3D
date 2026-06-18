@@ -1,7 +1,7 @@
 # [TARENA] PRD019/PRD030 Run Metagame Code Map
 
 Status: active
-Last updated: 2026-06-16
+Last updated: 2026-06-17
 
 ## Purpose
 
@@ -122,10 +122,24 @@ Key files:
 - `030_Database/OfflineDatabaseAccountBootstrap.cs` - default local account.
 - `030_Database/OfflineDatabaseLegacyIdentity.cs` - legacy string label to
   integer id conversion.
+- `030_Database/OfflineRunContextDbReader.cs` - shared read side for persisted
+  run context, `next_screen` lookup, Start Run-created record reload, current
+  snapshots, summary lookup, and latest async battle result id.
+- `030_Database/OfflineRunContextDbWriter.cs` - shared write side for
+  `offline_runs` creation and run-context updates.
 
 Database file:
 
 - `Application.persistentDataPath/TArenaOffline.db`
+
+Run context rule:
+
+- `OfflineRunContextDbWriter` is the only runtime code surface that should
+  contain `INSERT INTO offline_runs` or `UPDATE offline_runs`.
+- Slice DB stores own their detail tables, but update `offline_runs` through
+  the writer.
+- UI controllers read persisted run state via adapters/services and
+  `OfflineRunContextDbReader`, not serialized sample ids or direct SQLite.
 
 ### Shared Army Snapshot Module
 
@@ -183,16 +197,28 @@ Main code:
 - `DataMapperStartRunUnitSource.cs` - current unit definition bridge.
 - `StartRunService.cs` - screen data and begin-run command.
 - `OfflineStartRunAdapter.cs` - UI/service facade.
-- `OfflineStartRunDbStore.cs` - persists `offline_runs`, start snapshot,
-  `route_maps`, `route_paths`, and `route_nodes`.
+- `OfflineStartRunDbStore.cs` - persists Start Run detail flow through shared
+  run context writer, shared snapshot repository, `route_maps`, `route_paths`,
+  and `route_nodes`.
 - `StartRunScreenController.cs` - Unity UI controller.
+- `StartRunArmyCardView.cs` - starting-army card view; binds one
+  `StartingArmyOptionViewData` into the instantiated card and displays its
+  stacks through `StackRepresentation` children under its `stackRowsParent`.
 
 DB handoff:
 
-- creates durable `run_id`,
-- writes `start_army_snapshot_id`,
+- creates durable `run_id` through `OfflineRunContextDbWriter.InsertStartRun`,
+- writes `start_army_snapshot_id` through shared snapshot persistence,
 - seeds route map and nodes upfront,
+- attaches route map and initial army through
+  `OfflineRunContextDbWriter.AttachStartRunRouteAndArmy`,
+- reloads the returned `CreatedRunRecord` through
+  `OfflineRunContextDbReader.ToStartRunCreatedRecord`,
 - returns legacy-facing ids such as `run-<id>` for screen DTO compatibility.
+- selected army details and army cards display live `StartRunStackViewData`
+  through the two prefabs selected on `StartRunScreenController`: whole
+  `startingArmyPrefab` cards for each starting-army option and
+  `armyDetailsPrefab` stack rows for each selected-army stack.
 
 Tests:
 
@@ -213,14 +239,22 @@ Main code:
 - `RunMapService.cs` - create/load/travel rules.
 - `OfflineRunMapAdapter.cs` - UI/service facade.
 - `OfflineRunMapDbStore.cs` - loads and updates persisted route state.
-- `PRD19_021_RunMapMockupController.cs` - Unity mockup/controller.
+- `RunMapController.cs` - Unity controller backed by
+  `OfflineModeDatabaseComposition.CreateRunMapAdapter()` and
+  `OfflineRunContextDbReader`.
+- `RunMetagameStackListPresenter.cs` - shared runtime helper for displaying
+  stack DTOs by instantiating a prefab that contains `StackRepresentation`.
 
 DB handoff:
 
 - reads by durable `run_id`,
+- controller creates `RunMapCreateRequest` from latest persisted `RunMap`
+  context, route choice, current gold, and current army snapshot summary,
+- controller renders the army panel from hydrated current snapshot stacks into
+  `StackRepresentation` row prefab instances,
 - updates `route_nodes.node_state_id`,
 - updates `offline_runs.current_node_id`, `stage_progress`, and
-  `route_progress`.
+  `route_progress` through `OfflineRunContextDbWriter.UpdateRunMapState`.
 
 Tests:
 
@@ -249,7 +283,7 @@ DB handoff:
 - pre-battle and post-battle armies use shared snapshots,
 - completion writes `run_battle_losses`,
 - updates `offline_runs.current_army_snapshot_id`, status, current node, and
-  run gold.
+  run gold through `OfflineRunContextDbWriter`.
 
 Not done here:
 
@@ -281,10 +315,14 @@ Main code:
 
 DB handoff:
 
-- choice writes `run_events` type Reward, `reward_choices`, and
-  `reward_cards`,
+- reward choices are generated and materialized upfront when the run begins;
+  Reward Map loads the materialized choice for the current run/node instead of
+  rolling screen-time fallback rewards,
+- choice rows still use `run_events` type Reward, `reward_choices`, and
+  `reward_cards` or their future minimal generated-reward successors,
 - focused preview can write `preview_snapshot_id`,
 - apply writes applied snapshot, selected reward, and run gold/current army,
+- handoff to Reward Map uses `offline_runs.next_screen = Reward`,
 - second apply returns `RewardMapError.AlreadyApplied`.
 
 Tests:
@@ -314,7 +352,8 @@ DB handoff:
 - generated offers persist once in `shop_offers`,
 - purchase writes `run_events` type Purchase and `shop_purchases`,
 - purchase writes a new current army snapshot and updates run gold,
-- leaving updates visit/run/route flow state.
+- leaving updates visit/run/route flow state through
+  `OfflineRunContextDbWriter`.
 
 Product rule:
 
@@ -345,6 +384,8 @@ DB handoff:
 - writes/loads `run_summaries`,
 - soft-replaces `run_summary_entries`,
 - won final uses pre-final snapshot as `saved_army_candidate_snapshot_id`,
+- updates run summary snapshot references through
+  `OfflineRunContextDbWriter.UpdateSummarySnapshots`,
 - save candidate delegates to saved-army DB repository.
 
 Product rule:
@@ -441,36 +482,46 @@ StartRunScreenController
   -> OfflineStartRunAdapter
   -> StartRunService
   -> OfflineStartRunDbStore
+  -> OfflineRunContextDbWriter + OfflineArmySnapshotDbRepository
+  -> OfflineRunContextDbReader
   -> offline_runs + army_snapshots + route_maps/paths/nodes
 
-PRD19_021_RunMapMockupController
+RunMapController
   -> OfflineRunMapAdapter
   -> RunMapService
   -> OfflineRunMapDbStore
+  -> OfflineRunContextDbWriter
   -> offline_runs + route_nodes
 
 RunBattle caller/future screen
   -> OfflineRunBattleAdapter
   -> RunBattleService
   -> OfflineRunBattleDbStore
+  -> OfflineRunContextDbWriter
   -> run_events + run_battles + run_battle_losses + army_snapshots
 
 RewardMapScreenController
+  -> OfflineRunContextDbReader
   -> OfflineRewardMapAdapter
   -> RewardMapService
   -> OfflineRewardMapDbStore
+  -> OfflineRunContextDbWriter
   -> run_events + reward_choices + reward_cards + army_snapshots
 
 RunShopScreenController
+  -> OfflineRunContextDbReader
   -> OfflineRunShopAdapter
   -> RunShopService
   -> OfflineRunShopDbStore
+  -> OfflineRunContextDbWriter
   -> shop_visits + shop_offers + run_events + shop_purchases
 
 SummaryValueScreenController
+  -> OfflineRunContextDbReader
   -> OfflineSummaryValueAdapter
   -> SummaryValueService
   -> OfflineSummaryValueDbStore / OfflineSavedArmyDbRepository
+  -> OfflineRunContextDbWriter
   -> run_summaries + run_summary_entries + saved_army_slots + saved_armies
 
 SavedArmiesScreenController
@@ -480,6 +531,7 @@ SavedArmiesScreenController
   -> saved_army_slots + saved_armies + saved_army_roster_state + saved_army_history
 
 BattleResultScreenController
+  -> OfflineRunContextDbReader
   -> OfflineBattleResultAdapter
   -> BattleResultService
   -> OfflineBattleResultDbStore
@@ -495,6 +547,8 @@ When moving data from one screen to another:
   `saved-army-<id>` facade labels at UI boundaries only;
 - convert to integer ids inside DB stores through `OfflineDatabaseLegacyIdentity`;
 - load current army from `offline_runs.current_army_snapshot_id`;
+- use `offline_runs.next_screen` values that match code contracts, for example
+  `Reward`, `RunShop`, and `RunMap`;
 - do not make UI controllers query SQLite directly;
 - do not put reward/shop/battle rules in SQL;
 - do not move authored catalogs into the database in PRD030.
@@ -506,15 +560,17 @@ These remain code/assets/catalog references, not SQLite-owned truth:
 - starting army catalog,
 - route path catalog,
 - encounter catalog,
-- reward template catalog,
+- reward ruleset/catalog configuration,
 - run shop offer generation rules,
 - current unit catalog/DataMapper path,
 - legal unit skill lists,
 - skill execution ids,
 - skill presentation catalog.
 
-The database stores runtime references such as `unit_id`, `skill_id`,
-`template_id`, `encounter_id`, selected/applied state, snapshots, and records.
+The database stores runtime materialized generated results and references such
+as `unit_id`, `skill_id`, `template_id` or catalog position id, reward id,
+`encounter_id`, selected/applied state, snapshots, and records. Runtime screens
+load these generated rows for the run/node instead of rolling new content.
 
 ## Current Manual QA Surface
 
@@ -538,9 +594,8 @@ Manual integration task files:
 ## Known Risks And Follow-Ups
 
 - Unity tests were not run automatically in the reviewed implementation passes.
-- Some screen controllers still need real persisted `run-*` and node ids for
-  DB-backed manual testing; placeholder ids such as `offline-run` are not valid
-  production verification.
+- Manual testing still needs a real Start Run -> Run Map flow so screen
+  controllers can load persisted `run-*`, `node-*`, and `next_screen` state.
 - `async_battle_result_details` is created lazily by Battle Result DB code and
   should be folded into formal schema migration if schema versioning advances.
 - Duplicate unit stacks may expose weak runtime stack identity where DTOs
@@ -558,8 +613,10 @@ Before changing a PRD019/PRD030 screen:
 3. Check whether the change is UI-only, domain-rule, or DB persistence.
 4. Keep UI on adapter/service APIs.
 5. Keep DB writes in the relevant DB store or shared repository.
-6. Use shared `OfflineArmySnapshotMapper` and `OfflineArmySnapshotDbRepository`
+6. Use `OfflineRunContextDbReader` / `OfflineRunContextDbWriter` for
+   `offline_runs` state.
+7. Use shared `OfflineArmySnapshotMapper` and `OfflineArmySnapshotDbRepository`
    for any persisted army state.
-7. Add or update EditMode tests at the service/store seam.
-8. Leave Unity compilation and Play Mode validation as manual unless explicitly
+8. Add or update EditMode tests at the service/store seam.
+9. Leave Unity compilation and Play Mode validation as manual unless explicitly
    allowed.

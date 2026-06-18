@@ -80,6 +80,8 @@ public class OfflineDatabaseModule
                     currentVersion = ReadCurrentVersion(connection);
                 }
 
+                EnsureSchemaVersion1Compatibility(connection);
+
                 return new OfflineDatabaseOpenResult(
                     true,
                     OfflineDatabaseError.None,
@@ -136,6 +138,79 @@ CREATE TABLE IF NOT EXISTS schema_version (
             transaction.Rollback();
             throw;
         }
+    }
+
+    private static void EnsureSchemaVersion1Compatibility(IDbConnection connection)
+    {
+        IDbTransaction transaction = connection.BeginTransaction();
+        try
+        {
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "offline_runs",
+                "run_seed",
+                "ALTER TABLE offline_runs ADD COLUMN run_seed INTEGER NOT NULL DEFAULT 35035;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "offline_runs",
+                "run_seed_version",
+                "ALTER TABLE offline_runs ADD COLUMN run_seed_version INTEGER NOT NULL DEFAULT 1;");
+
+            List<string> statements = OfflineDatabaseSchemaV1.BuildStatements();
+            for (int i = 0; i < statements.Count; i++)
+            {
+                ExecuteNonQuery(connection, statements[i], transaction);
+            }
+
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
+    private static void AddColumnIfMissing(
+        IDbConnection connection,
+        IDbTransaction transaction,
+        string tableName,
+        string columnName,
+        string alterSql)
+    {
+        if (ColumnExists(connection, transaction, tableName, columnName))
+        {
+            return;
+        }
+
+        ExecuteNonQuery(connection, alterSql, transaction);
+    }
+
+    private static bool ColumnExists(
+        IDbConnection connection,
+        IDbTransaction transaction,
+        string tableName,
+        string columnName)
+    {
+        using (IDbCommand command = connection.CreateCommand())
+        {
+            command.CommandText = "PRAGMA table_info(" + tableName + ");";
+            command.Transaction = transaction;
+            using (IDataReader reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    if (string.Equals(Convert.ToString(reader["name"], CultureInfo.InvariantCulture), columnName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     private static int ReadCurrentVersion(IDbConnection connection)

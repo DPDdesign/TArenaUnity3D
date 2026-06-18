@@ -1955,10 +1955,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b8c2082fd354d4438c7a11a3d70f421, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RewardMapScreenController
-  runId: offline-run
-  stageIndex: 2
-  startingRunGoldBeforeReward: 360
-  sampleInventorySupplies: 2
   resultGainedPanel: {fileID: 1629776396647760402}
   rewardCards:
   - {fileID: 4506822857923725654}
@@ -1977,8 +1973,6 @@ MonoBehaviour:
   focusedRewardTitleText: {fileID: 2532514223654874571}
   focusedRewardPreviewText: {fileID: 9147726606679070954}
   statusText: {fileID: 3089966923883806233}
-  selectCommandButton: {fileID: 3400334928170339260}
-  continueCommandButton: {fileID: 3327368090867121537}
 --- !u!1 &8943779765110979769
 GameObject:
   m_ObjectHideFlags: 0
@@ -2690,18 +2684,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9f1c2bd741a9f874394f03098d1b8b5d, type: 3}
---- !u!114 &3400334928170339260 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 968181286622318197, guid: 9f1c2bd741a9f874394f03098d1b8b5d,
-    type: 3}
-  m_PrefabInstance: {fileID: 2476910911659410889}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc97e45c38cdac24dbf7598205575294, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RewardMapCommandButtonView
 --- !u!224 &8031597675342190240 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5560316963435074409, guid: 9f1c2bd741a9f874394f03098d1b8b5d,
@@ -2891,18 +2873,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9f1c2bd741a9f874394f03098d1b8b5d, type: 3}
---- !u!114 &3327368090867121537 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 968181286622318197, guid: 9f1c2bd741a9f874394f03098d1b8b5d,
-    type: 3}
-  m_PrefabInstance: {fileID: 2540738715128919028}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc97e45c38cdac24dbf7598205575294, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RewardMapCommandButtonView
 --- !u!224 &7955805244598198429 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5560316963435074409, guid: 9f1c2bd741a9f874394f03098d1b8b5d,

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Start Run DataMapper Flow Graph</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --ink: #18202a;
+      --muted: #657080;
+      --line: #91a0b3;
+      --ui: #d9ecff;
+      --code: #e8e4ff;
+      --so: #dbf1e2;
+      --db: #ffe4c8;
+      --gen: #fff2b8;
+      --out: #e7edf3;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.45 Arial, Helvetica, sans-serif;
+    }
+
+    main {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0 0 20px;
+      color: var(--muted);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 9px;
+      border: 1px solid #d4dbe5;
+      border-radius: 6px;
+      background: #fff;
+      color: #354052;
+      font-size: 12px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,.12);
+    }
+
+    .graph {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid #d7dde6;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 26px rgba(20, 32, 45, .06);
+    }
+
+    svg {
+      display: block;
+      min-width: 1120px;
+      height: auto;
+    }
+
+    .node rect {
+      stroke: rgba(24, 32, 42, .2);
+      stroke-width: 1.2;
+      rx: 8;
+    }
+
+    .node text {
+      fill: var(--ink);
+      font-size: 13px;
+    }
+
+    .node .title {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .node .note {
+      fill: var(--muted);
+      font-size: 12px;
+    }
+
+    .ui rect { fill: var(--ui); }
+    .code rect { fill: var(--code); }
+    .so rect { fill: var(--so); }
+    .db rect { fill: var(--db); }
+    .gen rect { fill: var(--gen); }
+    .out rect { fill: var(--out); }
+
+    .edge {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 2;
+      marker-end: url(#arrow);
+    }
+
+    .edge-label {
+      fill: #4d5969;
+      font-size: 12px;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    .section {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid #d7dde6;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .section h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    li { margin: 5px 0; }
+    code { background: #edf1f6; padding: 1px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Start Run: DataMapper, DB i generator</h1>
+  <p class="subtitle">Graf pokazuje, skąd Start Run bierze dane i jak łączy authored data z DB progress/unlock state.</p>
+
+  <div class="legend">
+    <span class="pill"><span class="dot" style="background: var(--ui)"></span>UI / ekran</span>
+    <span class="pill"><span class="dot" style="background: var(--code)"></span>kod C# / adapter</span>
+    <span class="pill"><span class="dot" style="background: var(--so)"></span>ScriptableObject authored data</span>
+    <span class="pill"><span class="dot" style="background: var(--db)"></span>SQLite DB runtime/progress</span>
+    <span class="pill"><span class="dot" style="background: var(--gen)"></span>generator</span>
+    <span class="pill"><span class="dot" style="background: var(--out)"></span>wynik dla UI / run</span>
+  </div>
+
+  <div class="graph">
+    <svg viewBox="0 0 1120 720" role="img" aria-label="Start Run data flow graph">
+      <defs>
+        <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+          <path d="M2,2 L10,6 L2,10 Z" fill="#91a0b3"></path>
+        </marker>
+      </defs>
+
+      <path class="edge" d="M145 94 C210 94 210 94 275 94"></path>
+      <text class="edge-label" x="176" y="82">woła adapter</text>
+
+      <path class="edge" d="M420 94 C477 94 477 94 535 94"></path>
+      <text class="edge-label" x="448" y="82">tworzy service</text>
+
+      <path class="edge" d="M680 94 C740 94 740 94 800 94"></path>
+      <text class="edge-label" x="705" y="82">tworzy source</text>
+
+      <path class="edge" d="M895 126 C895 178 850 178 850 230"></path>
+      <text class="edge-label" x="864" y="180">DataMapper.Instance</text>
+
+      <path class="edge" d="M850 292 C850 334 735 334 735 376"></path>
+      <text class="edge-label" x="742" y="326">Resources.Load</text>
+
+      <path class="edge" d="M735 438 C735 478 640 478 640 518"></path>
+      <text class="edge-label" x="654" y="470">UnitCatalog</text>
+
+      <path class="edge" d="M735 438 C735 478 830 478 830 518"></path>
+      <text class="edge-label" x="778" y="470">SkillCatalog</text>
+
+      <path class="edge" d="M640 580 C650 626 485 626 495 520"></path>
+      <text class="edge-label" x="500" y="636">GetAllUnits + mapowanie</text>
+
+      <path class="edge" d="M830 580 C820 626 520 626 530 520"></path>
+
+      <path class="edge" d="M535 126 C470 178 470 178 405 230"></path>
+      <text class="edge-label" x="417" y="174">ładuje unlocki</text>
+
+      <path class="edge" d="M405 292 C405 334 405 334 405 376"></path>
+      <text class="edge-label" x="420" y="326">unit/skill unlocks</text>
+
+      <path class="edge" d="M495 438 C495 478 495 478 495 518"></path>
+      <text class="edge-label" x="510" y="470">unit pool</text>
+
+      <path class="edge" d="M405 438 C438 478 462 478 495 518"></path>
+
+      <path class="edge" d="M495 580 C400 634 250 628 190 544"></path>
+      <text class="edge-label" x="296" y="626">StartingArmyTemplate[]</text>
+
+      <path class="edge" d="M190 482 C190 430 260 430 330 376"></path>
+      <text class="edge-label" x="206" y="424">BuildScreen</text>
+
+      <path class="edge" d="M190 544 C120 606 120 606 190 648"></path>
+      <text class="edge-label" x="54" y="608">BeginRun zapisuje wybraną</text>
+
+      <path class="edge" d="M330 376 C250 430 230 430 190 482"></path>
+
+      <g class="node ui" transform="translate(25 62)">
+        <rect width="120" height="64"></rect>
+        <text class="title" x="14" y="24">StartRunScreen</text>
+        <text x="14" y="42">Controller.cs</text>
+        <text class="note" x="14" y="57">ekran UI</text>
+      </g>
+
+      <g class="node code" transform="translate(275 62)">
+        <rect width="145" height="64"></rect>
+        <text class="title" x="14" y="24">OfflineStartRun</text>
+        <text x="14" y="42">Adapter.cs</text>
+        <text class="note" x="14" y="57">fasada UI</text>
+      </g>
+
+      <g class="node code" transform="translate(535 62)">
+        <rect width="145" height="64"></rect>
+        <text class="title" x="14" y="24">OfflineModeDB</text>
+        <text x="14" y="42">Composition.cs</text>
+        <text class="note" x="14" y="57">składa zależności</text>
+      </g>
+
+      <g class="node code" transform="translate(800 62)">
+        <rect width="190" height="64"></rect>
+        <text class="title" x="14" y="24">DataMapperStartRun</text>
+        <text x="14" y="42">UnitSource.cs</text>
+        <text class="note" x="14" y="57">adapter pod generator</text>
+      </g>
+
+      <g class="node code" transform="translate(755 230)">
+        <rect width="190" height="62"></rect>
+        <text class="title" x="14" y="24">DataMapper.Instance</text>
+        <text x="14" y="42">singleton access</text>
+        <text class="note" x="14" y="56">cache statyczny</text>
+      </g>
+
+      <g class="node so" transform="translate(645 376)">
+        <rect width="180" height="62"></rect>
+        <text class="title" x="14" y="24">DataMapper.asset</text>
+        <text x="14" y="42">Resources/0_Data</text>
+        <text class="note" x="14" y="56">SO z referencjami</text>
+      </g>
+
+      <g class="node so" transform="translate(550 518)">
+        <rect width="180" height="62"></rect>
+        <text class="title" x="14" y="24">UnitCatalog</text>
+        <text x="14" y="42">UnitDefinitionAsset[]</text>
+        <text class="note" x="14" y="56">tier, cost, faction</text>
+      </g>
+
+      <g class="node so" transform="translate(740 518)">
+        <rect width="180" height="62"></rect>
+        <text class="title" x="14" y="24">SkillCatalog</text>
+        <text x="14" y="42">SkillDefinitionAsset[]</text>
+        <text class="note" x="14" y="56">skill definitions</text>
+      </g>
+
+      <g class="node db" transform="translate(300 230)">
+        <rect width="210" height="62"></rect>
+        <text class="title" x="14" y="24">Offline SQLite DB</text>
+        <text x="14" y="42">account_unlocks</text>
+        <text class="note" x="14" y="56">progress/unlock state</text>
+      </g>
+
+      <g class="node code" transform="translate(300 376)">
+        <rect width="210" height="62"></rect>
+        <text class="title" x="14" y="24">OfflineStartRunUnlock</text>
+        <text x="14" y="42">ContextSource.cs</text>
+        <text class="note" x="14" y="56">filtr jednostek/skilli</text>
+      </g>
+
+      <g class="node gen" transform="translate(395 518)">
+        <rect width="200" height="62"></rect>
+        <text class="title" x="14" y="24">DeterministicRun</text>
+        <text x="14" y="42">GenerationCatalog.cs</text>
+        <text class="note" x="14" y="56">generuje army offers</text>
+      </g>
+
+      <g class="node code" transform="translate(95 482)">
+        <rect width="190" height="62"></rect>
+        <text class="title" x="14" y="24">StartRunService.cs</text>
+        <text x="14" y="42">BuildScreen / BeginRun</text>
+        <text class="note" x="14" y="56">DTO i walidacja</text>
+      </g>
+
+      <g class="node out" transform="translate(95 648)">
+        <rect width="190" height="50"></rect>
+        <text class="title" x="14" y="23">UI rows</text>
+        <text class="note" x="14" y="40">StartingArmyOptionViewData</text>
+      </g>
+
+      <g class="node db" transform="translate(345 648)">
+        <rect width="210" height="50"></rect>
+        <text class="title" x="14" y="23">Run DB write</text>
+        <text class="note" x="14" y="40">offline_runs + snapshots</text>
+      </g>
+
+      <path class="edge" d="M285 673 C310 673 320 673 345 673"></path>
+    </svg>
+  </div>
+
+  <section class="section">
+    <h2>Najkrótszy opis flow</h2>
+    <ol>
+      <li><code>StartRunScreenController.cs</code> prosi adapter o dane ekranu.</li>
+      <li><code>OfflineModeDatabaseComposition.cs</code> składa service i tworzy <code>DataMapperStartRunUnitSource</code>.</li>
+      <li><code>DataMapperStartRunUnitSource</code> woła <code>DataMapper.Instance</code>.</li>
+      <li><code>DataMapper.Instance</code> ładuje raz <code>Resources/0_Data/DataMapper</code>, czyli ScriptableObject z referencjami do katalogów.</li>
+      <li><code>UnitCatalog</code> i <code>SkillCatalog</code> dają authored data: jednostki, koszty, tiery, faction, role i skille.</li>
+      <li>DB daje runtime/progress data: unlocki konta oraz później zapis wybranego runu i snapshotu.</li>
+      <li><code>DeterministicRunGenerationCatalog</code> łączy authored unit pool z DB unlockami i generuje oferty armii.</li>
+      <li><code>StartRunService</code> zamienia oferty na UI rows, a po starcie zapisuje wybraną armię do DB przez store/writer.</li>
+    </ol>
+  </section>
+</main>
+</body>
+</html>

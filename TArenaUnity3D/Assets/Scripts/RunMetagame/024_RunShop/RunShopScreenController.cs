@@ -4,9 +4,6 @@ using UnityEngine.UI;
 
 public class RunShopScreenController : MonoBehaviour
 {
-    [SerializeField] private string runId = "offline-run";
-    [SerializeField] private string routeNodeId = "offline-shop-node";
-    [SerializeField] private int startingRunCurrency = 120;
     [SerializeField] private RunShopOfferCardView[] offerCards = new RunShopOfferCardView[0];
     [SerializeField] private RunShopStackRowView[] currentArmyRows = new RunShopStackRowView[0];
     [SerializeField] private RunShopStackRowView[] previewArmyRows = new RunShopStackRowView[0];
@@ -18,6 +15,8 @@ public class RunShopScreenController : MonoBehaviour
     [SerializeField] private Button leaveButton;
 
     private OfflineRunShopAdapter adapter;
+    private OfflineRunContextDbReader runContextReader;
+    private OfflineRunContext runContext;
     private DataMapper dataMapper;
     private RunShopVisitViewData visit;
     private RunShopArmySnapshot currentArmy;
@@ -27,18 +26,27 @@ public class RunShopScreenController : MonoBehaviour
 
     private void Awake()
     {
-        adapter = new OfflineRunShopAdapter();
+        adapter = OfflineModeDatabaseComposition.CreateRunShopAdapter();
+        runContextReader = OfflineModeDatabaseComposition.CreateRunContextReader();
         dataMapper = DataMapper.Instance;
-        runCurrency = Mathf.Max(0, startingRunCurrency);
-        currentArmy = BuildMockArmy();
         WireStaticButtons();
+        if (!LoadRunState())
+        {
+            return;
+        }
+
         Refresh();
     }
 
     public void Refresh()
     {
+        if (currentArmy == null && !LoadRunState())
+        {
+            return;
+        }
+
         visit = adapter.BuildVisit(
-            new RunShopVisitRequest(visitId, runId, routeNodeId, runCurrency, currentArmy),
+            new RunShopVisitRequest(visitId, runContext.RunIdText, runContext.CurrentNodeDatabaseIdText, runCurrency, currentArmy),
             focusedOfferId);
 
         visitId = visit.VisitId;
@@ -144,47 +152,30 @@ public class RunShopScreenController : MonoBehaviour
         }
     }
 
-    private RunShopArmySnapshot BuildMockArmy()
+    private bool LoadRunState()
     {
-        System.Collections.Generic.List<RunShopStackSnapshot> stacks = new System.Collections.Generic.List<RunShopStackSnapshot>
+        runContext = runContextReader == null ? null : runContextReader.LoadLatestRunForNextScreen("RunShop");
+        if (runContext == null)
         {
-            Stack("stack-rusher", "Rusher", 28, 5, "Chope", "Rush"),
-            Stack("stack-thrower", "Thrower", 10, 0, "Range_Stance_Barb", "Double_Throw", "Axe_Rain"),
-            Stack("stack-healer", "Healer", 5, 2, "Tough_Skin", "Defence_Ritual"),
-            Stack("stack-wisp", "Wisp", 22, 0, "Blind_by_light", "Unstoppable_Light")
-        };
-
-        int totalValue = 0;
-        for (int i = 0; i < stacks.Count; i++)
-        {
-            totalValue += stacks[i].CombatValue;
+            RenderUnavailable("Run Shop requires a persisted offline run whose next_screen is RunShop.");
+            return false;
         }
 
-        return new RunShopArmySnapshot(
-            "mock-shop-army",
-            totalValue,
-            stacks);
-    }
-
-    private RunShopStackSnapshot Stack(string stackId, string unitId, int amount, int lost, params string[] skillIds)
-    {
-        RunShopUnitDefinition unit = new DataMapperRunShopUnitSource(dataMapper).FindUnit(unitId);
-        System.Collections.Generic.List<RunShopSkillState> skills = new System.Collections.Generic.List<RunShopSkillState>();
-        for (int i = 0; i < skillIds.Length; i++)
+        currentArmy = runContextReader.ToRunShopCurrentArmy(runContext);
+        if (currentArmy == null || currentArmy.Stacks == null || currentArmy.Stacks.Count == 0)
         {
-            skills.Add(new RunShopSkillState(skillIds[i], i == 0));
+            RenderUnavailable("Run Shop requires current_army_snapshot_id on the active run.");
+            return false;
         }
 
-        return new RunShopStackSnapshot(
-            stackId,
-            unitId,
-            unit == null ? unitId : unit.DisplayName,
-            unit == null ? "I" : unit.Tier,
-            1,
-            amount,
-            lost,
-            amount * (unit == null ? 0 : unit.Cost),
-            skills);
+        if (runContext.CurrentNodeId <= 0)
+        {
+            RenderUnavailable("Run Shop requires current_node_id on the active run.");
+            return false;
+        }
+
+        runCurrency = Mathf.Max(0, runContext.CurrentRunGold);
+        return true;
     }
 
     private void WireStaticButtons()
@@ -213,6 +204,22 @@ public class RunShopScreenController : MonoBehaviour
         if (text != null)
         {
             text.text = value ?? string.Empty;
+        }
+    }
+
+    private void RenderUnavailable(string message)
+    {
+        visit = null;
+        BindOfferCards();
+        BindArmyRows(currentArmyRows, null);
+        BindArmyRows(previewArmyRows, null);
+        SetText(walletText, "0 RUN GOLD");
+        SetText(selectedOfferTitleText, "Shop unavailable");
+        SetText(selectedOfferPreviewText, string.Empty);
+        SetText(resultMessageText, message);
+        if (buyButton != null)
+        {
+            buyButton.interactable = false;
         }
     }
 }

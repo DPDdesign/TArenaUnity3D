@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using NUnit.Framework;
+using UnityEngine;
 
 public class StartRunSlotAvailabilityTests
 {
@@ -10,7 +11,7 @@ public class StartRunSlotAvailabilityTests
     public void BuildScreen_GeneratesRequestedSlotsAndAppliesDefaultLocks()
     {
         FakeUnitPoolSource units = new FakeUnitPoolSource();
-        DeterministicRunGenerationCatalog catalog = new DeterministicRunGenerationCatalog(units);
+        DeterministicRunGenerationCatalog catalog = CreateCatalog(units);
         StartRunService service = new StartRunService(
             catalog,
             catalog,
@@ -37,7 +38,7 @@ public class StartRunSlotAvailabilityTests
     public void BuildScreen_UnlocksWinAndLevelSlotsWhenProgressAllows()
     {
         FakeUnitPoolSource units = new FakeUnitPoolSource();
-        DeterministicRunGenerationCatalog catalog = new DeterministicRunGenerationCatalog(units);
+        DeterministicRunGenerationCatalog catalog = CreateCatalog(units);
         StartRunService service = new StartRunService(
             catalog,
             catalog,
@@ -57,7 +58,7 @@ public class StartRunSlotAvailabilityTests
     public void BeginRun_RejectsLockedSelectionEvenWhenCalledDirectly()
     {
         FakeUnitPoolSource units = new FakeUnitPoolSource();
-        DeterministicRunGenerationCatalog catalog = new DeterministicRunGenerationCatalog(units);
+        DeterministicRunGenerationCatalog catalog = CreateCatalog(units);
         StartRunService service = new StartRunService(
             catalog,
             catalog,
@@ -105,6 +106,74 @@ public class StartRunSlotAvailabilityTests
         }
     }
 
+    [Test]
+    public void OfflineUnlockContextSource_SeedsAllStartRunUnitsAndSkills()
+    {
+        string databasePath = BuildTempDatabasePath();
+        try
+        {
+            OfflineStartRunUnlockContextSource source = new OfflineStartRunUnlockContextSource(databasePath);
+
+            StartRunGenerationUnlockContext context = source.LoadUnlockContext("offline-player");
+
+            Assert.That(context.UnlockedUnitIds, Is.EquivalentTo(new[]
+            {
+                "Axeman",
+                "FireElemental",
+                "FleshGolem",
+                "Healer",
+                "HeavyHitter",
+                "Rusher",
+                "Specialist",
+                "StoneGolem",
+                "Tank",
+                "Trapper",
+                "Thrower",
+                "Wisp"
+            }));
+            Assert.That(context.UnlockedSkillIds, Is.EquivalentTo(new[]
+            {
+                "Axe_Rain",
+                "Blind_by_light",
+                "Chope",
+                "Cold_Blood",
+                "Defence_Ritual",
+                "Double_Throw",
+                "Fire_Ball",
+                "Fire_Movement",
+                "Fire_Skin",
+                "Force_Pull",
+                "Hate",
+                "Heavy_Fists",
+                "Insult",
+                "Long_Lick",
+                "Massochism",
+                "Melee_Stance_Barb",
+                "Melee_Stance_Lizard",
+                "Rage",
+                "Range_Stance_Barb",
+                "Range_Stance_Lizard",
+                "Rope_Trap",
+                "Rotting",
+                "Rush",
+                "Shapeshift",
+                "Slash",
+                "Spike_Trap",
+                "Stone_Skin",
+                "Stone_Stance",
+                "Stone_Throw",
+                "Terrifying_Presence",
+                "Tough_Skin",
+                "Toxic_Fume",
+                "Unstoppable_Light"
+            }));
+        }
+        finally
+        {
+            TryDelete(databasePath);
+        }
+    }
+
     private static void AssertSlot(
         StartingArmyOptionViewData option,
         int visualSlotIndex,
@@ -115,6 +184,18 @@ public class StartRunSlotAvailabilityTests
         Assert.That(option.IsLocked, Is.EqualTo(isLocked));
         Assert.That(option.LockedReason, Is.EqualTo(lockedReason));
         Assert.That(option.CanStartRun, Is.EqualTo(!isLocked));
+    }
+
+    private static DeterministicRunGenerationCatalog CreateCatalog(IStartRunUnitPoolSource units)
+    {
+        ArmyGeneratorRuleSet ruleSet = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
+        ruleSet.ConfigureMockDefaults();
+        return new DeterministicRunGenerationCatalog(
+            units,
+            ruleSet,
+            StartingArmyGeneratorConfig.CreateDefault(ruleSet),
+            RouteGeneratorConfig.CreateDefault(),
+            null);
     }
 
     private static void SeedAccountProgress(string databasePath, int accountXp, bool wonRun)

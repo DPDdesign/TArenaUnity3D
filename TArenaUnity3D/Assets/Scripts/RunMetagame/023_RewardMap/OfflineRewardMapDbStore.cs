@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Data;
 using UnityEngine;
 
-public class OfflineRewardMapDbStore : IRewardMapChoiceStore
+public class OfflineRewardMapDbStore : IMaterializedRewardMapChoiceStore
 {
     private readonly string databasePath;
     private readonly IOfflineArmySnapshotCatalogResolver resolver;
     private readonly OfflineArmySnapshotDbRepository snapshotRepository = new OfflineArmySnapshotDbRepository();
+    private readonly OfflineRunContextDbWriter runContextWriter = new OfflineRunContextDbWriter();
 
     public OfflineRewardMapDbStore(string databasePath, IOfflineArmySnapshotCatalogResolver resolver)
     {
@@ -133,27 +134,17 @@ INSERT INTO reward_choices (
                 new OfflineDatabaseSqlParameter("@choiceStatusId", (int)DBChoiceStatusId.Generated),
                 new OfflineDatabaseSqlParameter("@createdAtUtc", now));
 
-            SaveCards(connection, transaction, persistedChoiceId, run.AccountId, runId, nodeId, choice, formationSlotBySemanticStackId, snapshotStackIdsByFormationSlot);
+            SaveCards(connection, transaction, persistedChoiceId, run.AccountId, runId, nodeId, beforeSnapshotId, choice, formationSlotBySemanticStackId, snapshotStackIdsByFormationSlot);
 
-            OfflineDatabaseSql.ExecuteNonQuery(
+            runContextWriter.UpdateNodeArmyGoldScreen(
                 connection,
-                @"
-UPDATE offline_runs
-SET current_node_id = @currentNodeId,
-    current_army_snapshot_id = @currentArmySnapshotId,
-    current_run_gold = @currentRunGold,
-    run_status_id = @runStatusId,
-    next_screen = @nextScreen,
-    updated_at_utc = @updatedAtUtc
-WHERE run_id = @runId;",
                 transaction,
-                new OfflineDatabaseSqlParameter("@currentNodeId", nodeId),
-                new OfflineDatabaseSqlParameter("@currentArmySnapshotId", beforeSnapshotId),
-                new OfflineDatabaseSqlParameter("@currentRunGold", choice.RunGoldBeforeReward),
-                new OfflineDatabaseSqlParameter("@runStatusId", (int)DBRunStatusId.AwaitingReward),
-                new OfflineDatabaseSqlParameter("@nextScreen", "RewardMap"),
-                new OfflineDatabaseSqlParameter("@updatedAtUtc", now),
-                new OfflineDatabaseSqlParameter("@runId", runId));
+                runId,
+                nodeId,
+                beforeSnapshotId,
+                choice.RunGoldBeforeReward,
+                (int)DBRunStatusId.AwaitingReward,
+                "Reward");
 
             transaction.Commit();
         }
@@ -195,7 +186,7 @@ WHERE run_id = @runId;",
                 RewardMapError error = legal ? RewardMapError.None : RewardMapError.NoLegalTarget;
 
                 RewardMapCardViewData card = new RewardMapCardViewData(
-                    BuildRewardId(cardRow.TemplateId),
+                    BuildRewardId(cardRow.TemplateId, cardRow.SortOrder),
                     cardRow.TemplateId,
                     ToFamily(cardRow.FamilyId),
                     ToIntention(cardRow.IntentionId),
@@ -241,6 +232,42 @@ WHERE run_id = @runId;",
         }
     }
 
+    public RewardMapChoiceViewData FindChoiceForRunNode(string runId)
+    {
+        int parsedRunId = OfflineDatabaseLegacyIdentity.ParseIntIdOrDefault(runId);
+        if (parsedRunId <= 0)
+        {
+            return null;
+        }
+
+        using (IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
+        {
+            int nodeId = ReadCurrentNodeId(connection, parsedRunId);
+            if (nodeId <= 0)
+            {
+                return null;
+            }
+
+            object choiceId = OfflineDatabaseSql.ExecuteScalar(
+                connection,
+                @"
+SELECT reward_choice_id
+FROM reward_choices
+WHERE run_id = @runId
+  AND node_id = @nodeId
+  AND is_active = 1
+ORDER BY reward_choice_id DESC
+LIMIT 1;",
+                null,
+                new OfflineDatabaseSqlParameter("@runId", parsedRunId),
+                new OfflineDatabaseSqlParameter("@nodeId", nodeId));
+            int parsedChoiceId = OfflineDatabaseSql.ReadInt(choiceId);
+            return parsedChoiceId <= 0
+                ? null
+                : FindChoice(OfflineDatabaseLegacyIdentity.ToLegacyRewardChoiceId(parsedChoiceId));
+        }
+    }
+
     public RewardMapApplyResult SaveAppliedReward(string choiceId, RewardMapApplyResult result)
     {
         int parsedChoiceId = OfflineDatabaseLegacyIdentity.ParseIntIdOrDefault(choiceId);
@@ -267,6 +294,7 @@ WHERE run_id = @runId;",
                 connection,
                 transaction,
                 OfflineArmySnapshotMapper.FromRewardMap(result.ArmyAfterReward, choiceRow.AccountId, choiceRow.RunId, choiceRow.NodeId));
+            int selectedSortOrder = ResolveRewardSortOrder(result.Reward);
 
             OfflineDatabaseSql.ExecuteNonQuery(
                 connection,
@@ -304,29 +332,36 @@ WHERE reward_choice_id = @rewardChoiceId;",
 UPDATE reward_cards
 SET applied_snapshot_id = @appliedSnapshotId
 WHERE reward_choice_id = @rewardChoiceId
-  AND template_id = @templateId;",
+  AND template_id = @templateId
+  AND (@sortOrder < 0 OR sort_order = @sortOrder);",
                 transaction,
                 new OfflineDatabaseSqlParameter("@appliedSnapshotId", afterSnapshotId),
                 new OfflineDatabaseSqlParameter("@rewardChoiceId", parsedChoiceId),
-                new OfflineDatabaseSqlParameter("@templateId", result.Reward == null ? string.Empty : result.Reward.TemplateId));
+                new OfflineDatabaseSqlParameter("@templateId", result.Reward == null ? string.Empty : result.Reward.TemplateId),
+                new OfflineDatabaseSqlParameter("@sortOrder", selectedSortOrder));
 
             OfflineDatabaseSql.ExecuteNonQuery(
                 connection,
                 @"
-UPDATE offline_runs
-SET current_army_snapshot_id = @currentArmySnapshotId,
-    current_run_gold = @currentRunGold,
-    run_status_id = @runStatusId,
-    next_screen = @nextScreen,
-    updated_at_utc = @updatedAtUtc
-WHERE run_id = @runId;",
+UPDATE map_node_rewards
+SET is_selected = CASE WHEN catalog_entry_id = @catalogEntryId AND (@sortOrder < 0 OR reward_slot_index = @sortOrder) THEN 1 ELSE 0 END,
+    applied_snapshot_id = CASE WHEN catalog_entry_id = @catalogEntryId AND (@sortOrder < 0 OR reward_slot_index = @sortOrder) THEN @appliedSnapshotId ELSE applied_snapshot_id END
+WHERE node_id = @nodeId
+  AND is_active = 1;",
                 transaction,
-                new OfflineDatabaseSqlParameter("@currentArmySnapshotId", afterSnapshotId),
-                new OfflineDatabaseSqlParameter("@currentRunGold", result.RunGoldAfterReward),
-                new OfflineDatabaseSqlParameter("@runStatusId", (int)DBRunStatusId.InProgress),
-                new OfflineDatabaseSqlParameter("@nextScreen", "RunMap"),
-                new OfflineDatabaseSqlParameter("@updatedAtUtc", OfflineDatabaseSql.UtcNowText()),
-                new OfflineDatabaseSqlParameter("@runId", choiceRow.RunId));
+                new OfflineDatabaseSqlParameter("@catalogEntryId", result.Reward == null ? string.Empty : result.Reward.TemplateId),
+                new OfflineDatabaseSqlParameter("@appliedSnapshotId", afterSnapshotId),
+                new OfflineDatabaseSqlParameter("@sortOrder", selectedSortOrder),
+                new OfflineDatabaseSqlParameter("@nodeId", choiceRow.NodeId));
+
+            runContextWriter.UpdateArmyGoldScreen(
+                connection,
+                transaction,
+                choiceRow.RunId,
+                afterSnapshotId,
+                result.RunGoldAfterReward,
+                (int)DBRunStatusId.InProgress,
+                "RunMap");
 
             transaction.Commit();
 
@@ -349,6 +384,7 @@ WHERE run_id = @runId;",
         int accountId,
         int runId,
         int nodeId,
+        int beforeSnapshotId,
         RewardMapChoiceViewData choice,
         Dictionary<string, int> formationSlotBySemanticStackId,
         Dictionary<int, int> snapshotStackIdsByFormationSlot)
@@ -433,7 +469,82 @@ INSERT INTO reward_cards (
                 new OfflineDatabaseSqlParameter("@previewTextAfter", card.AfterText),
                 new OfflineDatabaseSqlParameter("@previewSnapshotId", previewSnapshotId > 0 ? (object)previewSnapshotId : DBNull.Value),
                 new OfflineDatabaseSqlParameter("@sortOrder", i));
+
+            SaveMapNodeReward(
+                connection,
+                transaction,
+                nodeId,
+                i,
+                beforeSnapshotId,
+                targetSnapshotStackId,
+                card);
         }
+    }
+
+    private static void SaveMapNodeReward(
+        IDbConnection connection,
+        IDbTransaction transaction,
+        int nodeId,
+        int slotIndex,
+        int beforeSnapshotId,
+        int targetSnapshotStackId,
+        RewardMapCardViewData card)
+    {
+        if (nodeId <= 0 || beforeSnapshotId <= 0 || card == null)
+        {
+            return;
+        }
+
+        RewardMapOperation operation = card.Operation;
+        OfflineDatabaseSql.ExecuteNonQuery(
+            connection,
+            @"
+INSERT INTO map_node_rewards (
+    node_id,
+    reward_slot_index,
+    catalog_entry_id,
+    base_snapshot_id,
+    target_snapshot_stack_id,
+    reward_type,
+    unit_id,
+    to_unit_id,
+    amount,
+    currency_delta,
+    operation_json,
+    is_selected,
+    applied_snapshot_id,
+    is_fallback,
+    is_active
+) VALUES (
+    @nodeId,
+    @rewardSlotIndex,
+    @catalogEntryId,
+    @baseSnapshotId,
+    @targetSnapshotStackId,
+    @rewardType,
+    @unitId,
+    @toUnitId,
+    @amount,
+    @currencyDelta,
+    @operationJson,
+    0,
+    NULL,
+    @isFallback,
+    1
+);",
+            transaction,
+            new OfflineDatabaseSqlParameter("@nodeId", nodeId),
+            new OfflineDatabaseSqlParameter("@rewardSlotIndex", slotIndex),
+            new OfflineDatabaseSqlParameter("@catalogEntryId", card.TemplateId),
+            new OfflineDatabaseSqlParameter("@baseSnapshotId", beforeSnapshotId),
+            new OfflineDatabaseSqlParameter("@targetSnapshotStackId", targetSnapshotStackId > 0 ? (object)targetSnapshotStackId : DBNull.Value),
+            new OfflineDatabaseSqlParameter("@rewardType", ToRewardType(operation)),
+            new OfflineDatabaseSqlParameter("@unitId", operation == null ? string.Empty : operation.UnitId),
+            new OfflineDatabaseSqlParameter("@toUnitId", operation == null ? string.Empty : operation.ToUnitId),
+            new OfflineDatabaseSqlParameter("@amount", operation == null ? 0 : operation.Amount),
+            new OfflineDatabaseSqlParameter("@currencyDelta", operation == null ? 0 : operation.CurrencyDelta),
+            new OfflineDatabaseSqlParameter("@operationJson", JsonUtility.ToJson(operation)),
+            new OfflineDatabaseSqlParameter("@isFallback", IsFallback(card) ? 1 : 0));
     }
 
     private static Dictionary<string, int> BuildFormationSlotLookup(RewardMapArmySnapshot army)
@@ -502,11 +613,73 @@ INSERT INTO reward_cards (
         {
             case RewardMapOperationType.AddUnits:
             case RewardMapOperationType.PromoteStack:
+            case RewardMapOperationType.DowngradeStack:
             case RewardMapOperationType.TeachSkill:
             case RewardMapOperationType.RecoverLosses:
                 operation.StackId = slotId;
                 break;
         }
+    }
+
+    private static int ReadCurrentNodeId(IDbConnection connection, int runId)
+    {
+        object nodeId = OfflineDatabaseSql.ExecuteScalar(
+            connection,
+            @"
+SELECT current_node_id
+FROM offline_runs
+WHERE run_id = @runId
+LIMIT 1;",
+            null,
+            new OfflineDatabaseSqlParameter("@runId", runId));
+        return OfflineDatabaseSql.ReadInt(nodeId);
+    }
+
+    private static string ToRewardType(RewardMapOperation operation)
+    {
+        if (operation == null)
+        {
+            return string.Empty;
+        }
+
+        switch (operation.Type)
+        {
+            case RewardMapOperationType.AddStack:
+                return "AddNewStack";
+            case RewardMapOperationType.AddUnits:
+                return "IncreaseStack";
+            case RewardMapOperationType.PromoteStack:
+                return "PromoteUnit";
+            case RewardMapOperationType.DowngradeStack:
+                return "DowngradeUnit";
+            case RewardMapOperationType.GainCurrency:
+                return "RunGold";
+            default:
+                return operation.Type.ToString();
+        }
+    }
+
+    private static bool IsFallback(RewardMapCardViewData card)
+    {
+        return card != null && card.Operation != null && card.Operation.Type == RewardMapOperationType.GainCurrency;
+    }
+
+    private static int ResolveRewardSortOrder(RewardMapCardViewData reward)
+    {
+        if (reward == null || string.IsNullOrEmpty(reward.TemplateId) || !reward.TemplateId.StartsWith("prd37-", StringComparison.Ordinal))
+        {
+            return -1;
+        }
+
+        string rewardId = reward.RewardId ?? string.Empty;
+        int separator = rewardId.LastIndexOf('-');
+        if (separator < 0 || separator >= rewardId.Length - 1)
+        {
+            return -1;
+        }
+
+        int parsed;
+        return int.TryParse(rewardId.Substring(separator + 1), out parsed) ? parsed : -1;
     }
 
     private static string ResolveRuntimeStackId(RewardMapArmySnapshot army, int formationSlot)
@@ -591,9 +764,11 @@ INSERT INTO reward_cards (
         return null;
     }
 
-    private static string BuildRewardId(string templateId)
+    private static string BuildRewardId(string templateId, int sortOrder)
     {
-        return "reward-" + templateId;
+        return !string.IsNullOrEmpty(templateId) && templateId.StartsWith("prd37-", StringComparison.Ordinal)
+            ? "reward-" + templateId + "-" + sortOrder
+            : "reward-" + templateId;
     }
 
     private static RewardMapFamily ToFamily(int familyId)

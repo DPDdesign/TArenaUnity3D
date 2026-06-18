@@ -15,6 +15,7 @@ public class OfflineSummaryValueDbStore : ISummaryValueRosterStore, ISummaryValu
     private readonly IOfflineArmySnapshotCatalogResolver resolver;
     private readonly OfflineArmySnapshotDbRepository snapshotRepository = new OfflineArmySnapshotDbRepository();
     private readonly OfflineSavedArmyDbRepository savedArmyRepository;
+    private readonly OfflineRunContextDbWriter runContextWriter = new OfflineRunContextDbWriter();
 
     public OfflineSummaryValueDbStore(string databasePath, IOfflineArmySnapshotCatalogResolver resolver)
     {
@@ -68,19 +69,7 @@ public class OfflineSummaryValueDbStore : ISummaryValueRosterStore, ISummaryValu
 
                 ReplaceEntries(connection, transaction, summaryId, request.TimelineEntries);
 
-                OfflineDatabaseSql.ExecuteNonQuery(
-                    connection,
-                    @"
-UPDATE offline_runs
-SET pre_final_army_snapshot_id = @preFinalArmySnapshotId,
-    current_army_snapshot_id = @currentArmySnapshotId,
-    updated_at_utc = @updatedAtUtc
-WHERE run_id = @runId;",
-                    transaction,
-                    new OfflineDatabaseSqlParameter("@preFinalArmySnapshotId", preFinalSnapshotId > 0 ? (object)preFinalSnapshotId : DBNull.Value),
-                    new OfflineDatabaseSqlParameter("@currentArmySnapshotId", postFinalSnapshotId > 0 ? (object)postFinalSnapshotId : DBNull.Value),
-                    new OfflineDatabaseSqlParameter("@updatedAtUtc", now),
-                    new OfflineDatabaseSqlParameter("@runId", runId));
+                runContextWriter.UpdateSummarySnapshots(connection, transaction, runId, preFinalSnapshotId, postFinalSnapshotId);
             }
 
             SummaryValuePersistedState state = LoadPersistedState(connection, transaction, runId, unlockedSlotCount, request.SelectedSlotId);

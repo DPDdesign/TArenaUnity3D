@@ -10,6 +10,7 @@ public class OfflineRunShopDbStore : IRunShopVisitStore
     private readonly IOfflineArmySnapshotCatalogResolver resolver;
     private readonly IRunMapPathCatalog pathCatalog;
     private readonly OfflineArmySnapshotDbRepository snapshotRepository = new OfflineArmySnapshotDbRepository();
+    private readonly OfflineRunContextDbWriter runContextWriter = new OfflineRunContextDbWriter();
 
     public OfflineRunShopDbStore(string databasePath, IOfflineArmySnapshotCatalogResolver resolver, IRunMapPathCatalog pathCatalog = null)
     {
@@ -277,7 +278,7 @@ WHERE shop_offer_id = @shopOfferId;",
                 new OfflineDatabaseSqlParameter("@shopOfferId", shopOfferId));
 
             UpdateVisitState(connection, transaction, existing, afterSnapshotId, record.CurrencyAfter, record.OfferId, (int)DBVisitStatusId.Open, null);
-            UpdateRunState(connection, transaction, existing.RunId, existing.NodeId, afterSnapshotId, record.CurrencyAfter, (int)DBRunStatusId.InShop, "RunShop");
+            runContextWriter.UpdateNodeArmyGoldScreen(connection, transaction, existing.RunId, existing.NodeId, afterSnapshotId, record.CurrencyAfter, (int)DBRunStatusId.InShop, "RunShop");
 
             transaction.Commit();
         }
@@ -315,7 +316,7 @@ WHERE shop_offer_id = @shopOfferId;",
                 command.FocusedOfferId,
                 (int)DBVisitStatusId.Left,
                 now);
-            UpdateRunState(connection, transaction, row.RunId, row.NodeId, row.CurrentArmySnapshotId, row.CurrentRunGold, (int)DBRunStatusId.InProgress, "RunMap");
+            runContextWriter.UpdateNodeArmyGoldScreen(connection, transaction, row.RunId, row.NodeId, row.CurrentArmySnapshotId, row.CurrentRunGold, (int)DBRunStatusId.InProgress, "RunMap");
             transaction.Commit();
         }
 
@@ -387,7 +388,7 @@ WHERE node_id = @nodeId;",
             new OfflineDatabaseSqlParameter("@shopVisitId", shopVisitId),
             new OfflineDatabaseSqlParameter("@nodeId", nodeId));
 
-        UpdateRunState(connection, transaction, run.RunId, nodeId, initialSnapshotId, visit.RunCurrency, (int)DBRunStatusId.InShop, "RunShop");
+        runContextWriter.UpdateNodeArmyGoldScreen(connection, transaction, run.RunId, nodeId, initialSnapshotId, visit.RunCurrency, (int)DBRunStatusId.InShop, "RunShop");
     }
 
     private void UpdateVisit(IDbConnection connection, IDbTransaction transaction, RunContext run, VisitRow existing, RunShopVisitViewData visit)
@@ -409,7 +410,7 @@ WHERE node_id = @nodeId;",
             visit.FocusedOffer == null ? string.Empty : visit.FocusedOffer.OfferId,
             (int)DBVisitStatusId.Open,
             null);
-        UpdateRunState(connection, transaction, existing.RunId, existing.NodeId, currentSnapshotId, visit.RunCurrency, (int)DBRunStatusId.InShop, "RunShop");
+        runContextWriter.UpdateNodeArmyGoldScreen(connection, transaction, existing.RunId, existing.NodeId, currentSnapshotId, visit.RunCurrency, (int)DBRunStatusId.InShop, "RunShop");
     }
 
     private RunShopVisitViewData BuildVisit(IDbConnection connection, VisitRow row)
@@ -608,37 +609,6 @@ WHERE shop_visit_id = @shopVisitId;",
             new OfflineDatabaseSqlParameter("@focusedOfferId", string.IsNullOrEmpty(focusedOfferId) ? string.Empty : focusedOfferId),
             new OfflineDatabaseSqlParameter("@leftAtUtc", string.IsNullOrEmpty(leftAtUtc) ? (object)DBNull.Value : leftAtUtc),
             new OfflineDatabaseSqlParameter("@shopVisitId", row.ShopVisitId));
-    }
-
-    private static void UpdateRunState(
-        IDbConnection connection,
-        IDbTransaction transaction,
-        int runId,
-        int nodeId,
-        int currentSnapshotId,
-        int currentRunGold,
-        int runStatusId,
-        string nextScreen)
-    {
-        OfflineDatabaseSql.ExecuteNonQuery(
-            connection,
-            @"
-UPDATE offline_runs
-SET current_node_id = @currentNodeId,
-    current_army_snapshot_id = @currentArmySnapshotId,
-    current_run_gold = @currentRunGold,
-    run_status_id = @runStatusId,
-    next_screen = @nextScreen,
-    updated_at_utc = @updatedAtUtc
-WHERE run_id = @runId;",
-            transaction,
-            new OfflineDatabaseSqlParameter("@currentNodeId", nodeId),
-            new OfflineDatabaseSqlParameter("@currentArmySnapshotId", currentSnapshotId),
-            new OfflineDatabaseSqlParameter("@currentRunGold", currentRunGold),
-            new OfflineDatabaseSqlParameter("@runStatusId", runStatusId),
-            new OfflineDatabaseSqlParameter("@nextScreen", nextScreen),
-            new OfflineDatabaseSqlParameter("@updatedAtUtc", OfflineDatabaseSql.UtcNowText()),
-            new OfflineDatabaseSqlParameter("@runId", runId));
     }
 
     private int ResolveNodeId(IDbConnection connection, IDbTransaction transaction, RunContext run, string routeNodeId)

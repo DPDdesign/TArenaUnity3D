@@ -324,6 +324,60 @@ Recommended first content target:
 The generator should mix proven templates. It should not invent arbitrary
 reward math until the core reward feel is proven.
 
+## Upfront Materialization Decision
+
+Accepted on 2026-06-17:
+
+Reward choices are generated as part of the whole run generation pass, not when
+the Reward Map screen opens.
+
+The run seed deterministically generates the run-owned reward rows upfront.
+Those rows are materialized in minimal DB tables with references such as
+`run_id`, runtime node id, reward id, catalog position id, generated reward
+type, operation payload, selected/applied state, and snapshot references.
+
+Reward Map is a load/preview/apply screen:
+
+- hover card: preview the already-materialized card,
+- click card: apply the selected reward immediately,
+- successful apply: return to Run Map through `GameSceneManager.ShowRunMap()`.
+
+Runtime Reward Map must not fall back to a broad hardcoded reward catalog when
+materialized reward rows are missing. Missing generated reward content is a run
+generation/persistence error or an explicit dev/test setup gap.
+
+### Simple RewardRuleSet V1
+
+Current V1 reward generation scope:
+
+- `AddNewStack`,
+- `IncreaseStack`,
+- `PromoteUnit`,
+- `DowngradeUnit`.
+
+Deferred:
+
+- run gold,
+- recovery,
+- skill rewards,
+- reroll tokens.
+
+Rules:
+
+- generate 3 legal reward cards,
+- if a reward type has no legal operation for the current army, try another
+  type,
+- do not show illegal cards in V1,
+- no forced Stabilize/Strengthen/Pivot distribution yet,
+- `IncreaseStack` adds 30 percent to the selected stack amount,
+- `PromoteUnit` changes to a same-faction unit exactly one tier higher,
+- `DowngradeUnit` changes to a same-faction unit exactly one tier lower,
+- promote/downgrade amount is
+  `round((oldAmount * oldUnitCost * 1.2) / newUnitCost)`,
+- `AddNewStack` may choose any catalog unit not already present in the army,
+- `AddNewStack` amount is
+  `round((averageExistingStackValue * 1.2) / newUnitCost)`, minimum 1.
+
 ## Open Questions
 
 1. Which exact unit classes and tiers can promote, demote, or replace each

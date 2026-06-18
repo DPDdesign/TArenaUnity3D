@@ -4,7 +4,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class SavedArmiesScreenController : MonoBehaviour
 {
-    [Header("Offline Prototype State")]
+    [Header("Offline Roster State")]
     [SerializeField] private int unlockedSlotCount = 8;
     [SerializeField] private string selectedSlotId = "slot-01";
     [SerializeField] private string selectedArenaArmyId = "seed-army-01";
@@ -127,7 +127,7 @@ public class SavedArmiesScreenController : MonoBehaviour
         pendingOverwriteConfirmation = false;
         pendingOverwriteSlotId = string.Empty;
         pendingOverwriteArenaArmyId = string.Empty;
-        Render("Back selected. Offline Saved Armies prototype is ready to leave this screen.");
+        Render("Back selected. Offline Saved Armies roster is ready to leave this screen.");
     }
 
     private void InitializeIfNeeded()
@@ -143,7 +143,6 @@ public class SavedArmiesScreenController : MonoBehaviour
         historyStore = dbStore;
         seedSource = new SavedArmiesSeedSnapshotSource();
         adapter = OfflineModeDatabaseComposition.CreateSavedArmiesAdapter(rosterStore, seedSource, historyStore);
-        SeedInitialRoster();
         WireNestedOwners();
     }
 
@@ -259,26 +258,6 @@ public class SavedArmiesScreenController : MonoBehaviour
         if (backButton != null)
         {
             backButton.Bind("Back", true);
-        }
-    }
-
-    private void SeedInitialRoster()
-    {
-        SavedArmy existing = rosterStore.FindActiveArmyInSlot("slot-01");
-        if (existing != null)
-        {
-            return;
-        }
-
-        SavedArmySeedCandidate initialSeed = seedSource == null ? null : seedSource.FindSeedArmy("seed-army-01");
-        SavedArmy seededArmy = initialSeed == null ? null : OfflineArmySnapshotMapper.ToSavedArmy(initialSeed.Snapshot, initialSeed.SeedArmyId);
-        SavedArmy saved = rosterStore.SaveArmyToSlot("slot-01", seededArmy == null ? new System.Collections.Generic.List<SavedArmyStackSnapshot>() : seededArmy.Stacks);
-
-        if (saved != null)
-        {
-            int value = SavedArmiesValueCalculator.CalculateArmyValue(saved.Stacks, new DataMapperSavedArmiesUnitSource());
-            historyStore.AddHistory(new SavedArmyAttackHistoryEntry("history-seeded-01", saved.SavedArmyId, SavedArmyBattleResultKind.DefenceLoss, "Initial Seed Army", value, value + 140));
-            historyStore.AddHistory(new SavedArmyAttackHistoryEntry("history-seeded-02", saved.SavedArmyId, SavedArmyBattleResultKind.OffenceWin, "Practice Keep", value, Mathf.Max(0, value - 90)));
         }
     }
 

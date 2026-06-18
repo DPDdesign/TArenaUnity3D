@@ -164,10 +164,6 @@ public static class PRD19_023_RewardMapPrefabBuilder
         TextMeshProUGUI statusText = AddText("Text_Status", root.transform, "Previewing selected reward.", 17, TextAlignmentOptions.Midline, new Vector2(760f, 32f), new Vector2(-80f, -252f), new Color(0.86f, 0.80f, 0.68f, 1f));
 
         SerializedObject serialized = new SerializedObject(controller);
-        SetString(serialized, "runId", "offline-run");
-        SetInt(serialized, "stageIndex", 2);
-        SetInt(serialized, "startingRunGoldBeforeReward", 360);
-        SetInt(serialized, "sampleInventorySupplies", 2);
         SetObject(serialized, "resultGainedPanel", resultPanel);
         SetObjectArray(serialized, "rewardCards", rewardCardViews.ToArray());
         SetObjectArray(serialized, "armyPreviewUnits", armyUnitViews.ToArray());

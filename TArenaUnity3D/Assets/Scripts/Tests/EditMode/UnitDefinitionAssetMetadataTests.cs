@@ -5,6 +5,28 @@ using UnityEngine;
 public class UnitDefinitionAssetMetadataTests
 {
     [Test]
+    public void DataMapper_ListsProjectUnitDefinitions()
+    {
+        List<string> unitNames = DataMapper.Instance.GetAllUnitNames();
+
+        Assert.That(unitNames, Is.EquivalentTo(new[]
+        {
+            "Axeman",
+            "FireElemental",
+            "FleshGolem",
+            "Healer",
+            "HeavyHitter",
+            "Rusher",
+            "Specialist",
+            "StoneGolem",
+            "Tank",
+            "Thrower",
+            "Trapper",
+            "Wisp"
+        }));
+    }
+
+    [Test]
     public void ToUnitDefinition_CarriesFactionAndRoleCategoryToStartRunDefinition()
     {
         UnitDefinitionAsset asset = ScriptableObject.CreateInstance<UnitDefinitionAsset>();

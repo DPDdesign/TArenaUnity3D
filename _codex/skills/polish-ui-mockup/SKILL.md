@@ -20,6 +20,23 @@ TArenaUnity3D uses TextMesh Pro only. Keep or replace text components with TMP
 types such as `TMP_Text` and `TextMeshProUGUI`; do not introduce or preserve
 legacy `UnityEngine.UI.Text`.
 
+## UI Architecture Contract
+
+Follow `_codex/Context/11_UI_Context.md` during polish.
+
+- Preserve or migrate toward screen controllers/screen views that reference
+  top-level view classes and global controls only.
+- Complex panels/items should be view classes that own their internal fields.
+- Repeated UI should remain `parent + prefab` or nested prefab instances under
+  a configured layout parent.
+- Do not polish by flattening nested prefabs, hand-copying repeated children,
+  or moving child fields onto the screen controller.
+- If a prefab uses a presentation catalog for type/state/category visuals,
+  preserve that catalog wiring. Polish catalog entries or catalog-assigned
+  sprites/colors instead of hardcoding visual choices in the controller.
+- Start Run may remain a working legacy exception unless the task explicitly
+  asks to refactor it.
+
 ## Project UI Frame And Image Rules
 
 - Every text UI component must be a child of an otherwise empty GameObject
@@ -76,6 +93,8 @@ the visual direction conflicts with TArena identity.
    - do not replace nested prefab instances with copied children,
    - do not remove button callbacks,
    - do not rename serialized/public fields,
+   - do not move repeated child fields onto the screen controller,
+   - do not replace catalog-driven visuals with hardcoded controller logic,
    - do not leave legacy `UnityEngine.UI.Text` in a polished prefab set.
 8. Migrate text stack to TextMesh Pro when needed:
    - use `TextMeshProUGUI` for prefab text components,
@@ -127,6 +146,8 @@ screenshot.
 - Keep repeated rows/cards/buttons visually identical except content and state.
 - Prefer nested prefab variants or prefab overrides over hand-edited duplicate
   structures.
+- Keep state overlays and local visual fields inside the repeated item view
+  prefab that owns them.
 - Prefer polishing a `_Polished` copy or variant over editing the source prefab
   in place.
 - Keep spacing on an 8px rhythm unless matching an existing legacy component.

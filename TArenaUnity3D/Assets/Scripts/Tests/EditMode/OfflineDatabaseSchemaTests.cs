@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Data;
+using System.IO;
 using NUnit.Framework;
 
 public class OfflineDatabaseSchemaTests
@@ -43,6 +45,40 @@ public class OfflineDatabaseSchemaTests
         Assert.That((int)DBResultKindId.DefenceLoss, Is.EqualTo(4));
     }
 
+    [Test]
+    public void OpenOrCreate_AddsPrd37ColumnsToExistingVersionOneDatabase()
+    {
+        string databasePath = Path.Combine(Path.GetTempPath(), "TArenaOffline_LegacyV1_" + System.Guid.NewGuid().ToString("N") + ".db");
+        try
+        {
+            CreateLegacyVersionOneDatabase(databasePath);
+
+            OfflineDatabaseOpenResult result = new OfflineDatabaseModule(databasePath).OpenOrCreate();
+
+            Assert.That(result.Success, Is.True);
+            using (IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
+            {
+                Assert.That(ColumnExists(connection, "offline_runs", "run_seed"), Is.True);
+                Assert.That(ColumnExists(connection, "offline_runs", "run_seed_version"), Is.True);
+                Assert.That(TableExists(connection, "map_nodes"), Is.True);
+                Assert.That(TableExists(connection, "map_node_rewards"), Is.True);
+            }
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(databasePath))
+                {
+                    File.Delete(databasePath);
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+
     private static bool ContainsSql(List<string> statements, string fragment)
     {
         for (int i = 0; i < statements.Count; i++)
@@ -54,5 +90,95 @@ public class OfflineDatabaseSchemaTests
         }
 
         return false;
+    }
+
+    private static void CreateLegacyVersionOneDatabase(string databasePath)
+    {
+        OfflineDatabaseProviderResolution provider = OfflineDatabaseProvider.Resolve();
+        Assert.That(provider.Success, Is.True, provider.ErrorMessage);
+        string initializationError = OfflineDatabaseProvider.Initialize(provider);
+        Assert.That(initializationError, Is.Empty);
+
+        using (IDbConnection connection = OfflineDatabaseProvider.CreateConnection(provider, databasePath))
+        {
+            connection.Open();
+            ExecuteNonQuery(connection, @"
+CREATE TABLE schema_version (
+    id INTEGER PRIMARY KEY,
+    version INTEGER NOT NULL,
+    applied_at_utc TEXT NOT NULL,
+    notes TEXT
+);");
+            ExecuteNonQuery(connection, @"
+INSERT INTO schema_version (id, version, applied_at_utc, notes)
+VALUES (1, 1, '2026-06-17T00:00:00.0000000Z', 'Legacy v1 before PRD37');");
+            ExecuteNonQuery(connection, @"
+CREATE TABLE offline_runs (
+    run_id INTEGER PRIMARY KEY,
+    account_id INTEGER NOT NULL,
+    game_mode_id INTEGER NOT NULL,
+    authority_source_id INTEGER NOT NULL,
+    run_status_id INTEGER NOT NULL,
+    starting_army_template_id TEXT NOT NULL,
+    starting_army_variant_id TEXT NOT NULL,
+    selected_starting_army_id TEXT NOT NULL,
+    selected_route_choice_id TEXT NOT NULL,
+    route_map_id INTEGER,
+    current_node_id INTEGER,
+    current_army_snapshot_id INTEGER,
+    start_army_snapshot_id INTEGER,
+    pre_final_army_snapshot_id INTEGER,
+    current_run_gold INTEGER NOT NULL DEFAULT 0,
+    stage_progress INTEGER NOT NULL DEFAULT 0,
+    route_progress INTEGER NOT NULL DEFAULT 0,
+    next_screen TEXT,
+    created_at_utc TEXT NOT NULL,
+    updated_at_utc TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1
+);");
+        }
+    }
+
+    private static bool ColumnExists(IDbConnection connection, string tableName, string columnName)
+    {
+        using (IDbCommand command = connection.CreateCommand())
+        {
+            command.CommandText = "PRAGMA table_info(" + tableName + ");";
+            using (IDataReader reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    if (reader["name"].ToString() == columnName)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TableExists(IDbConnection connection, string tableName)
+    {
+        using (IDbCommand command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT name FROM sqlite_master WHERE type = 'table' AND name = @name LIMIT 1;";
+            IDbDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@name";
+            parameter.Value = tableName;
+            command.Parameters.Add(parameter);
+            object result = command.ExecuteScalar();
+            return result != null && result != System.DBNull.Value;
+        }
+    }
+
+    private static void ExecuteNonQuery(IDbConnection connection, string sql)
+    {
+        using (IDbCommand command = connection.CreateCommand())
+        {
+            command.CommandText = sql;
+            command.ExecuteNonQuery();
+        }
     }
 }

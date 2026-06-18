@@ -1,8 +1,10 @@
 using TMPro;
+using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class RewardMapRewardCardView : MonoBehaviour
+public class RewardMapRewardCardView : MonoBehaviour, IPointerEnterHandler
 {
     [SerializeField] private Button button;
     [SerializeField] private Image accentImage;
@@ -23,12 +25,19 @@ public class RewardMapRewardCardView : MonoBehaviour
         get { return button; }
     }
 
+    public Action<string> FocusRequested;
+
+    private string rewardId;
+    private bool legal;
+
     public void Bind(RewardMapCardViewData card, bool selected)
     {
         bool hasCard = card != null;
         gameObject.SetActive(hasCard);
         if (!hasCard)
         {
+            rewardId = string.Empty;
+            legal = false;
             return;
         }
 
@@ -39,7 +48,9 @@ public class RewardMapRewardCardView : MonoBehaviour
         SetText(detailText, card.Detail);
         SetText(beforeText, card.BeforeText);
         SetText(afterText, card.AfterText);
-        SetText(legalText, card.Legal ? "Focus to preview" : card.Error.ToString());
+        SetText(legalText, card.Legal ? "Hover to preview, click to apply" : card.Error.ToString());
+        rewardId = card.RewardId;
+        legal = card.Legal;
 
         if (accentImage != null)
         {
@@ -76,6 +87,14 @@ public class RewardMapRewardCardView : MonoBehaviour
 
         SetActive(selectedState, selected);
         SetActive(disabledState, !card.Legal);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (legal && FocusRequested != null)
+        {
+            FocusRequested(rewardId);
+        }
     }
 
     private static Color ColorFor(RewardMapIntention intention)

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -12,9 +13,9 @@ public class StartRunArmyCardView : MonoBehaviour
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private GameObject locked;
     [SerializeField] private TMP_Text lockedReasonText;
-    [SerializeField] private StackRepresentation[] stackRepresentations = new StackRepresentation[0];
+    [SerializeField] private Transform stackRowsParent;
 
-    private StackRepresentation[] cachedChildStackRepresentations;
+    private readonly List<StackRepresentation> stackRows = new List<StackRepresentation>();
 
     public string TemplateId { get; private set; }
 
@@ -75,19 +76,19 @@ public class StartRunArmyCardView : MonoBehaviour
             button.enabled = option.CanStartRun;
         }
 
-        StackRepresentation[] resolvedStackRepresentations = ResolveStackRepresentations();
-        BindStackRepresentations(option, dataMapper, resolvedStackRepresentations);
+        BindStackRepresentations(option, dataMapper);
     }
 
     private void BindStackRepresentations(
         StartingArmyOptionViewData option,
-        DataMapper dataMapper,
-        StackRepresentation[] resolvedStackRepresentations)
+        DataMapper dataMapper)
     {
-        for (int i = 0; i < resolvedStackRepresentations.Length; i++)
+        EnsureStackRows();
+
+        for (int i = 0; i < stackRows.Count; i++)
         {
-            StackRepresentation representation = resolvedStackRepresentations[i];
-            if (representation == null)
+            StackRepresentation row = stackRows[i];
+            if (row == null)
             {
                 continue;
             }
@@ -95,52 +96,24 @@ public class StartRunArmyCardView : MonoBehaviour
             StartRunStackViewData stack = option.Stacks != null && i < option.Stacks.Count
                 ? option.Stacks[i]
                 : null;
-
-            bool hasStack = stack != null;
-            representation.gameObject.SetActive(hasStack);
-            if (!hasStack)
-            {
-                continue;
-            }
-
-            StackInfoData stackInfo = RunMetagameDisplayInfoFactory.FromStartRun(stack, dataMapper);
-            if (stackInfo != null)
-            {
-                representation.DisplayInfo(stackInfo);
-            }
+            row.DisplayStackInfo(RunMetagameDisplayInfoFactory.FromStartRun(stack, dataMapper));
         }
     }
 
-    private StackRepresentation[] ResolveStackRepresentations()
+    private void EnsureStackRows()
     {
-        if (HasStackRepresentation(stackRepresentations))
+        if (stackRows.Count > 0 || stackRowsParent == null)
         {
-            return stackRepresentations;
+            return;
         }
 
-        if (cachedChildStackRepresentations == null || cachedChildStackRepresentations.Length == 0)
+        StackRepresentation[] rows = stackRowsParent.GetComponentsInChildren<StackRepresentation>(true);
+        for (int i = 0; i < rows.Length; i++)
         {
-            cachedChildStackRepresentations = GetComponentsInChildren<StackRepresentation>(true);
-        }
-
-        return cachedChildStackRepresentations ?? new StackRepresentation[0];
-    }
-
-    private static bool HasStackRepresentation(StackRepresentation[] representations)
-    {
-        if (representations == null)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < representations.Length; i++)
-        {
-            if (representations[i] != null)
+            if (rows[i] != null)
             {
-                return true;
+                stackRows.Add(rows[i]);
             }
         }
-
-        return false;
     }
 }

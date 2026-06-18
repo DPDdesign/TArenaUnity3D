@@ -126,13 +126,10 @@ public static class PRD19_027_BattleResultPrefabBuilder
 
         TextMeshProUGUI flowStatus = AddText("Text_FlowStatus", root.transform, "Rendered from BattleResultViewData.", 16, TextAlignmentOptions.Midline, new Vector2(960f, 26f), new Vector2(0f, 110f), new Color(0.84f, 0.80f, 0.70f, 1f));
         SetAnchored(flowStatus.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 110f));
-        TextMeshProUGUI backendGap = AddText("Text_BackendGap", root.transform, "Online authority/result storage: tutaj powinno byc z bazy danych", 13, TextAlignmentOptions.Midline, new Vector2(960f, 24f), new Vector2(0f, -126f), new Color(0.64f, 0.60f, 0.52f, 1f));
+        TextMeshProUGUI backendGap = AddText("Text_BackendGap", root.transform, "Offline result storage: persisted DB result.", 13, TextAlignmentOptions.Midline, new Vector2(960f, 24f), new Vector2(0f, -126f), new Color(0.64f, 0.60f, 0.52f, 1f));
         SetAnchored(backendGap.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -126f));
 
         SerializedObject serialized = new SerializedObject(controller);
-        SetString(serialized, "sampleResultId", "offline-async-result-027");
-        SetInt(serialized, "playerRankBefore", 1520);
-        SetInt(serialized, "accountXpBefore", 2170);
         SetObject(serialized, "attackerArmyCard", attackerCard);
         SetObject(serialized, "defenderArmyCard", defenderCard);
         SetObject(serialized, "rankDeltaPanel", rankPanel);
@@ -155,7 +152,7 @@ public static class PRD19_027_BattleResultPrefabBuilder
         UnityEventTools.AddPersistentListener(continueCommand.Button.onClick, controller.OnContinueClicked);
         UnityEventTools.AddPersistentListener(viewArmiesCommand.Button.onClick, controller.OnViewArmiesClicked);
 
-        controller.BuildAndRenderSampleResult();
+        controller.LoadAndRenderLatestResult();
         return root;
     }
 

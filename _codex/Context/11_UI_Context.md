@@ -2,12 +2,12 @@
 
 Status: active
 Project: TArenaUnity3D
-Last updated: 2026-06-14
+Last updated: 2026-06-18
 
 ## Purpose
 
-This document records the current TArenaUnity3D battle UI integration points,
-especially how the active unit's skills are shown and selected.
+This document records the current TArenaUnity3D UI integration points and the
+default architecture rules for programming, prototyping, mockups, and polish.
 
 Use this context when the user asks about the new UI, HUD, battle UI, skill
 buttons, active unit display, cooldowns, right-click skill info, or where UI
@@ -22,6 +22,79 @@ For visual polish of an already functional mockup, also use:
 
 - `_codex/Context/12_UI_Visual_Context.md`
 - `_codex/skills/polish-ui-mockup/SKILL.md`
+
+For PRD019 Run Map UI design, review, prototype, polish, or implementation,
+also use:
+
+- `_codex/Context/RunMap_UI_Context.md`
+
+## UI Architecture Contract
+
+This contract applies to UI programming, UI prototypes, task mockups, visual
+polish, and refactors.
+
+- Screen controllers own screen flow, service/adapter calls, selected ids, and
+  top-level command wiring.
+- Screen controllers may reference top-level view classes and global controls
+  such as Back, Begin, status text, global resource labels, and progress bars.
+- Screen controllers should not expose many serialized child `Image`,
+  `TMP_Text`, `Button`, or row/card arrays for one complex panel.
+- Complex UI regions must be represented by view classes: army panels, army
+  cards, stack rows, route nodes, reward cards, shop offers, saved-army slots,
+  battle HUD panels, skill buttons, and similar blocks.
+- A view class owns its own internal serialized fields and binds its own data.
+  The parent controller calls `view.Bind(dto)` or an equivalent method.
+- Repeated UI defaults to `Transform parent + prefab`. The parent is configured
+  in Unity with `VerticalLayoutGroup`, `HorizontalLayoutGroup`,
+  `GridLayoutGroup`, anchors, spacing, padding, and `LayoutElement` sizes.
+- Repeated rows/cards/buttons should be instantiated from prefabs at runtime or
+  authored as nested prefab instances in a mockup. Do not hand-copy repeated
+  children into the screen root.
+- Manual arrays of repeated views are not the default. Use them only for a
+  genuinely authored positional layout where each position is intentional, such
+  as a fixed route map, and document the reason.
+- Child lookup must stay inside the owning view class. Do not make screen
+  controllers search deep hierarchy paths or bind raw child components from
+  another panel.
+- Prefer explicit serialized fields inside view classes. Avoid brittle
+  `transform.Find("Long/Path/ByName")` lookups.
+- Use TextMesh Pro only: `TMP_Text` or `TextMeshProUGUI`. Do not introduce
+  legacy `UnityEngine.UI.Text`.
+
+Presentation catalogs:
+
+- If a prefab's visuals depend on a type, state, category, rarity, unit id,
+  skill id, route node type, button role, or similar data key, prefer a
+  serialized presentation catalog over hardcoded visuals in the controller.
+- The owning view class receives the catalog and resolves local visuals during
+  `Bind(...)`, for example `RunMapNodeTypeIconCatalog` maps
+  `RunMapNodeType` to a node icon.
+- Catalogs should own presentation choices such as icons, frame sprites,
+  state-specific colors, badges, or short labels. Gameplay rules and persisted
+  state must stay in services/adapters/data models.
+- Controllers pass DTOs and ids to views. Controllers should not contain
+  switch statements that pick sprites for child prefab internals unless the
+  switch is temporary and scheduled to become a catalog.
+- Keep useful fallback visuals in the view or catalog so missing catalog entries
+  are visible in Unity instead of breaking the screen.
+
+Refactor rule:
+
+- When an existing UI is refactored to this contract, refactor the full screen
+  UI layer at once or the full selected UI layer if gameplay/DB flow is the
+  risky part.
+- Do not keep a fallback old wiring path after the refactor.
+- Remove obsolete serialized/public Inspector fields from the component once
+  the new view-class wiring replaces them.
+- The user validates compilation and behavior inside Unity unless a specific
+  Unity test command is explicitly allowed.
+
+Current exception:
+
+- `StartRunScreenController` is a working screen and may remain in its current
+  wiring style for now. Do not treat it as the target pattern for new UI.
+- Future UI should use this contract first. Refactor Start Run later only after
+  the view-class/prefab pattern has proven itself on newer screens.
 
 ## UI Mockup Asset Sources
 
@@ -44,6 +117,9 @@ PRD polish screenshots should be stored in:
 
 Task mockups should be production-shaped Unity UI, not flat drawings.
 
+- Build mockups with the same UI Architecture Contract used for production
+  programming: screen controller or screen view at the top, view classes for
+  panels/items, and `parent + prefab` for repeated content.
 - Use `VerticalLayoutGroup` and `HorizontalLayoutGroup` on obvious repeated
   lists: army cards, stack rows, route options, route nodes, skill rows, reward
   cards, and unit icon rows.
@@ -51,9 +127,11 @@ Task mockups should be production-shaped Unity UI, not flat drawings.
 - Every repeated UI element should have a prefab or prefab template: cards,
   unit frames, rows, route options, route nodes, route edges, skill buttons,
   reward cards, and similar repeated blocks.
+- Repeated UI should be instantiated under a configured parent rather than
+  represented by screen-level serialized arrays.
 - GameObjects that own scripts should start with `Script_`.
-- Script references should be wired in serialized fields on the prefab. Do not
-  rely on name-based lookup to connect UI.
+- Script references should be wired in serialized fields on the owning view
+  prefab or screen prefab. Do not rely on name-based lookup to connect UI.
 - For risky nested prefab conversion, create a copy prefab first and verify it
   imports before replacing a working prefab.
 
@@ -275,6 +353,7 @@ ownership out of XML unless the user explicitly asks for a broader refactor.
 
 ## Related Context
 
+- `_codex/Context/RunMap_UI_Context.md`
 - `_codex/Context/09_CurrentSkills.md`
 - `_codex/Context/10_Skill_Design_Rules.md`
 - `_codex/agents/docs/codebase-map.md`

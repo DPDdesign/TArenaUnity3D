@@ -18,6 +18,10 @@ public static class OfflineDatabaseSchemaV1
             TableRouteMaps(),
             TableRoutePaths(),
             TableRouteNodes(),
+            TableMapNodes(),
+            TableMapNodeConnections(),
+            TableMapNodeRewards(),
+            TableMapNodeEnemies(),
             TableRunEvents(),
             TableRunBattles(),
             TableRunBattleLosses(),
@@ -98,11 +102,94 @@ CREATE TABLE IF NOT EXISTS offline_runs (
     current_run_gold INTEGER NOT NULL DEFAULT 0,
     stage_progress INTEGER NOT NULL DEFAULT 0,
     route_progress INTEGER NOT NULL DEFAULT 0,
+    run_seed INTEGER NOT NULL DEFAULT 35035,
+    run_seed_version INTEGER NOT NULL DEFAULT 1,
     next_screen TEXT,
     created_at_utc TEXT NOT NULL,
     updated_at_utc TEXT NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1,
     FOREIGN KEY (account_id) REFERENCES offline_accounts(account_id)
+);";
+    }
+
+    private static string TableMapNodes()
+    {
+        return @"
+CREATE TABLE IF NOT EXISTS map_nodes (
+    node_id INTEGER PRIMARY KEY,
+    run_id INTEGER NOT NULL,
+    route_map_id INTEGER,
+    route_path_id INTEGER,
+    catalog_entry_id TEXT,
+    node_type_id INTEGER NOT NULL,
+    node_state_id INTEGER NOT NULL,
+    stage_index INTEGER NOT NULL DEFAULT 0,
+    display_name TEXT,
+    possible_reward_hint TEXT,
+    expected_risk_hint TEXT,
+    encounter_id TEXT,
+    completed_at_utc TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (run_id) REFERENCES offline_runs(run_id)
+);";
+    }
+
+    private static string TableMapNodeConnections()
+    {
+        return @"
+CREATE TABLE IF NOT EXISTS map_node_connections (
+    connection_id INTEGER PRIMARY KEY,
+    run_id INTEGER NOT NULL,
+    from_node_id INTEGER NOT NULL,
+    to_node_id INTEGER NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (run_id) REFERENCES offline_runs(run_id),
+    FOREIGN KEY (from_node_id) REFERENCES map_nodes(node_id),
+    FOREIGN KEY (to_node_id) REFERENCES map_nodes(node_id)
+);";
+    }
+
+    private static string TableMapNodeRewards()
+    {
+        return @"
+CREATE TABLE IF NOT EXISTS map_node_rewards (
+    reward_id INTEGER PRIMARY KEY,
+    node_id INTEGER NOT NULL,
+    reward_slot_index INTEGER NOT NULL,
+    catalog_entry_id TEXT NOT NULL,
+    base_snapshot_id INTEGER NOT NULL,
+    target_snapshot_stack_id INTEGER,
+    reward_type TEXT NOT NULL,
+    unit_id TEXT,
+    to_unit_id TEXT,
+    amount INTEGER NOT NULL DEFAULT 0,
+    currency_delta INTEGER NOT NULL DEFAULT 0,
+    operation_json TEXT NOT NULL,
+    is_selected INTEGER NOT NULL DEFAULT 0,
+    applied_snapshot_id INTEGER,
+    is_fallback INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (node_id) REFERENCES map_nodes(node_id),
+    FOREIGN KEY (base_snapshot_id) REFERENCES army_snapshots(snapshot_id),
+    FOREIGN KEY (target_snapshot_stack_id) REFERENCES army_snapshot_stacks(snapshot_stack_id),
+    FOREIGN KEY (applied_snapshot_id) REFERENCES army_snapshots(snapshot_id)
+);";
+    }
+
+    private static string TableMapNodeEnemies()
+    {
+        return @"
+CREATE TABLE IF NOT EXISTS map_node_enemies (
+    enemy_id INTEGER PRIMARY KEY,
+    node_id INTEGER NOT NULL,
+    catalog_entry_id TEXT,
+    army_snapshot_id INTEGER,
+    encounter_id TEXT,
+    enemy_rule_id TEXT,
+    risk_band TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (node_id) REFERENCES map_nodes(node_id),
+    FOREIGN KEY (army_snapshot_id) REFERENCES army_snapshots(snapshot_id)
 );";
     }
 

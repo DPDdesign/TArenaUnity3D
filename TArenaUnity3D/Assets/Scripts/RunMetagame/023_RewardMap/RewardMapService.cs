@@ -23,6 +23,19 @@ public class RewardMapService
             return EmptyChoice(request, "Army after battle is missing.");
         }
 
+        IMaterializedRewardMapChoiceStore materializedStore = choiceStore as IMaterializedRewardMapChoiceStore;
+        if (materializedStore != null && OfflineDatabaseLegacyIdentity.ParseIntIdOrDefault(request.RunId) > 0)
+        {
+            RewardMapChoiceViewData materializedChoice = materializedStore.FindChoiceForRunNode(request.RunId);
+            if (materializedChoice == null)
+            {
+                return EmptyChoice(request, "Materialized reward rows are missing for this run node.");
+            }
+
+            FocusChoice(materializedChoice, focusedRewardId);
+            return materializedChoice;
+        }
+
         RewardMapArmySnapshot army = CloneArmy(request.ArmyAfterBattle, request.ArmyAfterBattle.SnapshotId);
         List<RewardMapCardViewData> cards = BuildCards(army, request.StageIndex);
         RewardMapCardViewData focused = FindCard(cards, focusedRewardId);
@@ -37,7 +50,7 @@ public class RewardMapService
 
         RewardMapChoiceViewData choice = new RewardMapChoiceViewData(
             "reward-choice-" + Guid.NewGuid().ToString("N"),
-            string.IsNullOrEmpty(request.RunId) ? "offline-run" : request.RunId,
+            request.RunId,
             RewardMapGameMode.Offline,
             RewardMapAuthoritySource.LocalOfflineAdapter,
             request.BattleResultSummary,
@@ -50,6 +63,26 @@ public class RewardMapService
             preview.Message);
 
         return choiceStore == null ? choice : choiceStore.SaveChoice(choice);
+    }
+
+    private void FocusChoice(RewardMapChoiceViewData choice, string focusedRewardId)
+    {
+        if (choice == null)
+        {
+            return;
+        }
+
+        RewardMapCardViewData focused = FindCard(choice.Cards, focusedRewardId);
+        if (focused == null && choice.Cards != null && choice.Cards.Count > 0)
+        {
+            focused = choice.Cards[0];
+        }
+
+        choice.FocusedCard = focused;
+        choice.FocusedPreview = focused == null
+            ? BuildPreview(string.Empty, choice.ArmyBeforeReward, choice.RunGoldBeforeReward, null, RewardMapError.MissingReward, "Select a reward.")
+            : Preview(focused, choice.ArmyBeforeReward, choice.RunGoldBeforeReward);
+        choice.Message = choice.FocusedPreview == null ? choice.Message : choice.FocusedPreview.Message;
     }
 
     public RewardMapApplyResult Apply(RewardMapApplyCommand command)
@@ -267,7 +300,7 @@ public class RewardMapService
             return RewardMapError.None;
         }
 
-        if (operation.Type == RewardMapOperationType.PromoteStack)
+        if (operation.Type == RewardMapOperationType.PromoteStack || operation.Type == RewardMapOperationType.DowngradeStack)
         {
             RunShopUnitDefinition unit = unitSource == null ? null : unitSource.FindUnit(operation.ToUnitId);
             if (unit == null || operation.Amount <= 0)

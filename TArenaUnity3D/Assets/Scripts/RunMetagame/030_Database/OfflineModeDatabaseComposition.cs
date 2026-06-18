@@ -10,6 +10,22 @@ public static class OfflineModeDatabaseComposition
     public static void ResetStartRunOfferSession()
     {
         runtimeStartRunService = null;
+        RunGenerationSession.DestroyActive();
+    }
+
+    public static void StartNewRunGenerationSession(string accountPlayerId)
+    {
+        runtimeStartRunService = null;
+        DataMapperStartRunUnitSource unitSource = new DataMapperStartRunUnitSource();
+        StartRunGenerationUnlockContext unlockContext = new OfflineStartRunUnlockContextSource()
+            .LoadUnlockContext(string.IsNullOrEmpty(accountPlayerId) ? "offline-player" : accountPlayerId);
+        RunGenerationSession.CreateNew(unitSource, unlockContext);
+    }
+
+    public static void EndRunGenerationSession()
+    {
+        runtimeStartRunService = null;
+        RunGenerationSession.DestroyActive();
     }
 
     public static OfflineStartRunAdapter CreateStartRunAdapter()
@@ -29,7 +45,7 @@ public static class OfflineModeDatabaseComposition
                 catalog,
                 catalog,
                 unitSource,
-                new OfflineStartRunDbStore(null, catalog),
+                new OfflineStartRunDbStore(null, catalog, CreateSnapshotResolver()),
                 new OfflineStartRunSlotAvailabilitySource());
         }
 
@@ -57,10 +73,11 @@ public static class OfflineModeDatabaseComposition
     {
         EnsureDefaultDatabase();
         DefaultRunBattleEncounterCatalog encounterCatalog = new DefaultRunBattleEncounterCatalog();
+        RewardMapDataMapperUnitSource rewardUnitSource = new RewardMapDataMapperUnitSource(DataMapper.Instance);
         return new RunBattleService(
             encounterCatalog,
             new OfflineRunBattleLaunchAdapter(),
-            new OfflineRunBattleDbStore(null, CreateSnapshotResolver(), encounterCatalog));
+            new OfflineRunBattleDbStore(null, CreateSnapshotResolver(), encounterCatalog, rewardUnitSource));
     }
 
     public static OfflineRewardMapAdapter CreateRewardMapAdapter()
@@ -85,7 +102,8 @@ public static class OfflineModeDatabaseComposition
     public static RunShopService CreateRunShopService()
     {
         EnsureDefaultDatabase();
-        return new RunShopService(new DataMapperRunShopUnitSource(), new OfflineRunShopDbStore(null, CreateSnapshotResolver()));
+        DeterministicRunGenerationCatalog catalog = CreateRuntimeRunGenerationCatalog(new DataMapperStartRunUnitSource());
+        return new RunShopService(new DataMapperRunShopUnitSource(), new OfflineRunShopDbStore(null, CreateSnapshotResolver(), catalog));
     }
 
     public static OfflineSummaryValueDbStore CreateSummaryValueStore()
@@ -143,6 +161,12 @@ public static class OfflineModeDatabaseComposition
         return new BattleResultService(new OfflineBattleResultDbStore(null));
     }
 
+    public static OfflineRunContextDbReader CreateRunContextReader()
+    {
+        EnsureDefaultDatabase();
+        return new OfflineRunContextDbReader(null, CreateSnapshotResolver());
+    }
+
     private static IOfflineArmySnapshotCatalogResolver CreateSnapshotResolver()
     {
         return new DataMapperOfflineArmySnapshotCatalogResolver(DataMapper.Instance);
@@ -157,9 +181,8 @@ public static class OfflineModeDatabaseComposition
         DataMapperStartRunUnitSource unitSource,
         StartRunGenerationUnlockContext unlockContext)
     {
-        StartingArmyGeneratorConfig armyConfig = StartingArmyGeneratorConfig.CreateRuntimeRandomized();
-        RouteGeneratorConfig routeConfig = RouteGeneratorConfig.CreateRuntimeRandomized(armyConfig.Seed.Value);
-        return new DeterministicRunGenerationCatalog(unitSource, armyConfig, routeConfig, unlockContext);
+        RunGenerationSession session = RunGenerationSession.EnsureActive(unitSource, unlockContext);
+        return session.Catalog;
     }
 
     private static void EnsureDefaultDatabase()

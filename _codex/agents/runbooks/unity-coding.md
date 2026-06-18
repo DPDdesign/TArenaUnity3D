@@ -45,3 +45,16 @@ Allowed by default:
 - `.cs`,
 - `.md`,
 - other plain text files when needed.
+
+## Army Stack UI
+
+When a runtime UI displays army stacks, expose a stack row parent `Transform`
+and a stack row prefab reference in the controller Inspector. The row prefab
+must contain `StackRepresentation`; instantiate one prefab per stack and bind
+it through `StackRepresentation.DisplayStackInfo(...)` or the shared
+`RunMetagameStackListPresenter.DisplayStackInfo(...)` helper.
+
+Do not build production stack lists from fixed scene children, child-name
+lookups, or serialized arrays of sample rows. Builders may create prefab
+templates, but screen controllers should render live DTO/snapshot data into
+instantiated row prefabs.

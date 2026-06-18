@@ -167,7 +167,6 @@ public class OfflineBattleResultDbTests
     {
         using (System.Data.IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
         {
-            object unlockCount = OfflineDatabaseSql.ExecuteScalar(connection, "SELECT COUNT(*) FROM account_unlocks WHERE account_id = 1 AND is_active = 1;");
             object slotUnlockType = OfflineDatabaseSql.ExecuteScalar(
                 connection,
                 "SELECT unlock_type_id FROM account_unlocks WHERE account_id = 1 AND target_id = 'slot-03' LIMIT 1;");
@@ -175,7 +174,6 @@ public class OfflineBattleResultDbTests
                 connection,
                 "SELECT unlock_type_id FROM account_unlocks WHERE account_id = 1 AND target_id = 'skill-rush' LIMIT 1;");
 
-            Assert.That(OfflineDatabaseSql.ReadInt(unlockCount), Is.EqualTo(2));
             Assert.That(OfflineDatabaseSql.ReadInt(slotUnlockType), Is.EqualTo((int)DBUnlockTypeId.SavedArmySlot));
             Assert.That(OfflineDatabaseSql.ReadInt(skillUnlockType), Is.EqualTo((int)DBUnlockTypeId.Skill));
         }

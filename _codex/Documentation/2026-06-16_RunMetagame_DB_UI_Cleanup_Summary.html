@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <title>[TARENA] Run Metagame DB/UI Cleanup Summary</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 32px; color: #202124; line-height: 1.45; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    h2 { font-size: 18px; margin-top: 28px; }
+    code { background: #f2f4f7; padding: 2px 5px; border-radius: 4px; }
+    li { margin-bottom: 8px; }
+    .note { background: #fff8db; border-left: 4px solid #d8a100; padding: 12px 14px; }
+    .ok { background: #eaf7ee; border-left: 4px solid #27864f; padding: 12px 14px; }
+  </style>
+</head>
+<body>
+  <h1>[TARENA] Run Metagame DB/UI Cleanup Summary</h1>
+  <p>Date: 2026-06-16</p>
+  <p>Goal: make run-metagame frontend scripts use persisted Offline DB state instead of sample armies, placeholder ids, temporary stores, or automatic dev data writes.</p>
+
+  <h2>Changed</h2>
+  <ul>
+    <li>Added <code>OfflineRunContextDbReader</code> as the shared DB reader for active run context, Start Run record reload, screen-specific <code>next_screen</code> lookup, persisted summaries, latest async battle result id, and snapshot conversion.</li>
+    <li>Added <code>OfflineRunContextDbWriter</code> as the shared DB writer for <code>offline_runs</code> creation and run-context updates.</li>
+    <li>Start Run now creates <code>offline_runs</code> through the run context writer and reloads the persisted <code>CreatedRunRecord</code> through the run context reader.</li>
+    <li>Added <code>OfflineDatabaseLegacyIdentity.ToLegacyRouteNodeId</code> so route node facade labels are centralized.</li>
+    <li>Connected <code>OfflineModeDatabaseComposition</code> to create the run context reader and to pass the PRD035 generation catalog into Run Shop DB store.</li>
+    <li>Reward Map now loads a persisted run whose <code>next_screen</code> is <code>Reward</code>, then reads current army and run gold from DB.</li>
+    <li>Run Shop now loads a persisted run whose <code>next_screen</code> is <code>RunShop</code>, then reads current node, current army, and run currency from DB.</li>
+    <li>Summary Value now loads persisted <code>run_summaries</code> instead of building sample start/pre-final/post-final armies.</li>
+    <li>Battle Result now loads the latest persisted async result instead of recording a hardcoded sample result on awake.</li>
+    <li>Saved Armies no longer auto-seeds a slot or writes sample attack history during screen/service initialization.</li>
+    <li>Run Map DB store now rejects missing runs instead of inserting <code>mock-start-army</code> rows.</li>
+    <li>Run Map, Run Battle, Reward Map, Run Shop, Summary Value, and Start Run no longer contain direct <code>INSERT/UPDATE offline_runs</code> SQL outside the shared writer.</li>
+    <li>Run Map mockup was explicitly isolated onto an in-memory mock store so it cannot write fake run records into the production Offline DB.</li>
+    <li>Prefab builders no longer serialize removed sample/placeholder fields.</li>
+  </ul>
+
+  <h2>Main Files</h2>
+  <ul>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/030_Database/OfflineRunContextDbReader.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/030_Database/OfflineRunContextDbWriter.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/020_StartRun/OfflineStartRunDbStore.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/030_Database/OfflineModeDatabaseComposition.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/030_Database/OfflineDatabaseLegacyIdentity.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/021_RunMap/OfflineRunMapDbStore.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/021_RunMap/RunMapController.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/023_RewardMap/RewardMapScreenController.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/024_RunShop/RunShopScreenController.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/025_SummaryValue/SummaryValueScreenController.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/026_SavedArmies/SavedArmiesScreenController.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/026_SavedArmies/SavedArmiesService.cs</code></li>
+    <li><code>TArenaUnity3D/Assets/Scripts/RunMetagame/027_BattleResult/BattleResultScreenController.cs</code></li>
+  </ul>
+
+  <h2>Removed Runtime Temporary Data</h2>
+  <ul>
+    <li>No runtime <code>offline-run</code>, <code>offline-run-final-win</code>, <code>offline-shop-node</code>, or <code>offline-async-result-027</code> placeholders in screen controllers.</li>
+    <li>No hardcoded Reward Map, Run Shop, Summary Value, or Battle Result sample armies in runtime screen controllers.</li>
+    <li>No automatic Saved Armies seed slot or mock history writes.</li>
+    <li>No Run Map DB creation of placeholder <code>offline_runs</code> rows.</li>
+    <li>No duplicated runtime <code>offline_runs</code> writer SQL outside <code>OfflineRunContextDbWriter</code>.</li>
+  </ul>
+
+  <h2>Verification</h2>
+  <div class="note">
+    Unity compilation and EditMode tests were not run automatically. This project requires Unity-side validation.
+  </div>
+  <ul>
+    <li>Static scans found no remaining runtime sample army builders or placeholder screen fields in the changed controllers.</li>
+    <li>Run DB store construction remains centralized in <code>OfflineModeDatabaseComposition</code>.</li>
+    <li><code>INSERT INTO offline_runs</code> and <code>UPDATE offline_runs</code> now scan only inside <code>OfflineRunContextDbWriter</code>.</li>
+    <li>Mockup-only in-memory use is excluded from the production-composition guard.</li>
+  </ul>
+
+  <h2>Manual Unity Checks</h2>
+  <ul>
+    <li>Open Unity and let scripts compile.</li>
+    <li>Run EditMode tests: <code>OfflineModeProductionCompositionTests</code>, <code>OfflineStartRunRunMapDbTests</code>, <code>OfflineRunShopDbTests</code>, <code>OfflineSummarySavedArmiesDbTests</code>, <code>OfflineBattleResultDbTests</code>.</li>
+    <li>Play Mode smoke: Start Run -> Run Map -> Battle/Reward -> Shop -> Summary -> Saved Armies -> Battle Result.</li>
+    <li>Confirm Reward Map and Run Shop show a clear unavailable state if DB flow did not set the expected <code>next_screen</code> values: <code>Reward</code> or <code>RunShop</code>.</li>
+  </ul>
+
+  <h2>Remaining Follow-Up</h2>
+  <div class="ok">
+    PRD035 seed persistence is still encoded through generated route ids. A future schema migration should add first-class run seed metadata before analytics, replay, or online authority depends on it.
+  </div>
+</body>
+</html>

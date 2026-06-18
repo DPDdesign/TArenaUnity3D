@@ -76,6 +76,11 @@ public class GameSceneManager : MonoBehaviour
 
     public void ShowStartRun()
     {
+        if (currentScreen != RunMetagameScreen.None && currentScreen != RunMetagameScreen.StartRun)
+        {
+            OfflineModeDatabaseComposition.EndRunGenerationSession();
+        }
+
         Show(RunMetagameScreen.StartRun);
     }
 
@@ -136,6 +141,7 @@ public class GameSceneManager : MonoBehaviour
         SetAllScreensInactive();
         SetScreenActive(screen, true);
         currentScreen = screen;
+        NotifyScreenShown(screen);
     }
 
     public void EnterBattle()
@@ -240,6 +246,23 @@ public class GameSceneManager : MonoBehaviour
                 SetActive(battleResultUI, active);
                 break;
         }
+    }
+
+    private void NotifyScreenShown(RunMetagameScreen screen)
+    {
+        if (screen != RunMetagameScreen.RunMap || runMapUI == null)
+        {
+            return;
+        }
+
+        RunMapController controller = runMapUI.GetComponentInChildren<RunMapController>(true);
+        if (controller != null)
+        {
+            controller.RefreshFromPersistedRun();
+            return;
+        }
+
+        Debug.LogWarning("[GameSceneManager] Run Map UI is assigned, but no RunMapController was found under it.");
     }
 
     private bool RegisterSingleton()

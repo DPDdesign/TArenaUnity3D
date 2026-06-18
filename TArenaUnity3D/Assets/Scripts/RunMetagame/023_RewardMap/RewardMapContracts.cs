@@ -5,6 +5,11 @@ public interface IRewardMapUnitDefinitionSource
     RunShopUnitDefinition FindUnit(string unitId);
 }
 
+public interface IRewardMapUnitPoolSource : IRewardMapUnitDefinitionSource
+{
+    List<RunShopUnitDefinition> ListUnits();
+}
+
 public interface IRewardMapTemplateCatalog
 {
     List<RewardMapTemplate> ListTemplates();
@@ -15,6 +20,11 @@ public interface IRewardMapChoiceStore
     RewardMapChoiceViewData SaveChoice(RewardMapChoiceViewData choice);
     RewardMapChoiceViewData FindChoice(string choiceId);
     RewardMapApplyResult SaveAppliedReward(string choiceId, RewardMapApplyResult result);
+}
+
+public interface IMaterializedRewardMapChoiceStore : IRewardMapChoiceStore
+{
+    RewardMapChoiceViewData FindChoiceForRunNode(string runId);
 }
 
 public class InMemoryRewardMapChoiceStore : IRewardMapChoiceStore

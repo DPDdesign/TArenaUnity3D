@@ -33,6 +33,14 @@ The deterministic generator config remains available for tests and explicit
 tooling. Tests should call `StartingArmyGeneratorConfig.CreateDefault()` when
 stable repeatable output is required.
 
+Online random generation is explicitly out of authority for the Unity client.
+When online mode returns, random numbers for generated armies, routes, rewards,
+rerolls, and similar run-critical outcomes must be calculated by the online
+authority/backend or supplied to the client as server-owned results. The client
+may display server results and may use deterministic replay data for debugging,
+but client-side random output must not be treated as authoritative online game
+state.
+
 ## Rationale
 
 - Current goal is fast local playtest variety.
@@ -61,3 +69,5 @@ Revisit this when one of these becomes product truth:
 - Existing deterministic tests stay stable by using explicit default configs.
 - Future online or analytics work should not rely on this runtime-random seed as
   final authority.
+- Online work must not reuse the offline runtime random path as trusted game
+  state. Server-owned RNG/results are required for online run generation.

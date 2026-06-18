@@ -230,19 +230,36 @@ public class StartRunScreenController : MonoBehaviour
             : string.Empty);
         RefreshScreen();
         SetRuntimeMessage(resultMessage);
+
+        if (result.Success && result.CreatedRun != null)
+        {
+            ShowRunMap();
+        }
     }
 
     private void OnBackClicked()
     {
+        OfflineModeDatabaseComposition.EndRunGenerationSession();
         gameObject.SetActive(false);
     }
 
     private void StartNewOfferSession()
     {
-        OfflineModeDatabaseComposition.ResetStartRunOfferSession();
+        OfflineModeDatabaseComposition.StartNewRunGenerationSession(defaultAccountPlayerId);
         adapter = new OfflineStartRunAdapter();
         selectedStartingArmyId = initialStartingArmyId;
         selectedRouteId = string.Empty;
+    }
+
+    private void ShowRunMap()
+    {
+        if (GameSceneManager.Instance == null)
+        {
+            Debug.LogWarning("[StartRunScreenController] GameSceneManager instance is missing; cannot show Run Map.");
+            return;
+        }
+
+        GameSceneManager.Instance.ShowRunMap();
     }
 
     private void SetRuntimeMessage(string message)

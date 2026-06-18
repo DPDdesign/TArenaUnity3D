@@ -6,6 +6,7 @@ using UnityEngine;
 public class DataMapper : ScriptableObject
 {
     private const string MapperResourcePath = "0_Data/DataMapper";
+    private const string UnitDefinitionsResourcePath = "0_Data/Units";
 
     private static DataMapper instance;
 
@@ -198,13 +199,13 @@ public class DataMapper : ScriptableObject
         unitLookup = new Dictionary<string, UnitDefinition>();
         unitDefinitions = new List<UnitDefinition>();
 
-        if (unitCatalog == null)
+        List<UnitDefinitionAsset> units = LoadUnitDefinitionAssets();
+        if (units.Count == 0)
         {
-            Debug.LogError("UnitCatalog is not assigned on DataMapper. Unit XML fallback is disabled.");
+            Debug.LogError("No unit definitions are available from UnitCatalog or Resources/0_Data/Units.");
             return;
         }
 
-        List<UnitDefinitionAsset> units = unitCatalog.GetUnits();
         foreach (UnitDefinitionAsset unitAsset in units)
         {
             UnitDefinition definition = unitAsset == null ? null : unitAsset.ToUnitDefinition();
@@ -219,6 +220,26 @@ public class DataMapper : ScriptableObject
                 unitLookup.Add(definition.Name, definition);
             }
         }
+    }
+
+    private List<UnitDefinitionAsset> LoadUnitDefinitionAssets()
+    {
+        List<UnitDefinitionAsset> units = unitCatalog == null ? new List<UnitDefinitionAsset>() : unitCatalog.GetUnits();
+        if (units.Count > 0)
+        {
+            return units;
+        }
+
+        UnitDefinitionAsset[] fallbackUnits = Resources.LoadAll<UnitDefinitionAsset>(UnitDefinitionsResourcePath);
+        List<UnitDefinitionAsset> result = new List<UnitDefinitionAsset>(fallbackUnits);
+        result.Sort(delegate(UnitDefinitionAsset a, UnitDefinitionAsset b)
+        {
+            string left = a == null ? string.Empty : a.UnitName;
+            string right = b == null ? string.Empty : b.UnitName;
+            return string.CompareOrdinal(left, right);
+        });
+
+        return result;
     }
 
     private void EnsureSkillCache()

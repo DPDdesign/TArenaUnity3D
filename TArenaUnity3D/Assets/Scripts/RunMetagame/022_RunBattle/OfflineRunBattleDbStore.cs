@@ -8,16 +8,28 @@ public class OfflineRunBattleDbStore : IRunBattleStore
     private readonly string databasePath;
     private readonly IOfflineArmySnapshotCatalogResolver resolver;
     private readonly IRunBattleEncounterSource encounterSource;
+    private readonly IRewardMapUnitDefinitionSource rewardUnitSource;
     private readonly OfflineArmySnapshotDbRepository snapshotRepository = new OfflineArmySnapshotDbRepository();
+    private readonly OfflineRunContextDbWriter runContextWriter = new OfflineRunContextDbWriter();
 
     public OfflineRunBattleDbStore(
         string databasePath,
         IOfflineArmySnapshotCatalogResolver resolver,
         IRunBattleEncounterSource encounterSource)
+        : this(databasePath, resolver, encounterSource, null)
+    {
+    }
+
+    public OfflineRunBattleDbStore(
+        string databasePath,
+        IOfflineArmySnapshotCatalogResolver resolver,
+        IRunBattleEncounterSource encounterSource,
+        IRewardMapUnitDefinitionSource rewardUnitSource)
     {
         this.databasePath = databasePath;
         this.resolver = resolver;
         this.encounterSource = encounterSource ?? new DefaultRunBattleEncounterCatalog();
+        this.rewardUnitSource = rewardUnitSource;
     }
 
     public RunBattleLaunchViewData SavePreparedBattle(RunBattleLaunchViewData preparedBattle)
@@ -147,25 +159,15 @@ INSERT INTO run_battles (
                 new OfflineDatabaseSqlParameter("@nextScreen", RunBattleNextScreen.Battle.ToString()),
                 new OfflineDatabaseSqlParameter("@preparedAtUtc", now));
 
-            OfflineDatabaseSql.ExecuteNonQuery(
+            runContextWriter.UpdateNodeArmyGoldScreen(
                 connection,
-                @"
-UPDATE offline_runs
-SET current_node_id = @nodeId,
-    current_army_snapshot_id = @currentArmySnapshotId,
-    current_run_gold = @currentRunGold,
-    run_status_id = @runStatusId,
-    next_screen = @nextScreen,
-    updated_at_utc = @updatedAtUtc
-WHERE run_id = @runId;",
                 transaction,
-                new OfflineDatabaseSqlParameter("@nodeId", nodeId),
-                new OfflineDatabaseSqlParameter("@currentArmySnapshotId", snapshotId),
-                new OfflineDatabaseSqlParameter("@currentRunGold", preparedBattle.RunCurrency),
-                new OfflineDatabaseSqlParameter("@runStatusId", (int)DBRunStatusId.AwaitingBattle),
-                new OfflineDatabaseSqlParameter("@nextScreen", RunBattleNextScreen.Battle.ToString()),
-                new OfflineDatabaseSqlParameter("@updatedAtUtc", now),
-                new OfflineDatabaseSqlParameter("@runId", runId));
+                runId,
+                nodeId,
+                snapshotId,
+                preparedBattle.RunCurrency,
+                (int)DBRunStatusId.AwaitingBattle,
+                RunBattleNextScreen.Battle.ToString());
 
             transaction.Commit();
         }
@@ -349,29 +351,24 @@ WHERE run_battle_id = @runBattleId;",
             Dictionary<int, int> snapshotStackIdsByFormationSlot = snapshotRepository.LoadSnapshotStackIdsByFormationSlot(connection, persistedBattle.PreBattleSnapshotId, transaction);
             InsertLosses(connection, transaction, parsedRunBattleId, completionRecord.Losses, snapshotStackIdsByFormationSlot);
 
-            OfflineDatabaseSql.ExecuteNonQuery(
+            runContextWriter.UpdateArmyGoldScreen(
                 connection,
-                @"
-UPDATE offline_runs
-SET current_army_snapshot_id = @currentArmySnapshotId,
-    current_run_gold = @currentRunGold,
-    run_status_id = @runStatusId,
-    next_screen = @nextScreen,
-    updated_at_utc = @updatedAtUtc
-WHERE run_id = @runId;",
                 transaction,
-                new OfflineDatabaseSqlParameter("@currentArmySnapshotId", postBattleSnapshotId),
-                new OfflineDatabaseSqlParameter("@currentRunGold", runGoldAfter),
-                new OfflineDatabaseSqlParameter("@runStatusId", ToRunStatusId(completionRecord.NextScreen)),
-                new OfflineDatabaseSqlParameter("@nextScreen", completionRecord.NextScreen.ToString()),
-                new OfflineDatabaseSqlParameter("@updatedAtUtc", OfflineDatabaseSql.UtcNowText()),
-                new OfflineDatabaseSqlParameter("@runId", persistedBattle.RunId));
+                persistedBattle.RunId,
+                postBattleSnapshotId,
+                runGoldAfter,
+                ToRunStatusId(completionRecord.NextScreen),
+                completionRecord.NextScreen.ToString());
 
+            int runSeed = persistedBattle.RunSeed;
+            int runSeedVersion = persistedBattle.RunSeedVersion;
+            int nodeId = persistedBattle.NodeId;
+            int runId = persistedBattle.RunId;
             transaction.Commit();
 
             RunBattleArmySnapshot persistedBefore = OfflineArmySnapshotMapper.ToRunBattle(snapshotRepository.LoadSnapshot(connection, persistedBattle.PreBattleSnapshotId), resolver);
             RunBattleArmySnapshot persistedAfter = OfflineArmySnapshotMapper.ToRunBattle(snapshotRepository.LoadSnapshot(connection, postBattleSnapshotId), resolver);
-            return new RunBattleCompletionRecord(
+            RunBattleCompletionRecord result = new RunBattleCompletionRecord(
                 completionRecord.CompletionRecordId,
                 OfflineDatabaseLegacyIdentity.ToLegacyRunBattleId(parsedRunBattleId),
                 OfflineDatabaseLegacyIdentity.ToLegacyRunId(persistedBattle.RunId),
@@ -386,7 +383,92 @@ WHERE run_id = @runId;",
                 completionRecord.RunGoldGained,
                 completionRecord.CompletionPayloadId,
                 completionRecord.ResultSource);
+
+            MaterializeRewardsIfNeeded(
+                parsedRunBattleId,
+                runId,
+                nodeId,
+                runSeed,
+                runSeedVersion,
+                runGoldAfter,
+                result);
+
+            return result;
         }
+    }
+
+    private void MaterializeRewardsIfNeeded(
+        int runBattleId,
+        int runId,
+        int nodeId,
+        int runSeed,
+        int runSeedVersion,
+        int runGoldAfterBattle,
+        RunBattleCompletionRecord completionRecord)
+    {
+        if (completionRecord == null || completionRecord.NextScreen != RunBattleNextScreen.Reward)
+        {
+            return;
+        }
+
+        OfflineRewardMapDbStore store = new OfflineRewardMapDbStore(databasePath, resolver);
+        if (store.FindChoiceForRunNode(OfflineDatabaseLegacyIdentity.ToLegacyRunId(runId)) != null)
+        {
+            return;
+        }
+
+        IRewardMapUnitDefinitionSource source = rewardUnitSource ?? new RewardMapResolverUnitSource(resolver);
+        RewardMapArmySnapshot rewardArmy = ToRewardMapArmy(completionRecord.ArmyAfterBattle);
+        RewardMapChoiceViewData choice = new RewardMapMaterializedGenerator(source).BuildChoice(
+            OfflineDatabaseLegacyIdentity.ToLegacyRunId(runId),
+            nodeId,
+            runSeed,
+            runSeedVersion,
+            runGoldAfterBattle,
+            rewardArmy,
+            new RewardMapBattleResultSummary(
+                OfflineDatabaseLegacyIdentity.ToLegacyRunBattleId(runBattleId),
+                completionRecord.Outcome.ToString(),
+                completionRecord.TotalLosses,
+                completionRecord.RunGoldGained));
+
+        store.SaveChoice(choice);
+    }
+
+    private static RewardMapArmySnapshot ToRewardMapArmy(RunBattleArmySnapshot army)
+    {
+        List<RewardMapStackSnapshot> stacks = new List<RewardMapStackSnapshot>();
+        for (int i = 0; army != null && army.Stacks != null && i < army.Stacks.Count; i++)
+        {
+            RunBattleStackSnapshot stack = army.Stacks[i];
+            if (stack == null)
+            {
+                continue;
+            }
+
+            List<RewardMapSkillState> skills = new List<RewardMapSkillState>();
+            for (int skillIndex = 0; stack.Skills != null && skillIndex < stack.Skills.Count; skillIndex++)
+            {
+                RunBattleSkillState skill = stack.Skills[skillIndex];
+                if (skill != null)
+                {
+                    skills.Add(new RewardMapSkillState(skill.SkillId, skill.Unlocked));
+                }
+            }
+
+            stacks.Add(new RewardMapStackSnapshot(
+                stack.StackId,
+                stack.UnitId,
+                stack.DisplayName,
+                stack.Tier,
+                stack.Level,
+                stack.Amount,
+                stack.Lost,
+                stack.CombatValue,
+                skills));
+        }
+
+        return new RewardMapArmySnapshot(army == null ? string.Empty : army.SnapshotId, army == null ? 0 : army.TotalArmyValue, stacks);
     }
 
     private static RunBattleLaunchViewData ClonePreparedBattle(RunBattleLaunchViewData source, int runBattleId)
@@ -592,9 +674,11 @@ LIMIT 1;",
         List<PersistedBattle> rows = OfflineDatabaseSql.Query(
             connection,
             @"
-SELECT rb.event_id, rb.run_id, rb.node_id, rb.pre_battle_snapshot_id, ev.account_id, ev.run_gold_before
+SELECT rb.event_id, rb.run_id, rb.node_id, rb.pre_battle_snapshot_id, ev.account_id, ev.run_gold_before,
+       runs.run_seed, runs.run_seed_version
 FROM run_battles rb
 INNER JOIN run_events ev ON ev.event_id = rb.event_id
+INNER JOIN offline_runs runs ON runs.run_id = rb.run_id
 WHERE rb.run_battle_id = @runBattleId
 LIMIT 1;",
             delegate(IDataRecord row)
@@ -606,7 +690,9 @@ LIMIT 1;",
                     NodeId = OfflineDatabaseSql.ReadInt(row["node_id"]),
                     PreBattleSnapshotId = OfflineDatabaseSql.ReadInt(row["pre_battle_snapshot_id"]),
                     AccountId = OfflineDatabaseSql.ReadInt(row["account_id"]),
-                    RunGoldBefore = OfflineDatabaseSql.ReadInt(row["run_gold_before"])
+                    RunGoldBefore = OfflineDatabaseSql.ReadInt(row["run_gold_before"]),
+                    RunSeed = OfflineDatabaseSql.ReadInt(row["run_seed"], 35035),
+                    RunSeedVersion = OfflineDatabaseSql.ReadInt(row["run_seed_version"], 1)
                 };
             },
             transaction,
@@ -629,6 +715,26 @@ LIMIT 1;",
         public int PreBattleSnapshotId;
         public int AccountId;
         public int RunGoldBefore;
+        public int RunSeed;
+        public int RunSeedVersion;
+    }
+
+    private sealed class RewardMapResolverUnitSource : IRewardMapUnitDefinitionSource
+    {
+        private readonly IOfflineArmySnapshotCatalogResolver resolver;
+
+        public RewardMapResolverUnitSource(IOfflineArmySnapshotCatalogResolver resolver)
+        {
+            this.resolver = resolver;
+        }
+
+        public RunShopUnitDefinition FindUnit(string unitId)
+        {
+            OfflineArmySnapshotUnitCatalogEntry unit = resolver == null ? null : resolver.FindUnit(unitId);
+            return unit == null
+                ? null
+                : new RunShopUnitDefinition(unit.UnitId, unit.DisplayName, unit.Tier, unit.CombatValue, new List<string>(unit.SkillIds));
+        }
     }
 
     private sealed class BattleRow

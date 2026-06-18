@@ -1,7 +1,7 @@
 # TArenaUnity3D Context Map
 
 Status: active
-Last updated: 2026-06-16
+Last updated: 2026-06-17
 
 ## Purpose
 
@@ -30,6 +30,18 @@ between screens:
 These maps are required routing context for Start Run, Run Map, Run Battle,
 Reward Map, Run Shop, Summary Value, Saved Armies, Battle Result, shared army
 snapshots, Offline Mode database adapters, and SQLite table ownership.
+
+Current PRD030 run-context rule:
+
+- `OfflineRunContextDbReader` is the shared run-context read side used by
+  frontend screen controllers/adapters for persisted run state.
+- `OfflineRunContextDbWriter` is the shared write side for creating and updating
+  `offline_runs`.
+- Start Run, Run Map, Run Battle, Reward Map, Run Shop, and Summary Value should
+  not own direct `INSERT/UPDATE offline_runs` SQL outside the writer.
+- When a run-metagame UI needs current army, currency, node, summary, latest
+  battle result, or Start Run-created record state, route through reader/service
+  APIs instead of serialized placeholder ids or ad hoc DB queries.
 
 ## Project Documentation Layout
 
@@ -143,6 +155,8 @@ to gameplay logic:
 - `_codex/Context/12_UI_Visual_Context.md` when improving UI visuals,
   screenshot readability, icon/button/zone sizes, layout proportions, or visual
   consistency with TArena identity
+- `_codex/Context/RunMap_UI_Context.md` when designing, reviewing,
+  prototyping, polishing, or implementing the PRD019 Run Map screen
 - `_codex/Context/BattleUIResponsiveGuidelines.md` when the task is about
   battle HUD scaling, aspect-ratio behavior, queue containment, chat
   containment, or footer protection
@@ -174,11 +188,25 @@ Current battle UI bridge: read active unit state from
 cooldowns from `SelectedToster.cooldowns`, and invoke skills through
 `MouseControler.CastSkill(slotIndex)`.
 
+Default UI architecture rule: UI programming, prototyping, mockups, and polish
+must follow `_codex/Context/11_UI_Context.md`'s UI Architecture Contract.
+Screen controllers own flow and top-level controls, while panels/cards/rows use
+view classes. Repeated UI defaults to `Transform parent + prefab` under a
+Unity-configured layout parent. Avoid screen-level arrays of raw `Image`,
+`TMP_Text`, `Button`, or repeated child components unless a fixed authored
+positional layout explicitly needs them.
+
 Default unit UI programming tip: parent UI views should receive and bind ready
-`UnitRepresentation` or `StackRepresentation` child components instead of
-rebuilding unit UI from raw `Image`/`TMP_Text` arrays. The parent owns screen
-selection/card state, while the child representation owns unit presentation and
-is filled from `UnitInfoData` or `StackInfoData`.
+`UnitRepresentation`, `StackRepresentation`, or other child view components
+instead of rebuilding unit UI from raw `Image`/`TMP_Text` arrays. The parent owns
+screen selection/card state, while the child representation owns unit
+presentation and is filled from `UnitInfoData`, `StackInfoData`, or a matching
+screen DTO.
+
+Default run-metagame UI data tip: screen controllers should represent persisted
+run state from `OfflineRunContextDbReader` and slice adapters, then bind ready
+DTOs/representations. They should not carry sample run ids, mock route node ids,
+or fallback in-memory stores in production UI.
 
 When UI code replaces a legacy wiring style, remove obsolete serialized/public
 Inspector fields from the component. Commenting old logic is acceptable only as
@@ -296,6 +324,11 @@ Confirmed design boundaries:
   losses"; offence/defence starts with one win-focused chess-like AI.
 - Event nodes, route-specific battle map rules, and selectable defence AI types
   are future/open scope.
+- Online random generation is server-authoritative. Random numbers for online
+  armies, routes, rewards, rerolls, and other run-critical outcomes must be
+  calculated by the online authority/backend or delivered as server-owned
+  results. Offline/client runtime RNG is acceptable only for local playtest
+  mocks and deterministic replay tooling, not trusted online state.
 
 Do not implement metagame systems ahead of local battle recovery unless the user
 explicitly requests that work.
@@ -388,6 +421,11 @@ difficulty:
 For run routes, reward cards, shops, saved armies, account progress, or
 asynchronous offence/defence, also use the "Run, Metaprogression, And Async
 Defence Context" section above.
+
+For Run Map UI work, also use `_codex/Context/RunMap_UI_Context.md`. The Run
+Map should read as a connected route map with background context, visible path
+connections, large symbolic nodes, a clear current party marker, and a linked
+army bar, not as a debug grid of buttons.
 
 Current skill model: unit skill ownership is loaded from the unit
 `ScriptableObject` catalog into `TosterHexUnit.skillstrings`.

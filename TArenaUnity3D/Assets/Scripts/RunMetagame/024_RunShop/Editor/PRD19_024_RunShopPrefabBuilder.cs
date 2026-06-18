@@ -147,9 +147,6 @@ public static class PRD19_024_RunShopPrefabBuilder
         }
 
         SerializedObject serialized = new SerializedObject(controller);
-        SetString(serialized, "runId", "offline-run");
-        SetString(serialized, "routeNodeId", "offline-shop-node");
-        SetInt(serialized, "startingRunCurrency", 120);
         SetObjectArray(serialized, "offerCards", offerCards.ToArray());
         SetObjectArray(serialized, "currentArmyRows", currentRows.ToArray());
         SetObjectArray(serialized, "previewArmyRows", previewRows.ToArray());

@@ -112,13 +112,44 @@ public static class OfflineRouteMapSeedFactory
                 }
 
                 OfflineRouteNodeSeedRecord seededNode = seededPath.Nodes[seededNodeIndex++];
+                seededNode.NextNodeIds.Clear();
                 int nextNodeId;
                 if (!string.IsNullOrEmpty(sourceNode.NextNodeId) && nodeIdByCatalogId.TryGetValue(sourceNode.NextNodeId, out nextNodeId))
                 {
                     seededNode.NextNodeId = nextNodeId;
+                    AddUnique(seededNode.NextNodeIds, nextNodeId);
+                }
+
+                if (sourceNode.NextNodeIds == null)
+                {
+                    continue;
+                }
+
+                for (int nextIndex = 0; nextIndex < sourceNode.NextNodeIds.Count; nextIndex++)
+                {
+                    string catalogNextNodeId = sourceNode.NextNodeIds[nextIndex];
+                    if (!string.IsNullOrEmpty(catalogNextNodeId) && nodeIdByCatalogId.TryGetValue(catalogNextNodeId, out nextNodeId))
+                    {
+                        if (seededNode.NextNodeId <= 0)
+                        {
+                            seededNode.NextNodeId = nextNodeId;
+                        }
+
+                        AddUnique(seededNode.NextNodeIds, nextNodeId);
+                    }
                 }
             }
         }
+    }
+
+    private static void AddUnique(List<int> values, int value)
+    {
+        if (value <= 0 || values.Contains(value))
+        {
+            return;
+        }
+
+        values.Add(value);
     }
 
     private static int ToDbNodeTypeId(RunMapNodeType nodeType)

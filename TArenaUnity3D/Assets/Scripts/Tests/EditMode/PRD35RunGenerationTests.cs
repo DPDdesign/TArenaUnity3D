@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
+using UnityEngine;
 
 public class PRD35RunGenerationTests
 {
@@ -22,6 +23,7 @@ public class PRD35RunGenerationTests
         Assert.That(first.StartingAssets.BattleSkipTokens, Is.EqualTo(0));
         Assert.That(second.SelectedStartingArmy.TemplateId, Is.EqualTo(first.SelectedStartingArmy.TemplateId));
         Assert.That(second.SelectedStartingArmy.TotalArmyValue, Is.EqualTo(first.SelectedStartingArmy.TotalArmyValue));
+        Assert.That(CountUniqueArmyUnitSets(first.StartingArmies), Is.EqualTo(first.StartingArmies.Count));
 
         for (int i = 0; i < first.StartingArmies.Count; i++)
         {
@@ -41,7 +43,7 @@ public class PRD35RunGenerationTests
     }
 
     [Test]
-    public void BuildScreen_UsesFallbackPoolWhenUnlocksAreTooNarrow()
+    public void BuildScreen_ReturnsNoStartingArmyWhenUnlocksAreTooNarrow()
     {
         FakeUnitPoolSource units = new FakeUnitPoolSource();
         StartRunGenerationUnlockContext unlocks = new StartRunGenerationUnlockContext(
@@ -52,10 +54,10 @@ public class PRD35RunGenerationTests
 
         StartRunScreenViewData screen = service.BuildScreen(string.Empty, string.Empty);
 
-        Assert.That(screen.CanBeginRun, Is.True);
-        Assert.That(screen.SelectedStartingArmy.Description, Does.Contain("Fallback"));
-        Assert.That(screen.SelectedStartingArmy.Stacks.Count, Is.EqualTo(4));
-        Assert.That(CountFactions(screen.SelectedStartingArmy), Is.LessThanOrEqualTo(2));
+        Assert.That(screen.CanBeginRun, Is.False);
+        Assert.That(screen.SelectedStartingArmy, Is.Null);
+        Assert.That(screen.ValidationError, Is.EqualTo(StartRunValidationError.MissingStartingArmy));
+        Assert.That(screen.StartingArmies.Count, Is.EqualTo(0));
     }
 
     [Test]
@@ -68,9 +70,10 @@ public class PRD35RunGenerationTests
         List<RunMapPathDefinition> paths = catalog.BuildPaths(routeId);
 
         Assert.That(paths.Count, Is.EqualTo(4));
-        Assert.That(CountNodes(paths), Is.EqualTo(15));
+        Assert.That(CountNodes(paths), Is.EqualTo(13));
         Assert.That(FindNode(paths, "node-2").NodeType, Is.EqualTo(RunMapNodeType.RandomEvent));
-        Assert.That(FindNode(paths, "node-7a").NodeType, Is.EqualTo(RunMapNodeType.Empty));
+        Assert.That(FindNode(paths, "node-7a"), Is.Null);
+        Assert.That(FindNode(paths, "node-8a"), Is.Null);
         Assert.That(FindNode(paths, "node-9").NodeType, Is.EqualTo(RunMapNodeType.Shop));
         Assert.That(FindNode(paths, "node-10").NodeType, Is.EqualTo(RunMapNodeType.FinalBoss));
         Assert.That(FindNode(paths, "node-3").NextNodeIds, Does.Contain("node-4a"));
@@ -111,8 +114,6 @@ public class PRD35RunGenerationTests
         Assert.That(service.Travel(new RunMapTravelCommand("run-35", "node-4a")).Success, Is.True);
         Assert.That(service.Travel(new RunMapTravelCommand("run-35", "node-5a")).Success, Is.True);
         Assert.That(service.Travel(new RunMapTravelCommand("run-35", "node-6a")).Success, Is.True);
-        Assert.That(service.Travel(new RunMapTravelCommand("run-35", "node-7a")).Success, Is.True);
-        Assert.That(service.Travel(new RunMapTravelCommand("run-35", "node-8a")).Success, Is.True);
 
         RunMapScreenViewData shopScreen = service.CreateOrLoad(new RunMapCreateRequest("run-35", routeId, 150, null), string.Empty);
         Assert.That(FindNode(shopScreen, "node-9").State, Is.EqualTo(RunMapNodeState.Available));
@@ -172,9 +173,12 @@ public class PRD35RunGenerationTests
         IStartRunUnitPoolSource units,
         StartRunGenerationUnlockContext unlocks = null)
     {
+        ArmyGeneratorRuleSet ruleSet = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
+        ruleSet.ConfigureMockDefaults();
         return new DeterministicRunGenerationCatalog(
             units,
-            StartingArmyGeneratorConfig.CreateDefault(),
+            ruleSet,
+            StartingArmyGeneratorConfig.CreateDefault(ruleSet),
             RouteGeneratorConfig.CreateDefault(),
             unlocks);
     }
@@ -234,6 +238,33 @@ public class PRD35RunGenerationTests
         }
 
         return unitIds.Count;
+    }
+
+    private static int CountUniqueArmyUnitSets(List<StartingArmyOptionViewData> armies)
+    {
+        List<string> signatures = new List<string>();
+        for (int i = 0; armies != null && i < armies.Count; i++)
+        {
+            string signature = BuildUnitSignature(armies[i]);
+            if (!signatures.Contains(signature))
+            {
+                signatures.Add(signature);
+            }
+        }
+
+        return signatures.Count;
+    }
+
+    private static string BuildUnitSignature(StartingArmyOptionViewData army)
+    {
+        List<string> unitIds = new List<string>();
+        for (int i = 0; army != null && army.Stacks != null && i < army.Stacks.Count; i++)
+        {
+            unitIds.Add(army.Stacks[i].UnitId);
+        }
+
+        unitIds.Sort();
+        return string.Join("|", unitIds.ToArray());
     }
 
     private static int FactionFor(string unitId)

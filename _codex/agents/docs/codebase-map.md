@@ -1,7 +1,7 @@
 # TArenaUnity3D Codebase Map
 
 Status: active
-Last updated: 2026-06-11
+Last updated: 2026-06-17
 
 Unity project root:
 
@@ -72,6 +72,21 @@ For PRD019 Run Metagame and PRD030 Offline Database tasks, inspect these first:
 - `Assets/Scripts/RunMetagame/`
 - `Assets/Scripts/RunMetagame/030_Database/OfflineModeDatabaseComposition.cs`
 - `Assets/Scripts/RunMetagame/030_Database/OfflineDatabaseSchemaV1.cs`
+- `Assets/Scripts/RunMetagame/030_Database/OfflineRunContextDbReader.cs`
+- `Assets/Scripts/RunMetagame/030_Database/OfflineRunContextDbWriter.cs`
+
+Current run-metagame DB architecture:
+
+- `OfflineRunContextDbReader` is the shared read side for active run context,
+  screen-specific `next_screen` lookup, persisted summary lookup, latest battle
+  result lookup, Start Run record reload, and snapshot conversion to screen DTOs.
+- `OfflineRunContextDbWriter` is the only runtime code surface that should
+  insert or update `offline_runs`.
+- Start Run, Run Map, Run Battle, Reward Map, Run Shop, and Summary Value must
+  update run context through the writer instead of duplicating
+  `INSERT/UPDATE offline_runs` SQL in slice-specific stores.
+- UI controllers should read run state through adapters/services and the shared
+  reader, not by direct SQLite access or serialized placeholder ids.
 
 For dependency-removal tasks, inspect direct game-code references before opening
 vendor SDK internals. Most vendor code is not project-specific truth.

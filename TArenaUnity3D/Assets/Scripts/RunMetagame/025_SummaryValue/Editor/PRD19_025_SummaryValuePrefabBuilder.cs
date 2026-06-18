@@ -165,8 +165,6 @@ public static class PRD19_025_SummaryValuePrefabBuilder
         returnSerialized.ApplyModifiedPropertiesWithoutUndo();
 
         SerializedObject serialized = new SerializedObject(controller);
-        SetString(serialized, "runId", "offline-run-final-win");
-        SetInt(serialized, "unlockedSlotCount", 2);
         SetString(serialized, "selectedSlotId", "slot-02");
         SetObject(serialized, "resultHeaderText", resultHeader);
         SetObject(serialized, "resultSubheaderText", resultSubheader);

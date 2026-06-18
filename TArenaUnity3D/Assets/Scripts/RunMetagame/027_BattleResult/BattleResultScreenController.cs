@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -6,18 +5,13 @@ using UnityEngine.UI;
 
 public class BattleResultScreenController : MonoBehaviour
 {
-    private enum BattleResultPrototypeFlowState
+    private enum BattleResultFlowState
     {
         ResultShown,
         ArmyFocused,
         ContinueSelected,
         SavedArmiesRosterOpen
     }
-
-    [Header("Sample Result Source")]
-    [SerializeField] private string sampleResultId = "offline-async-result-027";
-    [SerializeField] private int playerRankBefore = 1520;
-    [SerializeField] private int accountXpBefore = 2170;
 
     [Header("Sections")]
     [SerializeField] private BattleResultArmySummaryCardView attackerArmyCard;
@@ -40,25 +34,22 @@ public class BattleResultScreenController : MonoBehaviour
 
     private BattleResultViewData currentResult;
     private string focusedArmyId;
-    private BattleResultPrototypeFlowState flowState;
+    private BattleResultFlowState flowState;
     private OfflineBattleResultAdapter adapter;
+    private OfflineRunContextDbReader runContextReader;
 
     private void Awake()
     {
-        BuildAndRenderSampleResult();
+        LoadAndRenderLatestResult();
         WireButtonsIfNeeded();
     }
 
-    [ContextMenu("Rebuild Sample Battle Result")]
-    public void BuildAndRenderSampleResult()
+    [ContextMenu("Load Latest Battle Result")]
+    public void LoadAndRenderLatestResult()
     {
         EnsureAdapter();
-        currentResult = adapter.Find(sampleResultId);
-        if (currentResult == null)
-        {
-            currentResult = adapter.Record(BuildSampleRequest());
-        }
-
+        string resultId = runContextReader == null ? string.Empty : runContextReader.LoadLatestBattleResultId();
+        currentResult = string.IsNullOrEmpty(resultId) ? null : adapter.Find(resultId);
         Render(currentResult);
     }
 
@@ -80,7 +71,7 @@ public class BattleResultScreenController : MonoBehaviour
             return;
         }
 
-        flowState = BattleResultPrototypeFlowState.ContinueSelected;
+        flowState = BattleResultFlowState.ContinueSelected;
         BattleResultViewData storedResult = FindStoredCurrentResult();
         SetActive(rosterPreviewPanel, false);
         SetText(
@@ -100,7 +91,7 @@ public class BattleResultScreenController : MonoBehaviour
             return;
         }
 
-        flowState = BattleResultPrototypeFlowState.SavedArmiesRosterOpen;
+        flowState = BattleResultFlowState.SavedArmiesRosterOpen;
         SetActive(rosterPreviewPanel, true);
         SetText(
             rosterPreviewText,
@@ -116,11 +107,13 @@ public class BattleResultScreenController : MonoBehaviour
         {
             SetText(titleText, "Battle Result");
             SetText(summaryText, result == null ? "No result payload." : result.Message);
-            SetText(flowStatusText, "Battle result prototype could not build sample data.");
+            SetText(flowStatusText, "Battle Result requires a persisted async battle result.");
+            SetText(backendGapText, "Offline result storage: no DB result found.");
+            SetActive(rosterPreviewPanel, false);
             return;
         }
 
-        flowState = BattleResultPrototypeFlowState.ResultShown;
+        flowState = BattleResultFlowState.ResultShown;
         string resultLabel = BuildResultLabel(result.ResultKind);
         SetText(titleText, "Battle Result");
         SetText(
@@ -129,7 +122,7 @@ public class BattleResultScreenController : MonoBehaviour
             + " / " + result.AuthoritySource
             + " / " + result.AsyncBattleResultId);
         SetText(noArmyLostText, BuildPreservationText(result));
-        SetText(backendGapText, "Online authority/result storage: tutaj powinno byc z bazy danych");
+        SetText(backendGapText, "Offline result storage: persisted DB result.");
 
         if (attackerArmyCard != null)
         {
@@ -169,27 +162,6 @@ public class BattleResultScreenController : MonoBehaviour
         SetText(flowStatusText, "Flow state: " + flowState + " / rendered from OfflineBattleResultAdapter -> BattleResultService -> BattleResultViewData.");
     }
 
-    private BattleResultRecordRequest BuildSampleRequest()
-    {
-        BattleResultSavedArmySnapshot attacker = BuildAttackerArmy();
-        BattleResultSavedArmySnapshot defender = BuildDefenderArmy();
-        BattleResultOpponentMetadata opponent = new BattleResultOpponentMetadata(
-            "offline-rival-jorvik",
-            "Player_Jorvik",
-            1518,
-            defender.ArmyValue,
-            true);
-
-        return new BattleResultRecordRequest(
-            sampleResultId,
-            BattleResultKind.OffenceWin,
-            attacker,
-            defender,
-            opponent,
-            playerRankBefore,
-            accountXpBefore);
-    }
-
     private void EnsureAdapter()
     {
         if (adapter != null)
@@ -198,6 +170,7 @@ public class BattleResultScreenController : MonoBehaviour
         }
 
         adapter = OfflineModeDatabaseComposition.CreateBattleResultAdapter();
+        runContextReader = OfflineModeDatabaseComposition.CreateRunContextReader();
     }
 
     private BattleResultViewData FindStoredCurrentResult()
@@ -210,69 +183,6 @@ public class BattleResultScreenController : MonoBehaviour
         return adapter.Find(currentResult.AsyncBattleResultId);
     }
 
-    private static BattleResultSavedArmySnapshot BuildAttackerArmy()
-    {
-        List<BattleResultStackSnapshot> stacks = new List<BattleResultStackSnapshot>
-        {
-            Stack("attacker-rusher", "Brb_Rusher", "Rusher Vanguard", 70, 4200, "Rush", "Chope"),
-            Stack("attacker-thrower", "Brb_Thrower", "Axe Throwers", 60, 3600, "Double_Throw", "Axe_Rain"),
-            Stack("attacker-golem", "Gol_FG", "Field Golems", 45, 3150, "Tough_Skin"),
-            Stack("attacker-healer", "Liz_Healer", "Mist Healers", 30, 2100, "Defence_Ritual"),
-            Stack("attacker-axeman", "Brb_Axeman", "Axemen", 25, 1450, "Fury")
-        };
-
-        return new BattleResultSavedArmySnapshot(
-            "saved-army-3",
-            "snapshot-battle-result-attacker",
-            "Saved Army 3",
-            SumPower(stacks),
-            stacks);
-    }
-
-    private static BattleResultSavedArmySnapshot BuildDefenderArmy()
-    {
-        List<BattleResultStackSnapshot> stacks = new List<BattleResultStackSnapshot>
-        {
-            Stack("defender-tank", "Liz_Tank", "Swamp Shields", 65, 3900, "Guard"),
-            Stack("defender-golem", "Gol_SG", "Stone Guard", 50, 3350, "Tough_Skin"),
-            Stack("defender-wisp", "Gol_FE", "Fire Elementals", 40, 3050, "Burning_Aura"),
-            Stack("defender-specialist", "Liz_Specialist", "Hex Callers", 30, 2500, "Nature_Grasp"),
-            Stack("defender-trapper", "Liz_Trapper", "Mist Trappers", 20, 1750, "Trap")
-        };
-
-        return new BattleResultSavedArmySnapshot(
-            "saved-army-defence-jorvik",
-            "snapshot-battle-result-defender",
-            "Jorvik Defence",
-            SumPower(stacks),
-            stacks);
-    }
-
-    private static BattleResultStackSnapshot Stack(string stackId, string unitId, string displayName, int amount, int combatValue, params string[] skillIds)
-    {
-        List<BattleResultSkillState> skills = new List<BattleResultSkillState>();
-        for (int i = 0; i < skillIds.Length; i++)
-        {
-            skills.Add(new BattleResultSkillState(skillIds[i], i == 0));
-        }
-
-        return new BattleResultStackSnapshot(stackId, unitId, displayName, amount, combatValue, skills);
-    }
-
-    private static int SumPower(List<BattleResultStackSnapshot> stacks)
-    {
-        int total = 0;
-        for (int i = 0; i < stacks.Count; i++)
-        {
-            if (stacks[i] != null)
-            {
-                total += stacks[i].CombatValue;
-            }
-        }
-
-        return total;
-    }
-
     private void FocusArmy(BattleResultSavedArmySnapshot army, string header)
     {
         if (army == null)
@@ -281,7 +191,7 @@ public class BattleResultScreenController : MonoBehaviour
         }
 
         focusedArmyId = army.SavedArmyId;
-        flowState = BattleResultPrototypeFlowState.ArmyFocused;
+        flowState = BattleResultFlowState.ArmyFocused;
         if (attackerArmyCard != null)
         {
             attackerArmyCard.SetSelected(currentResult != null && currentResult.AttackerArmy == army);
@@ -294,7 +204,7 @@ public class BattleResultScreenController : MonoBehaviour
 
         SetText(detailHeaderText, header);
         SetText(detailBodyText, BuildArmyDetails(army));
-        SetText(flowStatusText, "Flow state: " + flowState + " / focused " + army.DisplayName + " from result " + (currentResult == null ? sampleResultId : currentResult.AsyncBattleResultId) + ".");
+        SetText(flowStatusText, "Flow state: " + flowState + " / focused " + army.DisplayName + " from result " + (currentResult == null ? string.Empty : currentResult.AsyncBattleResultId) + ".");
     }
 
     private static string BuildArmyDetails(BattleResultSavedArmySnapshot army)

@@ -1,4 +1,6 @@
-public class RewardMapDataMapperUnitSource : IRewardMapUnitDefinitionSource
+using System.Collections.Generic;
+
+public class RewardMapDataMapperUnitSource : IRewardMapUnitPoolSource
 {
     private readonly DataMapper dataMapper;
 
@@ -25,5 +27,26 @@ public class RewardMapDataMapperUnitSource : IRewardMapUnitDefinitionSource
         }
 
         return RunMetagameUnitDefinitionMapper.ToRunShopUnitDefinition(dataMapper.FindUnit(unitId));
+    }
+
+    public List<RunShopUnitDefinition> ListUnits()
+    {
+        List<RunShopUnitDefinition> result = new List<RunShopUnitDefinition>();
+        if (dataMapper == null)
+        {
+            return result;
+        }
+
+        List<DataMapper.UnitDefinition> units = dataMapper.GetAllUnits();
+        for (int i = 0; units != null && i < units.Count; i++)
+        {
+            RunShopUnitDefinition unit = RunMetagameUnitDefinitionMapper.ToRunShopUnitDefinition(units[i]);
+            if (unit != null)
+            {
+                result.Add(unit);
+            }
+        }
+
+        return result;
     }
 }

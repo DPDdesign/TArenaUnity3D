@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Random = System.Random;
 
 [Serializable]
 public class RunGenerationSeed
@@ -26,7 +27,6 @@ public class StartingArmyGeneratorConfig
     public int StartingGold;
     public int StartingRerollTokens;
     public int BattleSkipTokens;
-    public List<string> EarlyFallbackUnitIds;
 
     public StartingArmyGeneratorConfig(
         RunGenerationSeed seed,
@@ -38,8 +38,7 @@ public class StartingArmyGeneratorConfig
         int perStackTolerancePercent,
         int startingGold,
         int startingRerollTokens,
-        int battleSkipTokens,
-        List<string> earlyFallbackUnitIds)
+        int battleSkipTokens)
     {
         Seed = seed ?? new RunGenerationSeed(35035);
         OfferCount = Math.Max(1, offerCount);
@@ -51,30 +50,43 @@ public class StartingArmyGeneratorConfig
         StartingGold = Math.Max(0, startingGold);
         StartingRerollTokens = Math.Max(0, startingRerollTokens);
         BattleSkipTokens = Math.Max(0, battleSkipTokens);
-        EarlyFallbackUnitIds = earlyFallbackUnitIds ?? new List<string>();
     }
 
     public static StartingArmyGeneratorConfig CreateDefault()
     {
-        return new StartingArmyGeneratorConfig(
-            new RunGenerationSeed(35035),
-            3,
-            4,
-            1650,
-            1450,
-            1750,
-            20,
-            150,
-            1,
-            0,
-            new List<string> { "Wisp", "Rusher", "Trapper", "Thrower", "Healer", "StoneGolem" });
+        throw new InvalidOperationException("CreateDefault requires an ArmyGeneratorRuleSet. Use CreateDefault(ruleSet).");
     }
 
-    public static StartingArmyGeneratorConfig CreateRuntimeRandomized()
+    public static StartingArmyGeneratorConfig CreateDefault(ArmyGeneratorRuleSet ruleSet)
     {
-        StartingArmyGeneratorConfig config = CreateDefault();
+        if (ruleSet == null)
+        {
+            throw new ArgumentNullException("ruleSet");
+        }
+
+        return new StartingArmyGeneratorConfig(
+            new RunGenerationSeed(35035),
+            ruleSet.OfferCount,
+            ruleSet.StackCount,
+            CalculateTargetPower(ruleSet),
+            ruleSet.MinPower,
+            ruleSet.MaxPower,
+            20,
+            ruleSet.StartingGold,
+            ruleSet.StartingRerollTokens,
+            ruleSet.BattleSkipTokens);
+    }
+
+    public static StartingArmyGeneratorConfig CreateRuntimeRandomized(ArmyGeneratorRuleSet ruleSet)
+    {
+        StartingArmyGeneratorConfig config = CreateDefault(ruleSet);
         config.Seed = new RunGenerationSeed(CreateRuntimeSeed());
         return config;
+    }
+
+    private static int CalculateTargetPower(ArmyGeneratorRuleSet ruleSet)
+    {
+        return Math.Max(1, (ruleSet.MinPower + ruleSet.MaxPower) / 2);
     }
 
     private static int CreateRuntimeSeed()
@@ -195,23 +207,14 @@ public class StartRunGenerationUnlockContext
 
 public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateSource, IRunRoutePreviewSource, IRunMapPathCatalog
 {
-    private static readonly int[][] ApprovedTierCompositions =
-    {
-        new[] { 1, 1, 1, 1 },
-        new[] { 1, 1, 1, 2 },
-        new[] { 1, 1, 2, 3 },
-        new[] { 1, 1, 2, 2 },
-        new[] { 1, 2, 2, 3 },
-        new[] { 1, 2, 2, 2 }
-    };
-
     private readonly IStartRunUnitPoolSource unitSource;
+    private readonly ArmyGeneratorRuleSet ruleSet;
     private readonly StartingArmyGeneratorConfig armyConfig;
     private readonly RouteGeneratorConfig routeConfig;
     private readonly StartRunGenerationUnlockContext unlockContext;
 
     public DeterministicRunGenerationCatalog(IStartRunUnitPoolSource unitSource)
-        : this(unitSource, StartingArmyGeneratorConfig.CreateDefault(), RouteGeneratorConfig.CreateDefault(), null)
+        : this(unitSource, null, null, RouteGeneratorConfig.CreateDefault(), null)
     {
     }
 
@@ -220,9 +223,25 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
         StartingArmyGeneratorConfig armyConfig,
         RouteGeneratorConfig routeConfig,
         StartRunGenerationUnlockContext unlockContext)
+        : this(unitSource, null, armyConfig, routeConfig, unlockContext)
+    {
+    }
+
+    public DeterministicRunGenerationCatalog(
+        IStartRunUnitPoolSource unitSource,
+        ArmyGeneratorRuleSet ruleSet,
+        StartingArmyGeneratorConfig armyConfig,
+        RouteGeneratorConfig routeConfig,
+        StartRunGenerationUnlockContext unlockContext)
     {
         this.unitSource = unitSource;
-        this.armyConfig = armyConfig ?? StartingArmyGeneratorConfig.CreateDefault();
+        if (ruleSet == null)
+        {
+            throw new ArgumentNullException("ruleSet", "DeterministicRunGenerationCatalog requires an ArmyGeneratorRuleSet.");
+        }
+
+        this.ruleSet = ruleSet;
+        this.armyConfig = armyConfig ?? StartingArmyGeneratorConfig.CreateDefault(ruleSet);
         this.routeConfig = routeConfig ?? RouteGeneratorConfig.CreateDefault();
         this.unlockContext = unlockContext ?? new StartRunGenerationUnlockContext(null, null);
     }
@@ -234,14 +253,25 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
 
     public List<StartingArmyTemplate> ListStartingArmies(int requestedOfferCount)
     {
-        bool fallbackUsed;
-        List<StartRunUnitDefinition> units = BuildAvailableUnitPool(out fallbackUsed);
+        List<StartRunUnitDefinition> units = BuildAvailableUnitPool();
         List<StartingArmyTemplate> armies = new List<StartingArmyTemplate>();
+        List<string> usedUnitSignatures = new List<string>();
         int offerCount = Math.Max(1, requestedOfferCount);
 
         for (int offerIndex = 0; offerIndex < offerCount; offerIndex++)
         {
-            armies.Add(BuildArmyOffer(units, offerIndex, fallbackUsed));
+            StartingArmyTemplate army = BuildDistinctArmyOffer(units, offerIndex, usedUnitSignatures);
+            if (army == null || army.Stacks == null || army.Stacks.Count == 0)
+            {
+                continue;
+            }
+
+            armies.Add(army);
+            string signature = BuildUnitSignature(army);
+            if (!string.IsNullOrEmpty(signature) && !usedUnitSignatures.Contains(signature))
+            {
+                usedUnitSignatures.Add(signature);
+            }
         }
 
         return armies;
@@ -282,12 +312,10 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
                 Node("node-1", pathPrefix + "-main", RunMapNodeType.Battle, 1, "Outer Guard", "Battle reward", "Low risk", Encounter(campaignId, missionIndex, "node-1", "low", seed), "node-2"),
                 Node("node-2", pathPrefix + "-main", RunMapNodeType.RandomEvent, 2, "Unmarked Detour", "Event outcome", "No direct battle risk", string.Empty, "node-3"),
                 Node("node-3", pathPrefix + "-main", RunMapNodeType.Battle, 3, "Broken Road Fight", "Battle reward", "Medium risk", Encounter(campaignId, missionIndex, "node-3", "medium", seed), new List<string> { "node-4a", "node-4b" })),
-            Path(pathPrefix + "-safe", selectedRouteChoiceId, "Safer Branch", "Lower pressure branch with empty planning nodes.",
+            Path(pathPrefix + "-safe", selectedRouteChoiceId, "Safer Branch", "Lower pressure branch with fewer battle checks.",
                 Node("node-4a", pathPrefix + "-safe", RunMapNodeType.Battle, 4, "Cautious Push", "Battle reward", "Medium risk", Encounter(campaignId, missionIndex, "node-4a", "medium", seed), "node-5a"),
                 Node("node-5a", pathPrefix + "-safe", RunMapNodeType.RandomEvent, 5, "Camp Rumor", "Event outcome", "No direct battle risk", string.Empty, "node-6a"),
-                Node("node-6a", pathPrefix + "-safe", RunMapNodeType.Battle, 6, "Supply Guard", "Battle reward", "Medium risk", Encounter(campaignId, missionIndex, "node-6a", "medium", seed), "node-7a"),
-                Node("node-7a", pathPrefix + "-safe", RunMapNodeType.Empty, 7, "Quiet Crossing", "No reward", "No battle risk", string.Empty, "node-8a"),
-                Node("node-8a", pathPrefix + "-safe", RunMapNodeType.Empty, 8, "Old Milestone", "No reward", "No battle risk", string.Empty, "node-9")),
+                Node("node-6a", pathPrefix + "-safe", RunMapNodeType.Battle, 6, "Supply Guard", "Battle reward", "Medium risk", Encounter(campaignId, missionIndex, "node-6a", "medium", seed), "node-9")),
             Path(pathPrefix + "-risk", selectedRouteChoiceId, "Risk Branch", "Harder pressure branch with better reward hints.",
                 Node("node-4b", pathPrefix + "-risk", RunMapNodeType.Battle, 4, "Elite Roadblock", "Improved battle reward", "High risk", Encounter(campaignId, missionIndex, "node-4b", "high", seed), "node-5b"),
                 Node("node-5b", pathPrefix + "-risk", RunMapNodeType.RandomEvent, 5, "Strange Shrine", "Event outcome", "Uncertain risk", string.Empty, "node-6b"),
@@ -300,13 +328,56 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
         };
     }
 
-    private StartingArmyTemplate BuildArmyOffer(List<StartRunUnitDefinition> units, int offerIndex, bool fallbackUsed)
+    private StartingArmyTemplate BuildDistinctArmyOffer(
+        List<StartRunUnitDefinition> units,
+        int offerIndex,
+        List<string> usedUnitSignatures)
     {
-        Random random = new Random(BuildSeed(armyConfig.Seed.Value, offerIndex, 7103));
-        bool raceFallbackUsed;
-        List<string> racePool = SelectRacePool(units, random, offerIndex, out raceFallbackUsed);
-        List<StartRunUnitDefinition> raceUnits = FilterUnitsByRace(units, racePool);
+        StartingArmyTemplate best = null;
+        StartingArmyTemplate firstNonEmpty = null;
+        int attemptCount = Math.Max(armyConfig.OfferCount, Math.Max(8, armyConfig.StackCount * 4));
+
+        for (int attemptIndex = 0; attemptIndex < attemptCount; attemptIndex++)
+        {
+            StartingArmyTemplate candidate = BuildArmyOffer(units, offerIndex, attemptIndex);
+            if (best == null)
+            {
+                best = candidate;
+            }
+
+            string signature = BuildUnitSignature(candidate);
+            if (string.IsNullOrEmpty(signature))
+            {
+                continue;
+            }
+
+            if (firstNonEmpty == null)
+            {
+                firstNonEmpty = candidate;
+            }
+
+            if (usedUnitSignatures == null ||
+                !usedUnitSignatures.Contains(signature))
+            {
+                return candidate;
+            }
+        }
+
+        return firstNonEmpty ?? best;
+    }
+
+    private StartingArmyTemplate BuildArmyOffer(List<StartRunUnitDefinition> units, int offerIndex, int attemptIndex)
+    {
+        int attemptSalt = attemptIndex == 0 ? 7103 : BuildSeed(7103, attemptIndex, 9176);
+        Random random = new Random(BuildSeed(armyConfig.Seed.Value, offerIndex, attemptSalt));
+        List<int> factionPool = SelectFactionPool(units, random, offerIndex);
+        List<StartRunUnitDefinition> raceUnits = FilterUnitsByFaction(units, factionPool);
         int[] composition = SelectTierComposition(raceUnits, random);
+        if (composition == null || composition.Length == 0)
+        {
+            return null;
+        }
+
         List<StartRunStackTemplate> stacks = new List<StartRunStackTemplate>();
         List<string> usedUnitIds = new List<string>();
         List<UnitRoleCategory> usedRoleCategories = new List<UnitRoleCategory>();
@@ -338,11 +409,14 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
                 BuildSkills(unit, random)));
         }
 
+        if (stacks.Count != armyConfig.StackCount || !NormalizeStackPower(stacks))
+        {
+            return null;
+        }
+
         string templateId = "generated-start-" + armyConfig.Seed.Value.ToString(CultureInfo.InvariantCulture) + "-" + (offerIndex + 1).ToString(CultureInfo.InvariantCulture);
         string displayName = BuildArmyName(stacks, offerIndex);
-        string description = fallbackUsed || raceFallbackUsed
-            ? "Generated balanced start. Fallback early pool was used because unlocks were narrow."
-            : "Generated balanced start from available unit and skill unlocks.";
+        string description = "Generated balanced start from the configured ArmyGeneratorRuleSet.";
 
         return new StartingArmyTemplate(
             templateId,
@@ -355,9 +429,29 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
             stacks);
     }
 
-    private List<StartRunUnitDefinition> BuildAvailableUnitPool(out bool fallbackUsed)
+    private static string BuildUnitSignature(StartingArmyTemplate army)
     {
-        fallbackUsed = false;
+        if (army == null || army.Stacks == null || army.Stacks.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        List<string> unitIds = new List<string>();
+        for (int i = 0; i < army.Stacks.Count; i++)
+        {
+            StartRunStackTemplate stack = army.Stacks[i];
+            if (stack != null && !string.IsNullOrEmpty(stack.UnitId))
+            {
+                unitIds.Add(stack.UnitId);
+            }
+        }
+
+        unitIds.Sort();
+        return string.Join("|", unitIds.ToArray());
+    }
+
+    private List<StartRunUnitDefinition> BuildAvailableUnitPool()
+    {
         List<StartRunUnitDefinition> source = unitSource == null ? new List<StartRunUnitDefinition>() : unitSource.ListUnits();
         SortUnits(source);
 
@@ -365,52 +459,26 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
         for (int i = 0; i < source.Count; i++)
         {
             StartRunUnitDefinition unit = source[i];
-            if (IsUsableUnit(unit) && unlockContext.AllowsUnit(unit.UnitId) && HasAllowedSkill(unit))
+            if (IsUsableUnit(unit) && IsAllowedFaction(unit) && unlockContext.AllowsUnit(unit.UnitId) && HasAllowedSkill(unit))
             {
                 filtered.Add(unit);
             }
         }
 
-        if (CanBuildFourStackArmy(filtered))
-        {
-            return filtered;
-        }
-
-        fallbackUsed = true;
-        AddFallbackUnits(filtered);
-        SortUnits(filtered);
         return filtered;
     }
 
-    private bool CanBuildFourStackArmy(List<StartRunUnitDefinition> units)
+    private bool CanBuildArmy(List<StartRunUnitDefinition> units)
     {
         if (units == null || units.Count == 0)
         {
             return false;
         }
 
-        for (int i = 0; i < ApprovedTierCompositions.Length; i++)
-        {
-            bool valid = true;
-            for (int j = 0; j < ApprovedTierCompositions[i].Length; j++)
-            {
-                if (!HasTier(units, ApprovedTierCompositions[i][j]))
-                {
-                    valid = false;
-                    break;
-                }
-            }
-
-            if (valid)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return BuildValidTierCompositions(units).Count > 0;
     }
 
-    private bool CanBuildVariedFourStackArmy(List<StartRunUnitDefinition> units, int minimumUniqueUnits)
+    private bool CanBuildVariedArmy(List<StartRunUnitDefinition> units, int minimumUniqueUnits)
     {
         if (units == null || units.Count == 0)
         {
@@ -418,9 +486,10 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
         }
 
         int clampedMinimum = Math.Max(1, Math.Min(armyConfig.StackCount, minimumUniqueUnits));
-        for (int i = 0; i < ApprovedTierCompositions.Length; i++)
+        List<int[]> compositions = BuildValidTierCompositions(units);
+        for (int i = 0; i < compositions.Count; i++)
         {
-            int[] composition = ApprovedTierCompositions[i];
+            int[] composition = compositions[i];
             if (CanBuildComposition(units, composition) && CountUniqueUnitsForComposition(units, composition) >= clampedMinimum)
             {
                 return true;
@@ -497,32 +566,15 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
         return unitIds.Count;
     }
 
-    private void AddFallbackUnits(List<StartRunUnitDefinition> units)
-    {
-        for (int i = 0; i < armyConfig.EarlyFallbackUnitIds.Count; i++)
-        {
-            string unitId = armyConfig.EarlyFallbackUnitIds[i];
-            if (ContainsUnit(units, unitId))
-            {
-                continue;
-            }
-
-            StartRunUnitDefinition unit = unitSource == null ? null : unitSource.FindUnit(unitId);
-            if (IsUsableUnit(unit))
-            {
-                units.Add(unit);
-            }
-        }
-    }
-
     private int[] SelectTierComposition(List<StartRunUnitDefinition> units, Random random)
     {
+        List<int[]> valid = BuildValidTierCompositions(units);
         List<int[]> preferred = new List<int[]>();
         int minimumUniqueUnits = MinimumUniqueUnitsFor(units);
 
-        for (int i = 0; i < ApprovedTierCompositions.Length; i++)
+        for (int i = 0; i < valid.Count; i++)
         {
-            int[] composition = ApprovedTierCompositions[i];
+            int[] composition = valid[i];
             if (CanBuildComposition(units, composition) && CountUniqueUnitsForComposition(units, composition) >= minimumUniqueUnits)
             {
                 preferred.Add(composition);
@@ -534,54 +586,73 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
             return preferred[random.Next(preferred.Count)];
         }
 
-        int start = random.Next(ApprovedTierCompositions.Length);
-        for (int offset = 0; offset < ApprovedTierCompositions.Length; offset++)
-        {
-            int[] composition = ApprovedTierCompositions[(start + offset) % ApprovedTierCompositions.Length];
-            if (CanBuildComposition(units, composition))
-            {
-                return composition;
-            }
-        }
-
-        return ApprovedTierCompositions[0];
+        return valid.Count == 0 ? null : valid[random.Next(valid.Count)];
     }
 
-    private List<string> SelectRacePool(List<StartRunUnitDefinition> units, Random random, int offerIndex, out bool fallbackUsed)
+    private List<int[]> BuildValidTierCompositions(List<StartRunUnitDefinition> units)
     {
-        fallbackUsed = false;
-        List<string> races = BuildRaceList(units);
-        List<List<string>> validPools = new List<List<string>>();
-        List<List<string>> preferredPools = new List<List<string>>();
-        int minimumUniqueUnits = MinimumUniqueUnitsFor(units);
+        List<int[]> result = new List<int[]>();
+        int[] maxCounts = TierMaxCounts();
+        int[] counts = new int[4];
+        List<int> current = new List<int>();
+        BuildValidTierCompositions(units, maxCounts, counts, current, result);
+        return result;
+    }
 
-        for (int i = 0; i < races.Count; i++)
+    private void BuildValidTierCompositions(
+        List<StartRunUnitDefinition> units,
+        int[] maxCounts,
+        int[] counts,
+        List<int> current,
+        List<int[]> result)
+    {
+        if (current.Count == armyConfig.StackCount)
         {
-            List<string> singleRacePool = new List<string> { races[i] };
-            List<StartRunUnitDefinition> singleRaceUnits = FilterUnitsByRace(units, singleRacePool);
-            if (CanBuildFourStackArmy(singleRaceUnits))
+            int[] composition = current.ToArray();
+            if (CanBuildComposition(units, composition))
             {
-                validPools.Add(singleRacePool);
-                if (CanBuildVariedFourStackArmy(singleRaceUnits, minimumUniqueUnits))
-                {
-                    preferredPools.Add(singleRacePool);
-                }
+                result.Add(composition);
             }
 
-            for (int j = i + 1; j < races.Count; j++)
-            {
-                List<string> twoRacePool = new List<string> { races[i], races[j] };
-                List<StartRunUnitDefinition> twoRaceUnits = FilterUnitsByRace(units, twoRacePool);
-                if (CanBuildFourStackArmy(twoRaceUnits))
-                {
-                    validPools.Add(twoRacePool);
-                    if (CanBuildVariedFourStackArmy(twoRaceUnits, minimumUniqueUnits))
-                    {
-                        preferredPools.Add(twoRacePool);
-                    }
-                }
-            }
+            return;
         }
+
+        for (int tier = 1; tier <= 4; tier++)
+        {
+            int index = tier - 1;
+            if (counts[index] >= maxCounts[index] || !HasTier(units, tier))
+            {
+                continue;
+            }
+
+            counts[index]++;
+            current.Add(tier);
+            BuildValidTierCompositions(units, maxCounts, counts, current, result);
+            current.RemoveAt(current.Count - 1);
+            counts[index]--;
+        }
+    }
+
+    private int[] TierMaxCounts()
+    {
+        return new[]
+        {
+            ruleSet.MaxTier1Count,
+            ruleSet.MaxTier2Count,
+            ruleSet.MaxTier3Count,
+            ruleSet.MaxTier4Count
+        };
+    }
+
+    private List<int> SelectFactionPool(List<StartRunUnitDefinition> units, Random random, int offerIndex)
+    {
+        List<int> factions = BuildFactionList(units);
+        List<List<int>> validPools = new List<List<int>>();
+        List<List<int>> preferredPools = new List<List<int>>();
+        int minimumUniqueUnits = MinimumUniqueUnitsFor(units);
+        int mixCount = Math.Max(1, Math.Min(ruleSet.FactionMixCount, factions.Count));
+
+        BuildFactionPools(factions, mixCount, 0, new List<int>(), validPools, preferredPools, units, minimumUniqueUnits);
 
         if (preferredPools.Count > 0)
         {
@@ -595,36 +666,66 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
             return validPools[index];
         }
 
-        fallbackUsed = true;
-        List<string> fallback = new List<string>();
-        for (int i = 0; i < races.Count && fallback.Count < 2; i++)
-        {
-            fallback.Add(races[i]);
-        }
-
-        return fallback;
+        return new List<int>();
     }
 
-    private static List<string> BuildRaceList(List<StartRunUnitDefinition> units)
+    private void BuildFactionPools(
+        List<int> factions,
+        int mixCount,
+        int startIndex,
+        List<int> current,
+        List<List<int>> validPools,
+        List<List<int>> preferredPools,
+        List<StartRunUnitDefinition> units,
+        int minimumUniqueUnits)
     {
-        List<string> races = new List<string>();
-        for (int i = 0; i < units.Count; i++)
+        if (current.Count > 0)
         {
-            string race = FactionKey(units[i]);
-            if (!races.Contains(race))
+            List<StartRunUnitDefinition> poolUnits = FilterUnitsByFaction(units, current);
+            if (CanBuildArmy(poolUnits))
             {
-                races.Add(race);
+                List<int> pool = new List<int>(current);
+                validPools.Add(pool);
+                if (CanBuildVariedArmy(poolUnits, minimumUniqueUnits))
+                {
+                    preferredPools.Add(pool);
+                }
             }
         }
 
-        races.Sort();
-        return races;
+        if (current.Count == mixCount)
+        {
+            return;
+        }
+
+        for (int i = startIndex; i < factions.Count; i++)
+        {
+            current.Add(factions[i]);
+            BuildFactionPools(factions, mixCount, i + 1, current, validPools, preferredPools, units, minimumUniqueUnits);
+            current.RemoveAt(current.Count - 1);
+        }
     }
 
-    private static List<StartRunUnitDefinition> FilterUnitsByRace(List<StartRunUnitDefinition> units, List<string> racePool)
+    private static List<int> BuildFactionList(List<StartRunUnitDefinition> units)
+    {
+        List<int> factions = new List<int>();
+        for (int i = 0; i < units.Count; i++)
+        {
+            int faction = units[i] == null ? UnitFactionResolver.UnknownFactionId : units[i].FactionId;
+            if (faction > 0 && !factions.Contains(faction))
+            {
+                factions.Add(faction);
+            }
+        }
+
+        factions.Sort();
+        return factions;
+    }
+
+    private static List<StartRunUnitDefinition> FilterUnitsByFaction(List<StartRunUnitDefinition> units, List<int> factionPool)
     {
         List<StartRunUnitDefinition> result = new List<StartRunUnitDefinition>();
-        if (units == null || racePool == null || racePool.Count == 0)
+        if (units == null || factionPool == null || factionPool.Count == 0)
         {
             return result;
         }
@@ -632,8 +733,8 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
         for (int i = 0; i < units.Count; i++)
         {
             StartRunUnitDefinition unit = units[i];
-            string race = FactionKey(unit);
-            if (racePool.Contains(race))
+            int faction = unit == null ? UnitFactionResolver.UnknownFactionId : unit.FactionId;
+            if (factionPool.Contains(faction))
             {
                 result.Add(unit);
             }
@@ -723,11 +824,6 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
             }
         }
 
-        if (legal.Count == 0 && unit != null && unit.SkillIds != null && unit.SkillIds.Count > 0)
-        {
-            legal.Add(unit.SkillIds[0]);
-        }
-
         List<StartRunSkillTemplate> result = new List<StartRunSkillTemplate>();
         if (legal.Count > 0)
         {
@@ -746,6 +842,110 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
 
         float targetStackValue = (float)armyConfig.TargetTotalValue / armyConfig.StackCount;
         return Math.Max(1, (int)Math.Round(targetStackValue / unitCost));
+    }
+
+    private bool NormalizeStackPower(List<StartRunStackTemplate> stacks)
+    {
+        if (stacks == null || stacks.Count == 0)
+        {
+            return false;
+        }
+
+        int guard = 0;
+        while (guard++ < 1000)
+        {
+            int totalPower = CalculateTotalPower(stacks);
+            if (totalPower >= ruleSet.MinPower && totalPower <= ruleSet.MaxPower)
+            {
+                return true;
+            }
+
+            if (totalPower < ruleSet.MinPower)
+            {
+                StartRunStackTemplate stackToIncrease = FindIncreaseStack(stacks, ruleSet.MaxPower - totalPower);
+                if (stackToIncrease == null)
+                {
+                    return false;
+                }
+
+                stackToIncrease.Amount++;
+                continue;
+            }
+
+            StartRunStackTemplate stackToReduce = FindReduceStack(stacks);
+            if (stackToReduce == null)
+            {
+                return false;
+            }
+
+            stackToReduce.Amount--;
+        }
+
+        return false;
+    }
+
+    private int CalculateTotalPower(List<StartRunStackTemplate> stacks)
+    {
+        int total = 0;
+        for (int i = 0; stacks != null && i < stacks.Count; i++)
+        {
+            StartRunStackTemplate stack = stacks[i];
+            StartRunUnitDefinition unit = stack == null || unitSource == null ? null : unitSource.FindUnit(stack.UnitId);
+            if (unit != null)
+            {
+                total += Math.Max(0, stack.Amount) * Math.Max(0, unit.Cost);
+            }
+        }
+
+        return total;
+    }
+
+    private StartRunStackTemplate FindIncreaseStack(List<StartRunStackTemplate> stacks, int maxAddedPower)
+    {
+        StartRunStackTemplate best = null;
+        int bestCost = 0;
+        for (int i = 0; stacks != null && i < stacks.Count; i++)
+        {
+            StartRunStackTemplate stack = stacks[i];
+            StartRunUnitDefinition unit = stack == null || unitSource == null ? null : unitSource.FindUnit(stack.UnitId);
+            int cost = unit == null ? 0 : unit.Cost;
+            if (cost <= 0 || cost > maxAddedPower)
+            {
+                continue;
+            }
+
+            if (best == null || cost > bestCost)
+            {
+                best = stack;
+                bestCost = cost;
+            }
+        }
+
+        return best;
+    }
+
+    private StartRunStackTemplate FindReduceStack(List<StartRunStackTemplate> stacks)
+    {
+        StartRunStackTemplate best = null;
+        int bestCost = 0;
+        for (int i = 0; stacks != null && i < stacks.Count; i++)
+        {
+            StartRunStackTemplate stack = stacks[i];
+            StartRunUnitDefinition unit = stack == null || unitSource == null ? null : unitSource.FindUnit(stack.UnitId);
+            int cost = unit == null ? 0 : unit.Cost;
+            if (cost <= 0 || stack.Amount <= 1)
+            {
+                continue;
+            }
+
+            if (best == null || cost > bestCost)
+            {
+                best = stack;
+                bestCost = cost;
+            }
+        }
+
+        return best;
     }
 
     private string BuildArmyName(List<StartRunStackTemplate> stacks, int offerIndex)
@@ -771,6 +971,26 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
         for (int i = 0; i < unit.SkillIds.Count; i++)
         {
             if (unlockContext.AllowsSkill(unit.SkillIds[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsAllowedFaction(StartRunUnitDefinition unit)
+    {
+        int[] allowedFactionIds = ruleSet.AllowedFactionIds;
+        if (allowedFactionIds.Length == 0)
+        {
+            return false;
+        }
+
+        int factionId = unit == null ? UnitFactionResolver.UnknownFactionId : unit.FactionId;
+        for (int i = 0; i < allowedFactionIds.Length; i++)
+        {
+            if (allowedFactionIds[i] == factionId)
             {
                 return true;
             }
@@ -906,19 +1126,6 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
         return false;
     }
 
-    private static bool ContainsUnit(List<StartRunUnitDefinition> units, string unitId)
-    {
-        for (int i = 0; i < units.Count; i++)
-        {
-            if (units[i] != null && units[i].UnitId == unitId)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private static int TierNumber(string tier)
     {
         if (string.IsNullOrEmpty(tier))
@@ -947,12 +1154,6 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
             default:
                 return 1;
         }
-    }
-
-    private static string FactionKey(StartRunUnitDefinition unit)
-    {
-        int factionId = unit == null ? UnitFactionResolver.UnknownFactionId : unit.FactionId;
-        return factionId <= 0 ? "Faction-Unknown" : "Faction-" + factionId.ToString(CultureInfo.InvariantCulture);
     }
 
     private static void SortUnits(List<StartRunUnitDefinition> units)
@@ -1022,4 +1223,5 @@ public class DeterministicRunGenerationCatalog : IRequestedStartingArmyTemplateS
 
         return char.ToUpperInvariant(token[0]) + token.Substring(1);
     }
+
 }

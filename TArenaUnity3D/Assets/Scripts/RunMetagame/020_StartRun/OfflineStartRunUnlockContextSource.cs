@@ -20,7 +20,9 @@ public class OfflineStartRunUnlockContextSource
         using (IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
         {
             int accountId = OfflineDatabaseAccountBootstrap.EnsureDefaultAccount(connection, null, accountPlayerId);
-            return new StartRunGenerationUnlockContext(ReadUnlocks(connection, accountId, DBUnlockTypeId.Unit), null);
+            return new StartRunGenerationUnlockContext(
+                ReadUnlocks(connection, accountId, DBUnlockTypeId.Unit),
+                ReadUnlocks(connection, accountId, DBUnlockTypeId.Skill));
         }
     }
 

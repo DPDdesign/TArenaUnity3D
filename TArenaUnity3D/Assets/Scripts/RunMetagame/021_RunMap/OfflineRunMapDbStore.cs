@@ -30,6 +30,7 @@ public class OfflineRunMapDbStore : IRunMapStore
 
     private readonly string databasePath;
     private readonly IRunMapPathCatalog pathCatalog;
+    private readonly OfflineRunContextDbWriter runContextWriter = new OfflineRunContextDbWriter();
 
     public OfflineRunMapDbStore()
         : this(null, new DefaultRunMapPathCatalog())
@@ -52,35 +53,22 @@ public class OfflineRunMapDbStore : IRunMapStore
         using (IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
         using (IDbTransaction transaction = connection.BeginTransaction())
         {
-            int accountId = OfflineDatabaseAccountBootstrap.EnsureDefaultAccount(connection, transaction, "offline-player");
-            int runId = EnsureRun(connection, transaction, state, accountId);
+            int runId = EnsureRun(connection, transaction, state);
             int routeMapId = EnsureRouteMap(connection, transaction, runId, state);
             UpdateNodeStates(connection, transaction, routeMapId, state);
 
             int currentNodeId = ResolveCurrentNodeIntId(connection, transaction, routeMapId, state.SelectedRouteChoiceId, state.CurrentNodeId);
-            OfflineDatabaseSql.ExecuteNonQuery(
+            runContextWriter.UpdateRunMapState(
                 connection,
-                @"
-UPDATE offline_runs
-SET route_map_id = @routeMapId,
-    current_node_id = @currentNodeId,
-    current_run_gold = @currentRunGold,
-    stage_progress = @stageProgress,
-    route_progress = @routeProgress,
-    run_status_id = @runStatusId,
-    next_screen = @nextScreen,
-    updated_at_utc = @updatedAtUtc
-WHERE run_id = @runId;",
                 transaction,
-                new OfflineDatabaseSqlParameter("@routeMapId", routeMapId),
-                new OfflineDatabaseSqlParameter("@currentNodeId", currentNodeId > 0 ? (object)currentNodeId : DBNull.Value),
-                new OfflineDatabaseSqlParameter("@currentRunGold", state.RunGold),
-                new OfflineDatabaseSqlParameter("@stageProgress", state.StageProgress),
-                new OfflineDatabaseSqlParameter("@routeProgress", state.RouteProgress),
-                new OfflineDatabaseSqlParameter("@runStatusId", (int)DBRunStatusId.InProgress),
-                new OfflineDatabaseSqlParameter("@nextScreen", "RunMap"),
-                new OfflineDatabaseSqlParameter("@updatedAtUtc", OfflineDatabaseSql.UtcNowText()),
-                new OfflineDatabaseSqlParameter("@runId", runId));
+                runId,
+                routeMapId,
+                currentNodeId,
+                state.RunGold,
+                state.StageProgress,
+                state.RouteProgress,
+                (int)DBRunStatusId.InProgress,
+                ResolveNextScreen(state));
 
             transaction.Commit();
             return Find(OfflineDatabaseLegacyIdentity.ToLegacyRunId(runId));
@@ -160,134 +148,25 @@ LIMIT 1;",
         }
     }
 
-    private int EnsureRun(IDbConnection connection, IDbTransaction transaction, RunMapStateRecord state, int accountId)
+    private int EnsureRun(IDbConnection connection, IDbTransaction transaction, RunMapStateRecord state)
     {
         int parsedRunId = OfflineDatabaseLegacyIdentity.ParseIntIdOrDefault(state.RunId);
-        if (parsedRunId > 0)
+        if (parsedRunId <= 0)
         {
-            object existing = OfflineDatabaseSql.ExecuteScalar(
-                connection,
-                "SELECT run_id FROM offline_runs WHERE run_id = @runId LIMIT 1;",
-                transaction,
-                new OfflineDatabaseSqlParameter("@runId", parsedRunId));
-            if (existing != null && existing != DBNull.Value)
-            {
-                return parsedRunId;
-            }
+            throw new InvalidOperationException("Run Map DB store requires a persisted run id from Start Run.");
         }
 
-        string now = OfflineDatabaseSql.UtcNowText();
-        if (parsedRunId > 0)
-        {
-            OfflineDatabaseSql.ExecuteNonQuery(
-                connection,
-                @"
-INSERT INTO offline_runs (
-    run_id,
-    account_id,
-    game_mode_id,
-    authority_source_id,
-    run_status_id,
-    starting_army_template_id,
-    starting_army_variant_id,
-    selected_starting_army_id,
-    selected_route_choice_id,
-    current_run_gold,
-    stage_progress,
-    route_progress,
-    next_screen,
-    created_at_utc,
-    updated_at_utc,
-    is_active
-) VALUES (
-    @runId,
-    @accountId,
-    @gameModeId,
-    @authoritySourceId,
-    @runStatusId,
-    @startingArmyTemplateId,
-    @startingArmyVariantId,
-    @selectedStartingArmyId,
-    @selectedRouteChoiceId,
-    @currentRunGold,
-    @stageProgress,
-    @routeProgress,
-    @nextScreen,
-    @createdAtUtc,
-    @updatedAtUtc,
-    1
-);",
-                transaction,
-                new OfflineDatabaseSqlParameter("@runId", parsedRunId),
-                new OfflineDatabaseSqlParameter("@accountId", accountId),
-                new OfflineDatabaseSqlParameter("@gameModeId", (int)DBGameModeId.Offline),
-                new OfflineDatabaseSqlParameter("@authoritySourceId", (int)DBAuthoritySourceId.LocalOfflineAdapter),
-                new OfflineDatabaseSqlParameter("@runStatusId", (int)DBRunStatusId.InProgress),
-                new OfflineDatabaseSqlParameter("@startingArmyTemplateId", "mock-start-army"),
-                new OfflineDatabaseSqlParameter("@startingArmyVariantId", "mock-start-army-v1"),
-                new OfflineDatabaseSqlParameter("@selectedStartingArmyId", "mock-start-army"),
-                new OfflineDatabaseSqlParameter("@selectedRouteChoiceId", state.SelectedRouteChoiceId),
-                new OfflineDatabaseSqlParameter("@currentRunGold", state.RunGold),
-                new OfflineDatabaseSqlParameter("@stageProgress", state.StageProgress),
-                new OfflineDatabaseSqlParameter("@routeProgress", state.RouteProgress),
-                new OfflineDatabaseSqlParameter("@nextScreen", "RunMap"),
-                new OfflineDatabaseSqlParameter("@createdAtUtc", now),
-                new OfflineDatabaseSqlParameter("@updatedAtUtc", now));
-            return parsedRunId;
-        }
-
-        OfflineDatabaseSql.ExecuteNonQuery(
+        object existing = OfflineDatabaseSql.ExecuteScalar(
             connection,
-            @"
-INSERT INTO offline_runs (
-    account_id,
-    game_mode_id,
-    authority_source_id,
-    run_status_id,
-    starting_army_template_id,
-    starting_army_variant_id,
-    selected_starting_army_id,
-    selected_route_choice_id,
-    current_run_gold,
-    stage_progress,
-    route_progress,
-    next_screen,
-    created_at_utc,
-    updated_at_utc,
-    is_active
-) VALUES (
-    @accountId,
-    @gameModeId,
-    @authoritySourceId,
-    @runStatusId,
-    @startingArmyTemplateId,
-    @startingArmyVariantId,
-    @selectedStartingArmyId,
-    @selectedRouteChoiceId,
-    @currentRunGold,
-    @stageProgress,
-    @routeProgress,
-    @nextScreen,
-    @createdAtUtc,
-    @updatedAtUtc,
-    1
-);",
+            "SELECT run_id FROM offline_runs WHERE run_id = @runId AND is_active = 1 LIMIT 1;",
             transaction,
-            new OfflineDatabaseSqlParameter("@accountId", accountId),
-            new OfflineDatabaseSqlParameter("@gameModeId", (int)DBGameModeId.Offline),
-            new OfflineDatabaseSqlParameter("@authoritySourceId", (int)DBAuthoritySourceId.LocalOfflineAdapter),
-            new OfflineDatabaseSqlParameter("@runStatusId", (int)DBRunStatusId.InProgress),
-            new OfflineDatabaseSqlParameter("@startingArmyTemplateId", "mock-start-army"),
-            new OfflineDatabaseSqlParameter("@startingArmyVariantId", "mock-start-army-v1"),
-            new OfflineDatabaseSqlParameter("@selectedStartingArmyId", "mock-start-army"),
-            new OfflineDatabaseSqlParameter("@selectedRouteChoiceId", state.SelectedRouteChoiceId),
-            new OfflineDatabaseSqlParameter("@currentRunGold", state.RunGold),
-            new OfflineDatabaseSqlParameter("@stageProgress", state.StageProgress),
-            new OfflineDatabaseSqlParameter("@routeProgress", state.RouteProgress),
-            new OfflineDatabaseSqlParameter("@nextScreen", "RunMap"),
-            new OfflineDatabaseSqlParameter("@createdAtUtc", now),
-            new OfflineDatabaseSqlParameter("@updatedAtUtc", now));
-        return (int)OfflineDatabaseSql.ReadLastInsertRowId(connection, transaction);
+            new OfflineDatabaseSqlParameter("@runId", parsedRunId));
+        if (existing == null || existing == DBNull.Value)
+        {
+            throw new InvalidOperationException("Run Map DB store could not find a persisted run. Start Run must create the run before Run Map saves route state.");
+        }
+
+        return parsedRunId;
     }
 
     private int EnsureRouteMap(IDbConnection connection, IDbTransaction transaction, int runId, RunMapStateRecord state)
@@ -381,6 +260,7 @@ INSERT INTO route_paths (
 
         InsertRouteNodes(connection, transaction, seed);
         UpdateRouteNodeLinks(connection, transaction, seed);
+        OfflineMaterializedRunMapDbStore.SaveMaterializedMap(connection, transaction, seed);
 
         return routeMapId;
     }
@@ -422,6 +302,18 @@ WHERE node_id = @nodeId;",
                     new OfflineDatabaseSqlParameter("@nodeStateId", nodeStateId),
                     new OfflineDatabaseSqlParameter("@completedAtUtc", nodeStateId == (int)DBNodeStateId.Completed ? (object)now : DBNull.Value),
                     new OfflineDatabaseSqlParameter("@nodeId", persistedNode.NodeId));
+
+                OfflineDatabaseSql.ExecuteNonQuery(
+                    connection,
+                    @"
+UPDATE map_nodes
+SET node_state_id = @nodeStateId,
+    completed_at_utc = @completedAtUtc
+WHERE node_id = @nodeId;",
+                    transaction,
+                    new OfflineDatabaseSqlParameter("@nodeStateId", nodeStateId),
+                    new OfflineDatabaseSqlParameter("@completedAtUtc", nodeStateId == (int)DBNodeStateId.Completed ? (object)now : DBNull.Value),
+                    new OfflineDatabaseSqlParameter("@nodeId", persistedNode.NodeId));
             }
         }
     }
@@ -439,6 +331,28 @@ WHERE node_id = @nodeId;",
         Dictionary<string, PersistedNodeRow> byCatalogNodeId = BuildNodeLookup(catalogPaths, persistedPaths, persistedNodes);
         PersistedNodeRow node;
         return byCatalogNodeId.TryGetValue(currentNodeId, out node) ? node.NodeId : 0;
+    }
+
+    private static string ResolveNextScreen(RunMapStateRecord state)
+    {
+        RunMapNodeDefinition current = state == null ? null : FindNode(state.Paths, state.CurrentNodeId);
+        if (current == null)
+        {
+            return "RunMap";
+        }
+
+        switch (current.NodeType)
+        {
+            case RunMapNodeType.Battle:
+            case RunMapNodeType.FinalBoss:
+                return "RunBattle";
+            case RunMapNodeType.Shop:
+                return "RunShop";
+            case RunMapNodeType.RecruitReward:
+                return "Reward";
+            default:
+                return "RunMap";
+        }
     }
 
     private static List<PersistedPathRow> LoadPaths(IDbConnection connection, int routeMapId, IDbTransaction transaction = null)

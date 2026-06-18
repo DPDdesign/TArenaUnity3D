@@ -56,6 +56,11 @@ public static class OfflineDatabaseLegacyIdentity
         return ToPrefixedId("route-map", routeMapId);
     }
 
+    public static string ToLegacyRouteNodeId(int routeNodeId)
+    {
+        return ToPrefixedId("node", routeNodeId);
+    }
+
     public static string ToLegacyRewardChoiceId(int rewardChoiceId)
     {
         return ToPrefixedId("reward-choice", rewardChoiceId);

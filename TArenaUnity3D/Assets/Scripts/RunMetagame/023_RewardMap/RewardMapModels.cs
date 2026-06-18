@@ -44,7 +44,8 @@ public enum RewardMapOperationType
     AddStack,
     TeachSkill,
     RecoverLosses,
-    GainCurrency
+    GainCurrency,
+    DowngradeStack
 }
 
 public enum RewardMapError
