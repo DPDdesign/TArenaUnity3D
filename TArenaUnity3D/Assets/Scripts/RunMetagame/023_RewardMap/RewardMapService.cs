@@ -72,6 +72,7 @@ public class RewardMapService
             return;
         }
 
+        ResolveChoiceCards(choice);
         RewardMapCardViewData focused = FindCard(choice.Cards, focusedRewardId);
         if (focused == null && choice.Cards != null && choice.Cards.Count > 0)
         {
@@ -83,6 +84,48 @@ public class RewardMapService
             ? BuildPreview(string.Empty, choice.ArmyBeforeReward, choice.RunGoldBeforeReward, null, RewardMapError.MissingReward, "Select a reward.")
             : Preview(focused, choice.ArmyBeforeReward, choice.RunGoldBeforeReward);
         choice.Message = choice.FocusedPreview == null ? choice.Message : choice.FocusedPreview.Message;
+    }
+
+    private void ResolveChoiceCards(RewardMapChoiceViewData choice)
+    {
+        if (choice == null || choice.Cards == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < choice.Cards.Count; i++)
+        {
+            RewardMapCardViewData card = choice.Cards[i];
+            if (card == null)
+            {
+                continue;
+            }
+
+            if (!card.Legal && card.Error != RewardMapError.None)
+            {
+                card.AfterText = string.IsNullOrEmpty(card.AfterText) ? "No legal target" : card.AfterText;
+                card.BeforeStackPreview = BuildBeforeStackPreview(choice.ArmyBeforeReward, card.Operation);
+                card.AfterStackPreview = null;
+                card.AffectedSlotIndex = ResolvePreviewSlotIndex(choice.ArmyBeforeReward, card.BeforeStackPreview, null);
+                continue;
+            }
+
+            RewardMapOperation operation = ResolveTemplateOperation(card.Operation, choice.ArmyBeforeReward);
+            RewardMapStackSnapshot beforeStackPreview = BuildBeforeStackPreview(choice.ArmyBeforeReward, operation);
+            RewardMapArmySnapshot previewArmy = CloneArmy(choice.ArmyBeforeReward, "card-preview");
+            int previewGold = 0;
+            RewardMapStackSnapshot affected;
+            RewardMapError error = ApplyOperation(previewArmy, operation, ref previewGold, out affected);
+            card.Operation = operation;
+            card.BeforeText = BuildBeforeText(choice.ArmyBeforeReward, operation);
+            card.AfterText = error == RewardMapError.None ? BuildAfterText(previewArmy, operation, previewGold) : "No legal target";
+            card.AffectedStackId = affected == null ? card.AffectedStackId : affected.StackId;
+            card.Legal = error == RewardMapError.None;
+            card.Error = error;
+            card.BeforeStackPreview = beforeStackPreview;
+            card.AfterStackPreview = error == RewardMapError.None ? affected : null;
+            card.AffectedSlotIndex = ResolvePreviewSlotIndex(choice.ArmyBeforeReward, beforeStackPreview, affected);
+        }
     }
 
     public RewardMapApplyResult Apply(RewardMapApplyCommand command)
@@ -165,13 +208,15 @@ public class RewardMapService
 
     private RewardMapCardViewData BuildCard(RewardMapTemplate template, RewardMapArmySnapshot army, int stageIndex)
     {
+        RewardMapOperation operation = ResolveTemplateOperation(template.Operation, army);
+        RewardMapStackSnapshot beforeStackPreview = BuildBeforeStackPreview(army, operation);
         RewardMapArmySnapshot previewArmy = CloneArmy(army, "card-preview");
         int previewGold = 0;
         RewardMapStackSnapshot affected;
-        RewardMapError error = ApplyOperation(previewArmy, template.Operation, ref previewGold, out affected);
-        string beforeText = BuildBeforeText(army, template.Operation);
-        string afterText = error == RewardMapError.None ? BuildAfterText(previewArmy, template.Operation, previewGold) : "No legal target";
-        return new RewardMapCardViewData(
+        RewardMapError error = ApplyOperation(previewArmy, operation, ref previewGold, out affected);
+        string beforeText = BuildBeforeText(army, operation);
+        string afterText = error == RewardMapError.None ? BuildAfterText(previewArmy, operation, previewGold) : "No legal target";
+        RewardMapCardViewData card = new RewardMapCardViewData(
             "reward-" + template.TemplateId,
             template.TemplateId,
             template.Family,
@@ -182,10 +227,124 @@ public class RewardMapService
             template.Detail,
             beforeText,
             afterText,
-            affected == null ? template.Operation.StackId : affected.StackId,
+            affected == null ? operation.StackId : affected.StackId,
             error == RewardMapError.None,
             error,
-            template.Operation);
+            operation);
+        card.BeforeStackPreview = beforeStackPreview;
+        card.AfterStackPreview = error == RewardMapError.None ? affected : null;
+        card.AffectedSlotIndex = ResolvePreviewSlotIndex(army, beforeStackPreview, affected);
+        return card;
+    }
+
+    private RewardMapOperation ResolveTemplateOperation(RewardMapOperation operation, RewardMapArmySnapshot army)
+    {
+        if (operation == null || string.IsNullOrEmpty(operation.UnitId))
+        {
+            return operation;
+        }
+
+        if (!OperationTargetsExistingStack(operation.Type))
+        {
+            return operation;
+        }
+
+        if (!string.IsNullOrEmpty(operation.StackId) && FindStack(army, operation.StackId) != null)
+        {
+            return operation;
+        }
+
+        RewardMapStackSnapshot stack = FindStackByUnit(army, operation.UnitId);
+        if (stack == null || string.IsNullOrEmpty(stack.StackId))
+        {
+            return operation;
+        }
+
+        return new RewardMapOperation(
+            operation.Type,
+            stack.StackId,
+            operation.UnitId,
+            operation.ToUnitId,
+            operation.SkillId,
+            operation.NewStackId,
+            operation.Amount,
+            operation.CurrencyDelta);
+    }
+
+    private static bool OperationTargetsExistingStack(RewardMapOperationType type)
+    {
+        return type == RewardMapOperationType.AddUnits ||
+            type == RewardMapOperationType.RecoverLosses ||
+            type == RewardMapOperationType.TeachSkill ||
+            type == RewardMapOperationType.PromoteStack ||
+            type == RewardMapOperationType.DowngradeStack;
+    }
+
+    private RewardMapStackSnapshot BuildBeforeStackPreview(RewardMapArmySnapshot army, RewardMapOperation operation)
+    {
+        if (operation == null)
+        {
+            return null;
+        }
+
+        if (operation.Type == RewardMapOperationType.RecoverLosses && string.IsNullOrEmpty(operation.StackId))
+        {
+            return FindLargestLossStack(army);
+        }
+
+        if (!string.IsNullOrEmpty(operation.StackId))
+        {
+            return FindStack(army, operation.StackId);
+        }
+
+        return null;
+    }
+
+    private static int ResolvePreviewSlotIndex(RewardMapArmySnapshot army, RewardMapStackSnapshot before, RewardMapStackSnapshot after)
+    {
+        int beforeIndex = IndexOfStack(army, before == null ? string.Empty : before.StackId);
+        if (beforeIndex >= 0)
+        {
+            return beforeIndex;
+        }
+
+        string afterStackId = after == null ? string.Empty : after.StackId;
+        int afterIndex = IndexOfStack(army, afterStackId);
+        if (afterIndex >= 0)
+        {
+            return afterIndex;
+        }
+
+        const string prefix = "slot-";
+        if (!string.IsNullOrEmpty(afterStackId) && afterStackId.StartsWith(prefix))
+        {
+            int parsed;
+            if (int.TryParse(afterStackId.Substring(prefix.Length), out parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return -1;
+    }
+
+    private static int IndexOfStack(RewardMapArmySnapshot army, string stackId)
+    {
+        if (army == null || army.Stacks == null || string.IsNullOrEmpty(stackId))
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < army.Stacks.Count; i++)
+        {
+            RewardMapStackSnapshot stack = army.Stacks[i];
+            if (stack != null && stack.StackId == stackId)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private RewardMapPreviewData Preview(RewardMapCardViewData card, RewardMapArmySnapshot army, int runGold)
@@ -195,10 +354,28 @@ public class RewardMapService
             return BuildPreview(string.Empty, army, runGold, null, RewardMapError.MissingReward, "Select a reward.");
         }
 
+        if (!card.Legal && card.Error != RewardMapError.None)
+        {
+            return BuildPreview(
+                card.RewardId,
+                CloneArmy(army, "reward-preview-disabled"),
+                runGold,
+                null,
+                card.Error,
+                MessageFor(card.Error));
+        }
+
+        RewardMapOperation operation = ResolveTemplateOperation(card.Operation, army);
+        card.Operation = operation;
+        if (operation != null && !string.IsNullOrEmpty(operation.StackId))
+        {
+            card.AffectedStackId = operation.StackId;
+        }
+
         RewardMapArmySnapshot previewArmy = CloneArmy(army, "reward-preview-" + Guid.NewGuid().ToString("N"));
         int currencyDelta = 0;
         RewardMapStackSnapshot affected;
-        RewardMapError error = ApplyOperation(previewArmy, card.Operation, ref currencyDelta, out affected);
+        RewardMapError error = ApplyOperation(previewArmy, operation, ref currencyDelta, out affected);
         int goldAfter = Math.Max(0, runGold + currencyDelta);
         return BuildPreview(
             card.RewardId,
@@ -231,8 +408,19 @@ public class RewardMapService
                 return RewardMapError.InvalidTarget;
             }
 
+            if (ArmyContainsUnit(army, unit.UnitId))
+            {
+                return RewardMapError.NoLegalTarget;
+            }
+
+            int formationSlot = RewardMapArmySlotRules.FindFirstFreeFormationSlot(army);
+            if (formationSlot < 0)
+            {
+                return RewardMapError.NoLegalTarget;
+            }
+
             affected = new RewardMapStackSnapshot(
-                string.IsNullOrEmpty(operation.NewStackId) ? "reward-stack-" + Guid.NewGuid().ToString("N") : operation.NewStackId,
+                RewardMapArmySlotRules.ToFormationSlotStackId(formationSlot),
                 unit.UnitId,
                 unit.DisplayName,
                 unit.Tier,
@@ -256,6 +444,12 @@ public class RewardMapService
         affected = FindStack(army, targetStackId);
         if (affected == null)
         {
+            return RewardMapError.NoLegalTarget;
+        }
+
+        if (!OperationMatchesAffectedUnit(operation, affected))
+        {
+            affected = null;
             return RewardMapError.NoLegalTarget;
         }
 
@@ -308,11 +502,6 @@ public class RewardMapService
                 return RewardMapError.InvalidTarget;
             }
 
-            if (affected.Amount < operation.Amount)
-            {
-                return RewardMapError.NoLegalTarget;
-            }
-
             affected.UnitId = unit.UnitId;
             affected.DisplayName = unit.DisplayName;
             affected.Tier = unit.Tier;
@@ -325,6 +514,16 @@ public class RewardMapService
         }
 
         return RewardMapError.InvalidTarget;
+    }
+
+    private static bool OperationMatchesAffectedUnit(RewardMapOperation operation, RewardMapStackSnapshot affected)
+    {
+        if (operation == null || affected == null || string.IsNullOrEmpty(operation.UnitId))
+        {
+            return true;
+        }
+
+        return affected.UnitId == operation.UnitId;
     }
 
     private RewardMapPreviewData BuildPreview(string rewardId, RewardMapArmySnapshot army, int runGold, RewardMapStackSnapshot affected, RewardMapError error, string message)
@@ -400,6 +599,11 @@ public class RewardMapService
         if (operation.Type == RewardMapOperationType.AddStack)
         {
             RewardMapStackSnapshot addedStack = FindStack(army, operation.NewStackId);
+            if (addedStack == null)
+            {
+                addedStack = FindStackByUnit(army, operation.UnitId);
+            }
+
             return addedStack == null ? "No legal target" : addedStack.DisplayName + " x" + addedStack.Amount + " joins";
         }
 
@@ -482,6 +686,44 @@ public class RewardMapService
             if (army.Stacks[i] != null && army.Stacks[i].StackId == stackId)
             {
                 return army.Stacks[i];
+            }
+        }
+
+        return null;
+    }
+
+    private bool ArmyContainsUnit(RewardMapArmySnapshot army, string unitId)
+    {
+        if (army == null || army.Stacks == null || string.IsNullOrEmpty(unitId))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < army.Stacks.Count; i++)
+        {
+            RewardMapStackSnapshot stack = army.Stacks[i];
+            if (stack != null && stack.UnitId == unitId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private RewardMapStackSnapshot FindStackByUnit(RewardMapArmySnapshot army, string unitId)
+    {
+        if (army == null || army.Stacks == null || string.IsNullOrEmpty(unitId))
+        {
+            return null;
+        }
+
+        for (int i = 0; i < army.Stacks.Count; i++)
+        {
+            RewardMapStackSnapshot stack = army.Stacks[i];
+            if (stack != null && stack.UnitId == unitId)
+            {
+                return stack;
             }
         }
 

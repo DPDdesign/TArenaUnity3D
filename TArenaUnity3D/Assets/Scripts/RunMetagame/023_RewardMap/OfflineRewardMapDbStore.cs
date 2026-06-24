@@ -87,6 +87,7 @@ INSERT INTO run_events (
 
             persistedChoiceId = ReadNextId(connection, "reward_choices", "reward_choice_id", transaction);
             int runBattleId = OfflineDatabaseLegacyIdentity.ParseIntIdOrDefault(choice.BattleResultSummary == null ? string.Empty : choice.BattleResultSummary.BattleResultId);
+            int focusedRewardSlotIndex = ResolveRewardSlotIndex(choice.FocusedCard, IndexOfRewardCard(choice.Cards, choice.FocusedCard));
 
             OfflineDatabaseSql.ExecuteNonQuery(
                 connection,
@@ -99,7 +100,9 @@ INSERT INTO reward_choices (
     node_id,
     army_before_reward_snapshot_id,
     focused_reward_id,
+    focused_reward_slot_index,
     selected_reward_id,
+    selected_reward_slot_index,
     run_gold_before,
     run_gold_after,
     choice_status_id,
@@ -114,7 +117,9 @@ INSERT INTO reward_choices (
     @nodeId,
     @armyBeforeRewardSnapshotId,
     @focusedRewardId,
+    @focusedRewardSlotIndex,
     NULL,
+    -1,
     @runGoldBefore,
     NULL,
     @choiceStatusId,
@@ -130,11 +135,13 @@ INSERT INTO reward_choices (
                 new OfflineDatabaseSqlParameter("@nodeId", nodeId),
                 new OfflineDatabaseSqlParameter("@armyBeforeRewardSnapshotId", beforeSnapshotId),
                 new OfflineDatabaseSqlParameter("@focusedRewardId", choice.FocusedCard == null ? string.Empty : choice.FocusedCard.RewardId),
+                new OfflineDatabaseSqlParameter("@focusedRewardSlotIndex", focusedRewardSlotIndex),
                 new OfflineDatabaseSqlParameter("@runGoldBefore", choice.RunGoldBeforeReward),
                 new OfflineDatabaseSqlParameter("@choiceStatusId", (int)DBChoiceStatusId.Generated),
                 new OfflineDatabaseSqlParameter("@createdAtUtc", now));
 
             SaveCards(connection, transaction, persistedChoiceId, run.AccountId, runId, nodeId, beforeSnapshotId, choice, formationSlotBySemanticStackId, snapshotStackIdsByFormationSlot);
+            OfflineRewardOpportunityDbStore.MarkResolvedForChoice(connection, transaction, runId, nodeId, persistedChoiceId);
 
             runContextWriter.UpdateNodeArmyGoldScreen(
                 connection,
@@ -181,12 +188,23 @@ INSERT INTO reward_choices (
                     ? null
                     : JsonUtility.FromJson<RewardMapOperation>(cardRow.OperationJson);
                 string runtimeStackId = ResolveRuntimeStackId(armyBeforeReward, cardRow.TargetFormationSlot);
-                NormalizeOperationForLoadedSnapshot(operation, runtimeStackId);
-                bool legal = !string.Equals(cardRow.PreviewTextAfter, "No legal target", StringComparison.Ordinal);
-                RewardMapError error = legal ? RewardMapError.None : RewardMapError.NoLegalTarget;
+                bool legal = cardRow.Legal;
+                RewardMapError error = legal
+                    ? RewardMapError.None
+                    : ToRewardMapError(cardRow.ErrorId, RewardMapError.NoLegalTarget);
+                if (legal)
+                {
+                    NormalizeOperationForLoadedSnapshot(operation, runtimeStackId, armyBeforeReward);
+                }
+
+                string affectedStackId = !string.IsNullOrEmpty(cardRow.AffectedStackId)
+                    ? cardRow.AffectedStackId
+                    : operation != null && !string.IsNullOrEmpty(operation.StackId)
+                    ? operation.StackId
+                    : (legal ? runtimeStackId : string.Empty);
 
                 RewardMapCardViewData card = new RewardMapCardViewData(
-                    BuildRewardId(cardRow.TemplateId, cardRow.SortOrder),
+                    BuildRewardId(cardRow),
                     cardRow.TemplateId,
                     ToFamily(cardRow.FamilyId),
                     ToIntention(cardRow.IntentionId),
@@ -196,13 +214,16 @@ INSERT INTO reward_choices (
                     string.Empty,
                     cardRow.PreviewTextBefore,
                     cardRow.PreviewTextAfter,
-                    runtimeStackId,
+                    affectedStackId,
                     legal,
                     error,
                     operation);
+                card.RewardSlotIndex = cardRow.RewardSlotIndex;
+                card.AffectedSlotIndex = cardRow.AffectedSlotIndex;
+                card.IsFallback = cardRow.IsFallback;
 
                 cards.Add(card);
-                if (!string.IsNullOrEmpty(choiceRow.FocusedRewardId) && choiceRow.FocusedRewardId == card.RewardId)
+                if (CardIdentityMatches(choiceRow.FocusedRewardId, choiceRow.FocusedRewardSlotIndex, card))
                 {
                     focusedCard = card;
                 }
@@ -294,7 +315,18 @@ LIMIT 1;",
                 connection,
                 transaction,
                 OfflineArmySnapshotMapper.FromRewardMap(result.ArmyAfterReward, choiceRow.AccountId, choiceRow.RunId, choiceRow.NodeId));
-            int selectedSortOrder = ResolveRewardSortOrder(result.Reward);
+            RewardCardIdentity selectedIdentity = ResolveRewardCardIdentity(connection, transaction, parsedChoiceId, result.Reward);
+            if (result.Reward != null && selectedIdentity == null)
+            {
+                throw new InvalidOperationException("Applied reward card was not found in the persisted reward choice.");
+            }
+
+            int selectedSlotIndex = selectedIdentity == null
+                ? ResolveRewardSlotIndex(result.Reward, -1)
+                : selectedIdentity.RewardSlotIndex;
+            string selectedRewardId = selectedIdentity == null
+                ? (result.Reward == null ? string.Empty : result.Reward.RewardId)
+                : selectedIdentity.RewardId;
 
             OfflineDatabaseSql.ExecuteNonQuery(
                 connection,
@@ -307,7 +339,7 @@ WHERE event_id = @eventId;",
                 transaction,
                 new OfflineDatabaseSqlParameter("@afterSnapshotId", afterSnapshotId),
                 new OfflineDatabaseSqlParameter("@runGoldAfter", result.RunGoldAfterReward),
-                new OfflineDatabaseSqlParameter("@result", result.Reward == null ? string.Empty : result.Reward.RewardId),
+                new OfflineDatabaseSqlParameter("@result", selectedRewardId),
                 new OfflineDatabaseSqlParameter("@eventId", choiceRow.EventId));
 
             OfflineDatabaseSql.ExecuteNonQuery(
@@ -315,12 +347,14 @@ WHERE event_id = @eventId;",
                 @"
 UPDATE reward_choices
 SET selected_reward_id = @selectedRewardId,
+    selected_reward_slot_index = @selectedRewardSlotIndex,
     run_gold_after = @runGoldAfter,
     choice_status_id = @choiceStatusId,
     applied_at_utc = @appliedAtUtc
 WHERE reward_choice_id = @rewardChoiceId;",
                 transaction,
-                new OfflineDatabaseSqlParameter("@selectedRewardId", result.Reward == null ? string.Empty : result.Reward.RewardId),
+                new OfflineDatabaseSqlParameter("@selectedRewardId", selectedRewardId),
+                new OfflineDatabaseSqlParameter("@selectedRewardSlotIndex", selectedSlotIndex),
                 new OfflineDatabaseSqlParameter("@runGoldAfter", result.RunGoldAfterReward),
                 new OfflineDatabaseSqlParameter("@choiceStatusId", (int)DBChoiceStatusId.Selected),
                 new OfflineDatabaseSqlParameter("@appliedAtUtc", OfflineDatabaseSql.UtcNowText()),
@@ -330,28 +364,29 @@ WHERE reward_choice_id = @rewardChoiceId;",
                 connection,
                 @"
 UPDATE reward_cards
-SET applied_snapshot_id = @appliedSnapshotId
+SET is_selected = CASE WHEN reward_card_id = @rewardCardId THEN 1 ELSE 0 END,
+    applied_snapshot_id = CASE WHEN reward_card_id = @rewardCardId THEN @appliedSnapshotId ELSE applied_snapshot_id END
 WHERE reward_choice_id = @rewardChoiceId
-  AND template_id = @templateId
-  AND (@sortOrder < 0 OR sort_order = @sortOrder);",
+  AND is_active = 1;",
                 transaction,
+                new OfflineDatabaseSqlParameter("@rewardCardId", selectedIdentity == null ? 0 : selectedIdentity.RewardCardId),
                 new OfflineDatabaseSqlParameter("@appliedSnapshotId", afterSnapshotId),
-                new OfflineDatabaseSqlParameter("@rewardChoiceId", parsedChoiceId),
-                new OfflineDatabaseSqlParameter("@templateId", result.Reward == null ? string.Empty : result.Reward.TemplateId),
-                new OfflineDatabaseSqlParameter("@sortOrder", selectedSortOrder));
+                new OfflineDatabaseSqlParameter("@rewardChoiceId", parsedChoiceId));
 
             OfflineDatabaseSql.ExecuteNonQuery(
                 connection,
                 @"
 UPDATE map_node_rewards
-SET is_selected = CASE WHEN catalog_entry_id = @catalogEntryId AND (@sortOrder < 0 OR reward_slot_index = @sortOrder) THEN 1 ELSE 0 END,
-    applied_snapshot_id = CASE WHEN catalog_entry_id = @catalogEntryId AND (@sortOrder < 0 OR reward_slot_index = @sortOrder) THEN @appliedSnapshotId ELSE applied_snapshot_id END
+SET is_selected = CASE WHEN card_reward_id = @selectedRewardId AND reward_slot_index = @selectedRewardSlotIndex THEN 1 ELSE 0 END,
+    applied_snapshot_id = CASE WHEN card_reward_id = @selectedRewardId AND reward_slot_index = @selectedRewardSlotIndex THEN @appliedSnapshotId ELSE applied_snapshot_id END
 WHERE node_id = @nodeId
+  AND (reward_choice_id = @rewardChoiceId OR reward_choice_id = 0)
   AND is_active = 1;",
                 transaction,
-                new OfflineDatabaseSqlParameter("@catalogEntryId", result.Reward == null ? string.Empty : result.Reward.TemplateId),
+                new OfflineDatabaseSqlParameter("@selectedRewardId", selectedRewardId),
+                new OfflineDatabaseSqlParameter("@selectedRewardSlotIndex", selectedSlotIndex),
                 new OfflineDatabaseSqlParameter("@appliedSnapshotId", afterSnapshotId),
-                new OfflineDatabaseSqlParameter("@sortOrder", selectedSortOrder),
+                new OfflineDatabaseSqlParameter("@rewardChoiceId", parsedChoiceId),
                 new OfflineDatabaseSqlParameter("@nodeId", choiceRow.NodeId));
 
             runContextWriter.UpdateArmyGoldScreen(
@@ -402,9 +437,15 @@ WHERE node_id = @nodeId
                 continue;
             }
 
+            int rewardSlotIndex = ResolveRewardSlotIndex(card, i);
+            card.RewardSlotIndex = rewardSlotIndex;
             int formationSlot = ResolveFormationSlot(card.AffectedStackId, formationSlotBySemanticStackId, card.Operation, i);
+            int affectedSlotIndex = ResolveAffectedSlotIndex(card, formationSlot);
+            card.AffectedSlotIndex = affectedSlotIndex;
             int targetSnapshotStackId;
             snapshotStackIdsByFormationSlot.TryGetValue(formationSlot, out targetSnapshotStackId);
+            bool isFallback = IsFallback(card);
+            card.IsFallback = isFallback;
 
             int previewSnapshotId = 0;
             if (choice.FocusedPreview != null &&
@@ -424,59 +465,86 @@ WHERE node_id = @nodeId
                 @"
 INSERT INTO reward_cards (
     reward_choice_id,
+    reward_id,
+    reward_slot_index,
     template_id,
     family_id,
     intention_id,
     rarity_id,
     title_id,
     verb_id,
+    affected_stack_id,
+    affected_slot_index,
     target_snapshot_stack_id,
+    operation_type,
     operation_json,
+    legal,
+    error_id,
     preview_text_before,
     preview_text_after,
     preview_snapshot_id,
     applied_snapshot_id,
+    is_selected,
+    is_fallback,
     sort_order,
     is_active
 ) VALUES (
     @rewardChoiceId,
+    @rewardId,
+    @rewardSlotIndex,
     @templateId,
     @familyId,
     @intentionId,
     @rarityId,
     @titleId,
     @verbId,
+    @affectedStackId,
+    @affectedSlotIndex,
     @targetSnapshotStackId,
+    @operationType,
     @operationJson,
+    @legal,
+    @errorId,
     @previewTextBefore,
     @previewTextAfter,
     @previewSnapshotId,
     NULL,
-    @sortOrder,
+    0,
+    @isFallback,
+    @rewardSlotIndex,
     1
 );",
                 transaction,
                 new OfflineDatabaseSqlParameter("@rewardChoiceId", rewardChoiceId),
+                new OfflineDatabaseSqlParameter("@rewardId", card.RewardId),
+                new OfflineDatabaseSqlParameter("@rewardSlotIndex", rewardSlotIndex),
                 new OfflineDatabaseSqlParameter("@templateId", card.TemplateId),
                 new OfflineDatabaseSqlParameter("@familyId", (int)card.Family + 1),
                 new OfflineDatabaseSqlParameter("@intentionId", (int)card.Intention + 1),
                 new OfflineDatabaseSqlParameter("@rarityId", (int)card.Rarity + 1),
                 new OfflineDatabaseSqlParameter("@titleId", card.Title),
                 new OfflineDatabaseSqlParameter("@verbId", card.Verb),
+                new OfflineDatabaseSqlParameter("@affectedStackId", card.AffectedStackId),
+                new OfflineDatabaseSqlParameter("@affectedSlotIndex", affectedSlotIndex),
                 new OfflineDatabaseSqlParameter("@targetSnapshotStackId", targetSnapshotStackId > 0 ? (object)targetSnapshotStackId : DBNull.Value),
+                new OfflineDatabaseSqlParameter("@operationType", OperationTypeText(card.Operation)),
                 new OfflineDatabaseSqlParameter("@operationJson", JsonUtility.ToJson(card.Operation)),
+                new OfflineDatabaseSqlParameter("@legal", card.Legal ? 1 : 0),
+                new OfflineDatabaseSqlParameter("@errorId", (int)card.Error),
                 new OfflineDatabaseSqlParameter("@previewTextBefore", card.BeforeText),
                 new OfflineDatabaseSqlParameter("@previewTextAfter", card.AfterText),
                 new OfflineDatabaseSqlParameter("@previewSnapshotId", previewSnapshotId > 0 ? (object)previewSnapshotId : DBNull.Value),
-                new OfflineDatabaseSqlParameter("@sortOrder", i));
+                new OfflineDatabaseSqlParameter("@isFallback", isFallback ? 1 : 0));
 
             SaveMapNodeReward(
                 connection,
                 transaction,
+                rewardChoiceId,
                 nodeId,
-                i,
+                rewardSlotIndex,
                 beforeSnapshotId,
                 targetSnapshotStackId,
+                isFallback,
                 card);
         }
     }
@@ -484,10 +552,12 @@ INSERT INTO reward_cards (
     private static void SaveMapNodeReward(
         IDbConnection connection,
         IDbTransaction transaction,
+        int rewardChoiceId,
         int nodeId,
         int slotIndex,
         int beforeSnapshotId,
         int targetSnapshotStackId,
+        bool isFallback,
         RewardMapCardViewData card)
     {
         if (nodeId <= 0 || beforeSnapshotId <= 0 || card == null)
@@ -501,7 +571,9 @@ INSERT INTO reward_cards (
             @"
 INSERT INTO map_node_rewards (
     node_id,
+    reward_choice_id,
     reward_slot_index,
+    card_reward_id,
     catalog_entry_id,
     base_snapshot_id,
     target_snapshot_stack_id,
@@ -511,13 +583,17 @@ INSERT INTO map_node_rewards (
     amount,
     currency_delta,
     operation_json,
+    legal,
+    error_id,
     is_selected,
     applied_snapshot_id,
     is_fallback,
     is_active
 ) VALUES (
     @nodeId,
+    @rewardChoiceId,
     @rewardSlotIndex,
+    @cardRewardId,
     @catalogEntryId,
     @baseSnapshotId,
     @targetSnapshotStackId,
@@ -527,6 +603,8 @@ INSERT INTO map_node_rewards (
     @amount,
     @currencyDelta,
     @operationJson,
+    @legal,
+    @errorId,
     0,
     NULL,
     @isFallback,
@@ -534,7 +612,9 @@ INSERT INTO map_node_rewards (
 );",
             transaction,
             new OfflineDatabaseSqlParameter("@nodeId", nodeId),
+            new OfflineDatabaseSqlParameter("@rewardChoiceId", rewardChoiceId),
             new OfflineDatabaseSqlParameter("@rewardSlotIndex", slotIndex),
+            new OfflineDatabaseSqlParameter("@cardRewardId", card.RewardId),
             new OfflineDatabaseSqlParameter("@catalogEntryId", card.TemplateId),
             new OfflineDatabaseSqlParameter("@baseSnapshotId", beforeSnapshotId),
             new OfflineDatabaseSqlParameter("@targetSnapshotStackId", targetSnapshotStackId > 0 ? (object)targetSnapshotStackId : DBNull.Value),
@@ -544,7 +624,9 @@ INSERT INTO map_node_rewards (
             new OfflineDatabaseSqlParameter("@amount", operation == null ? 0 : operation.Amount),
             new OfflineDatabaseSqlParameter("@currencyDelta", operation == null ? 0 : operation.CurrencyDelta),
             new OfflineDatabaseSqlParameter("@operationJson", JsonUtility.ToJson(operation)),
-            new OfflineDatabaseSqlParameter("@isFallback", IsFallback(card) ? 1 : 0));
+            new OfflineDatabaseSqlParameter("@legal", card.Legal ? 1 : 0),
+            new OfflineDatabaseSqlParameter("@errorId", (int)card.Error),
+            new OfflineDatabaseSqlParameter("@isFallback", isFallback ? 1 : 0));
     }
 
     private static Dictionary<string, int> BuildFormationSlotLookup(RewardMapArmySnapshot army)
@@ -563,7 +645,7 @@ INSERT INTO map_node_rewards (
                 continue;
             }
 
-            int formationSlot = OfflineDatabaseLegacyIdentity.ParseSlotIndexOrDefault(stack.StackId, i);
+            int formationSlot = ParseRewardFormationSlotOrDefault(stack.StackId, i);
             if (!result.ContainsKey(stack.StackId))
             {
                 result.Add(stack.StackId, formationSlot);
@@ -581,7 +663,7 @@ INSERT INTO map_node_rewards (
             return -1;
         }
 
-        int direct = OfflineDatabaseLegacyIdentity.ParseSlotIndexOrDefault(stackId, -1);
+        int direct = ParseRewardFormationSlotOrDefault(stackId, -1);
         if (direct >= 0)
         {
             return direct;
@@ -602,7 +684,7 @@ INSERT INTO map_node_rewards (
         return fallback;
     }
 
-    private static void NormalizeOperationForLoadedSnapshot(RewardMapOperation operation, string slotId)
+    private static void NormalizeOperationForLoadedSnapshot(RewardMapOperation operation, string slotId, RewardMapArmySnapshot army)
     {
         if (operation == null || string.IsNullOrEmpty(slotId))
         {
@@ -616,9 +698,33 @@ INSERT INTO map_node_rewards (
             case RewardMapOperationType.DowngradeStack:
             case RewardMapOperationType.TeachSkill:
             case RewardMapOperationType.RecoverLosses:
+                if (StackExists(army, operation.StackId))
+                {
+                    return;
+                }
+
                 operation.StackId = slotId;
                 break;
         }
+    }
+
+    private static bool StackExists(RewardMapArmySnapshot army, string stackId)
+    {
+        if (army == null || army.Stacks == null || string.IsNullOrEmpty(stackId))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < army.Stacks.Count; i++)
+        {
+            RewardMapStackSnapshot stack = army.Stacks[i];
+            if (stack != null && stack.StackId == stackId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static int ReadCurrentNodeId(IDbConnection connection, int runId)
@@ -661,25 +767,119 @@ LIMIT 1;",
 
     private static bool IsFallback(RewardMapCardViewData card)
     {
-        return card != null && card.Operation != null && card.Operation.Type == RewardMapOperationType.GainCurrency;
+        if (card == null)
+        {
+            return false;
+        }
+
+        if (card.IsFallback)
+        {
+            return true;
+        }
+
+        return string.Equals(card.TemplateId, "prd37-run-gold-fallback-v1", StringComparison.Ordinal);
     }
 
-    private static int ResolveRewardSortOrder(RewardMapCardViewData reward)
+    private static int IndexOfRewardCard(List<RewardMapCardViewData> cards, RewardMapCardViewData reward)
     {
-        if (reward == null || string.IsNullOrEmpty(reward.TemplateId) || !reward.TemplateId.StartsWith("prd37-", StringComparison.Ordinal))
+        if (cards == null || reward == null)
         {
             return -1;
+        }
+
+        for (int i = 0; i < cards.Count; i++)
+        {
+            RewardMapCardViewData card = cards[i];
+            if (ReferenceEquals(card, reward))
+            {
+                return i;
+            }
+
+            if (card != null && !string.IsNullOrEmpty(reward.RewardId) && card.RewardId == reward.RewardId)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static int ResolveRewardSlotIndex(RewardMapCardViewData reward, int fallback)
+    {
+        if (reward == null)
+        {
+            return fallback;
+        }
+
+        if (reward.RewardSlotIndex >= 0)
+        {
+            return reward.RewardSlotIndex;
         }
 
         string rewardId = reward.RewardId ?? string.Empty;
         int separator = rewardId.LastIndexOf('-');
         if (separator < 0 || separator >= rewardId.Length - 1)
         {
-            return -1;
+            return fallback;
         }
 
         int parsed;
-        return int.TryParse(rewardId.Substring(separator + 1), out parsed) ? parsed : -1;
+        return int.TryParse(rewardId.Substring(separator + 1), out parsed) ? parsed : fallback;
+    }
+
+    private static int ResolveAffectedSlotIndex(RewardMapCardViewData card, int targetFormationSlot)
+    {
+        if (card == null)
+        {
+            return -1;
+        }
+
+        if (card.AffectedSlotIndex >= 0)
+        {
+            return card.AffectedSlotIndex;
+        }
+
+        if (targetFormationSlot >= 0)
+        {
+            return targetFormationSlot;
+        }
+
+        int parsed = ParseRewardFormationSlotOrDefault(card.AffectedStackId, -1);
+        if (parsed >= 0)
+        {
+            return parsed;
+        }
+
+        RewardMapOperation operation = card.Operation;
+        parsed = ParseRewardFormationSlotOrDefault(operation == null ? string.Empty : operation.NewStackId, -1);
+        if (parsed >= 0)
+        {
+            return parsed;
+        }
+
+        return ParseRewardFormationSlotOrDefault(operation == null ? string.Empty : operation.StackId, -1);
+    }
+
+    private static string OperationTypeText(RewardMapOperation operation)
+    {
+        return operation == null ? string.Empty : operation.Type.ToString();
+    }
+
+    private static RewardMapError ToRewardMapError(int errorId, RewardMapError fallback)
+    {
+        return errorId >= (int)RewardMapError.None && errorId <= (int)RewardMapError.AlreadyApplied
+            ? (RewardMapError)errorId
+            : fallback;
+    }
+
+    private static bool CardIdentityMatches(string rewardId, int rewardSlotIndex, RewardMapCardViewData card)
+    {
+        if (card == null || string.IsNullOrEmpty(rewardId) || card.RewardId != rewardId)
+        {
+            return false;
+        }
+
+        return rewardSlotIndex < 0 || card.RewardSlotIndex == rewardSlotIndex;
     }
 
     private static string ResolveRuntimeStackId(RewardMapArmySnapshot army, int formationSlot)
@@ -691,6 +891,34 @@ LIMIT 1;",
 
         RewardMapStackSnapshot stack = army.Stacks[formationSlot];
         return stack == null ? string.Empty : stack.StackId;
+    }
+
+    private static int ParseRewardFormationSlotOrDefault(string stackId, int fallback)
+    {
+        if (string.IsNullOrEmpty(stackId))
+        {
+            return fallback;
+        }
+
+        const string prefix = "slot-";
+        if (stackId.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            string suffix = stackId.Substring(prefix.Length);
+            int parsed;
+            if (int.TryParse(suffix, out parsed))
+            {
+                bool legacyOneBased = suffix.Length > 1 && suffix[0] == '0';
+                return legacyOneBased ? Math.Max(0, parsed - 1) : Math.Max(0, parsed);
+            }
+        }
+
+        int numeric;
+        if (int.TryParse(stackId, out numeric))
+        {
+            return Math.Max(0, numeric);
+        }
+
+        return fallback;
     }
 
     private RewardMapPreviewData BuildFocusedPreview(IDbConnection connection, ChoiceRow choiceRow, RewardMapCardViewData focusedCard)
@@ -712,7 +940,7 @@ LIMIT 1;",
                 "offline-local-reward-resolver");
         }
 
-        RewardCardRow focusedCardRow = LoadFocusedCardRow(connection, choiceRow.RewardChoiceId, focusedCard.TemplateId);
+        RewardCardRow focusedCardRow = LoadFocusedCardRow(connection, choiceRow.RewardChoiceId, focusedCard);
         RewardMapArmySnapshot previewArmy = focusedCardRow == null || focusedCardRow.PreviewSnapshotId <= 0
             ? null
             : OfflineArmySnapshotMapper.ToRewardMap(snapshotRepository.LoadSnapshot(connection, focusedCardRow.PreviewSnapshotId), resolver);
@@ -764,10 +992,22 @@ LIMIT 1;",
         return null;
     }
 
-    private static string BuildRewardId(string templateId, int sortOrder)
+    private static string BuildRewardId(RewardCardRow row)
     {
+        if (row != null && !string.IsNullOrEmpty(row.RewardId))
+        {
+            return row.RewardId;
+        }
+
+        string templateId = row == null ? string.Empty : row.TemplateId;
+        int slotIndex = row == null ? -1 : row.RewardSlotIndex;
+        if (slotIndex < 0 && row != null)
+        {
+            slotIndex = row.SortOrder;
+        }
+
         return !string.IsNullOrEmpty(templateId) && templateId.StartsWith("prd37-", StringComparison.Ordinal)
-            ? "reward-" + templateId + "-" + sortOrder
+            ? "reward-" + templateId + "-" + slotIndex
             : "reward-" + templateId;
     }
 
@@ -830,6 +1070,7 @@ LIMIT 1;",
             @"
 SELECT choice.reward_choice_id, choice.event_id, choice.run_id, choice.run_battle_id, choice.node_id,
        choice.army_before_reward_snapshot_id, choice.focused_reward_id, choice.selected_reward_id,
+       choice.focused_reward_slot_index, choice.selected_reward_slot_index,
        choice.run_gold_before, runs.account_id
 FROM reward_choices choice
 INNER JOIN offline_runs runs ON runs.run_id = choice.run_id
@@ -846,7 +1087,9 @@ LIMIT 1;",
                     NodeId = OfflineDatabaseSql.ReadInt(row["node_id"]),
                     BeforeSnapshotId = OfflineDatabaseSql.ReadInt(row["army_before_reward_snapshot_id"]),
                     FocusedRewardId = OfflineDatabaseSql.ReadText(row["focused_reward_id"]),
+                    FocusedRewardSlotIndex = OfflineDatabaseSql.ReadInt(row["focused_reward_slot_index"], -1),
                     SelectedRewardId = OfflineDatabaseSql.ReadText(row["selected_reward_id"]),
+                    SelectedRewardSlotIndex = OfflineDatabaseSql.ReadInt(row["selected_reward_slot_index"], -1),
                     RunGoldBefore = OfflineDatabaseSql.ReadInt(row["run_gold_before"]),
                     AccountId = OfflineDatabaseSql.ReadInt(row["account_id"])
                 };
@@ -863,27 +1106,38 @@ LIMIT 1;",
             connection,
             @"
 SELECT cards.template_id, cards.family_id, cards.intention_id, cards.rarity_id, cards.title_id, cards.verb_id,
-       cards.target_snapshot_stack_id, cards.operation_json, cards.preview_text_before, cards.preview_text_after,
-       cards.preview_snapshot_id, cards.applied_snapshot_id, cards.sort_order, stacks.formation_slot
+       cards.reward_id, cards.reward_slot_index, cards.affected_stack_id, cards.affected_slot_index,
+       cards.target_snapshot_stack_id, cards.operation_type, cards.operation_json, cards.legal, cards.error_id,
+       cards.preview_text_before, cards.preview_text_after, cards.preview_snapshot_id, cards.applied_snapshot_id,
+       cards.is_selected, cards.is_fallback, cards.sort_order, stacks.formation_slot
 FROM reward_cards cards
 LEFT JOIN army_snapshot_stacks stacks ON stacks.snapshot_stack_id = cards.target_snapshot_stack_id
 WHERE cards.reward_choice_id = @rewardChoiceId AND cards.is_active = 1
-ORDER BY cards.sort_order, cards.reward_card_id;",
+ORDER BY cards.reward_slot_index, cards.sort_order, cards.reward_card_id;",
             delegate(IDataRecord row)
             {
                 return new RewardCardRow
                 {
+                    RewardId = OfflineDatabaseSql.ReadText(row["reward_id"]),
+                    RewardSlotIndex = OfflineDatabaseSql.ReadInt(row["reward_slot_index"]),
                     TemplateId = OfflineDatabaseSql.ReadText(row["template_id"]),
                     FamilyId = OfflineDatabaseSql.ReadInt(row["family_id"]),
                     IntentionId = OfflineDatabaseSql.ReadInt(row["intention_id"]),
                     RarityId = OfflineDatabaseSql.ReadInt(row["rarity_id"]),
                     TitleId = OfflineDatabaseSql.ReadText(row["title_id"]),
                     VerbId = OfflineDatabaseSql.ReadText(row["verb_id"]),
+                    AffectedStackId = OfflineDatabaseSql.ReadText(row["affected_stack_id"]),
+                    AffectedSlotIndex = OfflineDatabaseSql.ReadInt(row["affected_slot_index"], -1),
+                    OperationType = OfflineDatabaseSql.ReadText(row["operation_type"]),
                     OperationJson = OfflineDatabaseSql.ReadText(row["operation_json"]),
+                    Legal = OfflineDatabaseSql.ReadBool(row["legal"], true),
+                    ErrorId = OfflineDatabaseSql.ReadInt(row["error_id"]),
                     PreviewTextBefore = OfflineDatabaseSql.ReadText(row["preview_text_before"]),
                     PreviewTextAfter = OfflineDatabaseSql.ReadText(row["preview_text_after"]),
                     PreviewSnapshotId = OfflineDatabaseSql.ReadInt(row["preview_snapshot_id"]),
                     AppliedSnapshotId = OfflineDatabaseSql.ReadInt(row["applied_snapshot_id"]),
+                    IsSelected = OfflineDatabaseSql.ReadBool(row["is_selected"]),
+                    IsFallback = OfflineDatabaseSql.ReadBool(row["is_fallback"]),
                     TargetFormationSlot = row["formation_slot"] == DBNull.Value ? -1 : OfflineDatabaseSql.ReadInt(row["formation_slot"]),
                     SortOrder = OfflineDatabaseSql.ReadInt(row["sort_order"])
                 };
@@ -892,15 +1146,141 @@ ORDER BY cards.sort_order, cards.reward_card_id;",
             new OfflineDatabaseSqlParameter("@rewardChoiceId", rewardChoiceId));
     }
 
-    private static RewardCardRow LoadFocusedCardRow(IDbConnection connection, int rewardChoiceId, string templateId)
+    private static RewardCardIdentity ResolveRewardCardIdentity(
+        IDbConnection connection,
+        IDbTransaction transaction,
+        int rewardChoiceId,
+        RewardMapCardViewData reward)
     {
+        if (connection == null || rewardChoiceId <= 0 || reward == null)
+        {
+            return null;
+        }
+
+        int rewardSlotIndex = ResolveRewardSlotIndex(reward, -1);
+        string rewardId = reward.RewardId ?? string.Empty;
+        RewardCardIdentity identity = null;
+        if (!string.IsNullOrEmpty(rewardId))
+        {
+            identity = FindRewardCardIdentity(
+                connection,
+                transaction,
+                @"
+SELECT reward_card_id, reward_id, reward_slot_index, template_id
+FROM reward_cards
+WHERE reward_choice_id = @rewardChoiceId
+  AND reward_id = @rewardId
+  AND reward_slot_index = @rewardSlotIndex
+  AND is_active = 1
+LIMIT 1;",
+                new OfflineDatabaseSqlParameter("@rewardChoiceId", rewardChoiceId),
+                new OfflineDatabaseSqlParameter("@rewardId", rewardId),
+                new OfflineDatabaseSqlParameter("@rewardSlotIndex", rewardSlotIndex));
+            if (identity != null)
+            {
+                return identity;
+            }
+
+            identity = FindRewardCardIdentity(
+                connection,
+                transaction,
+                @"
+SELECT reward_card_id, reward_id, reward_slot_index, template_id
+FROM reward_cards
+WHERE reward_choice_id = @rewardChoiceId
+  AND reward_id = @rewardId
+  AND is_active = 1
+ORDER BY reward_slot_index, sort_order, reward_card_id
+LIMIT 1;",
+                new OfflineDatabaseSqlParameter("@rewardChoiceId", rewardChoiceId),
+                new OfflineDatabaseSqlParameter("@rewardId", rewardId));
+            if (identity != null)
+            {
+                return identity;
+            }
+        }
+
+        if (rewardSlotIndex >= 0)
+        {
+            identity = FindRewardCardIdentity(
+                connection,
+                transaction,
+                @"
+SELECT reward_card_id, reward_id, reward_slot_index, template_id
+FROM reward_cards
+WHERE reward_choice_id = @rewardChoiceId
+  AND reward_slot_index = @rewardSlotIndex
+  AND is_active = 1
+ORDER BY reward_card_id
+LIMIT 1;",
+                new OfflineDatabaseSqlParameter("@rewardChoiceId", rewardChoiceId),
+                new OfflineDatabaseSqlParameter("@rewardSlotIndex", rewardSlotIndex));
+            if (identity != null)
+            {
+                return identity;
+            }
+        }
+
+        return FindRewardCardIdentity(
+            connection,
+            transaction,
+            @"
+SELECT reward_card_id, reward_id, reward_slot_index, template_id
+FROM reward_cards
+WHERE reward_choice_id = @rewardChoiceId
+  AND template_id = @templateId
+  AND is_active = 1
+ORDER BY reward_slot_index, sort_order, reward_card_id
+LIMIT 1;",
+            new OfflineDatabaseSqlParameter("@rewardChoiceId", rewardChoiceId),
+            new OfflineDatabaseSqlParameter("@templateId", reward.TemplateId ?? string.Empty));
+    }
+
+    private static RewardCardIdentity FindRewardCardIdentity(
+        IDbConnection connection,
+        IDbTransaction transaction,
+        string sql,
+        params OfflineDatabaseSqlParameter[] parameters)
+    {
+        List<RewardCardIdentity> rows = OfflineDatabaseSql.Query(
+            connection,
+            sql,
+            delegate(IDataRecord row)
+            {
+                return new RewardCardIdentity
+                {
+                    RewardCardId = OfflineDatabaseSql.ReadInt(row["reward_card_id"]),
+                    RewardId = OfflineDatabaseSql.ReadText(row["reward_id"]),
+                    RewardSlotIndex = OfflineDatabaseSql.ReadInt(row["reward_slot_index"], -1),
+                    TemplateId = OfflineDatabaseSql.ReadText(row["template_id"])
+                };
+            },
+            transaction,
+            parameters);
+
+        return rows.Count == 0 ? null : rows[0];
+    }
+
+    private static RewardCardRow LoadFocusedCardRow(IDbConnection connection, int rewardChoiceId, RewardMapCardViewData focusedCard)
+    {
+        if (focusedCard == null)
+        {
+            return null;
+        }
+
+        RewardCardIdentity identity = ResolveRewardCardIdentity(connection, null, rewardChoiceId, focusedCard);
+        if (identity == null)
+        {
+            return null;
+        }
+
         List<RewardCardRow> rows = OfflineDatabaseSql.Query(
             connection,
             @"
 SELECT preview_snapshot_id
 FROM reward_cards
 WHERE reward_choice_id = @rewardChoiceId
-  AND template_id = @templateId
+  AND reward_card_id = @rewardCardId
 LIMIT 1;",
             delegate(IDataRecord row)
             {
@@ -911,7 +1291,7 @@ LIMIT 1;",
             },
             null,
             new OfflineDatabaseSqlParameter("@rewardChoiceId", rewardChoiceId),
-            new OfflineDatabaseSqlParameter("@templateId", templateId));
+            new OfflineDatabaseSqlParameter("@rewardCardId", identity.RewardCardId));
 
         return rows.Count == 0 ? null : rows[0];
     }
@@ -931,25 +1311,44 @@ LIMIT 1;",
         public int NodeId;
         public int BeforeSnapshotId;
         public string FocusedRewardId;
+        public int FocusedRewardSlotIndex;
         public string SelectedRewardId;
+        public int SelectedRewardSlotIndex;
         public int RunGoldBefore;
         public int AccountId;
     }
 
     private sealed class RewardCardRow
     {
+        public string RewardId;
+        public int RewardSlotIndex;
         public string TemplateId;
         public int FamilyId;
         public int IntentionId;
         public int RarityId;
         public string TitleId;
         public string VerbId;
+        public string AffectedStackId;
+        public int AffectedSlotIndex;
+        public string OperationType;
         public string OperationJson;
+        public bool Legal;
+        public int ErrorId;
         public string PreviewTextBefore;
         public string PreviewTextAfter;
         public int PreviewSnapshotId;
         public int AppliedSnapshotId;
+        public bool IsSelected;
+        public bool IsFallback;
         public int TargetFormationSlot;
         public int SortOrder;
+    }
+
+    private sealed class RewardCardIdentity
+    {
+        public int RewardCardId;
+        public string RewardId;
+        public int RewardSlotIndex;
+        public string TemplateId;
     }
 }

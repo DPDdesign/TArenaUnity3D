@@ -2,7 +2,7 @@
 
 Status: Initial Design
 Project: TArenaUnity3D
-Last updated: 2026-06-13
+Last updated: 2026-06-24
 
 This document defines the initial feel direction for TArenaUnity3D. It is
 marked `Initial Design`: it is a working draft for future grilling, not final
@@ -208,6 +208,17 @@ Post-battle rewards should be card-style, fast, and low-analysis:
 - each card should show a simple preview such as `40 -> 70`, `Tier II 30 ->
   Tier III 12`, or `Wisp gains Blind`,
 - the choice should feel meaningful but quick, not like arithmetic homework.
+
+Reward selection should eventually receive strong presentation polish while the
+player is choosing:
+
+- hovering a card should make the affected army slot feel clearly previewed,
+- selecting/applying a card should have a satisfying visual response on the
+  changed stack slot, not only text state changes,
+- preview, selection, and apply effects should reinforce the feeling that the
+  army is physically changing,
+- these effects are feel/presentation scope only and must not alter reward
+  legality, stack values, counts, targeting, or persistence.
 
 Shop nodes should feel like a breathing room:
 

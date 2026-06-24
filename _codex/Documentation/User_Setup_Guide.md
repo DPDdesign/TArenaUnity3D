@@ -2,13 +2,56 @@
 
 Status: active
 Project: TArenaUnity3D
-Last updated: 2026-06-12
+Last updated: 2026-06-24
 
 Use this for Inspector wiring, scene setup, manual Unity checks, and repeatable
 setup recipes discovered in this project.
 
 Do not copy setup assumptions from another Unity project unless the user
 explicitly asks for migration and the setup has been verified here.
+
+## Offline Mode Reward Map Manual Check
+
+Use this after PRD37 or PRD41 reward-flow changes.
+
+### Unity Setup
+
+1. Use the existing Offline Mode screen setup with `GameSceneManager`, Start
+   Run, Run Map, tactical battle handoff, Reward Map, and Summary Value wired.
+2. No new prefabs, scenes, GameObjects, components, or Inspector assignments are
+   required by PRD41.
+3. If the local Offline Mode database predates PRD37, rebuild or reset it before
+   testing because PRD37 added run seed and materialized map/reward tables.
+4. Keep Reward Map card button references assigned on the reward card views.
+   The old separate select/continue reward command buttons are not part of the
+   current runtime flow.
+
+### EditMode Tests
+
+Run these manually in Unity Test Runner:
+
+- `PRD37MaterializedRunGenerationTests`
+- `RunBattleServiceTests`
+- `OfflineRunBattleRewardDbTests`
+- `PRD41RewardValueParityTests`
+
+Expected result: focused tests pass. These were documented by implementation
+tasks but were not run automatically by Codex.
+
+### Play Mode Smoke
+
+1. Start an Offline run.
+2. Travel to a normal battle node.
+3. Complete the tactical battle with a win.
+4. Confirm Reward Map opens instead of Run Map.
+5. Confirm three materialized reward cards are visible or disabled according to
+   legal target availability.
+6. Hover a legal reward card and confirm the preview/focused summary updates.
+7. Click a legal reward card.
+8. Confirm the reward applies immediately and the UI returns to Run Map.
+9. On a high-value army, compare Add Stack, More Units, Promote, and Downgrade
+   deltas; Add Stack and More Units should not be tiny early-run values.
+10. Complete a final battle with a win and confirm Summary Value opens.
 
 ## Combat SFX Setup
 

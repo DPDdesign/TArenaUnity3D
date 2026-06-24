@@ -84,6 +84,13 @@ public enum DBChoiceStatusId
     Expired = 4
 }
 
+public enum DBRewardOpportunityStateId
+{
+    Unresolved = 1,
+    Resolved = 2,
+    Burned = 3
+}
+
 public enum DBVisitStatusId
 {
     Open = 1,

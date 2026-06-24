@@ -198,6 +198,11 @@ public class RewardMapCardViewData
     public bool Legal;
     public RewardMapError Error;
     public RewardMapOperation Operation;
+    public RewardMapStackSnapshot BeforeStackPreview;
+    public RewardMapStackSnapshot AfterStackPreview;
+    public int RewardSlotIndex;
+    public int AffectedSlotIndex;
+    public bool IsFallback;
 
     public RewardMapCardViewData(string rewardId, string templateId, RewardMapFamily family, RewardMapIntention intention, RewardMapRarity rarity, string verb, string title, string detail, string beforeText, string afterText, string affectedStackId, bool legal, RewardMapError error, RewardMapOperation operation)
     {
@@ -215,6 +220,11 @@ public class RewardMapCardViewData
         Legal = legal;
         Error = error;
         Operation = operation;
+        BeforeStackPreview = null;
+        AfterStackPreview = null;
+        RewardSlotIndex = -1;
+        AffectedSlotIndex = -1;
+        IsFallback = false;
     }
 }
 

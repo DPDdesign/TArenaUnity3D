@@ -419,6 +419,7 @@ WHERE run_battle_id = @runBattleId;",
 
         IRewardMapUnitDefinitionSource source = rewardUnitSource ?? new RewardMapResolverUnitSource(resolver);
         RewardMapArmySnapshot rewardArmy = ToRewardMapArmy(completionRecord.ArmyAfterBattle);
+        List<RewardMapOperationType> plannedOperationTypes = LoadPlannedRewardOperationTypes(runId, nodeId, runSeedVersion);
         RewardMapChoiceViewData choice = new RewardMapMaterializedGenerator(source).BuildChoice(
             OfflineDatabaseLegacyIdentity.ToLegacyRunId(runId),
             nodeId,
@@ -430,9 +431,23 @@ WHERE run_battle_id = @runBattleId;",
                 OfflineDatabaseLegacyIdentity.ToLegacyRunBattleId(runBattleId),
                 completionRecord.Outcome.ToString(),
                 completionRecord.TotalLosses,
-                completionRecord.RunGoldGained));
+                completionRecord.RunGoldGained),
+            plannedOperationTypes.Count == 0 ? null : plannedOperationTypes);
 
         store.SaveChoice(choice);
+    }
+
+    private List<RewardMapOperationType> LoadPlannedRewardOperationTypes(int runId, int nodeId, int runSeedVersion)
+    {
+        using (IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
+        {
+            return OfflineRewardOpportunityDbStore.LoadPlannedOperationTypes(
+                connection,
+                null,
+                runId,
+                nodeId,
+                runSeedVersion);
+        }
     }
 
     private static RewardMapArmySnapshot ToRewardMapArmy(RunBattleArmySnapshot army)

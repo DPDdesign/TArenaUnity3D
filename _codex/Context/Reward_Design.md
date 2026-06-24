@@ -2,7 +2,7 @@
 
 Status: Initial Design
 Project: TArenaUnity3D
-Last updated: 2026-06-13
+Last updated: 2026-06-24
 
 This document defines the reward design framework for TArenaUnity3D runs.
 It is gameplay-first: rewards must feel good, scale safely, be quick to choose,
@@ -27,6 +27,7 @@ The player should not need spreadsheet-style comparison to make a good choice.
 Reward choices must:
 
 - feel satisfying as immediate army growth,
+- help the player steer a run toward a recognizable army direction over time,
 - scale across early, mid, and late run stages,
 - be fast to understand,
 - be easy to present in UI,
@@ -326,25 +327,45 @@ reward math until the core reward feel is proven.
 
 ## Upfront Materialization Decision
 
-Accepted on 2026-06-17:
+Accepted on 2026-06-17 and refined on 2026-06-24:
 
-Reward choices are generated as part of the whole run generation pass, not when
-the Reward Map screen opens.
+Reward opportunities are generated as part of the whole run generation pass, not
+when the Reward Map screen opens.
 
-The run seed deterministically generates the run-owned reward rows upfront.
-Those rows are materialized in minimal DB tables with references such as
-`run_id`, runtime node id, reward id, catalog position id, generated reward
-type, operation payload, selected/applied state, and snapshot references.
+For Minimal Reward Flow V1, each reward opportunity has three different
+operation types selected at run start. Concrete card target, amount, and preview
+are resolved after the battle from the post-battle army snapshot.
+
+Current implementation uses two persistence layers:
+
+- `reward_opportunities` is upfront run-generation truth. It stores run id,
+  node id, slot index, planned normal operation type, catalog entry id, run
+  seed, seed version, and unresolved/resolved state.
+- `reward_choices`, `reward_cards`, and `map_node_rewards` are resolved Reward
+  Map truth. They store concrete card identity, operation payload, legal/error
+  state, fallback state, selected/applied state, and snapshot references.
+
+Reward Map must not infer card legality from text. Persisted legal/error state
+is domain truth. Reward Map must not identify cards by `template_id` alone;
+reward id plus reward slot identity is the current card identity contract.
 
 Reward Map is a load/preview/apply screen:
 
-- hover card: preview the already-materialized card,
+- card view: show a short operation label and the already-materialized concrete
+  effect,
 - click card: apply the selected reward immediately,
 - successful apply: return to Run Map through `GameSceneManager.ShowRunMap()`.
 
 Runtime Reward Map must not fall back to a broad hardcoded reward catalog when
 materialized reward rows are missing. Missing generated reward content is a run
 generation/persistence error or an explicit dev/test setup gap.
+
+Current limitation after the 2026-06-24 reward-flow closure:
+
+- normal battle reward opportunities are planned upfront and resolved after
+  battle completion,
+- `RecruitReward` nodes receive upfront unresolved opportunity rows, but still
+  need a no-battle Reward Map resolution hook before they are complete.
 
 ### Simple RewardRuleSet V1
 
@@ -364,19 +385,55 @@ Deferred:
 
 Rules:
 
-- generate 3 legal reward cards,
-- if a reward type has no legal operation for the current army, try another
-  type,
-- do not show illegal cards in V1,
+- roll 3 different normal operation types for the reward opportunity,
+- after battle, materialize one card for each pre-rolled operation type,
+- if a candidate target is illegal, try the same operation type on another legal
+  stack,
+- if the operation type has no legal target, show that slot as a disabled/burned
+  card instead of rerolling it into another type,
+- if all 3 cards are disabled/burned, expose emergency `RunGold` as a bottom
+  action,
+- do not use `RunGold` as a normal card or as a replacement for one failed card,
+- persisted fallback state must be explicit so the emergency `RunGold` card can
+  survive reload/focus/apply without relying on UI text,
 - no forced Stabilize/Strengthen/Pivot distribution yet,
-- `IncreaseStack` adds 30 percent to the selected stack amount,
+- reward value is generated from the average value of live current-army stacks,
+- base reward gain is `averageLiveStackValue * 0.20`,
+- Mass / More Units and Width / Add Stack target
+  `baseRewardGain * 1.20`,
+- Promote and Downgrade target `baseRewardGain * 1.00`,
+- candidates are scored by closeness to target gain after whole-unit rounding,
+- seeded randomness is used only to break ties or equivalent close candidates,
+- a card can fall outside the plus/minus 20 percent target band only when no
+  legal candidate can fit inside the band,
+- disabled/burned cards mean no legal target or legal unit conversion exists,
+  not that the first random candidate was weak,
+- `IncreaseStack` adds enough units to the selected stack to land closest to
+  the Mass target gain,
 - `PromoteUnit` changes to a same-faction unit exactly one tier higher,
 - `DowngradeUnit` changes to a same-faction unit exactly one tier lower,
-- promote/downgrade amount is
-  `round((oldAmount * oldUnitCost * 1.2) / newUnitCost)`,
+- promote/downgrade amount targets
+  `oldStackValue + baseRewardGain`,
 - `AddNewStack` may choose any catalog unit not already present in the army,
-- `AddNewStack` amount is
-  `round((averageExistingStackValue * 1.2) / newUnitCost)`, minimum 1.
+- `AddNewStack` chooses the non-duplicate unit and amount closest to the Width
+  target gain.
+
+## Implementation Tracking
+
+Closed reward-flow implementation PRDs from 2026-06-24:
+
+- `_codex/tasks/archive/042_PRD_RewardMaterializedSlotContract.md`
+- `_codex/tasks/archive/043_PRD_RewardPersistencePreviewApplyContract.md`
+- `_codex/tasks/archive/044_PRD_TacticalRewardStackIdentity.md`
+- `_codex/tasks/archive/045_PRD_UpfrontRewardOpportunityMaterialization.md`
+
+Validation status:
+
+- Unity compilation, EditMode tests, and Play Mode smoke tests are still manual.
+- Relevant EditMode test classes: `PRD42RewardMaterializedSlotContractTests`,
+  `OfflineRunBattleRewardDbTests`, `OfflineDatabaseSchemaTests`,
+  `PRD44TacticalRewardStackIdentityTests`, and
+  `PRD45RewardOpportunityMaterializationTests`.
 
 ## Open Questions
 

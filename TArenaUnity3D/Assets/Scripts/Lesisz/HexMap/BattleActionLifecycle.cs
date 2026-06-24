@@ -56,6 +56,14 @@ public class BattleActionLifecycle : MonoBehaviour
         return lifecycleObject.AddComponent<BattleActionLifecycle>();
     }
 
+    public static void CancelActiveAction()
+    {
+        if (Instance != null)
+        {
+            Instance.CancelActiveActionInstance();
+        }
+    }
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -65,6 +73,22 @@ public class BattleActionLifecycle : MonoBehaviour
         }
 
         Instance = this;
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
+    void CancelActiveActionInstance()
+    {
+        StopAllCoroutines();
+        activeActor = null;
+        activeLabel = null;
+        isBusy = false;
     }
 
     public bool TryRunAction(

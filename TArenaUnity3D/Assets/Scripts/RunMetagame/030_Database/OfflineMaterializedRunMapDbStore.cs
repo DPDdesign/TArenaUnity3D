@@ -19,7 +19,8 @@ public static class OfflineMaterializedRunMapDbStore
         IStartRunUnitPoolSource enemyUnitSource,
         EnemyEncounterRuleCatalog enemyRuleCatalog,
         int accountId,
-        int runSeed)
+        int runSeed,
+        int seedVersion = 1)
     {
         if (connection == null || transaction == null || seed == null)
         {
@@ -62,6 +63,7 @@ public static class OfflineMaterializedRunMapDbStore
             {
                 InsertConnections(connection, transaction, seed.RunId, path.Nodes[nodeIndex]);
                 InsertEnemy(connection, transaction, snapshotRepository, enemyMaterializer, accountId, seed.RunId, runSeed, path.Nodes[nodeIndex]);
+                InsertRewardOpportunities(connection, transaction, seed.RunId, runSeed, seedVersion, path.Nodes[nodeIndex]);
             }
         }
     }
@@ -226,6 +228,34 @@ INSERT INTO map_node_enemies (
     {
         return node != null &&
             (node.NodeTypeId == (int)DBNodeTypeId.Battle || node.NodeTypeId == (int)DBNodeTypeId.FinalBoss);
+    }
+
+    private static void InsertRewardOpportunities(
+        IDbConnection connection,
+        IDbTransaction transaction,
+        int runId,
+        int runSeed,
+        int seedVersion,
+        OfflineRouteNodeSeedRecord node)
+    {
+        if (node == null || node.NodeId <= 0 || !IsRewardProducingNode(node))
+        {
+            return;
+        }
+
+        OfflineRewardOpportunityDbStore.SaveUnresolvedPlanForNode(
+            connection,
+            transaction,
+            runId,
+            node.NodeId,
+            runSeed,
+            seedVersion);
+    }
+
+    private static bool IsRewardProducingNode(OfflineRouteNodeSeedRecord node)
+    {
+        return node != null &&
+            (node.NodeTypeId == (int)DBNodeTypeId.Battle || node.NodeTypeId == (int)DBNodeTypeId.RecruitReward);
     }
 
     private static string EmptyAsNull(string value)

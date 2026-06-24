@@ -23,6 +23,7 @@ public class TurnManager : MonoBehaviour
     List<GameObject> spawnedQueueTurnBars = new List<GameObject>();
     bool resolvingNewTurnSequence;
     bool advanceRoundAfterNewTurnSequence;
+    bool isDestroying;
    
     private void Start()
     {
@@ -32,14 +33,31 @@ public class TurnManager : MonoBehaviour
       UpdateTurnNumberText();
     }
 
+    private void OnDestroy()
+    {
+        isDestroying = true;
+        resolvingNewTurnSequence = false;
+        advanceRoundAfterNewTurnSequence = false;
+    }
+
 
 public void SetNewTurn()
 {
+    if (isDestroying)
+    {
+        return;
+    }
+
     UpdateTurnNumberText();
 }
 
 void UpdateTurnNumberText()
 {
+    if (isDestroying)
+    {
+        return;
+    }
+
     Transform turnNumberTransform = FindTurnNumberTransform();
     if (turnNumberTransform != null)
     {
@@ -49,6 +67,11 @@ void UpdateTurnNumberText()
 
 Transform FindTurnNumberTransform()
 {
+    if (isDestroying)
+    {
+        return null;
+    }
+
     Transform turnNumberTransform = null;
 
     turnNumberTransform = FindQueueChild(transform, "Turn_Number");
@@ -652,6 +675,11 @@ void SetQueuePlayerBars(Transform parent, bool isFirstPlayer)
 
     IEnumerator RunNewTurnSequence()
     {
+        if (isDestroying || hexMap == null)
+        {
+            yield break;
+        }
+
         Teams = hexMap.Teams;
         if (Teams == null || Teams.Count < 2)
         {
@@ -661,6 +689,11 @@ void SetQueuePlayerBars(Transform parent, bool isFirstPlayer)
         List<TosterHexUnit> turnUnits = BuildNewTurnUnitQueue();
         yield return ResolveNewTurnSpellsByGroups(turnUnits);
 
+        if (isDestroying || hexMap == null || Teams == null || Teams.Count < 2)
+        {
+            yield break;
+        }
+
         Teams[0].FinishNewTurnAfterSpellSequence();
         Teams[1].FinishNewTurnAfterSpellSequence();
 
@@ -669,6 +702,13 @@ void SetQueuePlayerBars(Transform parent, bool isFirstPlayer)
 
     void CompleteNewTurnSequence()
     {
+        if (isDestroying)
+        {
+            advanceRoundAfterNewTurnSequence = false;
+            resolvingNewTurnSequence = false;
+            return;
+        }
+
         if (advanceRoundAfterNewTurnSequence)
         {
             Tura++;

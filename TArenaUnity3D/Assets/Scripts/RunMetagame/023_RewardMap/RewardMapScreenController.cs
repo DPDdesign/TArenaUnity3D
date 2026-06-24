@@ -1,12 +1,20 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class RewardMapScreenController : MonoBehaviour
 {
     [Header("Sections")]
     [SerializeField] private RewardMapResultGainedPanelView resultGainedPanel;
     [SerializeField] private RewardMapRewardCardView[] rewardCards = new RewardMapRewardCardView[0];
-    [SerializeField] private RewardMapArmyPreviewUnitView[] armyPreviewUnits = new RewardMapArmyPreviewUnitView[0];
+    [SerializeField] private Transform changedStackPreviewRowsParent;
+    [SerializeField] private GameObject changedStackPreviewRowPrefab;
+
+    [Header("Army Panel")]
+    [SerializeField] private TMP_Text armySummaryText;
+    [SerializeField] private GameObject armyStackRowPrefab;
+    [SerializeField] private Transform armyStackRows;
 
     [Header("Right Summary")]
     [SerializeField] private TextMeshProUGUI walletText;
@@ -26,21 +34,73 @@ public class RewardMapScreenController : MonoBehaviour
     private int stageIndex;
     private string focusedRewardId;
     private bool rewardApplied;
+    private bool initialized;
+    private int refreshedFrame = -1;
+    private bool changedStackPreviewModeResolved;
+    private bool changedStackPreviewUsesSlotParents;
+    private readonly List<StackRepresentation> changedStackPreviewRows = new List<StackRepresentation>();
+    private readonly List<ChangedStackPreviewSlot> changedStackPreviewSlots = new List<ChangedStackPreviewSlot>();
+    private readonly List<StackRepresentation> armyStackRowInstances = new List<StackRepresentation>();
+
+    private sealed class ChangedStackPreviewSlot
+    {
+        public Transform Box;
+        public GameObject RowRoot;
+        public StackRepresentation Row;
+    }
 
     private void Awake()
+    {
+        Initialize();
+    }
+
+    private void OnEnable()
+    {
+        if (initialized)
+        {
+            RefreshFromPersistedRun();
+        }
+    }
+
+    private void Initialize()
     {
         dataMapper = DataMapper.Instance;
         adapter = OfflineModeDatabaseComposition.CreateRewardMapAdapter();
         runContextReader = OfflineModeDatabaseComposition.CreateRunContextReader();
+        initialized = true;
+    }
+
+    public void RefreshFromPersistedRun()
+    {
+        ResetRewardScreenState();
         if (!LoadRunState())
         {
             return;
         }
 
         RefreshChoice(string.Empty);
+        refreshedFrame = Time.frameCount;
+        ClearSelectedUi();
+    }
+
+    private void ResetRewardScreenState()
+    {
+        runContext = null;
+        currentArmy = null;
+        choice = null;
+        lastApplyResult = null;
+        runGold = 0;
+        stageIndex = 0;
+        focusedRewardId = string.Empty;
+        rewardApplied = false;
     }
 
     public void FocusReward(string rewardId)
+    {
+        PreviewReward(rewardId);
+    }
+
+    private void PreviewReward(string rewardId)
     {
         if (string.IsNullOrEmpty(rewardId))
         {
@@ -59,6 +119,11 @@ public class RewardMapScreenController : MonoBehaviour
 
     public void ApplyReward(string rewardId)
     {
+        if (Time.frameCount == refreshedFrame)
+        {
+            return;
+        }
+
         if (choice == null)
         {
             SetText(statusText, "Reward blocked: no materialized choice.");
@@ -103,13 +168,20 @@ public class RewardMapScreenController : MonoBehaviour
 
     public void SelectFocusedReward()
     {
-        if (choice == null || choice.FocusedCard == null)
+        RewardMapCardViewData reward = choice == null ? null : choice.FocusedCard;
+        if (reward == null)
         {
-            SetText(statusText, "Reward blocked: no focused reward.");
+            SetText(statusText, "Select a reward.");
             return;
         }
 
-        ApplyReward(choice.FocusedCard.RewardId);
+        if (!reward.Legal)
+        {
+            SetText(statusText, "Focused reward cannot be applied.");
+            return;
+        }
+
+        ApplyReward(reward.RewardId);
     }
 
     public void ContinueAfterReward()
@@ -177,14 +249,15 @@ public class RewardMapScreenController : MonoBehaviour
         }
 
         BindRewardCards();
+        BindArmyPanel(choice.ArmyBeforeReward);
 
         RewardMapPreviewData preview = choice.FocusedPreview;
-        RewardMapArmySnapshot previewArmy = preview == null ? choice.ArmyBeforeReward : preview.ArmyAfterReward;
-        string affectedStackId = preview == null || preview.AffectedStackPreview == null
-            ? string.Empty
-            : preview.AffectedStackPreview.StackId;
-
-        BindArmyPreview(previewArmy, affectedStackId);
+        RewardMapCardViewData focusedCard = choice.FocusedCard;
+        RewardMapStackSnapshot changedStack = focusedCard == null || focusedCard.AfterStackPreview == null
+            ? preview == null ? null : preview.AffectedStackPreview
+            : focusedCard.AfterStackPreview;
+        int changedSlotIndex = focusedCard == null ? -1 : focusedCard.AffectedSlotIndex;
+        BindChangedStackPreview(changedStack, changedSlotIndex);
         BindFocusedSummary(preview);
         SetText(statusText, string.IsNullOrEmpty(statusMessage) ? BuildFocusStatus() : statusMessage);
     }
@@ -193,7 +266,12 @@ public class RewardMapScreenController : MonoBehaviour
     {
         string affectedStackId = result.Reward == null ? string.Empty : result.Reward.AffectedStackId;
         BindRewardCards();
-        BindArmyPreview(result.ArmyAfterReward, affectedStackId);
+        BindArmyPanel(result.ArmyAfterReward);
+        RewardMapStackSnapshot changedStack = result.Reward == null || result.Reward.AfterStackPreview == null
+            ? FindStack(result.ArmyAfterReward, affectedStackId)
+            : result.Reward.AfterStackPreview;
+        int changedSlotIndex = result.Reward == null ? -1 : result.Reward.AffectedSlotIndex;
+        BindChangedStackPreview(changedStack, changedSlotIndex);
         SetText(walletText, result.RunGoldAfterReward + " RUN GOLD");
         SetText(inventoryText, BuildInventorySummary());
         SetText(
@@ -217,34 +295,155 @@ public class RewardMapScreenController : MonoBehaviour
             }
 
             cardView.FocusRequested = FocusReward;
+            cardView.ApplyRequested = ApplyReward;
             cardView.Bind(card, card != null && card.RewardId == focusedRewardId);
             if (cardView.Button != null)
             {
                 cardView.Button.onClick.RemoveAllListeners();
                 cardView.Button.interactable = card != null && card.Legal && !rewardApplied;
-                if (card != null && card.Legal && !rewardApplied)
-                {
-                    string rewardId = card.RewardId;
-                    cardView.Button.onClick.AddListener(delegate { ApplyReward(rewardId); });
-                }
             }
         }
     }
 
-    private void BindArmyPreview(RewardMapArmySnapshot army, string affectedStackId)
+    private void BindChangedStackPreview(RewardMapStackSnapshot stack, int slotIndex)
     {
-        for (int i = 0; i < armyPreviewUnits.Length; i++)
+        if (changedStackPreviewRowsParent != null && !changedStackPreviewRowsParent.gameObject.activeSelf)
         {
-            RewardMapArmyPreviewUnitView unitView = armyPreviewUnits[i];
-            RewardMapStackSnapshot stack = army != null && army.Stacks != null && i < army.Stacks.Count
-                ? army.Stacks[i]
-                : null;
+            changedStackPreviewRowsParent.gameObject.SetActive(true);
+        }
 
-            if (unitView != null)
+        if (!changedStackPreviewModeResolved)
+        {
+            changedStackPreviewUsesSlotParents = changedStackPreviewRowsParent != null && changedStackPreviewRowsParent.childCount > 0;
+            changedStackPreviewModeResolved = true;
+        }
+
+        if (changedStackPreviewUsesSlotParents)
+        {
+            BindChangedStackPreviewToSlots(stack, slotIndex);
+            return;
+        }
+
+        List<StackInfoData> stacks = new List<StackInfoData>();
+        if (stack != null)
+        {
+            stacks.Add(RunMetagameDisplayInfoFactory.FromRewardMap(stack, dataMapper));
+        }
+
+        RunMetagameStackListPresenter.DisplayStackInfo(
+            changedStackPreviewRowsParent,
+            changedStackPreviewRowPrefab,
+            stacks,
+            changedStackPreviewRows);
+    }
+
+    private void BindChangedStackPreviewToSlots(RewardMapStackSnapshot stack, int slotIndex)
+    {
+        EnsureChangedStackPreviewSlots();
+        bool showSlot = stack != null && slotIndex >= 0 && slotIndex < changedStackPreviewSlots.Count;
+
+        for (int i = 0; i < changedStackPreviewSlots.Count; i++)
+        {
+            ChangedStackPreviewSlot slot = changedStackPreviewSlots[i];
+            if (slot == null)
             {
-                unitView.Bind(stack, dataMapper, affectedStackId);
+                continue;
+            }
+
+            bool active = showSlot && i == slotIndex;
+            if (active)
+            {
+                EnsureChangedStackPreviewRow(slot, i);
+            }
+
+            if (slot.RowRoot != null)
+            {
+                slot.RowRoot.SetActive(active);
+            }
+
+            if (active && slot.Row != null)
+            {
+                slot.Row.DisplayStackInfo(RunMetagameDisplayInfoFactory.FromRewardMap(stack, dataMapper));
             }
         }
+    }
+
+    private void EnsureChangedStackPreviewSlots()
+    {
+        if (changedStackPreviewRowsParent == null || changedStackPreviewSlots.Count > 0)
+        {
+            return;
+        }
+
+        int childCount = changedStackPreviewRowsParent.childCount;
+        for (int i = 0; i < childCount; i++)
+        {
+            changedStackPreviewSlots.Add(new ChangedStackPreviewSlot
+            {
+                Box = changedStackPreviewRowsParent.GetChild(i)
+            });
+        }
+    }
+
+    private void EnsureChangedStackPreviewRow(ChangedStackPreviewSlot slot, int index)
+    {
+        if (slot == null || slot.RowRoot != null || slot.Box == null || changedStackPreviewRowPrefab == null)
+        {
+            return;
+        }
+
+        GameObject rowObject = Instantiate(changedStackPreviewRowPrefab, slot.Box);
+        rowObject.name = "ChangedStackPreview_" + (index + 1).ToString("00");
+        RectTransform rowRect = rowObject.GetComponent<RectTransform>();
+        if (rowRect != null)
+        {
+            rowRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rowRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rowRect.pivot = new Vector2(0.5f, 0.5f);
+            rowRect.anchoredPosition = Vector2.zero;
+        }
+
+        StackRepresentation row = rowObject.GetComponent<StackRepresentation>();
+        if (row == null)
+        {
+            row = rowObject.GetComponentInChildren<StackRepresentation>(true);
+        }
+
+        rowObject.SetActive(false);
+        slot.RowRoot = rowObject;
+        slot.Row = row;
+    }
+
+    private void BindArmyPanel(RewardMapArmySnapshot army)
+    {
+        if (armySummaryText != null)
+        {
+            armySummaryText.text = "Army Value\n" + ArmyValueLabel(army);
+        }
+
+        List<StackInfoData> stackInfos = new List<StackInfoData>();
+        if (army != null && army.Stacks != null)
+        {
+            for (int i = 0; i < army.Stacks.Count; i++)
+            {
+                RewardMapStackSnapshot stack = army.Stacks[i];
+                if (stack != null && !string.IsNullOrEmpty(stack.UnitId) && stack.Amount > 0)
+                {
+                    stackInfos.Add(RunMetagameDisplayInfoFactory.FromRewardMap(stack, dataMapper));
+                }
+            }
+        }
+
+        RunMetagameStackListPresenter.DisplayStackInfo(
+            armyStackRows,
+            armyStackRowPrefab,
+            stackInfos,
+            armyStackRowInstances);
+    }
+
+    private static string ArmyValueLabel(RewardMapArmySnapshot army)
+    {
+        return army == null ? "0" : Mathf.Max(0, army.TotalArmyValue).ToString();
     }
 
     private void BindFocusedSummary(RewardMapPreviewData preview)
@@ -291,6 +490,14 @@ public class RewardMapScreenController : MonoBehaviour
         }
     }
 
+    private static void ClearSelectedUi()
+    {
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+    }
+
     private void RenderUnavailable(string message)
     {
         SetText(walletText, "0 RUN GOLD");
@@ -298,7 +505,27 @@ public class RewardMapScreenController : MonoBehaviour
         SetText(focusedRewardTitleText, "Reward unavailable");
         SetText(focusedRewardPreviewText, string.Empty);
         SetText(statusText, message);
-        BindArmyPreview(null, string.Empty);
+        BindArmyPanel(null);
+        BindChangedStackPreview(null, -1);
         BindRewardCards();
+    }
+
+    private static RewardMapStackSnapshot FindStack(RewardMapArmySnapshot army, string stackId)
+    {
+        if (army == null || army.Stacks == null || string.IsNullOrEmpty(stackId))
+        {
+            return null;
+        }
+
+        for (int i = 0; i < army.Stacks.Count; i++)
+        {
+            RewardMapStackSnapshot stack = army.Stacks[i];
+            if (stack != null && stack.StackId == stackId)
+            {
+                return stack;
+            }
+        }
+
+        return null;
     }
 }

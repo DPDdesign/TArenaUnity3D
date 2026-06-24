@@ -1,7 +1,7 @@
 # [TARENA] PRD030 Offline Database Map
 
 Status: active
-Last updated: 2026-06-17
+Last updated: 2026-06-24
 
 ## Purpose
 
@@ -112,6 +112,7 @@ Tables:
 - `offline_runs`
 - `map_nodes`
 - `map_node_connections`
+- `reward_opportunities` for unresolved reward-producing node plans
 
 Primary owners:
 
@@ -122,6 +123,7 @@ Primary owners:
 - `OfflineRouteMapSeedFactory.cs`
 - `OfflineRouteMapSeedModels.cs`
 - `OfflineMaterializedRunMapDbStore.cs`
+- `OfflineRewardOpportunityDbStore.cs` for reward opportunity rows
 
 Data:
 
@@ -132,6 +134,7 @@ Data:
 - current node,
 - stage and route progress,
 - materialized route paths, route nodes, and node connections.
+- unresolved reward operation slots for battle/recruit reward nodes.
 
 Run-context read/write rule:
 
@@ -284,6 +287,11 @@ Tables:
 - `run_battles`
 - `run_battle_losses`
 
+Future tactical battle-state tables:
+
+- `run_battle_state_snapshots` or equivalent follow-up table name, keyed by
+  `run_battle_id` and action order.
+
 Primary owner:
 
 - `OfflineRunBattleDbStore.cs`
@@ -313,26 +321,46 @@ army_snapshot_stacks.snapshot_stack_id
 Rule:
 
 - `run_battle_losses` is a cached/detail record. Army state remains in snapshots.
+- Full tactical `BattleSnapshot` records are separate from army snapshots. They
+  must capture the whole battle map after completed actions so the tactical
+  battle can be recreated, synchronized, replayed, and used as the shared input
+  for Tactical AI planning.
+- V1 Tactical AI may use an in-memory `BattleSnapshot` and hash/cache while the
+  persistence table does not exist yet, but the AI should be designed so it can
+  later read the same persisted battle-state snapshot shape instead of a private
+  AI-only state model.
+- Do not overload `offline_runs` or `army_snapshots` with full tactical map
+  state. When persisted, battle-state snapshots belong under the Run Battle
+  persistence slice and should link to `run_battles.run_battle_id`, action
+  index/order, snapshot hash, and serialized snapshot payload.
 
 ### Reward Map
 
 Tables:
 
+- `reward_opportunities`
 - `reward_choices`
 - `reward_cards`
+- `map_node_rewards`
 
 Primary owner:
 
+- `OfflineRewardOpportunityDbStore.cs`
+- `OfflineMaterializedRunMapDbStore.cs` for upfront opportunity planning
 - `OfflineRewardMapDbStore.cs`
+- `OfflineRunBattleDbStore.cs` for post-battle reward materialization trigger
 
 Writes:
 
+- upfront planned reward operation slots,
+- unresolved/resolved opportunity state,
 - materialized generated reward choices for the run/current node,
 - reward event,
 - choice status,
 - focused reward id,
 - selected reward id,
 - generated cards,
+- node-level generated reward rows,
 - operation JSON,
 - preview snapshot id,
 - applied snapshot id.
@@ -340,23 +368,61 @@ Writes:
 Relations:
 
 ```text
+offline_runs.run_id
+  -> reward_opportunities.run_id
+map_nodes.node_id
+  -> reward_opportunities.node_id
 run_events.event_id
   -> reward_choices.event_id
 reward_choices.reward_choice_id
   -> reward_cards.reward_choice_id
 army_snapshot_stacks.snapshot_stack_id
   -> reward_cards.target_snapshot_stack_id
+map_nodes.node_id
+  -> map_node_rewards.node_id
+army_snapshots.snapshot_id
+  -> map_node_rewards.base_snapshot_id
+army_snapshots.snapshot_id
+  -> map_node_rewards.applied_snapshot_id
 ```
+
+V1 logical links:
+
+- `reward_opportunities.reward_choice_id` records which resolved choice closed
+  the opportunity.
+- `reward_opportunities.resolved_reward_card_id` records the resolved card row.
+- These two fields are not enforced foreign keys in schema V1; use them as
+  traceability links, not cascade/deletion authority.
 
 Rule:
 
 - reward ruleset/catalog configuration remains authored code/assets data,
-- reward choices are generated upfront when the run begins and stored as
-  runtime rows keyed by run/node/catalog position identity,
+- ADR011 is implemented as a two-phase reward flow:
+  `reward_opportunities` are planned upfront during run generation, while
+  concrete `reward_choices`, `reward_cards`, and `map_node_rewards` are
+  resolved after battle completion when the post-battle army snapshot exists,
+- generated reward rows are stored as runtime rows keyed by run/node/catalog
+  entry identity and card/reward slot identity,
 - Reward Map loads the materialized runtime choice; it must not roll fallback
   screen-time rewards in production,
 - DB stores the generated runtime choice and selected/applied result,
 - applying the same choice twice must be rejected.
+- successful apply writes a new current army snapshot and sets
+  `offline_runs.next_screen = RunMap`.
+- card state is explicit: `reward_id`, `reward_slot_index`, legal/error state,
+  fallback state, selected/applied state, and operation JSON are DB truth.
+- normal battle wins now route to `Reward`, final battle wins route to
+  `FinalSummary`, and losses route to `RunLoss`; reward materialization runs
+  on the normal win path before Reward Map opens.
+- PRD41 reward value parity is generator-side behavior, not a schema change:
+  materialized rows continue storing concrete operation data while the
+  generator chooses amounts and targets from the average live stack value
+  target policy.
+- PRD42 fallback behavior is generator-side but persisted explicitly: a single
+  impossible normal slot stays disabled; emergency `RunGold` is only a fallback
+  when all three normal slots are impossible.
+- Current limitation: no-battle `RecruitReward` nodes get unresolved
+  opportunities but still need a direct Reward Map resolution hook.
 
 ### Run Shop
 
@@ -572,6 +638,7 @@ Writes:
 - `map_nodes`
 - `map_node_connections`
 - `map_node_enemies`
+- `reward_opportunities`
 
 Primary code:
 
@@ -587,6 +654,9 @@ Rule:
 - Start Run reloads the returned `CreatedRunRecord` through
   `OfflineRunContextDbReader` after transaction commit, so the frontend receives
   DB-backed ids and snapshot state.
+- Start Run/run map materialization writes unresolved reward opportunities for
+  reward-producing nodes; concrete reward cards are not resolved until after
+  battle.
 
 ### Travel On Run Map
 
@@ -626,21 +696,29 @@ Writes:
 - `run_events`
 - `reward_choices`
 - `reward_cards`
+- `map_node_rewards`
+- `reward_opportunities`
 - `army_snapshots`
 - `offline_runs`
 
 Primary code:
 
+- `OfflineRunBattleDbStore.MaterializeRewardsIfNeeded(...)`
+- `RewardMapMaterializedGenerator.BuildChoice(...)`
 - `OfflineRewardMapDbStore.SaveChoice(...)`
+- `OfflineRewardOpportunityDbStore`
 - `OfflineRewardMapDbStore.SaveAppliedReward(...)`
 - `OfflineRunContextDbWriter.UpdateNodeArmyGoldScreen(...)`
 - `OfflineRunContextDbWriter.UpdateArmyGoldScreen(...)`
 
 Rule:
 
-- reward choice/card rows should already exist from Begin Run/run generation
-  for reward-producing nodes; Reward Map applies the current materialized
-  choice rather than generating a new fallback choice,
+- current implementation: Begin Run/run generation creates unresolved
+  `reward_opportunities`; battle completion creates concrete reward
+  choices/cards and `map_node_rewards` only when the completion next screen is
+  `Reward`,
+- Reward Map applies the current materialized choice rather than generating a
+  new fallback choice in the DB-backed production path,
 - Reward screen handoff uses `offline_runs.next_screen = Reward`, matching
   `RunBattleNextScreen.Reward` and `RewardMapScreenController` lookup.
 
@@ -721,7 +799,7 @@ Primary code:
 | Snapshot | `army_snapshots`, `army_snapshot_stacks`, `army_snapshot_stack_skills` | `OfflineArmySnapshotDbRepository`, `OfflineArmySnapshotMapper` |
 | Event | `run_events` | battle/reward/shop DB stores |
 | Battle | `run_battles`, `run_battle_losses` | `OfflineRunBattleDbStore` |
-| Reward | `reward_choices`, `reward_cards` | `OfflineRewardMapDbStore` |
+| Reward | `reward_opportunities`, `reward_choices`, `reward_cards`, `map_node_rewards` | `OfflineRewardOpportunityDbStore`, `OfflineRewardMapDbStore` |
 | Shop | `shop_visits`, `shop_offers`, `shop_purchases` | `OfflineRunShopDbStore` |
 | Summary | `run_summaries`, `run_summary_entries` | `OfflineSummaryValueDbStore` |
 | Saved Armies | `saved_army_slots`, `saved_armies`, `saved_army_roster_state`, `saved_army_history` | `OfflineSavedArmyDbRepository`, `OfflineSavedArmiesDbStore` |
@@ -754,6 +832,9 @@ EditMode tests to run manually in Unity:
 - `OfflineDatabaseLegacyIdentityTests`
 - `OfflineStartRunRunMapDbTests`
 - `OfflineRunBattleRewardDbTests`
+- `PRD42RewardMaterializedSlotContractTests`
+- `PRD44TacticalRewardStackIdentityTests`
+- `PRD45RewardOpportunityMaterializationTests`
 - `OfflineRunShopDbTests`
 - `OfflineSummarySavedArmiesDbTests`
 - `OfflineBattleResultDbTests`

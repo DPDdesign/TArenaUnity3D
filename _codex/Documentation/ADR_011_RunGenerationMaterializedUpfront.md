@@ -28,8 +28,8 @@ This applies to run-owned generated content, including:
 - future event choices and generated event payloads,
 - future generated enemy or encounter-owned armies when those systems exist.
 
-Generated runtime content must be stored in minimal DB tables keyed by `run_id`
-and the relevant runtime node/catalog position identity. Runtime screens should
+Generated runtime content must be stored in minimal DB tables keyed by `run_id`,
+runtime node id, and the relevant `catalog_entry_id`. Runtime screens should
 load the materialized rows for the current run/node instead of rolling new
 content or falling back to hardcoded catalogs.
 
@@ -39,9 +39,9 @@ cards on hover, applies the clicked card, and then returns to Run Map through
 `GameSceneManager.ShowRunMap()`.
 
 Catalog/ruleset data remains source configuration. The database stores runtime
-materialized results and references such as reward id, run id, node id, catalog
-position id, generated card type, operation payload, selected/applied state,
-and resulting snapshot references.
+materialized results and references such as reward id, run id, node id,
+`catalog_entry_id`, generated card type, operation payload, selected/applied
+state, and resulting snapshot references.
 
 ## Rationale
 

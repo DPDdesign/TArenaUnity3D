@@ -127,16 +127,6 @@ public static class PRD19_023_RewardMapPrefabBuilder
         armyLayout.childForceExpandWidth = false;
         armyLayout.childForceExpandHeight = false;
 
-        List<RewardMapArmyPreviewUnitView> armyUnitViews = new List<RewardMapArmyPreviewUnitView>();
-        for (int i = 0; i < 7; i++)
-        {
-            GameObject unit = InstantiateNestedPrefab(ArmyPreviewUnitPath, "ArmyPreviewUnit_" + (i + 1).ToString("00"), armyList.transform);
-            LayoutElement layoutElement = unit.AddComponent<LayoutElement>();
-            layoutElement.preferredWidth = 148f;
-            layoutElement.preferredHeight = 112f;
-            armyUnitViews.Add(unit.GetComponent<RewardMapArmyPreviewUnitView>());
-        }
-
         GameObject right = CreatePanel("Section_WalletInventorySummary", root.transform, new Vector2(280f, 650f), new Color(0.13f, 0.10f, 0.07f, 0.96f));
         SetAnchored(right, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-150f, -45f));
         AddText("Text_RightHeader", right.transform, "Run Summary", 23, TextAlignmentOptions.Midline, new Vector2(240f, 40f), new Vector2(0f, 285f), new Color(0.96f, 0.84f, 0.56f, 1f));
@@ -166,7 +156,8 @@ public static class PRD19_023_RewardMapPrefabBuilder
         SerializedObject serialized = new SerializedObject(controller);
         SetObject(serialized, "resultGainedPanel", resultPanel);
         SetObjectArray(serialized, "rewardCards", rewardCardViews.ToArray());
-        SetObjectArray(serialized, "armyPreviewUnits", armyUnitViews.ToArray());
+        SetObject(serialized, "changedStackPreviewRowsParent", armyList.transform);
+        SetObject(serialized, "changedStackPreviewRowPrefab", AssetDatabase.LoadAssetAtPath<GameObject>(ArmyPreviewUnitPath));
         SetObject(serialized, "walletText", walletText);
         SetObject(serialized, "inventoryText", inventoryText);
         SetObject(serialized, "focusedRewardTitleText", focusedTitle);
@@ -193,11 +184,6 @@ public static class PRD19_023_RewardMapPrefabBuilder
         TextMeshProUGUI verb = AddText("Text_Verb", root.transform, "Revive", 30, TextAlignmentOptions.Midline, new Vector2(250f, 44f), new Vector2(0f, 138f), Color.white);
         TextMeshProUGUI title = AddText("Text_Title", root.transform, "Recover Losses", 22, TextAlignmentOptions.Midline, new Vector2(250f, 34f), new Vector2(0f, 98f), new Color(0.98f, 0.90f, 0.70f, 1f));
         TextMeshProUGUI detail = AddText("Text_Detail", root.transform, "Restore part of the most damaged stack.", 15, TextAlignmentOptions.TopLeft, new Vector2(242f, 78f), new Vector2(0f, 42f), new Color(0.86f, 0.80f, 0.68f, 1f));
-        AddText("Text_BeforeLabel", root.transform, "Before", 13, TextAlignmentOptions.MidlineLeft, new Vector2(238f, 22f), new Vector2(0f, -22f), new Color(0.68f, 0.62f, 0.52f, 1f));
-        TextMeshProUGUI before = AddText("Text_Before", root.transform, "Rusher x40 lost 12", 16, TextAlignmentOptions.MidlineLeft, new Vector2(238f, 30f), new Vector2(0f, -52f), Color.white);
-        AddText("Text_Arrow", root.transform, "=>", 20, TextAlignmentOptions.Midline, new Vector2(238f, 28f), new Vector2(0f, -87f), new Color(1f, 0.82f, 0.30f, 1f));
-        AddText("Text_AfterLabel", root.transform, "After Preview", 13, TextAlignmentOptions.MidlineLeft, new Vector2(238f, 22f), new Vector2(0f, -118f), new Color(0.68f, 0.62f, 0.52f, 1f));
-        TextMeshProUGUI after = AddText("Text_After", root.transform, "Rusher x48 lost 4", 16, TextAlignmentOptions.MidlineLeft, new Vector2(238f, 32f), new Vector2(0f, -149f), new Color(0.66f, 1f, 0.70f, 1f));
         TextMeshProUGUI legal = AddText("Text_LegalState", root.transform, "Click to preview", 15, TextAlignmentOptions.Midline, new Vector2(238f, 34f), new Vector2(0f, -220f), new Color(0.96f, 0.84f, 0.56f, 1f));
         GameObject selectedState = CreateOverlay("State_Selected", root.transform, new Color(1f, 0.82f, 0.26f, 0.18f));
         GameObject disabledState = CreateOverlay("State_Disabled", root.transform, new Color(0f, 0f, 0f, 0.46f));
@@ -212,8 +198,6 @@ public static class PRD19_023_RewardMapPrefabBuilder
         SetObject(serialized, "verbText", verb);
         SetObject(serialized, "titleText", title);
         SetObject(serialized, "detailText", detail);
-        SetObject(serialized, "beforeText", before);
-        SetObject(serialized, "afterText", after);
         SetObject(serialized, "legalText", legal);
         SetObject(serialized, "selectedState", selectedState);
         SetObject(serialized, "disabledState", disabledState);
@@ -225,7 +209,6 @@ public static class PRD19_023_RewardMapPrefabBuilder
     private static GameObject BuildArmyPreviewUnitTemplate()
     {
         GameObject root = CreatePanel("PRD_19_023_RewardMap_ArmyPreviewUnit", null, new Vector2(148f, 112f), new Color(0.17f, 0.13f, 0.09f, 0.96f));
-        RewardMapArmyPreviewUnitView view = root.AddComponent<RewardMapArmyPreviewUnitView>();
 
         Image icon = CreateImage("Icon_Unit", root.transform, new Vector2(54f, 54f), new Vector2(-38f, 20f), new Color(0.30f, 0.24f, 0.16f, 1f));
         TextMeshProUGUI name = AddText("Text_Name", root.transform, "Rusher", 15, TextAlignmentOptions.MidlineLeft, new Vector2(78f, 22f), new Vector2(34f, 36f), Color.white);
@@ -249,16 +232,6 @@ public static class PRD19_023_RewardMapPrefabBuilder
         SetObject(stackSerialized, "Count", amount);
         SetObject(stackSerialized, "StackValue", value);
         stackSerialized.ApplyModifiedPropertiesWithoutUndo();
-
-        SerializedObject serialized = new SerializedObject(view);
-        SetObject(serialized, "unitIcon", icon);
-        SetObject(serialized, "nameText", name);
-        SetObject(serialized, "tierText", tier);
-        SetObject(serialized, "amountText", amount);
-        SetObject(serialized, "valueText", value);
-        SetObject(serialized, "skillsText", skills);
-        SetObject(serialized, "affectedState", affectedState);
-        serialized.ApplyModifiedPropertiesWithoutUndo();
 
         return root;
     }

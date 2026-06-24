@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using NUnit.Framework;
 
@@ -54,7 +55,7 @@ public class OfflineRunBattleRewardDbTests
                 "db-test"));
 
             Assert.That(completion.Success, Is.True);
-            Assert.That(completion.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.RunMap));
+            Assert.That(completion.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.Reward));
             Assert.That(completion.CompletionRecord.ArmyAfterBattle.SnapshotId, Does.StartWith("snapshot-"));
 
             RewardMapService rewardService = new RewardMapService(
@@ -104,6 +105,455 @@ public class OfflineRunBattleRewardDbTests
         {
             TryDelete(databasePath);
         }
+    }
+
+    [Test]
+    public void RewardChoicePersistence_KeepsZeroBasedSlotTarget()
+    {
+        string databasePath = BuildTempDatabasePath();
+        try
+        {
+            TestUnitCatalog units = new TestUnitCatalog();
+            DefaultStartRunCatalog catalog = new DefaultStartRunCatalog();
+            StartRunService startRunService = new StartRunService(
+                catalog,
+                catalog,
+                units,
+                new OfflineStartRunDbStore(databasePath, new DefaultRunMapPathCatalog()));
+
+            StartRunResult startRun = startRunService.BeginRun(new StartRunCommand(
+                "offline-player",
+                "barbarian-starter",
+                "barbarian-starter-v1",
+                "barbarian-starter",
+                "iron-line"));
+
+            RewardMapArmySnapshot army = new RewardMapArmySnapshot(
+                "army-slot-target-test",
+                28 * 31 + 10 * 60,
+                new List<RewardMapStackSnapshot>
+                {
+                    new RewardMapStackSnapshot("slot-0", "Rusher", "Rusher", "I", 1, 28, 0, 28 * 31, new List<RewardMapSkillState> { new RewardMapSkillState("Chope", true) }),
+                    new RewardMapStackSnapshot("slot-1", "Thrower", "Thrower", "I", 1, 10, 0, 10 * 60, new List<RewardMapSkillState> { new RewardMapSkillState("Range_Stance_Barb", true) })
+                });
+            RewardMapCardViewData card = new RewardMapCardViewData(
+                "reward-prd37-downgrade-unit-v1-0",
+                "prd37-downgrade-unit-v1",
+                RewardMapFamily.Mass,
+                RewardMapIntention.Stabilize,
+                RewardMapRarity.Common,
+                "Downgrade",
+                "Thrower to Rusher",
+                "Move one tier down in the same faction for more bodies.",
+                "Thrower x10",
+                "Rusher x23",
+                "slot-1",
+                true,
+                RewardMapError.None,
+                new RewardMapOperation(RewardMapOperationType.DowngradeStack, "slot-1", "Thrower", "Rusher", string.Empty, string.Empty, 23, 0));
+            RewardMapChoiceViewData choice = new RewardMapChoiceViewData(
+                "reward-choice-materialized-test",
+                startRun.CreatedRun.RunId,
+                RewardMapGameMode.Offline,
+                RewardMapAuthoritySource.LocalOfflineAdapter,
+                new RewardMapBattleResultSummary(string.Empty, "Victory", 0, 0),
+                "Gained: 0 RUN GOLD",
+                startRun.CreatedRun.StartingCurrency,
+                army,
+                new List<RewardMapCardViewData> { card },
+                card,
+                null,
+                "Materialized rewards loaded.");
+
+            OfflineRewardMapDbStore store = new OfflineRewardMapDbStore(databasePath, units);
+            RewardMapChoiceViewData saved = store.SaveChoice(choice);
+            RewardMapCardViewData savedCard = saved.Cards[0];
+
+            Assert.That(savedCard.Operation.StackId, Is.EqualTo("stack-thrower"));
+            Assert.That(savedCard.AffectedStackId, Is.EqualTo("stack-thrower"));
+
+            RewardMapService service = new RewardMapService(new DefaultRewardMapTemplateCatalog(), units, store);
+            RewardMapChoiceViewData loaded = service.BuildChoice(
+                new RewardMapChoiceRequest(
+                    startRun.CreatedRun.RunId,
+                    1,
+                    choice.RunGoldBeforeReward,
+                    army,
+                    choice.BattleResultSummary),
+                savedCard.RewardId);
+
+            Assert.That(loaded.FocusedCard.BeforeStackPreview.UnitId, Is.EqualTo("Thrower"));
+            Assert.That(loaded.FocusedCard.AfterStackPreview.UnitId, Is.EqualTo("Rusher"));
+            Assert.That(loaded.FocusedCard.AffectedSlotIndex, Is.EqualTo(1));
+        }
+        finally
+        {
+            TryDelete(databasePath);
+        }
+    }
+
+    [Test]
+    public void RewardChoicePersistence_KeepsSemanticStackTarget()
+    {
+        string databasePath = BuildTempDatabasePath();
+        try
+        {
+            TestUnitCatalog units = new TestUnitCatalog();
+            DefaultStartRunCatalog catalog = new DefaultStartRunCatalog();
+            StartRunService startRunService = new StartRunService(
+                catalog,
+                catalog,
+                units,
+                new OfflineStartRunDbStore(databasePath, new DefaultRunMapPathCatalog()));
+
+            StartRunResult startRun = startRunService.BeginRun(new StartRunCommand(
+                "offline-player",
+                "barbarian-starter",
+                "barbarian-starter-v1",
+                "barbarian-starter",
+                "iron-line"));
+
+            RewardMapArmySnapshot army = new RewardMapArmySnapshot(
+                "army-semantic-target-test",
+                28 * 31 + 10 * 60,
+                new List<RewardMapStackSnapshot>
+                {
+                    new RewardMapStackSnapshot("stack-rusher", "Rusher", "Rusher", "I", 1, 28, 0, 28 * 31, new List<RewardMapSkillState> { new RewardMapSkillState("Chope", true) }),
+                    new RewardMapStackSnapshot("stack-thrower", "Thrower", "Thrower", "I", 1, 10, 0, 10 * 60, new List<RewardMapSkillState> { new RewardMapSkillState("Range_Stance_Barb", true) })
+                });
+            RewardMapCardViewData card = new RewardMapCardViewData(
+                "reward-prd37-downgrade-unit-v1-0",
+                "prd37-downgrade-unit-v1",
+                RewardMapFamily.Mass,
+                RewardMapIntention.Stabilize,
+                RewardMapRarity.Common,
+                "Downgrade",
+                "Thrower to Rusher",
+                "Move one tier down in the same faction for more bodies.",
+                "Thrower x10",
+                "Rusher x23",
+                "stack-thrower",
+                true,
+                RewardMapError.None,
+                new RewardMapOperation(RewardMapOperationType.DowngradeStack, "stack-thrower", "Thrower", "Rusher", string.Empty, string.Empty, 23, 0));
+            RewardMapChoiceViewData choice = new RewardMapChoiceViewData(
+                "reward-choice-materialized-test",
+                startRun.CreatedRun.RunId,
+                RewardMapGameMode.Offline,
+                RewardMapAuthoritySource.LocalOfflineAdapter,
+                new RewardMapBattleResultSummary(string.Empty, "Victory", 0, 0),
+                "Gained: 0 RUN GOLD",
+                startRun.CreatedRun.StartingCurrency,
+                army,
+                new List<RewardMapCardViewData> { card },
+                card,
+                null,
+                "Materialized rewards loaded.");
+
+            OfflineRewardMapDbStore store = new OfflineRewardMapDbStore(databasePath, units);
+            RewardMapChoiceViewData saved = store.SaveChoice(choice);
+            RewardMapCardViewData savedCard = saved.Cards[0];
+
+            Assert.That(savedCard.Operation.StackId, Is.EqualTo("stack-thrower"));
+            Assert.That(savedCard.AffectedStackId, Is.EqualTo("stack-thrower"));
+        }
+        finally
+        {
+            TryDelete(databasePath);
+        }
+    }
+
+    [Test]
+    public void RewardChoicePersistence_ReloadsDisabledNormalsAndEmergencyFallbackFromCardState()
+    {
+        string databasePath = BuildTempDatabasePath();
+        try
+        {
+            TestUnitCatalog units = new TestUnitCatalog();
+            StartRunResult startRun = CreateStartedRun(databasePath, units);
+            RewardMapArmySnapshot army = CreateTwoStackRewardArmy();
+
+            RewardMapCardViewData disabledAdd = CreateRewardCard(
+                "reward-prd37-add-new-stack-v1-0",
+                "prd37-add-new-stack-v1",
+                0,
+                RewardMapOperationType.AddStack,
+                string.Empty,
+                "Rusher",
+                string.Empty,
+                0,
+                false,
+                RewardMapError.NoLegalTarget,
+                "Disabled persisted state",
+                false);
+            RewardMapCardViewData disabledGrow = CreateRewardCard(
+                "reward-prd37-increase-stack-v1-1",
+                "prd37-increase-stack-v1",
+                1,
+                RewardMapOperationType.AddUnits,
+                string.Empty,
+                "Rusher",
+                string.Empty,
+                0,
+                false,
+                RewardMapError.NoLegalTarget,
+                "Disabled persisted state",
+                false);
+            RewardMapCardViewData disabledPromote = CreateRewardCard(
+                "reward-prd37-promote-unit-v1-2",
+                "prd37-promote-unit-v1",
+                2,
+                RewardMapOperationType.PromoteStack,
+                string.Empty,
+                "Rusher",
+                "Axeman",
+                0,
+                false,
+                RewardMapError.NoLegalTarget,
+                "Disabled persisted state",
+                false);
+            RewardMapCardViewData fallback = CreateRewardCard(
+                "reward-prd37-run-gold-fallback-v1-3",
+                "prd37-run-gold-fallback-v1",
+                3,
+                RewardMapOperationType.GainCurrency,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                60,
+                true,
+                RewardMapError.None,
+                "+60 RUN GOLD",
+                true);
+
+            RewardMapChoiceViewData choice = new RewardMapChoiceViewData(
+                "reward-choice-prd43-disabled",
+                startRun.CreatedRun.RunId,
+                RewardMapGameMode.Offline,
+                RewardMapAuthoritySource.LocalOfflineAdapter,
+                new RewardMapBattleResultSummary(string.Empty, "Victory", 0, 0),
+                "Gained: 0 RUN GOLD",
+                startRun.CreatedRun.StartingCurrency,
+                army,
+                new List<RewardMapCardViewData> { disabledAdd, disabledGrow, disabledPromote, fallback },
+                fallback,
+                null,
+                "Materialized rewards loaded.");
+
+            OfflineRewardMapDbStore store = new OfflineRewardMapDbStore(databasePath, units);
+            RewardMapChoiceViewData saved = store.SaveChoice(choice);
+            RewardMapChoiceViewData reloaded = store.FindChoice(saved.ChoiceId);
+
+            Assert.That(reloaded.Cards.Count, Is.EqualTo(4));
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.That(reloaded.Cards[i].RewardSlotIndex, Is.EqualTo(i));
+                Assert.That(reloaded.Cards[i].Legal, Is.False);
+                Assert.That(reloaded.Cards[i].Error, Is.EqualTo(RewardMapError.NoLegalTarget));
+                Assert.That(reloaded.Cards[i].AfterText, Is.EqualTo("Disabled persisted state"));
+                Assert.That(reloaded.Cards[i].Operation.StackId, Is.Empty);
+                Assert.That(reloaded.Cards[i].IsFallback, Is.False);
+            }
+
+            Assert.That(reloaded.Cards[3].RewardSlotIndex, Is.EqualTo(3));
+            Assert.That(reloaded.Cards[3].Legal, Is.True);
+            Assert.That(reloaded.Cards[3].Operation.Type, Is.EqualTo(RewardMapOperationType.GainCurrency));
+            Assert.That(reloaded.Cards[3].IsFallback, Is.True);
+            Assert.That(reloaded.FocusedCard.RewardId, Is.EqualTo(fallback.RewardId));
+
+            using (IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
+            {
+                Assert.That(ScalarInt(connection, "SELECT COUNT(*) FROM reward_cards WHERE legal = 0;"), Is.EqualTo(3));
+                Assert.That(ScalarInt(connection, "SELECT COUNT(*) FROM reward_cards WHERE is_fallback = 1;"), Is.EqualTo(1));
+                Assert.That(ScalarInt(connection, "SELECT COUNT(*) FROM map_node_rewards WHERE legal = 0;"), Is.EqualTo(3));
+                Assert.That(ScalarInt(connection, "SELECT COUNT(*) FROM map_node_rewards WHERE is_fallback = 1;"), Is.EqualTo(1));
+            }
+        }
+        finally
+        {
+            TryDelete(databasePath);
+        }
+    }
+
+    [Test]
+    public void RewardChoicePersistence_DuplicateTemplateIdsFocusAndApplyByRewardSlot()
+    {
+        string databasePath = BuildTempDatabasePath();
+        try
+        {
+            TestUnitCatalog units = new TestUnitCatalog();
+            StartRunResult startRun = CreateStartedRun(databasePath, units);
+            RewardMapArmySnapshot army = CreateTwoStackRewardArmy();
+
+            RewardMapCardViewData first = CreateRewardCard(
+                "reward-duplicate-template-0",
+                "duplicate-template",
+                0,
+                RewardMapOperationType.AddUnits,
+                "stack-rusher",
+                "Rusher",
+                string.Empty,
+                0,
+                true,
+                RewardMapError.None,
+                "Rusher +3",
+                false);
+            first.Operation.Amount = 3;
+
+            RewardMapCardViewData second = CreateRewardCard(
+                "reward-duplicate-template-1",
+                "duplicate-template",
+                1,
+                RewardMapOperationType.AddUnits,
+                "stack-thrower",
+                "Thrower",
+                string.Empty,
+                0,
+                true,
+                RewardMapError.None,
+                "Thrower +2",
+                false);
+            second.Operation.Amount = 2;
+
+            RewardMapChoiceViewData choice = new RewardMapChoiceViewData(
+                "reward-choice-prd43-duplicate",
+                startRun.CreatedRun.RunId,
+                RewardMapGameMode.Offline,
+                RewardMapAuthoritySource.LocalOfflineAdapter,
+                new RewardMapBattleResultSummary(string.Empty, "Victory", 0, 0),
+                "Gained: 0 RUN GOLD",
+                startRun.CreatedRun.StartingCurrency,
+                army,
+                new List<RewardMapCardViewData> { first, second },
+                first,
+                null,
+                "Materialized rewards loaded.");
+
+            OfflineRewardMapDbStore store = new OfflineRewardMapDbStore(databasePath, units);
+            RewardMapChoiceViewData saved = store.SaveChoice(choice);
+            RewardMapService service = new RewardMapService(new DefaultRewardMapTemplateCatalog(), units, store);
+
+            RewardMapChoiceViewData focusedSecond = service.BuildChoice(
+                new RewardMapChoiceRequest(
+                    startRun.CreatedRun.RunId,
+                    1,
+                    choice.RunGoldBeforeReward,
+                    army,
+                    choice.BattleResultSummary),
+                second.RewardId);
+
+            Assert.That(focusedSecond.FocusedCard.RewardId, Is.EqualTo(second.RewardId));
+            Assert.That(focusedSecond.FocusedCard.TemplateId, Is.EqualTo(first.TemplateId));
+            Assert.That(focusedSecond.FocusedCard.RewardSlotIndex, Is.EqualTo(1));
+            Assert.That(focusedSecond.FocusedCard.Operation.StackId, Is.EqualTo("stack-thrower"));
+
+            RewardMapApplyResult apply = service.Apply(new RewardMapApplyCommand(
+                saved.ChoiceId,
+                second.RewardId,
+                choice.RunGoldBeforeReward,
+                army));
+
+            Assert.That(apply.Success, Is.True);
+            Assert.That(apply.Reward.RewardId, Is.EqualTo(second.RewardId));
+            Assert.That(apply.Reward.RewardSlotIndex, Is.EqualTo(1));
+
+            RewardMapChoiceViewData reloaded = store.FindChoice(saved.ChoiceId);
+            Assert.That(reloaded.SelectedRewardId, Is.EqualTo(second.RewardId));
+
+            using (IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
+            {
+                Assert.That(ScalarInt(connection, "SELECT COUNT(*) FROM reward_cards WHERE is_selected = 1;"), Is.EqualTo(1));
+                Assert.That(ScalarInt(connection, "SELECT reward_slot_index FROM reward_cards WHERE is_selected = 1 LIMIT 1;"), Is.EqualTo(1));
+                Assert.That(ScalarInt(connection, "SELECT COUNT(*) FROM reward_cards WHERE applied_snapshot_id IS NOT NULL;"), Is.EqualTo(1));
+                Assert.That(ScalarInt(connection, "SELECT COUNT(*) FROM map_node_rewards WHERE is_selected = 1;"), Is.EqualTo(1));
+                Assert.That(ScalarInt(connection, "SELECT reward_slot_index FROM map_node_rewards WHERE is_selected = 1 LIMIT 1;"), Is.EqualTo(1));
+                Assert.That(ScalarInt(connection, "SELECT selected_reward_slot_index FROM reward_choices WHERE selected_reward_id = 'reward-duplicate-template-1' LIMIT 1;"), Is.EqualTo(1));
+            }
+        }
+        finally
+        {
+            TryDelete(databasePath);
+        }
+    }
+
+    private static StartRunResult CreateStartedRun(string databasePath, TestUnitCatalog units)
+    {
+        DefaultStartRunCatalog catalog = new DefaultStartRunCatalog();
+        StartRunService startRunService = new StartRunService(
+            catalog,
+            catalog,
+            units,
+            new OfflineStartRunDbStore(databasePath, new DefaultRunMapPathCatalog()));
+
+        StartRunResult startRun = startRunService.BeginRun(new StartRunCommand(
+            "offline-player",
+            "barbarian-starter",
+            "barbarian-starter-v1",
+            "barbarian-starter",
+            "iron-line"));
+
+        Assert.That(startRun.Success, Is.True);
+        return startRun;
+    }
+
+    private static RewardMapArmySnapshot CreateTwoStackRewardArmy()
+    {
+        return new RewardMapArmySnapshot(
+            "army-prd43",
+            28 * 31 + 10 * 60,
+            new List<RewardMapStackSnapshot>
+            {
+                new RewardMapStackSnapshot("stack-rusher", "Rusher", "Rusher", "I", 1, 28, 0, 28 * 31, new List<RewardMapSkillState> { new RewardMapSkillState("Chope", true) }),
+                new RewardMapStackSnapshot("stack-thrower", "Thrower", "Thrower", "I", 1, 10, 0, 10 * 60, new List<RewardMapSkillState> { new RewardMapSkillState("Range_Stance_Barb", true) })
+            });
+    }
+
+    private static RewardMapCardViewData CreateRewardCard(
+        string rewardId,
+        string templateId,
+        int rewardSlotIndex,
+        RewardMapOperationType operationType,
+        string stackId,
+        string unitId,
+        string toUnitId,
+        int currencyDelta,
+        bool legal,
+        RewardMapError error,
+        string afterText,
+        bool isFallback)
+    {
+        RewardMapOperation operation = new RewardMapOperation(
+            operationType,
+            stackId,
+            unitId,
+            toUnitId,
+            string.Empty,
+            string.Empty,
+            1,
+            currencyDelta);
+        RewardMapCardViewData card = new RewardMapCardViewData(
+            rewardId,
+            templateId,
+            RewardMapFamily.Mass,
+            RewardMapIntention.Strengthen,
+            RewardMapRarity.Common,
+            "Test",
+            "Test Reward",
+            "Test reward card.",
+            "Before",
+            afterText,
+            stackId,
+            legal,
+            error,
+            operation);
+        card.RewardSlotIndex = rewardSlotIndex;
+        card.IsFallback = isFallback;
+        return card;
+    }
+
+    private static int ScalarInt(IDbConnection connection, string sql)
+    {
+        return OfflineDatabaseSql.ReadInt(OfflineDatabaseSql.ExecuteScalar(connection, sql));
     }
 
     private static RunBattleArmySnapshot CreateRunBattleArmy()

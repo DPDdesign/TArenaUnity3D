@@ -46,7 +46,11 @@ public static class RunBattleTacticalResultBridge
             return true;
         }
 
-        if (playerWon)
+        if (completion.CompletionRecord != null)
+        {
+            GameSceneManager.Instance.ReturnFromBattle(completion.CompletionRecord.NextScreen);
+        }
+        else if (playerWon)
         {
             GameSceneManager.Instance.ReturnFromBattleWon();
         }
@@ -99,36 +103,33 @@ LIMIT 1;",
 
     private static RunBattleArmySnapshot BuildPlayerArmyAfterBattle(RunBattleArmySnapshot beforeBattle, HexMap hexMap, bool playerWon)
     {
-        List<RunBattleStackSnapshot> stacks = new List<RunBattleStackSnapshot>();
-        List<TosterHexUnit> playerUnits = GetPlayerUnits(hexMap);
-        bool[] usedUnits = new bool[playerUnits.Count];
-        int totalValue = 0;
+        return RunBattleTacticalStackReconciler.BuildPlayerArmyAfterBattle(
+            beforeBattle,
+            BuildTacticalPlayerStackStates(hexMap),
+            playerWon);
+    }
 
-        for (int i = 0; beforeBattle != null && beforeBattle.Stacks != null && i < beforeBattle.Stacks.Count; i++)
+    private static List<RunBattleTacticalStackState> BuildTacticalPlayerStackStates(HexMap hexMap)
+    {
+        List<RunBattleTacticalStackState> result = new List<RunBattleTacticalStackState>();
+        List<TosterHexUnit> playerUnits = GetPlayerUnits(hexMap);
+        for (int i = 0; i < playerUnits.Count; i++)
         {
-            RunBattleStackSnapshot beforeStack = beforeBattle.Stacks[i];
-            if (beforeStack == null)
+            TosterHexUnit unit = playerUnits[i];
+            if (unit == null)
             {
                 continue;
             }
 
-            int amountAfter = playerWon ? FindRemainingAmount(beforeStack.UnitId, playerUnits, usedUnits) : 0;
-            int unitValue = beforeStack.Amount <= 0 ? beforeStack.CombatValue : beforeStack.CombatValue / Math.Max(1, beforeStack.Amount);
-            int combatValue = Math.Max(0, amountAfter * Math.Max(0, unitValue));
-            totalValue += combatValue;
-            stacks.Add(new RunBattleStackSnapshot(
-                beforeStack.StackId,
-                beforeStack.UnitId,
-                beforeStack.DisplayName,
-                beforeStack.Tier,
-                beforeStack.Level,
-                amountAfter,
-                Math.Max(0, beforeStack.Amount - amountAfter),
-                combatValue,
-                CloneSkills(beforeStack.Skills)));
+            result.Add(new RunBattleTacticalStackState(
+                string.Empty,
+                unit.Name,
+                i,
+                unit.Amount,
+                unit.isDead));
         }
 
-        return new RunBattleArmySnapshot(beforeBattle == null ? string.Empty : beforeBattle.SnapshotId, totalValue, stacks);
+        return result;
     }
 
     private static List<TosterHexUnit> GetPlayerUnits(HexMap hexMap)
@@ -151,40 +152,4 @@ LIMIT 1;",
         return result;
     }
 
-    private static int FindRemainingAmount(string unitId, List<TosterHexUnit> playerUnits, bool[] usedUnits)
-    {
-        for (int i = 0; i < playerUnits.Count; i++)
-        {
-            TosterHexUnit unit = playerUnits[i];
-            if (usedUnits[i] || unit == null || unit.Name != unitId)
-            {
-                continue;
-            }
-
-            usedUnits[i] = true;
-            return unit.isDead ? 0 : Math.Max(0, unit.Amount);
-        }
-
-        return 0;
-    }
-
-    private static List<RunBattleSkillState> CloneSkills(List<RunBattleSkillState> skills)
-    {
-        List<RunBattleSkillState> result = new List<RunBattleSkillState>();
-        if (skills == null)
-        {
-            return result;
-        }
-
-        for (int i = 0; i < skills.Count; i++)
-        {
-            RunBattleSkillState skill = skills[i];
-            if (skill != null)
-            {
-                result.Add(new RunBattleSkillState(skill.SkillId, skill.Unlocked));
-            }
-        }
-
-        return result;
-    }
 }

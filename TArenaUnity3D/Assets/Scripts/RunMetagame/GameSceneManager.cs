@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -41,7 +42,7 @@ public class GameSceneManager : MonoBehaviour
 
     private RunMetagameScreen currentScreen = RunMetagameScreen.None;
     private RunMetagameScreen screenBeforeBattle = RunMetagameScreen.None;
-    private bool battleSceneLoadedByManager;
+    private Coroutine returnFromBattleRoutine;
 
     public RunMetagameScreen CurrentScreen
     {
@@ -176,17 +177,12 @@ public class GameSceneManager : MonoBehaviour
 
     public void ReturnFromBattle()
     {
-        if (unloadBattleSceneOnReturn)
-        {
-            UnloadBattleScene();
-        }
-
         RunMetagameScreen target = screenBeforeBattle == RunMetagameScreen.None
             ? defaultScreen
             : screenBeforeBattle;
 
         screenBeforeBattle = RunMetagameScreen.None;
-        Show(target);
+        BeginReturnFromBattle(target);
     }
 
     public void ReturnFromBattleWon()
@@ -199,18 +195,67 @@ public class GameSceneManager : MonoBehaviour
         ReturnFromBattleTo(defaultScreen);
     }
 
+    public void ReturnFromBattle(RunBattleNextScreen nextScreen)
+    {
+        switch (nextScreen)
+        {
+            case RunBattleNextScreen.Reward:
+                ReturnFromBattleTo(RunMetagameScreen.RewardMap);
+                break;
+            case RunBattleNextScreen.FinalSummary:
+                ReturnFromBattleTo(RunMetagameScreen.SummaryValue);
+                break;
+            case RunBattleNextScreen.RunLoss:
+                ReturnFromBattleLost();
+                break;
+            case RunBattleNextScreen.RunMap:
+                ReturnFromBattleWon();
+                break;
+            default:
+                ReturnFromBattle();
+                break;
+        }
+    }
+
     private void ReturnFromBattleTo(RunMetagameScreen target)
     {
-        if (unloadBattleSceneOnReturn)
+        screenBeforeBattle = RunMetagameScreen.None;
+        BeginReturnFromBattle(target);
+    }
+
+    private void BeginReturnFromBattle(RunMetagameScreen target)
+    {
+        BattleActionLifecycle.CancelActiveAction();
+
+        if (returnFromBattleRoutine != null)
         {
-            UnloadBattleScene();
+            StopCoroutine(returnFromBattleRoutine);
         }
 
-        screenBeforeBattle = RunMetagameScreen.None;
+        returnFromBattleRoutine = StartCoroutine(ReturnFromBattleSequence(target));
+    }
+
+    private IEnumerator ReturnFromBattleSequence(RunMetagameScreen target)
+    {
+        AsyncOperation unloadOperation = unloadBattleSceneOnReturn ? UnloadBattleScene() : null;
+        if (unloadOperation != null)
+        {
+            while (!unloadOperation.isDone)
+            {
+                yield return null;
+            }
+        }
+        else
+        {
+            yield return null;
+        }
+
+        returnFromBattleRoutine = null;
+
         if (target == RunMetagameScreen.StartRun)
         {
             ShowStartRun();
-            return;
+            yield break;
         }
 
         Show(target);
@@ -231,23 +276,23 @@ public class GameSceneManager : MonoBehaviour
         }
 
         SceneManager.LoadScene(battleSceneName, LoadSceneMode.Additive);
-        battleSceneLoadedByManager = true;
     }
 
-    private void UnloadBattleScene()
+    private AsyncOperation UnloadBattleScene()
     {
-        if (!battleSceneLoadedByManager || string.IsNullOrEmpty(battleSceneName))
+        if (string.IsNullOrEmpty(battleSceneName))
         {
-            return;
+            return null;
         }
 
         Scene scene = SceneManager.GetSceneByName(battleSceneName);
+        AsyncOperation unloadOperation = null;
         if (scene.IsValid() && scene.isLoaded)
         {
-            SceneManager.UnloadSceneAsync(battleSceneName);
+            unloadOperation = SceneManager.UnloadSceneAsync(battleSceneName);
         }
 
-        battleSceneLoadedByManager = false;
+        return unloadOperation;
     }
 
     private void SetAllScreensInactive()

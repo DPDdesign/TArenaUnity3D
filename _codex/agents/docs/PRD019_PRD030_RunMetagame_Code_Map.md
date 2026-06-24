@@ -1,7 +1,7 @@
 # [TARENA] PRD019/PRD030 Run Metagame Code Map
 
 Status: active
-Last updated: 2026-06-17
+Last updated: 2026-06-24
 
 ## Purpose
 
@@ -41,6 +41,13 @@ PRD030 child tasks:
 - `_codex/tasks/030_8_PRD030_Summary_SavedArmies_DBIntegration.md`
 - `_codex/tasks/030_9_PRD030_AccountProgress_BattleResult_DBIntegration.md`
 - `_codex/tasks/030_10_PRD030_RemoveInMemoryProductionUsage_FinalAudit.md`
+
+Closed reward-flow follow-ups:
+
+- `_codex/tasks/archive/042_PRD_RewardMaterializedSlotContract.md`
+- `_codex/tasks/archive/043_PRD_RewardPersistencePreviewApplyContract.md`
+- `_codex/tasks/archive/044_PRD_TacticalRewardStackIdentity.md`
+- `_codex/tasks/archive/045_PRD_UpfrontRewardOpportunityMaterialization.md`
 
 Current implementation root:
 
@@ -278,6 +285,13 @@ Main code:
 - `RunBattleService.cs` - prepare/complete battle behavior.
 - `OfflineRunBattleAdapter.cs` - service facade.
 - `OfflineRunBattleDbStore.cs` - DB persistence for prepared/completed battles.
+- `RunBattleTacticalStackReconciler.cs` - pure helper that reconciles tactical
+  runtime stack results back to prepared run-battle stack ids.
+- `RunBattleTacticalResultBridge.cs` - legacy tactical battle completion bridge;
+  reads the latest prepared DB battle, writes completion, then asks
+  `GameSceneManager` to route.
+- `GameSceneManager.cs` - Run Metagame screen-flow owner with
+  `ShowRunMap()`, `ShowRewardMap()`, and `ShowSummaryValue()`.
 
 DB handoff:
 
@@ -286,6 +300,27 @@ DB handoff:
 - completion writes `run_battle_losses`,
 - updates `offline_runs.current_army_snapshot_id`, status, current node, and
   run gold through `OfflineRunContextDbWriter`.
+- `OfflineRunBattleDbStore.SaveCompletion()` persists
+  `RunBattleCompletionRecord.NextScreen` into both `run_battles.next_screen`
+  and `offline_runs.next_screen`.
+- `OfflineRunBattleDbStore.MaterializeRewardsIfNeeded()` runs only when
+  `completionRecord.NextScreen == RunBattleNextScreen.Reward`; it loads
+  persisted reward opportunity operation slots when present, builds a
+  `RewardMapMaterializedGenerator` choice from that plan, saves it through
+  `OfflineRewardMapDbStore`, and leaves existing reward rows alone.
+
+Current routing and reward materialization:
+
+- `RunBattleService.DetermineNextScreen(...)` returns `RunLoss` for non-wins,
+  `FinalSummary` for final-node wins, and `Reward` for normal battle wins.
+- `OfflineRunBattleDbStore.MaterializeRewardsIfNeeded(...)` is the
+  battle-completion hook that resolves upfront `reward_opportunities` into
+  concrete `reward_choices`, `reward_cards`, and `map_node_rewards`.
+- Older runs without `reward_opportunities` still fall back to deterministic
+  generator planning from run seed/node/seed version.
+- `RunBattleTacticalStackReconciler` preserves duplicate same-unit stack
+  identity by matching stack id first, battle-input order second, and unit id
+  only as an explicit legacy fallback.
 
 Not done here:
 
@@ -310,27 +345,121 @@ Main code:
   result.
 - `RewardMapContracts.cs` - unit source, template catalog, choice store.
 - `DefaultRewardMapTemplateCatalog.cs` - current authored reward templates.
+- `RewardMapMaterializedGenerator.cs` - current PRD37/PRD41 generated reward
+  choice builder used by battle completion materialization and value parity
+  scaling. It now also exposes deterministic operation planning helpers and a
+  `BuildChoice(...)` overload that resolves a persisted planned operation
+  sequence.
 - `RewardMapService.cs` - generate, preview, apply reward rules.
 - `OfflineRewardMapAdapter.cs` - service facade.
 - `OfflineRewardMapDbStore.cs` - DB persistence for choices/cards/apply.
+- `OfflineRewardOpportunityDbStore.cs` - unresolved upfront reward opportunity
+  persistence and resolved-card linkage.
 - `RewardMapScreenController.cs` and view classes - Unity UI.
+- `RewardDefinitionAsset.cs`, `RewardDefinitionAssetCatalog.cs`, and
+  `Editor/RewardDefinitionAssetBuilder.cs` - prepared ScriptableObject
+  authoring path; not wired into production runtime composition.
 
 DB handoff:
 
-- reward choices are generated and materialized upfront when the run begins;
-  Reward Map loads the materialized choice for the current run/node instead of
-  rolling screen-time fallback rewards,
-- choice rows still use `run_events` type Reward, `reward_choices`, and
-  `reward_cards` or their future minimal generated-reward successors,
+- ADR011 target is split into two phases in current code:
+  `reward_opportunities` are planned upfront at run generation, while concrete
+  card targets/amounts/previews are resolved after battle completion when the
+  post-battle army snapshot exists,
+- current code materializes concrete reward rows after battle completion, and
+  only when the completion record's `NextScreen` is `Reward`,
+- Reward Map loads the materialized choice for the current run/node instead of
+  rolling screen-time fallback rewards in the DB-backed production path,
+- choice rows use `run_events` type Reward, `reward_choices`, `reward_cards`,
+  and `map_node_rewards`; planned opportunity rows live in
+  `reward_opportunities`,
 - focused preview can write `preview_snapshot_id`,
-- apply writes applied snapshot, selected reward, and run gold/current army,
+- apply writes applied snapshot, selected reward, `map_node_rewards`
+  selected/applied state, and run gold/current army,
 - handoff to Reward Map uses `offline_runs.next_screen = Reward`,
+- successful apply uses `offline_runs.next_screen = RunMap`,
 - second apply returns `RewardMapError.AlreadyApplied`.
+
+Domain rules currently implemented:
+
+- `RewardMapFamily`: Mass, Quality, Width, Skill, Recovery, Economy.
+- `RewardMapIntention`: Stabilize, Strengthen, Pivot.
+- `RewardMapRarity`: Common, Uncommon, Rare.
+- `RewardMapOperationType`: AddUnits, PromoteStack, AddStack, TeachSkill,
+  RecoverLosses, GainCurrency, DowngradeStack.
+- Non-materialized/in-memory `RewardMapService.BuildChoice()` tries one legal
+  card for each intention in Stabilize, Strengthen, Pivot order.
+- DB-backed `BuildChoice()` detects `IMaterializedRewardMapChoiceStore` and
+  requires existing persisted rows for persisted run ids; missing materialized
+  rows return an empty choice with an error message instead of rolling new
+  rewards.
+- `Apply()` validates missing choice, already applied choice, missing reward,
+  missing army, preview/apply operation errors, and illegal targets.
+- `ApplyOperation()` supports all current operation types above.
+- `DefaultRewardMapTemplateCatalog` has 12 authored mock templates across all
+  six families but does not include `DowngradeStack`.
+- `RewardMapMaterializedGenerator` is the active generated V1 path for DB
+  materialization and can create AddNewStack, IncreaseStack, PromoteUnit,
+  DowngradeUnit, plus run-gold fallback.
+- PRD41 value parity is active in the generator: the target gain starts from
+  average live stack value, uses a 20 percent base gain, gives Mass/Width a
+  1.20 raw-growth multiplier, gives Promote/Downgrade a 1.00 army-shape
+  multiplier, and picks the closest legal rounded candidate instead of a random
+  poor-value target.
+- PRD42 slot contract is active: each choice plans three distinct normal
+  operation types from AddStack/AddUnits/PromoteStack/DowngradeStack; one
+  impossible slot remains a disabled card; emergency `RunGold` is only added
+  when all three normal slots are impossible.
+- PRD43 card persistence is active: card identity/state is explicit through
+  reward id, reward slot index, legal/error state, fallback state, and
+  selected/applied state. Do not use preview text or `template_id` alone as
+  domain truth.
+- PRD45 opportunity planning is active for battle rewards:
+  `reward_opportunities` store planned operation type, slot, catalog id, run
+  seed, and seed version before battle; battle completion links them to
+  resolved reward cards.
+
+UI runtime:
+
+- `RewardMapScreenController.LoadRunState()` loads only the latest active run
+  with `offline_runs.next_screen = Reward`.
+- unavailable state renders status text, zero wallet, unavailable inventory,
+  empty focused preview, and clears card/army views.
+- card hover calls `FocusReward()` and refreshes the focused preview.
+- card click calls `ApplyReward(...)` immediately; successful apply commits DB
+  state and calls `GameSceneManager.ShowRunMap()`.
+- `ContinueAfterReward()` is guarded by `rewardApplied`.
+- current reward UI code uses `TextMeshProUGUI`, not legacy
+  `UnityEngine.UI.Text`.
+
+Prepared but not production-wired:
+
+- `RewardDefinitionAssetCatalog` loads `RewardDefinitionAsset` resources from
+  `Resources/0_Data/Rewards`, but production
+  `OfflineModeDatabaseComposition.CreateRewardMapService()` still uses
+  `DefaultRewardMapTemplateCatalog`.
+- `RewardDefinitionAssetBuilder` creates mock reward assets from
+  `DefaultRewardMapTemplateCatalog`; those assets are authoring preparation,
+  not the current Play Mode reward source.
 
 Tests:
 
 - `RewardMapServiceTests.cs`
 - `OfflineRunBattleRewardDbTests.cs`
+- `PRD37MaterializedRunGenerationTests.cs`
+- `PRD41RewardValueParityTests.cs`
+- `PRD42RewardMaterializedSlotContractTests.cs`
+- `PRD44TacticalRewardStackIdentityTests.cs`
+- `PRD45RewardOpportunityMaterializationTests.cs`
+- `RunBattleServiceTests.cs`
+
+Current test gaps:
+
+- `RunBattleTacticalResultBridge` still needs Play Mode smoke coverage because
+  the path depends on the default DB, `DataMapper.Instance`, and tactical scene
+  runtime objects.
+- Reward preview/apply parity still depends on the generation and apply paths
+  using the same unit source.
 
 ### 024 Run Shop
 
@@ -487,6 +616,7 @@ StartRunScreenController
   -> OfflineRunContextDbWriter + OfflineArmySnapshotDbRepository
   -> OfflineRunContextDbReader
   -> offline_runs + army_snapshots + map_nodes/map_node_connections/map_node_enemies
+  -> reward_opportunities for reward-producing nodes
 
 RunMapController
   -> OfflineRunMapAdapter
@@ -501,6 +631,8 @@ RunBattle caller/future screen
   -> OfflineRunBattleDbStore
   -> OfflineRunContextDbWriter
   -> run_events + run_battles + run_battle_losses + army_snapshots
+  -> optional RewardMapMaterializedGenerator + OfflineRewardMapDbStore when NextScreen = Reward
+  -> resolves reward_opportunities for the current node
 
 RewardMapScreenController
   -> OfflineRunContextDbReader
@@ -508,7 +640,7 @@ RewardMapScreenController
   -> RewardMapService
   -> OfflineRewardMapDbStore
   -> OfflineRunContextDbWriter
-  -> run_events + reward_choices + reward_cards + army_snapshots
+  -> run_events + reward_choices + reward_cards + map_node_rewards + reward_opportunities + army_snapshots
 
 RunShopScreenController
   -> OfflineRunContextDbReader
@@ -570,7 +702,7 @@ These remain code/assets/catalog references, not SQLite-owned truth:
 - skill presentation catalog.
 
 The database stores runtime materialized generated results and references such
-as `unit_id`, `skill_id`, `template_id` or catalog position id, reward id,
+as `unit_id`, `skill_id`, `template_id` or `catalog_entry_id`, reward id,
 `encounter_id`, selected/applied state, snapshots, and records. Runtime screens
 load these generated rows for the run/node instead of rolling new content.
 
@@ -598,10 +730,20 @@ Manual integration task files:
 - Unity tests were not run automatically in the reviewed implementation passes.
 - Manual testing still needs a real Start Run -> Run Map flow so screen
   controllers can load persisted `run-*`, `node-*`, and `next_screen` state.
+- Battle completion routing was corrected in PRD37 follow-up work: normal wins
+  route to `Reward`, final wins route to `FinalSummary`, losses route to
+  `RunLoss`, and tactical completion routes by persisted
+  `CompletionRecord.NextScreen`.
+- PRD37/PRD41 focused EditMode tests were documented but not run
+  automatically; run them manually in Unity before treating the flow as
+  Play Mode verified.
 - `async_battle_result_details` is created lazily by Battle Result DB code and
   should be folded into formal schema migration if schema versioning advances.
-- Duplicate unit stacks may expose weak runtime stack identity where DTOs
-  rebuild stack ids from persisted formation/unit data.
+- Duplicate unit stack handoff has focused PRD044 coverage through
+  `RunBattleTacticalStackReconciler`; remaining risk is Unity Play Mode smoke
+  coverage of the live tactical scene bridge.
+- `RecruitReward` nodes receive upfront unresolved `reward_opportunities`, but
+  no-battle direct Reward Map resolution remains a focused follow-up.
 - PRD026 legacy Arena import compatibility code remains adjacent; product DB
   work should use seed snapshots or run-created snapshots instead.
 - Account progression thresholds should be centralized before extending unlocks.

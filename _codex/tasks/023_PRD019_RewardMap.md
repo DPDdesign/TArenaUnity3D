@@ -33,6 +33,24 @@ reward cards. The normal choice shape is Stabilize, Strengthen, and Pivot.
 This task preserves the PRD rule: each reward card has one main verb, one clear
 target, one plain preview, and one concrete operation.
 
+## Current Reward Flow Update - 2026-06-24
+
+PRD037, ADR011, and ADR012 supersede the older broad catalog and
+Select/Continue assumptions for the Minimal Reward Flow V1.
+
+Current target:
+
+- normal battle win routes to Reward Map; final win routes to final summary,
+- each reward node has three different operation types pre-rolled at run start,
+- after battle, cards resolve concrete target/amount from the post-battle army,
+- each card is already fully selected before display,
+- legal card click applies immediately and returns to Run Map,
+- disabled/burned cards remain visible when their operation type has no legal
+  target,
+- emergency `RunGold` appears only when all three normal cards are impossible,
+- V1 card preview can live directly on the card as a short operation label plus
+  concrete result; a separate hover army preview is deferred.
+
 ## Mode Architecture - 2026-06-14
 
 Current implementation target:

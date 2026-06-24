@@ -142,27 +142,12 @@ public class OfflineRunBattleLaunchAdapter : IRunBattleLaunchAdapter
         build.hero = 0;
         build.NazwaBohatera = displayName;
 
-        List<RunBattleStackSnapshot> stacks = new List<RunBattleStackSnapshot>(army.Stacks);
-        stacks.Sort(delegate(RunBattleStackSnapshot left, RunBattleStackSnapshot right)
-        {
-            return string.CompareOrdinal(
-                left == null ? string.Empty : left.StackId,
-                right == null ? string.Empty : right.StackId);
-        });
+        List<RunBattleStackSnapshot> stacks = RunBattleTacticalStackReconciler.BuildPreparedStacksInBattleInputOrder(army);
 
         for (int i = 0; i < stacks.Count; i++)
         {
             RunBattleStackSnapshot stack = stacks[i];
-            if (stack == null || stack.Amount <= 0)
-            {
-                continue;
-            }
-
-            string unitId = string.IsNullOrEmpty(stack.UnitId) ? stack.DisplayName : stack.UnitId;
-            if (string.IsNullOrEmpty(unitId))
-            {
-                continue;
-            }
+            string unitId = RunBattleTacticalStackReconciler.ResolveBattleInputUnitId(stack);
 
             build.Units.Add(unitId);
             build.NoUnits.Add(stack.Amount);

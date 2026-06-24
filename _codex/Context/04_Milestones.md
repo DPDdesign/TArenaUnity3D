@@ -2,7 +2,7 @@
 
 Status: active
 Project: TArenaUnity3D
-Last updated: 2026-06-10
+Last updated: 2026-06-24
 
 ## Recovery Milestones
 
@@ -52,6 +52,17 @@ Done when:
   enough for small tests or manual checks,
 - high-risk monoliths are split only after their behavior is documented,
 - future feature work can be done without touching Photon/PlayFab paths.
+
+Current progress notes:
+
+- PRD030 established the Offline Mode SQLite persistence layer and shared run
+  context reader/writer pattern.
+- PRD37 moved Reward Map toward materialized DB-backed run content and corrected
+  battle-completion routing into Reward Map / Summary Value.
+- PRD41 added reward value parity at the generator seam so materialized rewards
+  are closer to comparable strategic choices.
+- These are architecture stabilization steps for the Offline Mode run loop, but
+  manual Unity validation is still required before calling the whole loop stable.
 
 ## Current Priority
 

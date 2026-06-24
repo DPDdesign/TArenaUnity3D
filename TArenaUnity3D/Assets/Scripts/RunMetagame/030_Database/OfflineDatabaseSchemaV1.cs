@@ -17,6 +17,8 @@ public static class OfflineDatabaseSchemaV1
             TableArmySnapshotStackSkills(),
             TableMapNodes(),
             TableMapNodeConnections(),
+            TableRewardOpportunities(),
+            IndexRewardOpportunitiesRunNodeSlot(),
             TableMapNodeRewards(),
             TableMapNodeEnemies(),
             TableRunEvents(),
@@ -147,13 +149,46 @@ CREATE TABLE IF NOT EXISTS map_node_connections (
 );";
     }
 
+    private static string TableRewardOpportunities()
+    {
+        return @"
+CREATE TABLE IF NOT EXISTS reward_opportunities (
+    reward_opportunity_id INTEGER PRIMARY KEY,
+    run_id INTEGER NOT NULL,
+    node_id INTEGER NOT NULL,
+    reward_slot_index INTEGER NOT NULL,
+    planned_operation_type TEXT NOT NULL,
+    catalog_entry_id TEXT NOT NULL,
+    run_seed INTEGER NOT NULL DEFAULT 35035,
+    seed_version INTEGER NOT NULL DEFAULT 1,
+    opportunity_state_id INTEGER NOT NULL DEFAULT 1,
+    reward_choice_id INTEGER NOT NULL DEFAULT 0,
+    resolved_reward_card_id INTEGER,
+    resolved_card_reward_id TEXT NOT NULL DEFAULT '',
+    created_at_utc TEXT NOT NULL,
+    resolved_at_utc TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (run_id) REFERENCES offline_runs(run_id),
+    FOREIGN KEY (node_id) REFERENCES map_nodes(node_id)
+);";
+    }
+
+    private static string IndexRewardOpportunitiesRunNodeSlot()
+    {
+        return @"
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reward_opportunities_run_node_slot_active
+ON reward_opportunities(run_id, node_id, reward_slot_index, is_active);";
+    }
+
     private static string TableMapNodeRewards()
     {
         return @"
 CREATE TABLE IF NOT EXISTS map_node_rewards (
     reward_id INTEGER PRIMARY KEY,
     node_id INTEGER NOT NULL,
+    reward_choice_id INTEGER NOT NULL DEFAULT 0,
     reward_slot_index INTEGER NOT NULL,
+    card_reward_id TEXT NOT NULL DEFAULT '',
     catalog_entry_id TEXT NOT NULL,
     base_snapshot_id INTEGER NOT NULL,
     target_snapshot_stack_id INTEGER,
@@ -163,6 +198,8 @@ CREATE TABLE IF NOT EXISTS map_node_rewards (
     amount INTEGER NOT NULL DEFAULT 0,
     currency_delta INTEGER NOT NULL DEFAULT 0,
     operation_json TEXT NOT NULL,
+    legal INTEGER NOT NULL DEFAULT 1,
+    error_id INTEGER NOT NULL DEFAULT 0,
     is_selected INTEGER NOT NULL DEFAULT 0,
     applied_snapshot_id INTEGER,
     is_fallback INTEGER NOT NULL DEFAULT 0,
@@ -311,7 +348,9 @@ CREATE TABLE IF NOT EXISTS reward_choices (
     node_id INTEGER,
     army_before_reward_snapshot_id INTEGER NOT NULL,
     focused_reward_id TEXT,
+    focused_reward_slot_index INTEGER NOT NULL DEFAULT -1,
     selected_reward_id TEXT,
+    selected_reward_slot_index INTEGER NOT NULL DEFAULT -1,
     run_gold_before INTEGER NOT NULL DEFAULT 0,
     run_gold_after INTEGER,
     choice_status_id INTEGER NOT NULL,
@@ -331,18 +370,27 @@ CREATE TABLE IF NOT EXISTS reward_choices (
 CREATE TABLE IF NOT EXISTS reward_cards (
     reward_card_id INTEGER PRIMARY KEY,
     reward_choice_id INTEGER NOT NULL,
+    reward_id TEXT NOT NULL DEFAULT '',
+    reward_slot_index INTEGER NOT NULL DEFAULT 0,
     template_id TEXT NOT NULL,
     family_id INTEGER NOT NULL,
     intention_id INTEGER NOT NULL,
     rarity_id INTEGER,
     title_id TEXT,
     verb_id TEXT,
+    affected_stack_id TEXT,
+    affected_slot_index INTEGER NOT NULL DEFAULT -1,
     target_snapshot_stack_id INTEGER,
+    operation_type TEXT NOT NULL DEFAULT '',
     operation_json TEXT NOT NULL,
+    legal INTEGER NOT NULL DEFAULT 1,
+    error_id INTEGER NOT NULL DEFAULT 0,
     preview_text_before TEXT,
     preview_text_after TEXT,
     preview_snapshot_id INTEGER,
     applied_snapshot_id INTEGER,
+    is_selected INTEGER NOT NULL DEFAULT 0,
+    is_fallback INTEGER NOT NULL DEFAULT 0,
     sort_order INTEGER NOT NULL DEFAULT 0,
     is_active INTEGER NOT NULL DEFAULT 1,
     FOREIGN KEY (reward_choice_id) REFERENCES reward_choices(reward_choice_id),

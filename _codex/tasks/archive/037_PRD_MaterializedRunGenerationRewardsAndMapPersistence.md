@@ -1,15 +1,16 @@
 # [TARENA] PRD 037: Materialized Run Generation, Rewards, And Map Persistence
 
-- Status: ready-for-agent
+- Status: archived
 - Type: PRD
 - Area: Run Metagame, Reward Generation, Route Map, Offline DB, UI Flow
-- Label: ready-for-agent
+- Label: closed
 - Related:
   - `_codex/tasks/019_PRD_RunMetagameRewardFramework.md`
   - `_codex/tasks/023_PRD019_RewardMap.md`
   - `_codex/tasks/030_DB-001_OfflineModeDatabasePersistence.md`
   - `_codex/tasks/035_PRD_RandomStartingArmiesRoutes.md`
   - `_codex/Documentation/ADR_011_RunGenerationMaterializedUpfront.md`
+  - `_codex/Documentation/ADR_012_RewardDirectionAndStackFocus.md`
 
 ## Problem Statement
 
@@ -47,23 +48,26 @@ The new map persistence model should center on:
 - `map_node_rewards`,
 - `map_node_enemies`.
 
-Reward generation should be implemented as a simple ruleset generator. For V1,
-normal rewards are:
+Reward generation should be implemented as a simple ruleset generator. For each
+reward opportunity, the run start generation pass chooses three different normal
+operation types. For V1, normal operations are:
 
 - `AddNewStack`,
 - `IncreaseStack`,
 - `PromoteUnit`,
 - `DowngradeUnit`.
 
-`RunGold` exists only as an emergency always-valid fallback recipe when the
-normal pool cannot fill all three reward slots. Gold is not part of normal V1
-reward selection.
+`RunGold` exists only as an emergency fallback when none of the three normal
+operation-type cards can be applied. Gold is not part of normal V1 reward
+selection and should not replace a single failed card.
 
-Reward cards are materialized after battle completion, before the Reward Map
-screen opens, because they must target the post-battle/base army snapshot. The
-Reward Map screen does not generate rewards. It previews materialized cards on
-hover, applies a card immediately on click, persists the result, and then calls
-`GameSceneManager.ShowRunMap()`.
+Concrete reward cards are materialized after battle completion, before the
+Reward Map screen opens, because they must target the post-battle/base army
+snapshot. The materializer uses the pre-rolled operation types, selects legal
+targets/amounts where possible, and records disabled/burned cards when an
+operation type has no legal target. The Reward Map screen does not generate or
+reroll rewards. It shows the card result, applies a legal card immediately on
+click, persists the result, and then calls `GameSceneManager.ShowRunMap()`.
 
 ## User Stories
 
@@ -71,18 +75,18 @@ hover, applies a card immediately on click, persists the result, and then calls
    feels relevant instead of hand-authored around old sample stacks.
 2. As a player, I want reward cards to be concrete, so that I can understand
    exactly what changes before I click.
-3. As a player, I want hovering a card to preview the army after the reward, so
-   that I can inspect the consequence quickly.
+3. As a player, I want each card to show the concrete before/after result, so
+   that I can understand the consequence quickly.
 4. As a player, I want clicking a reward card to commit the reward immediately,
    so that post-battle reward selection stays fast.
 5. As a player, I want to return to the Run Map right after selecting a reward,
    so that the run flow does not require an extra confirmation step.
 6. As a player, I want every run reload to show the same generated map and
    already-created reward choices, so that saved local state is stable.
-7. As a player, I want rewards to avoid dead or illegal targets, so that I am
-   not offered a card that cannot apply.
-8. As a player, I want a fallback reward only when the normal reward pool fails,
-   so that rewards still function while the simple V1 generator is narrow.
+7. As a player, I want impossible pre-rolled cards to stay visible as disabled
+   route-choice consequences, so that reward hints are honest.
+8. As a player, I want an emergency gold fallback only when all three cards are
+   impossible, so that the run never dead-ends on the reward screen.
 9. As a designer, I want reward recipes to live in a catalog, so that reward
    presentation and generation weights can be authored separately from runtime
    rows.
@@ -185,12 +189,19 @@ map_node_enemies
   unit catalog/DataMapper data. Do not store normal UI title/before/after text
   as database truth in V1.
 
-- Reward cards are generated/materialized after battle completion, because
-  target legality depends on the post-battle/base army snapshot.
+- Reward opportunities are generated at run start as three different operation
+  types for the reward node. Concrete reward cards are materialized after battle
+  completion, because target legality depends on the post-battle/base army
+  snapshot.
 
 - Reward generation uses deterministic attempts from the run seed, node identity,
-  reward slot index, and attempt index. If a candidate targets a dead or illegal
-  stack, the generator continues with the next deterministic attempt.
+  reward slot index, operation type, and attempt index. If a candidate targets a
+  dead or illegal stack, the generator continues with the next deterministic
+  attempt for the same operation type.
+
+- If the operation type has no legal target after all deterministic attempts,
+  the card slot remains materialized as disabled/burned. Do not reroll that slot
+  into a different operation type.
 
 - After reward rows are written, Reward Map must only load the materialized
   rows. Reopening Reward Map for the same node must show the same cards.
@@ -201,12 +212,13 @@ map_node_enemies
   - `PromoteUnit`,
   - `DowngradeUnit`.
 
-- V1 fallback reward:
-  - `RunGold`, only as an emergency filler for missing slots after normal
-    generation fails.
+- V1 emergency fallback:
+  - `RunGold`, only when all three pre-rolled normal operation cards are
+    disabled/impossible.
 
-- `RunGold` fallback is a real catalog entry and a real `map_node_rewards` row.
-  It is not a legacy hardcoded fallback catalog path.
+- `RunGold` fallback is not one of the normal three cards. It may be backed by a
+  catalog entry/service payload, but it must not replace a single disabled
+  normal card.
 
 - `IncreaseStack` adds 30 percent of the current stack amount. The generated
   row should store the amount added.
@@ -231,10 +243,19 @@ averageExistingStackValue * 1.2
   The amount is `round(targetValue / newUnitCost)`, minimum 1.
 
 - Reward Map interaction:
-  - hover card: preview materialized card effect,
+  - card view: show a short operation label plus the materialized effect
+    directly,
+  - hover/focus card: optional highlight only in Minimal Flow V1,
   - click card: apply immediately,
   - successful apply: call `GameSceneManager.ShowRunMap()`,
   - failed apply: remain on Reward Map and show the error/status.
+
+- Disabled/burned reward cards remain visible, are not clickable, and show that
+  the pre-rolled operation type has no legal target.
+
+- If all three cards are disabled/burned, show an emergency `RunGold` action at
+  the bottom of the screen. Applying it returns to Run Map through the same
+  successful reward route.
 
 - Remove the separate `Select` plus `Continue` reward flow from the target UX.
   A click on a legal card is the commit.
@@ -286,10 +307,13 @@ averageExistingStackValue * 1.2
   - `IncreaseStack` stores a +30 percent amount,
   - `PromoteUnit` requires same faction and exactly +1 tier,
   - `DowngradeUnit` requires same faction and exactly -1 tier,
-  - dead/missing targets are not selected.
+  - dead/missing targets are not selected,
+  - an impossible operation type creates a disabled/burned card instead of
+    rerolling to another type.
 
-- Add fallback tests: if the normal reward pool cannot fill all three slots,
-  missing slots become `RunGold` fallback rows from the fallback catalog entry.
+- Add fallback tests: if all three normal operation cards are impossible, the
+  screen exposes an emergency `RunGold` action. If only one or two cards are
+  impossible, those cards remain disabled and no gold fallback is shown.
 
 - Add no-screen-reroll tests: reopening/loading Reward Map for the same run/node
   returns the persisted rows without creating new reward rows.
@@ -301,9 +325,9 @@ averageExistingStackValue * 1.2
   reward, writes `applied_snapshot_id`, updates current army state, and rejects
   second apply for the same node/reward set.
 
-- Add Reward Map controller or presenter-level tests where feasible for hover
-  preview and immediate click-apply semantics. Unity visual animation is not
-  required for this task.
+- Add Reward Map controller or presenter-level tests where feasible for card
+  preview text, disabled card state, emergency gold state, and immediate
+  click-apply semantics. Unity visual animation is not required for this task.
 
 - Add production composition guard coverage to ensure production Reward Map no
   longer uses old fallback catalogs.
@@ -415,3 +439,58 @@ new production content.
 - Run Unity Test Runner EditMode tests: `PRD37MaterializedRunGenerationTests`, `OfflineDatabaseSchemaTests`, `PRD35RunGenerationTests`, `OfflineRunBattleRewardDbTests`, `RewardMapServiceTests`, and `OfflineModeProductionCompositionTests`.
 - Rebuild/reset the local Offline Mode DB before Play Mode validation.
 - Run the manual Start Run -> Run Map -> Run Battle win -> Reward Map click-apply -> Run Map smoke test.
+
+## Implementation - 2026-06-24
+
+### What Changed
+
+- `RunBattleService`: normal battle wins now route to `RunBattleNextScreen.Reward`, final battle wins route to `RunBattleNextScreen.FinalSummary`, and non-wins still route to `RunBattleNextScreen.RunLoss`.
+- `RunBattleTacticalResultBridge`: after tactical completion is persisted, screen routing now uses `completion.CompletionRecord.NextScreen` instead of the raw `playerWon` boolean.
+- `GameSceneManager`: added `ReturnFromBattle(RunBattleNextScreen nextScreen)` to map persisted battle destinations to existing screens.
+- Tests: updated PRD37 and battle/reward expectations so the reward materialization path is exercised by normal battle wins.
+- No Inspector fields changed.
+
+### Automatic Test
+
+- Updated `RunBattleServiceTests` to cover normal win -> Reward, final win -> Summary Value, and loss -> run-loss handling.
+- Updated `OfflineRunBattleRewardDbTests` to expect the DB-backed completion handoff to Reward.
+- Updated `PRD37MaterializedRunGenerationTests` to assert Reward routing before checking persisted materialized reward rows.
+- Tests were not run automatically. Run them manually in Unity Test Runner: `Window > General > Test Runner > EditMode`. Expected result: all three focused test classes pass.
+
+### Unity Test
+
+#### Unity Setup
+
+- Use the existing Offline Mode screen setup with `GameSceneManager`, Run Map, Battle handoff, Reward Map, and Summary Value screens wired.
+- No new components, GameObjects, prefab assignments, or Inspector field values are required.
+- Use a rebuilt/reset Offline Mode database if the local DB predates the PRD37 schema.
+
+#### Play Mode Test
+
+- Start an Offline run.
+- Travel to a normal battle node and complete the tactical battle with a win.
+- Expected: battle completion persists, reward rows materialize, and Reward Map opens instead of Run Map.
+- Click a legal reward card.
+- Expected: the reward applies immediately and returns to Run Map.
+- Complete a final battle with a win.
+- Expected: the run routes to Summary Value.
+
+### QA Verdict
+
+- Final QA verdict: Pass.
+- QA report: `_codex/tasks/QA/2026-06-24_0934_037_QA_ArchitectureReview_BattleRewardRouting.md`.
+- Actionable findings: none.
+- Non-blocking observations: direct bridge coverage still needs Play Mode smoke testing because that path depends on the default DB, `DataMapper.Instance`, and tactical scene runtime objects.
+- Follow-up fixes: none required.
+
+### Notes
+
+- No Unity scenes, prefabs, materials, controllers, `.inputactions`, `.asmdef`, `.asmref`, or generated Unity files were edited.
+- No gameplay floats or balance values were changed.
+- `ReturnFromBattleWon()` and `ReturnFromBattleLost()` remain for compatibility with existing callers; PRD37 tactical completion now uses the persisted `NextScreen` route.
+
+### Next Steps
+
+- In Unity Test Runner, run `RunBattleServiceTests`, `OfflineRunBattleRewardDbTests`, and `PRD37MaterializedRunGenerationTests`.
+- Run the Play Mode smoke path: Start Run -> Run Map -> normal Battle win -> Reward Map click-apply -> Run Map.
+- Run a final battle win smoke test and confirm Summary Value opens.

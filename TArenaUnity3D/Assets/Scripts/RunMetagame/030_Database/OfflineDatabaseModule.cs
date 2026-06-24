@@ -170,6 +170,102 @@ CREATE TABLE IF NOT EXISTS schema_version (
                 "map_nodes",
                 "catalog_path_id",
                 "ALTER TABLE map_nodes ADD COLUMN catalog_path_id TEXT;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "map_node_rewards",
+                "reward_choice_id",
+                "ALTER TABLE map_node_rewards ADD COLUMN reward_choice_id INTEGER NOT NULL DEFAULT 0;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "map_node_rewards",
+                "card_reward_id",
+                "ALTER TABLE map_node_rewards ADD COLUMN card_reward_id TEXT NOT NULL DEFAULT '';");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "map_node_rewards",
+                "legal",
+                "ALTER TABLE map_node_rewards ADD COLUMN legal INTEGER NOT NULL DEFAULT 1;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "map_node_rewards",
+                "error_id",
+                "ALTER TABLE map_node_rewards ADD COLUMN error_id INTEGER NOT NULL DEFAULT 0;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "map_node_rewards",
+                "is_fallback",
+                "ALTER TABLE map_node_rewards ADD COLUMN is_fallback INTEGER NOT NULL DEFAULT 0;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_choices",
+                "focused_reward_slot_index",
+                "ALTER TABLE reward_choices ADD COLUMN focused_reward_slot_index INTEGER NOT NULL DEFAULT -1;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_choices",
+                "selected_reward_slot_index",
+                "ALTER TABLE reward_choices ADD COLUMN selected_reward_slot_index INTEGER NOT NULL DEFAULT -1;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_cards",
+                "reward_id",
+                "ALTER TABLE reward_cards ADD COLUMN reward_id TEXT NOT NULL DEFAULT '';");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_cards",
+                "reward_slot_index",
+                "ALTER TABLE reward_cards ADD COLUMN reward_slot_index INTEGER NOT NULL DEFAULT 0;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_cards",
+                "affected_stack_id",
+                "ALTER TABLE reward_cards ADD COLUMN affected_stack_id TEXT;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_cards",
+                "affected_slot_index",
+                "ALTER TABLE reward_cards ADD COLUMN affected_slot_index INTEGER NOT NULL DEFAULT -1;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_cards",
+                "operation_type",
+                "ALTER TABLE reward_cards ADD COLUMN operation_type TEXT NOT NULL DEFAULT '';");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_cards",
+                "legal",
+                "ALTER TABLE reward_cards ADD COLUMN legal INTEGER NOT NULL DEFAULT 1;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_cards",
+                "error_id",
+                "ALTER TABLE reward_cards ADD COLUMN error_id INTEGER NOT NULL DEFAULT 0;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_cards",
+                "is_selected",
+                "ALTER TABLE reward_cards ADD COLUMN is_selected INTEGER NOT NULL DEFAULT 0;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "reward_cards",
+                "is_fallback",
+                "ALTER TABLE reward_cards ADD COLUMN is_fallback INTEGER NOT NULL DEFAULT 0;");
 
             DropTableIfExists(connection, transaction, "route_nodes");
             DropTableIfExists(connection, transaction, "route_paths");

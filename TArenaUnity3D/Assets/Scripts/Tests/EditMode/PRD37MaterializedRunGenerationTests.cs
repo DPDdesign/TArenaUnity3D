@@ -69,6 +69,7 @@ public class PRD37MaterializedRunGenerationTests
                 "prd37-test"));
 
             Assert.That(completion.Success, Is.True);
+            Assert.That(completion.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.Reward));
 
             OfflineRewardMapDbStore rewardStore = new OfflineRewardMapDbStore(databasePath, units);
             RewardMapService rewardService = new RewardMapService(new DefaultRewardMapTemplateCatalog(), units, rewardStore);

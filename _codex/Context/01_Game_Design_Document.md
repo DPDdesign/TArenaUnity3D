@@ -2,7 +2,7 @@
 
 Status: Initial Design
 Project: TArenaUnity3D
-Last updated: 2026-06-13
+Last updated: 2026-06-24
 
 This document is the initial top-level game design charter for TArenaUnity3D.
 It is intentionally marked `Initial Design`: it captures the first synthesis of
@@ -233,6 +233,9 @@ Run map:
 - no requirement for a spatial adventure map,
 - different route maps may bias the player toward different army outcomes,
   unit pools, skill pools, rewards, and encounter types,
+- route and reward hints should let the player steer a run toward a recognizable
+  army direction, such as reinforcing a Rusher-centered army or another
+  stack/unit identity,
 - route-specific battle map rules are possible future scope, not first-scope
   requirement.
 
@@ -253,6 +256,9 @@ Reward model:
   exchange, or currency,
 - reward cards should define a concrete transaction instead of opening a full
   army editor,
+- route-level reward hints may show operation/category direction before battle,
+  while exact target, amount, and before/after preview are resolved after battle
+  from the current army state,
 - the detailed gameplay-first reward framework lives in
   `_codex/Context/Reward_Design.md`,
 - examples include `+30` of a unit, give a skill to one legal stack, exchange a

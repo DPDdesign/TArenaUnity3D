@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class RewardMapRewardCardView : MonoBehaviour, IPointerEnterHandler
+public class RewardMapRewardCardView : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
 {
     [SerializeField] private Button button;
     [SerializeField] private Image accentImage;
@@ -14,8 +14,6 @@ public class RewardMapRewardCardView : MonoBehaviour, IPointerEnterHandler
     [SerializeField] private TextMeshProUGUI verbText;
     [SerializeField] private TextMeshProUGUI titleText;
     [SerializeField] private TextMeshProUGUI detailText;
-    [SerializeField] private TextMeshProUGUI beforeText;
-    [SerializeField] private TextMeshProUGUI afterText;
     [SerializeField] private TextMeshProUGUI legalText;
     [SerializeField] private GameObject selectedState;
     [SerializeField] private GameObject disabledState;
@@ -26,12 +24,26 @@ public class RewardMapRewardCardView : MonoBehaviour, IPointerEnterHandler
     }
 
     public Action<string> FocusRequested;
+    public Action<string> ApplyRequested;
 
     private string rewardId;
     private bool legal;
+    private static readonly string[] LegacyPreviewChildNames =
+    {
+        "Text_BeforeLabel",
+        "Text_Before",
+        "Preview_BeforeStack",
+        "Text_Arrow",
+        "Text_AfterLabel",
+        "Text_After",
+        "Preview_AfterStack",
+        "Inset_Before",
+        "Inset_After"
+    };
 
     public void Bind(RewardMapCardViewData card, bool selected)
     {
+        HideLegacyPreviewBlocks();
         bool hasCard = card != null;
         gameObject.SetActive(hasCard);
         if (!hasCard)
@@ -46,8 +58,6 @@ public class RewardMapRewardCardView : MonoBehaviour, IPointerEnterHandler
         SetText(verbText, card.Verb);
         SetText(titleText, card.Title);
         SetText(detailText, card.Detail);
-        SetText(beforeText, card.BeforeText);
-        SetText(afterText, card.AfterText);
         SetText(legalText, card.Legal ? "Hover to preview, click to apply" : card.Error.ToString());
         rewardId = card.RewardId;
         legal = card.Legal;
@@ -71,13 +81,6 @@ public class RewardMapRewardCardView : MonoBehaviour, IPointerEnterHandler
             button.interactable = card.Legal;
         }
 
-        if (afterText != null)
-        {
-            afterText.color = card.Legal
-                ? new Color(0.76f, 0.92f, 0.56f, 1f)
-                : new Color(0.62f, 0.54f, 0.46f, 1f);
-        }
-
         if (legalText != null)
         {
             legalText.color = card.Legal
@@ -94,6 +97,14 @@ public class RewardMapRewardCardView : MonoBehaviour, IPointerEnterHandler
         if (legal && FocusRequested != null)
         {
             FocusRequested(rewardId);
+        }
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (legal && ApplyRequested != null)
+        {
+            ApplyRequested(rewardId);
         }
     }
 
@@ -126,5 +137,42 @@ public class RewardMapRewardCardView : MonoBehaviour, IPointerEnterHandler
         {
             target.SetActive(active);
         }
+    }
+
+    private void HideLegacyPreviewBlocks()
+    {
+        for (int i = 0; i < LegacyPreviewChildNames.Length; i++)
+        {
+            Transform child = FindChildRecursive(transform, LegacyPreviewChildNames[i]);
+            if (child != null)
+            {
+                child.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private static Transform FindChildRecursive(Transform parent, string childName)
+    {
+        if (parent == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name == childName)
+            {
+                return child;
+            }
+
+            Transform nested = FindChildRecursive(child, childName);
+            if (nested != null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
     }
 }

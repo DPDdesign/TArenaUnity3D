@@ -114,14 +114,21 @@ public class RunShopUnitDefinition
     public string DisplayName;
     public string Tier;
     public int Cost;
+    public int FactionId;
     public List<string> SkillIds;
 
     public RunShopUnitDefinition(string unitId, string displayName, string tier, int cost, List<string> skillIds)
+        : this(unitId, displayName, tier, cost, UnitFactionResolver.ResolveFactionId(unitId), skillIds)
+    {
+    }
+
+    public RunShopUnitDefinition(string unitId, string displayName, string tier, int cost, int factionId, List<string> skillIds)
     {
         UnitId = unitId;
         DisplayName = string.IsNullOrEmpty(displayName) ? unitId : displayName;
         Tier = string.IsNullOrEmpty(tier) ? "I" : tier;
         Cost = Math.Max(0, cost);
+        FactionId = factionId <= 0 ? UnitFactionResolver.ResolveFactionId(unitId) : factionId;
         SkillIds = skillIds ?? new List<string>();
     }
 }

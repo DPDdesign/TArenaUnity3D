@@ -51,7 +51,7 @@ public class RunBattleServiceTests
 
         Assert.That(result.Success, Is.True);
         Assert.That(result.CompletionRecord.Outcome, Is.EqualTo(RunBattleOutcome.Win));
-        Assert.That(result.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.RunMap));
+        Assert.That(result.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.Reward));
         Assert.That(result.CompletionRecord.TotalLosses, Is.EqualTo(10));
         Assert.That(result.CompletionRecord.RunGoldGained, Is.EqualTo(45));
         Assert.That(FindLoss(result.CompletionRecord.Losses, "stack-rusher").LostAmount, Is.EqualTo(7));
@@ -60,7 +60,7 @@ public class RunBattleServiceTests
     }
 
     [Test]
-    public void CompleteBattle_RoutesWinToRunMapAndLossToRunLoss()
+    public void CompleteBattle_RoutesBattleWinToRewardFinalWinToSummaryAndLossToRunLoss()
     {
         InMemoryRunBattleStore store = new InMemoryRunBattleStore();
         RunBattleService service = CreateService(store);
@@ -95,7 +95,7 @@ public class RunBattleServiceTests
             "test-local-completion"));
 
         Assert.That(finalResult.Success, Is.True);
-        Assert.That(finalResult.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.RunMap));
+        Assert.That(finalResult.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.FinalSummary));
         Assert.That(lossResult.Success, Is.True);
         Assert.That(lossResult.CompletionRecord.NextScreen, Is.EqualTo(RunBattleNextScreen.RunLoss));
     }

@@ -15,9 +15,17 @@ public class OfflineDatabaseSchemaTests
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS army_snapshots"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS map_nodes"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS route_nodes"), Is.False);
+        Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS reward_opportunities"), Is.True);
+        Assert.That(ContainsSql(statements, "planned_operation_type TEXT NOT NULL"), Is.True);
+        Assert.That(ContainsSql(statements, "seed_version INTEGER NOT NULL DEFAULT 1"), Is.True);
+        Assert.That(ContainsSql(statements, "opportunity_state_id INTEGER NOT NULL DEFAULT 1"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS run_events"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS shop_offers"), Is.True);
         Assert.That(ContainsSql(statements, "offer_id TEXT NOT NULL"), Is.True);
+        Assert.That(ContainsSql(statements, "reward_id TEXT NOT NULL DEFAULT ''"), Is.True);
+        Assert.That(ContainsSql(statements, "reward_slot_index INTEGER NOT NULL DEFAULT 0"), Is.True);
+        Assert.That(ContainsSql(statements, "focused_reward_slot_index INTEGER NOT NULL DEFAULT -1"), Is.True);
+        Assert.That(ContainsSql(statements, "card_reward_id TEXT NOT NULL DEFAULT ''"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS saved_armies"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS async_battle_results"), Is.True);
         Assert.That(ContainsSql(statements, "is_active INTEGER NOT NULL DEFAULT 1"), Is.True);
@@ -43,6 +51,8 @@ public class OfflineDatabaseSchemaTests
         Assert.That((int)DBRunStatusId.Created, Is.EqualTo(1));
         Assert.That((int)DBNodeTypeId.FinalBoss, Is.EqualTo(5));
         Assert.That((int)DBEventTypeId.Purchase, Is.EqualTo(5));
+        Assert.That((int)DBRewardOpportunityStateId.Unresolved, Is.EqualTo(1));
+        Assert.That((int)DBRewardOpportunityStateId.Resolved, Is.EqualTo(2));
         Assert.That((int)DBResultKindId.DefenceLoss, Is.EqualTo(4));
     }
 
@@ -63,7 +73,20 @@ public class OfflineDatabaseSchemaTests
                 Assert.That(ColumnExists(connection, "offline_runs", "run_seed_version"), Is.True);
                 Assert.That(TableExists(connection, "map_nodes"), Is.True);
                 Assert.That(TableExists(connection, "map_node_rewards"), Is.True);
+                Assert.That(TableExists(connection, "reward_opportunities"), Is.True);
+                Assert.That(ColumnExists(connection, "reward_opportunities", "planned_operation_type"), Is.True);
+                Assert.That(ColumnExists(connection, "reward_opportunities", "seed_version"), Is.True);
+                Assert.That(ColumnExists(connection, "reward_opportunities", "opportunity_state_id"), Is.True);
                 Assert.That(ColumnExists(connection, "map_nodes", "catalog_path_id"), Is.True);
+                Assert.That(ColumnExists(connection, "reward_choices", "focused_reward_slot_index"), Is.True);
+                Assert.That(ColumnExists(connection, "reward_choices", "selected_reward_slot_index"), Is.True);
+                Assert.That(ColumnExists(connection, "reward_cards", "reward_id"), Is.True);
+                Assert.That(ColumnExists(connection, "reward_cards", "reward_slot_index"), Is.True);
+                Assert.That(ColumnExists(connection, "reward_cards", "legal"), Is.True);
+                Assert.That(ColumnExists(connection, "reward_cards", "is_fallback"), Is.True);
+                Assert.That(ColumnExists(connection, "map_node_rewards", "reward_choice_id"), Is.True);
+                Assert.That(ColumnExists(connection, "map_node_rewards", "card_reward_id"), Is.True);
+                Assert.That(ColumnExists(connection, "map_node_rewards", "is_fallback"), Is.True);
                 Assert.That(TableExists(connection, "route_nodes"), Is.False);
             }
         }
@@ -137,6 +160,24 @@ CREATE TABLE offline_runs (
     next_screen TEXT,
     created_at_utc TEXT NOT NULL,
     updated_at_utc TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1
+);");
+            ExecuteNonQuery(connection, @"
+CREATE TABLE map_node_rewards (
+    reward_id INTEGER PRIMARY KEY,
+    node_id INTEGER NOT NULL,
+    reward_slot_index INTEGER NOT NULL,
+    catalog_entry_id TEXT NOT NULL,
+    base_snapshot_id INTEGER NOT NULL,
+    target_snapshot_stack_id INTEGER,
+    reward_type TEXT NOT NULL,
+    unit_id TEXT,
+    to_unit_id TEXT,
+    amount INTEGER NOT NULL DEFAULT 0,
+    currency_delta INTEGER NOT NULL DEFAULT 0,
+    operation_json TEXT NOT NULL,
+    is_selected INTEGER NOT NULL DEFAULT 0,
+    applied_snapshot_id INTEGER,
     is_active INTEGER NOT NULL DEFAULT 1
 );");
         }

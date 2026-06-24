@@ -5,9 +5,11 @@ using Random = System.Random;
 
 public sealed class RewardMapMaterializedGenerator
 {
-    private const int RewardSlotCount = 3;
-    private const int MaxAttemptsPerSlot = 24;
+    public const int RewardSlotCount = 3;
     private const int RunGoldFallbackAmount = 60;
+    private const float BaseRewardGainRatio = 0.20f;
+    private const float RawGrowthRewardMultiplier = 1.20f;
+    private const float ArmyShapeRewardMultiplier = 1.00f;
 
     private readonly IRewardMapUnitDefinitionSource unitSource;
 
@@ -25,23 +27,61 @@ public sealed class RewardMapMaterializedGenerator
         RewardMapArmySnapshot armyAfterBattle,
         RewardMapBattleResultSummary battleSummary)
     {
+        return BuildChoice(
+            runId,
+            nodeId,
+            runSeed,
+            runSeedVersion,
+            runGoldBeforeReward,
+            armyAfterBattle,
+            battleSummary,
+            null);
+    }
+
+    public RewardMapChoiceViewData BuildChoice(
+        string runId,
+        int nodeId,
+        int runSeed,
+        int runSeedVersion,
+        int runGoldBeforeReward,
+        RewardMapArmySnapshot armyAfterBattle,
+        RewardMapBattleResultSummary battleSummary,
+        IList<RewardMapOperationType> plannedOperationTypes)
+    {
         RewardMapArmySnapshot army = CloneArmy(armyAfterBattle, armyAfterBattle == null ? string.Empty : armyAfterBattle.SnapshotId);
         List<RewardMapCardViewData> cards = new List<RewardMapCardViewData>();
-        List<string> usedSignatures = new List<string>();
+        RewardMapOperationType[] plannedTypes = NormalizePlannedOperationTypes(plannedOperationTypes, runSeed, nodeId, runSeedVersion);
+        int disabledNormalCount = 0;
 
         for (int slotIndex = 0; slotIndex < RewardSlotCount; slotIndex++)
         {
-            RewardMapCardViewData card = BuildNormalCard(army, nodeId, runSeed, runSeedVersion, slotIndex, usedSignatures);
+            RewardMapOperationType plannedType = plannedTypes[slotIndex];
+            Random random = new Random(BuildSeed(runSeed, nodeId, runSeedVersion, slotIndex, (int)plannedType));
+            RewardMapCardViewData card = BuildPlannedNormalCard(army, plannedType, slotIndex, random);
             if (card == null)
             {
-                card = BuildRunGoldFallback(slotIndex);
+                card = BuildDisabledNormalCard(army, plannedType, slotIndex);
+            }
+
+            if (!card.Legal)
+            {
+                disabledNormalCount++;
             }
 
             cards.Add(card);
-            usedSignatures.Add(BuildSignature(card));
         }
 
-        RewardMapCardViewData focused = cards.Count == 0 ? null : cards[0];
+        if (disabledNormalCount == RewardSlotCount)
+        {
+            cards.Add(BuildRunGoldFallback(RewardSlotCount));
+        }
+
+        RewardMapCardViewData focused = FindFirstLegal(cards);
+        if (focused == null && cards.Count > 0)
+        {
+            focused = cards[0];
+        }
+
         RewardMapChoiceViewData choice = new RewardMapChoiceViewData(
             "reward-choice-materialized-" + nodeId.ToString(CultureInfo.InvariantCulture),
             runId,
@@ -59,53 +99,57 @@ public sealed class RewardMapMaterializedGenerator
         return choice;
     }
 
-    private RewardMapCardViewData BuildNormalCard(
+    private RewardMapCardViewData BuildPlannedNormalCard(
         RewardMapArmySnapshot army,
-        int nodeId,
-        int runSeed,
-        int runSeedVersion,
+        RewardMapOperationType plannedType,
         int slotIndex,
-        List<string> usedSignatures)
+        Random random)
     {
-        for (int attemptIndex = 0; attemptIndex < MaxAttemptsPerSlot; attemptIndex++)
+        switch (plannedType)
         {
-            Random random = new Random(BuildSeed(runSeed, nodeId, runSeedVersion, slotIndex, attemptIndex));
-            int recipe = random.Next(4);
-            RewardMapCardViewData card = BuildRecipeCard(army, recipe, slotIndex, random);
-            string signature = BuildSignature(card);
-            if (card != null && card.Legal && !string.IsNullOrEmpty(signature) && !usedSignatures.Contains(signature))
-            {
-                return card;
-            }
-        }
-
-        return null;
-    }
-
-    private RewardMapCardViewData BuildRecipeCard(RewardMapArmySnapshot army, int recipe, int slotIndex, Random random)
-    {
-        switch (recipe)
-        {
-            case 0:
+            case RewardMapOperationType.AddStack:
                 return BuildAddNewStack(army, slotIndex, random);
-            case 1:
+            case RewardMapOperationType.AddUnits:
                 return BuildIncreaseStack(army, slotIndex, random);
-            case 2:
+            case RewardMapOperationType.PromoteStack:
                 return BuildPromoteOrDowngrade(army, slotIndex, random, true);
-            default:
+            case RewardMapOperationType.DowngradeStack:
                 return BuildPromoteOrDowngrade(army, slotIndex, random, false);
+            default:
+                return null;
         }
     }
 
     private RewardMapCardViewData BuildIncreaseStack(RewardMapArmySnapshot army, int slotIndex, Random random)
     {
-        RewardMapStackSnapshot target = PickLiveStack(army, random);
-        if (target == null)
+        int targetGain = CalculateTargetGain(army, RawGrowthRewardMultiplier);
+        List<RewardValueCandidate> candidates = new List<RewardValueCandidate>();
+        for (int i = 0; army != null && army.Stacks != null && i < army.Stacks.Count; i++)
+        {
+            RewardMapStackSnapshot stack = army.Stacks[i];
+            if (stack == null || stack.Amount <= 0)
+            {
+                continue;
+            }
+
+            int unitCost = UnitCostForStack(stack);
+            if (unitCost <= 0)
+            {
+                continue;
+            }
+
+            int amount = CalculateAmountForTargetValue(targetGain, unitCost);
+            int valueGain = amount * unitCost;
+            candidates.Add(new RewardValueCandidate(stack, null, amount, Math.Abs(valueGain - targetGain)));
+        }
+
+        RewardValueCandidate selected = PickClosestCandidate(candidates, random);
+        if (selected == null || selected.Stack == null)
         {
             return null;
         }
 
-        int amount = Math.Max(1, (int)Math.Round(target.Amount * 0.3f));
+        RewardMapStackSnapshot target = selected.Stack;
         RewardMapOperation operation = new RewardMapOperation(
             RewardMapOperationType.AddUnits,
             target.StackId,
@@ -113,7 +157,7 @@ public sealed class RewardMapMaterializedGenerator
             string.Empty,
             string.Empty,
             string.Empty,
-            amount,
+            selected.Amount,
             0);
 
         return Card(
@@ -123,29 +167,48 @@ public sealed class RewardMapMaterializedGenerator
             RewardMapIntention.Strengthen,
             "Grow",
             "Increase " + target.DisplayName,
-            "Add 30 percent more units to this stack.",
+            "Add more units near the run reward value target.",
             target.DisplayName + " x" + target.Amount,
-            target.DisplayName + " +" + amount,
+            target.DisplayName + " +" + selected.Amount,
             target.StackId,
             operation);
     }
 
     private RewardMapCardViewData BuildPromoteOrDowngrade(RewardMapArmySnapshot army, int slotIndex, Random random, bool promote)
     {
-        RewardMapStackSnapshot target = PickStackWithTierNeighbor(army, random, promote);
-        if (target == null)
+        int targetGain = CalculateTargetGain(army, ArmyShapeRewardMultiplier);
+        List<RewardValueCandidate> candidates = new List<RewardValueCandidate>();
+        for (int i = 0; army != null && army.Stacks != null && i < army.Stacks.Count; i++)
+        {
+            RewardMapStackSnapshot stack = army.Stacks[i];
+            if (stack == null || stack.Amount <= 0)
+            {
+                continue;
+            }
+
+            RunShopUnitDefinition oldUnit = unitSource == null ? null : unitSource.FindUnit(stack.UnitId);
+            RunShopUnitDefinition newUnitCandidate = FindTierNeighbor(stack.UnitId, promote);
+            if (oldUnit == null || newUnitCandidate == null || oldUnit.Cost <= 0 || newUnitCandidate.Cost <= 0)
+            {
+                continue;
+            }
+
+            int oldValue = StackValue(stack, oldUnit.Cost);
+            int targetFinalValue = Math.Max(newUnitCandidate.Cost, oldValue + targetGain);
+            int amount = CalculateAmountForTargetValue(targetFinalValue, newUnitCandidate.Cost);
+            int finalValue = amount * newUnitCandidate.Cost;
+            int valueGain = Math.Max(0, finalValue - oldValue);
+            candidates.Add(new RewardValueCandidate(stack, newUnitCandidate, amount, Math.Abs(valueGain - targetGain)));
+        }
+
+        RewardValueCandidate selected = PickClosestCandidate(candidates, random);
+        if (selected == null || selected.Stack == null || selected.Unit == null)
         {
             return null;
         }
 
-        RunShopUnitDefinition oldUnit = unitSource == null ? null : unitSource.FindUnit(target.UnitId);
-        RunShopUnitDefinition newUnit = FindTierNeighbor(target.UnitId, promote);
-        if (oldUnit == null || newUnit == null || oldUnit.Cost <= 0 || newUnit.Cost <= 0)
-        {
-            return null;
-        }
-
-        int amount = Math.Max(1, (int)Math.Round((target.Amount * oldUnit.Cost * 1.2f) / newUnit.Cost));
+        RewardMapStackSnapshot target = selected.Stack;
+        RunShopUnitDefinition newUnit = selected.Unit;
         RewardMapOperation operation = new RewardMapOperation(
             promote ? RewardMapOperationType.PromoteStack : RewardMapOperationType.DowngradeStack,
             target.StackId,
@@ -153,7 +216,7 @@ public sealed class RewardMapMaterializedGenerator
             newUnit.UnitId,
             string.Empty,
             string.Empty,
-            amount,
+            selected.Amount,
             0);
 
         return Card(
@@ -165,28 +228,48 @@ public sealed class RewardMapMaterializedGenerator
             target.DisplayName + " to " + newUnit.DisplayName,
             promote ? "Move one tier up in the same faction." : "Move one tier down in the same faction for more bodies.",
             target.DisplayName + " x" + target.Amount,
-            newUnit.DisplayName + " x" + amount,
+            newUnit.DisplayName + " x" + selected.Amount,
             target.StackId,
             operation);
     }
 
     private RewardMapCardViewData BuildAddNewStack(RewardMapArmySnapshot army, int slotIndex, Random random)
     {
+        int formationSlot = RewardMapArmySlotRules.FindFirstFreeFormationSlot(army);
+        if (formationSlot < 0)
+        {
+            return null;
+        }
+
         List<RunShopUnitDefinition> candidates = ListUnitsNotInArmy(army);
         if (candidates.Count == 0)
         {
             return null;
         }
 
-        RunShopUnitDefinition unit = candidates[random.Next(candidates.Count)];
-        if (unit == null || unit.Cost <= 0)
+        int targetGain = CalculateTargetGain(army, RawGrowthRewardMultiplier);
+        List<RewardValueCandidate> valueCandidates = new List<RewardValueCandidate>();
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            RunShopUnitDefinition candidate = candidates[i];
+            if (candidate == null || candidate.Cost <= 0)
+            {
+                continue;
+            }
+
+            int amountCandidate = CalculateAmountForTargetValue(targetGain, candidate.Cost);
+            int stackValue = amountCandidate * candidate.Cost;
+            valueCandidates.Add(new RewardValueCandidate(null, candidate, amountCandidate, Math.Abs(stackValue - targetGain)));
+        }
+
+        RewardValueCandidate selected = PickClosestCandidate(valueCandidates, random);
+        if (selected == null || selected.Unit == null)
         {
             return null;
         }
 
-        int targetValue = Math.Max(unit.Cost, (int)Math.Round(AverageExistingStackValue(army) * 1.2f));
-        int amount = Math.Max(1, (int)Math.Round((float)targetValue / unit.Cost));
-        string stackId = "reward-stack-" + NormalizeId(unit.UnitId) + "-" + slotIndex.ToString(CultureInfo.InvariantCulture);
+        RunShopUnitDefinition unit = selected.Unit;
+        string stackId = RewardMapArmySlotRules.ToFormationSlotStackId(formationSlot);
         RewardMapOperation operation = new RewardMapOperation(
             RewardMapOperationType.AddStack,
             string.Empty,
@@ -194,7 +277,7 @@ public sealed class RewardMapMaterializedGenerator
             string.Empty,
             string.Empty,
             stackId,
-            amount,
+            selected.Amount,
             0);
 
         return Card(
@@ -206,7 +289,7 @@ public sealed class RewardMapMaterializedGenerator
             "Recruit " + unit.DisplayName,
             "Add a new non-duplicate stack.",
             "Open stack slot",
-            unit.DisplayName + " x" + amount + " joins",
+            unit.DisplayName + " x" + selected.Amount + " joins",
             stackId,
             operation);
     }
@@ -237,6 +320,34 @@ public sealed class RewardMapMaterializedGenerator
             operation);
     }
 
+    private RewardMapCardViewData BuildDisabledNormalCard(RewardMapArmySnapshot army, RewardMapOperationType operationType, int slotIndex)
+    {
+        RewardMapOperation operation = new RewardMapOperation(
+            operationType,
+            string.Empty,
+            FirstUnitId(army),
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            0,
+            0);
+
+        return Card(
+            CatalogEntryIdFor(operationType),
+            slotIndex,
+            FamilyFor(operationType),
+            IntentionFor(operationType),
+            VerbFor(operationType),
+            DisabledTitleFor(operationType),
+            "This planned reward type has no legal target.",
+            "Planned normal reward",
+            "No legal target",
+            string.Empty,
+            operation,
+            false,
+            RewardMapError.NoLegalTarget);
+    }
+
     private RewardMapCardViewData Card(
         string catalogEntryId,
         int slotIndex,
@@ -248,7 +359,9 @@ public sealed class RewardMapMaterializedGenerator
         string before,
         string after,
         string affectedStackId,
-        RewardMapOperation operation)
+        RewardMapOperation operation,
+        bool legal = true,
+        RewardMapError error = RewardMapError.None)
     {
         return new RewardMapCardViewData(
             "reward-" + catalogEntryId + "-" + slotIndex.ToString(CultureInfo.InvariantCulture),
@@ -262,39 +375,9 @@ public sealed class RewardMapMaterializedGenerator
             before,
             after,
             affectedStackId,
-            true,
-            RewardMapError.None,
+            legal,
+            error,
             operation);
-    }
-
-    private RewardMapStackSnapshot PickLiveStack(RewardMapArmySnapshot army, Random random)
-    {
-        List<RewardMapStackSnapshot> live = new List<RewardMapStackSnapshot>();
-        for (int i = 0; army != null && army.Stacks != null && i < army.Stacks.Count; i++)
-        {
-            RewardMapStackSnapshot stack = army.Stacks[i];
-            if (stack != null && stack.Amount > 0)
-            {
-                live.Add(stack);
-            }
-        }
-
-        return live.Count == 0 ? null : live[random.Next(live.Count)];
-    }
-
-    private RewardMapStackSnapshot PickStackWithTierNeighbor(RewardMapArmySnapshot army, Random random, bool promote)
-    {
-        List<RewardMapStackSnapshot> candidates = new List<RewardMapStackSnapshot>();
-        for (int i = 0; army != null && army.Stacks != null && i < army.Stacks.Count; i++)
-        {
-            RewardMapStackSnapshot stack = army.Stacks[i];
-            if (stack != null && stack.Amount > 0 && FindTierNeighbor(stack.UnitId, promote) != null)
-            {
-                candidates.Add(stack);
-            }
-        }
-
-        return candidates.Count == 0 ? null : candidates[random.Next(candidates.Count)];
     }
 
     private RunShopUnitDefinition FindTierNeighbor(string unitId, bool promote)
@@ -305,7 +388,12 @@ public sealed class RewardMapMaterializedGenerator
             return null;
         }
 
-        int sourceFaction = UnitFactionResolver.ResolveFactionId(source.UnitId);
+        int sourceFaction = UnitFactionId(source);
+        if (sourceFaction <= 0)
+        {
+            return null;
+        }
+
         int targetTier = TierNumber(source.Tier) + (promote ? 1 : -1);
         if (targetTier <= 0)
         {
@@ -318,7 +406,7 @@ public sealed class RewardMapMaterializedGenerator
             RunShopUnitDefinition candidate = units[i];
             if (candidate != null &&
                 candidate.UnitId != source.UnitId &&
-                UnitFactionResolver.ResolveFactionId(candidate.UnitId) == sourceFaction &&
+                UnitFactionId(candidate) == sourceFaction &&
                 TierNumber(candidate.Tier) == targetTier)
             {
                 return candidate;
@@ -366,6 +454,186 @@ public sealed class RewardMapMaterializedGenerator
         return result;
     }
 
+    private static RewardMapCardViewData FindFirstLegal(List<RewardMapCardViewData> cards)
+    {
+        for (int i = 0; cards != null && i < cards.Count; i++)
+        {
+            if (cards[i] != null && cards[i].Legal)
+            {
+                return cards[i];
+            }
+        }
+
+        return null;
+    }
+
+    public static RewardMapOperationType[] PlanNormalOperationTypes(int runSeed, int nodeId, int runSeedVersion)
+    {
+        List<RewardMapOperationType> types = new List<RewardMapOperationType>
+        {
+            RewardMapOperationType.AddStack,
+            RewardMapOperationType.AddUnits,
+            RewardMapOperationType.PromoteStack,
+            RewardMapOperationType.DowngradeStack
+        };
+
+        Random random = new Random(BuildSeed(runSeed, nodeId, runSeedVersion, 0, 0));
+        for (int i = types.Count - 1; i > 0; i--)
+        {
+            int swapIndex = random.Next(i + 1);
+            RewardMapOperationType temp = types[i];
+            types[i] = types[swapIndex];
+            types[swapIndex] = temp;
+        }
+
+        RewardMapOperationType[] planned = new RewardMapOperationType[RewardSlotCount];
+        for (int i = 0; i < RewardSlotCount; i++)
+        {
+            planned[i] = types[i];
+        }
+
+        return planned;
+    }
+
+    private static RewardMapOperationType[] NormalizePlannedOperationTypes(
+        IList<RewardMapOperationType> plannedOperationTypes,
+        int runSeed,
+        int nodeId,
+        int runSeedVersion)
+    {
+        if (plannedOperationTypes == null || plannedOperationTypes.Count < RewardSlotCount)
+        {
+            return PlanNormalOperationTypes(runSeed, nodeId, runSeedVersion);
+        }
+
+        RewardMapOperationType[] result = new RewardMapOperationType[RewardSlotCount];
+        for (int i = 0; i < RewardSlotCount; i++)
+        {
+            RewardMapOperationType plannedType = plannedOperationTypes[i];
+            if (!IsNormalPlannedOperationType(plannedType))
+            {
+                return PlanNormalOperationTypes(runSeed, nodeId, runSeedVersion);
+            }
+
+            result[i] = plannedType;
+        }
+
+        return result;
+    }
+
+    private static bool IsNormalPlannedOperationType(RewardMapOperationType operationType)
+    {
+        return operationType == RewardMapOperationType.AddStack ||
+            operationType == RewardMapOperationType.AddUnits ||
+            operationType == RewardMapOperationType.PromoteStack ||
+            operationType == RewardMapOperationType.DowngradeStack;
+    }
+
+    private static int UnitFactionId(RunShopUnitDefinition unit)
+    {
+        if (unit == null)
+        {
+            return UnitFactionResolver.UnknownFactionId;
+        }
+
+        return unit.FactionId > 0 ? unit.FactionId : UnitFactionResolver.ResolveFactionId(unit.UnitId);
+    }
+
+    private static string FirstUnitId(RewardMapArmySnapshot army)
+    {
+        for (int i = 0; army != null && army.Stacks != null && i < army.Stacks.Count; i++)
+        {
+            RewardMapStackSnapshot stack = army.Stacks[i];
+            if (stack != null && !string.IsNullOrEmpty(stack.UnitId))
+            {
+                return stack.UnitId;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    public static string CatalogEntryIdFor(RewardMapOperationType operationType)
+    {
+        switch (operationType)
+        {
+            case RewardMapOperationType.AddStack:
+                return "prd37-add-new-stack-v1";
+            case RewardMapOperationType.AddUnits:
+                return "prd37-increase-stack-v1";
+            case RewardMapOperationType.PromoteStack:
+                return "prd37-promote-unit-v1";
+            case RewardMapOperationType.DowngradeStack:
+                return "prd37-downgrade-unit-v1";
+            default:
+                return "prd37-normal-disabled-v1";
+        }
+    }
+
+    private static RewardMapFamily FamilyFor(RewardMapOperationType operationType)
+    {
+        switch (operationType)
+        {
+            case RewardMapOperationType.PromoteStack:
+                return RewardMapFamily.Quality;
+            case RewardMapOperationType.AddStack:
+                return RewardMapFamily.Width;
+            case RewardMapOperationType.AddUnits:
+            case RewardMapOperationType.DowngradeStack:
+            default:
+                return RewardMapFamily.Mass;
+        }
+    }
+
+    private static RewardMapIntention IntentionFor(RewardMapOperationType operationType)
+    {
+        switch (operationType)
+        {
+            case RewardMapOperationType.DowngradeStack:
+                return RewardMapIntention.Stabilize;
+            case RewardMapOperationType.AddUnits:
+                return RewardMapIntention.Strengthen;
+            case RewardMapOperationType.AddStack:
+            case RewardMapOperationType.PromoteStack:
+            default:
+                return RewardMapIntention.Pivot;
+        }
+    }
+
+    private static string VerbFor(RewardMapOperationType operationType)
+    {
+        switch (operationType)
+        {
+            case RewardMapOperationType.AddStack:
+                return "Add";
+            case RewardMapOperationType.AddUnits:
+                return "Grow";
+            case RewardMapOperationType.PromoteStack:
+                return "Promote";
+            case RewardMapOperationType.DowngradeStack:
+                return "Downgrade";
+            default:
+                return "Reward";
+        }
+    }
+
+    private static string DisabledTitleFor(RewardMapOperationType operationType)
+    {
+        switch (operationType)
+        {
+            case RewardMapOperationType.AddStack:
+                return "Add unavailable";
+            case RewardMapOperationType.AddUnits:
+                return "Grow unavailable";
+            case RewardMapOperationType.PromoteStack:
+                return "Promote unavailable";
+            case RewardMapOperationType.DowngradeStack:
+                return "Downgrade unavailable";
+            default:
+                return "Reward unavailable";
+        }
+    }
+
     private static bool ArmyContainsUnit(RewardMapArmySnapshot army, string unitId)
     {
         for (int i = 0; army != null && army.Stacks != null && i < army.Stacks.Count; i++)
@@ -379,37 +647,101 @@ public sealed class RewardMapMaterializedGenerator
         return false;
     }
 
-    private static int AverageExistingStackValue(RewardMapArmySnapshot army)
+    private int AverageExistingStackValue(RewardMapArmySnapshot army)
     {
         if (army == null || army.Stacks == null || army.Stacks.Count == 0)
         {
             return 100;
         }
 
-        int total = 0;
+        int resolvedTotal = 0;
         int count = 0;
         for (int i = 0; i < army.Stacks.Count; i++)
         {
             RewardMapStackSnapshot stack = army.Stacks[i];
             if (stack != null && stack.Amount > 0)
             {
-                total += Math.Max(0, stack.CombatValue);
+                resolvedTotal += StackValue(stack, UnitCostForStack(stack));
                 count++;
             }
         }
 
-        return count == 0 ? 100 : Math.Max(1, total / count);
+        int armyTotal = Math.Max(Math.Max(0, army.TotalArmyValue), resolvedTotal);
+        return count == 0 ? 100 : Math.Max(1, armyTotal / count);
     }
 
-    private static string BuildSignature(RewardMapCardViewData card)
+    private int CalculateTargetGain(RewardMapArmySnapshot army, float familyMultiplier)
     {
-        if (card == null || card.Operation == null)
+        return Math.Max(1, (int)Math.Round(AverageExistingStackValue(army) * BaseRewardGainRatio * familyMultiplier));
+    }
+
+    private static int CalculateAmountForTargetValue(int targetValue, int unitCost)
+    {
+        if (unitCost <= 0)
         {
-            return string.Empty;
+            return 0;
         }
 
-        RewardMapOperation operation = card.Operation;
-        return operation.Type + "|" + operation.StackId + "|" + operation.UnitId + "|" + operation.ToUnitId;
+        return Math.Max(1, (int)Math.Round((float)Math.Max(1, targetValue) / unitCost));
+    }
+
+    private int UnitCostForStack(RewardMapStackSnapshot stack)
+    {
+        RunShopUnitDefinition unit = unitSource == null || stack == null ? null : unitSource.FindUnit(stack.UnitId);
+        if (unit != null && unit.Cost > 0)
+        {
+            return unit.Cost;
+        }
+
+        return stack == null || stack.Amount <= 0 ? 0 : Math.Max(1, stack.CombatValue / stack.Amount);
+    }
+
+    private static int StackValue(RewardMapStackSnapshot stack, int unitCost)
+    {
+        if (stack == null)
+        {
+            return 0;
+        }
+
+        int amountValue = Math.Max(0, stack.Amount) * Math.Max(0, unitCost);
+        return Math.Max(Math.Max(0, stack.CombatValue), amountValue);
+    }
+
+    private static RewardValueCandidate PickClosestCandidate(List<RewardValueCandidate> candidates, Random random)
+    {
+        if (candidates == null || candidates.Count == 0)
+        {
+            return null;
+        }
+
+        int bestScore = int.MaxValue;
+        List<RewardValueCandidate> best = new List<RewardValueCandidate>();
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            RewardValueCandidate candidate = candidates[i];
+            if (candidate == null || candidate.Amount <= 0)
+            {
+                continue;
+            }
+
+            if (candidate.Score < bestScore)
+            {
+                bestScore = candidate.Score;
+                best.Clear();
+                best.Add(candidate);
+            }
+            else if (candidate.Score == bestScore)
+            {
+                best.Add(candidate);
+            }
+        }
+
+        if (best.Count == 0)
+        {
+            return null;
+        }
+
+        return random == null || best.Count == 1 ? best[0] : best[random.Next(best.Count)];
     }
 
     private static RewardMapArmySnapshot CloneArmy(RewardMapArmySnapshot army, string snapshotId)
@@ -510,5 +842,21 @@ public sealed class RewardMapMaterializedGenerator
         }
 
         return length == 0 ? "unit" : new string(buffer, 0, length);
+    }
+
+    private sealed class RewardValueCandidate
+    {
+        public readonly RewardMapStackSnapshot Stack;
+        public readonly RunShopUnitDefinition Unit;
+        public readonly int Amount;
+        public readonly int Score;
+
+        public RewardValueCandidate(RewardMapStackSnapshot stack, RunShopUnitDefinition unit, int amount, int score)
+        {
+            Stack = stack;
+            Unit = unit;
+            Amount = Math.Max(0, amount);
+            Score = Math.Max(0, score);
+        }
     }
 }

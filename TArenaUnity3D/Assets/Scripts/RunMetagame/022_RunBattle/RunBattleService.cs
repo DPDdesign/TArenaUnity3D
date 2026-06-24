@@ -169,7 +169,9 @@ public class RunBattleService
             return RunBattleNextScreen.RunLoss;
         }
 
-        return RunBattleNextScreen.RunMap;
+        return nodeType == RunBattleNodeType.Final
+            ? RunBattleNextScreen.FinalSummary
+            : RunBattleNextScreen.Reward;
     }
 
     private static List<RunBattleStackLossRecord> BuildLosses(RunBattleArmySnapshot before, RunBattleArmySnapshot after)

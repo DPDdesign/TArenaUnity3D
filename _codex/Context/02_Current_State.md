@@ -2,7 +2,7 @@
 
 Status: active
 Project: TArenaUnity3D
-Last updated: 2026-06-12
+Last updated: 2026-06-24
 
 ## Current Project Goal
 
@@ -49,6 +49,20 @@ The code is heavily coupled to Unity scene objects, Inspector fields,
 `PlayerPrefs`, Resources XML, local serialized build files, Photon/PUN, and
 PlayFab singleton access. Even the local/single-player path still passes
 through some PUN classes and PlayFab calls.
+
+Current Offline Mode run-metagame recovery:
+
+- PRD37 closed the materialized Reward Map flow: normal battle wins persist
+  reward rows, Reward Map loads persisted choices instead of rolling fallback
+  screen-time rewards, clicking a legal card applies immediately, and successful
+  apply returns to Run Map.
+- PRD37 follow-up routing closed the battle handoff mismatch: normal wins route
+  to Reward, final wins route to Summary Value, and losses route to run loss via
+  persisted `RunBattleNextScreen`.
+- PRD41 closed the reward value-parity pass: materialized reward amounts scale
+  from average live stack value so late-run Add Stack / More Units rewards no
+  longer collapse to tiny early-run values.
+- Unity Test Runner and Play Mode smoke validation remain manual.
 
 ## Current Combat Presentation Notes
 
