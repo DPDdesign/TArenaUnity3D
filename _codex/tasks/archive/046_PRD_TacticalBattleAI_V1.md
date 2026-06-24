@@ -1,6 +1,6 @@
 # [TARENA] PRD: Tactical Battle AI V1
 
-- Status: draft
+- Status: implemented-qa-pass-unity-validation-pending
 - Type: PRD
 - Area: Tactical Battle, AI, Battle Snapshot, Action Validation, Skills
 - Label: needs-grill
@@ -9,6 +9,7 @@
 - Related: `_codex/Documentation/ADR_004_BattleActionLifecycleTurnSafety.md`
 - Related: `_codex/Documentation/ADR_005_ActionValidationFuturePRD.md`
 - Related: `_codex/Documentation/ADR_013_TacticalAI_CastManagerSkillBridge.md`
+- Related: `_codex/Documentation/ADR_014_TacticalAI_MultiplayerCompatibleValidation.md`
 - Related: `_codex/tasks/018_PRD_BattleActionLifecycleFullMigration.md`
 - Related: `_codex/tasks/034_PRD_FutureSkillLogicAndTargetingExtraction.md`
 - Related: `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
@@ -17,28 +18,47 @@
 
 PRD046 is split into child PRDs for review and implementation planning:
 
-- `_codex/tasks/046_A_PRD_TacticalAI_BattleSnapshotV1.md`
-- `_codex/tasks/046_B_PRD_TacticalAI_ActionIntentCandidates.md`
-- `_codex/tasks/046_C_PRD_TacticalAI_LifecycleExecutionBridge.md`
-- `_codex/tasks/046_D_PRD_TacticalAI_SearchScoring.md`
-- `_codex/tasks/046_E_PRD_TacticalAI_ProfileCache.md`
-- `_codex/tasks/046_F_PRD_TacticalAI_CastManagerSkillBridge.md`
+- `_codex/tasks/archive/046_A_PRD_TacticalAI_BattleSnapshotV1.md`
+- `_codex/tasks/archive/046_B_PRD_TacticalAI_ActionIntentCandidates.md`
+- `_codex/tasks/archive/046_C_PRD_TacticalAI_LifecycleExecutionBridge.md`
+- `_codex/tasks/archive/046_D_PRD_TacticalAI_SearchScoring.md`
+- `_codex/tasks/archive/046_E_PRD_TacticalAI_ProfileCache.md`
+- `_codex/tasks/archive/046_F_PRD_TacticalAI_CastManagerSkillBridge.md`
+- `_codex/tasks/archive/046_G_PRD_TacticalAI_LiveEnemyTurnIntegration.md`
 
 Current confirmed direction:
 
 - Tactical AI V1 still targets 3-ply search from the first implementation.
-- A ply follows estimated snapshot turn order, not strict team alternation.
-- All active current skills may be considered as candidates.
+- A ply follows estimated snapshot turn order, not strict team alternation, but
+  a Normal-profile completed line must include at least one opponent response
+  when an opponent action opportunity is reachable.
+- Battle snapshots must be shaped for future replay and online sync from the
+  start, even when V1 keeps them in memory.
+- Candidate generation should intentionally emit legal snapshot-level actions,
+  not broad "maybe legal" placeholders.
+- All currently legal active skills may be considered as candidates.
 - Skill prediction is approximate in V1; no full skill prediction rewrite and
   no separate skill prediction catalog.
 - Selected actions and skills must revalidate live state and execute through
   existing `MouseControler`, `CastManager`, and `BattleActionLifecycle` paths.
 - `TacticalAIProfile` defines fixed depth, beam widths, candidate caps,
-  scoring weights, action biases, deterministic ordering, and watchdog.
+  scoring weights, action biases, deterministic ordering, opponent-response
+  requirement, and watchdog.
 - AI strength is profile-budgeted, not CPU-scaled. The 300 ms decision budget
   is a watchdog/failsafe.
 - A simple advisory cache is allowed, keyed by snapshot hash, active unit id,
   and profile hash, but it never bypasses live revalidation.
+- `TacticalAIProfile` should have a real ScriptableObject asset path in V1, in
+  addition to a runtime Normal default.
+- Failed live skill execution should fall back to the next intent and log enough
+  context to identify the rejected skill/target later.
+- Tactical AI V1 has the live enemy-turn integration slice that calls the
+  planner from the current enemy AI entry point and executes returned ordered
+  intents through the existing bridge, with legacy AI fallback still available.
+- PRD047 adds the first async planning pipeline: snapshot/profile/metadata are
+  captured on the main thread, search runs on a worker task, and result
+  consumption/live execution returns to the main thread through the existing
+  bridge.
 
 ## Problem Statement
 
@@ -57,11 +77,11 @@ rather than code changes.
 
 Build Tactical Battle AI V1 as a team-level tactical brain.
 
-The AI reads a full battle snapshot, evaluates the whole map and both teams,
-searches several plies ahead within a compute budget, and outputs one legal
-action intent for the currently active unit. The selected intent must be
-revalidated against the live battle state and executed through the existing
-battle action lifecycle.
+The AI reads a full battle snapshot shaped for future replay and online sync,
+evaluates the whole map and both teams, searches several plies ahead within a
+fixed profile budget, and outputs one legal action intent for the currently
+active unit. The selected intent must be revalidated against the live battle
+state and executed through the existing battle action lifecycle.
 
 For the first supported profile, `Normal`, the AI should target:
 
@@ -165,9 +185,15 @@ legal action rules.
   default Normal profile if no run-level reference is available.
 - `TacticalAIProfile` contains parameters, not runtime search state.
 - The Normal profile should use 3 plies as the starting search depth.
+- Normal 3-ply search must include at least one opponent response when an
+  opponent action opportunity is reachable. Same-side consecutive turns remain
+  legal in the turn-order estimator, but the search must not treat an own-side
+  only line as sufficient counterplay coverage when the opponent can still act.
 - The Normal profile should use about 300 ms as the synchronous decision budget.
 - The Normal profile should expose beam widths. Initial defaults are own action
   beam 8 and enemy response beam 5.
+- The Normal profile should require opponent-response coverage as a profile
+  option rather than a CPU-scaled behavior.
 - The profile should expose `maxActionSequenceLength = 3` for legal sequences
   inside one action opportunity.
 - A move-and-attack is treated as one composite action for sequence planning.
@@ -176,6 +202,8 @@ legal action rules.
 - Initial scoring direction: enemy value removed is positive, own value lost is
   negative and slightly stronger, killing a stack is a bonus, losing a stack is
   a penalty.
+- Initial own-value-lost weight should start stronger than enemy-value-removed,
+  with a starting direction around 1.2x, so needless own losses are penalized.
 - The AI should include a tempo/progress weight so it does not choose endless
   waiting, defending, or non-progressing repositioning when useful progress is
   available.
@@ -201,6 +229,9 @@ legal action rules.
 - Do not create a separate skill prediction catalog in V1. Future skill
   prediction data should extend the existing skill catalog and stable skill id
   model.
+- If approximate skill scoring or CastManager bridge performance is poor, log
+  the rejected/uncertain skill context and address it through the future skill
+  extraction work rather than adding a second prediction catalog.
 - Full extraction of skill targeting, validation, prediction, and execution out
   of the legacy skill flow is out of scope for this PRD and remains covered by
   the future skill extraction PRD.

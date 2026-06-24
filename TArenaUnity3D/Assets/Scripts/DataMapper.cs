@@ -7,6 +7,7 @@ public class DataMapper : ScriptableObject
 {
     private const string MapperResourcePath = "0_Data/DataMapper";
     private const string UnitDefinitionsResourcePath = "0_Data/Units";
+    private const string SkillCatalogResourcePath = "0_Data/SkillCatalog";
 
     private static DataMapper instance;
 
@@ -45,6 +46,7 @@ public class DataMapper : ScriptableObject
 
     private void OnEnable()
     {
+        ResolveMissingCatalogReferences();
         ClearCache();
         if (instance == null || (instance.hideFlags & HideFlags.HideAndDontSave) != 0)
         {
@@ -54,6 +56,7 @@ public class DataMapper : ScriptableObject
 
     private void OnValidate()
     {
+        ResolveMissingCatalogReferences();
         ClearCache();
     }
 
@@ -252,6 +255,8 @@ public class DataMapper : ScriptableObject
         skillLookup = new Dictionary<string, SkillDefinition>();
         skillDefinitions = new List<SkillDefinition>();
 
+        ResolveMissingCatalogReferences();
+
         if (skillCatalog == null)
         {
             Debug.LogError("SkillCatalog is not assigned on DataMapper. Skill XML fallback is disabled.");
@@ -281,6 +286,14 @@ public class DataMapper : ScriptableObject
         unitDefinitions = null;
         skillLookup = null;
         skillDefinitions = null;
+    }
+
+    private void ResolveMissingCatalogReferences()
+    {
+        if (skillCatalog == null)
+        {
+            skillCatalog = Resources.Load<SkillCatalog>(SkillCatalogResourcePath);
+        }
     }
 
     private static string CombineResourcePath(string folderPath, string entryName)

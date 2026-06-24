@@ -5,7 +5,7 @@
 - Area: Run Metagame, Start Run, Generated Starting Armies, Offline DB, UI
 - Label: ready-for-agent
 - Related:
-  - `_codex/tasks/020_PRD019_StartRun.md`
+  - `_codex/tasks/archive/020_PRD019_StartRun.md`
   - `_codex/tasks/030_DB-001_OfflineModeDatabasePersistence.md`
   - `_codex/tasks/035_PRD_RandomStartingArmiesRoutes.md`
   - `_codex/Documentation/PRD030_OfflineDatabase_Map.md`

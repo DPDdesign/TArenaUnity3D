@@ -18,16 +18,23 @@ Primary PRDs:
 - `_codex/tasks/019_PRD_RunMetagameRewardFramework.md`
 - `_codex/tasks/030_DB-001_OfflineModeDatabasePersistence.md`
 
-PRD019 child tasks:
+PRD019 historical child tasks:
 
-- `_codex/tasks/020_PRD019_StartRun.md`
-- `_codex/tasks/021_PRD019_RunMap.md`
-- `_codex/tasks/022_PRD019_RunBattle.md`
+- `_codex/tasks/archive/020_PRD019_StartRun.md`
+- `_codex/tasks/archive/021_PRD019_RunMap.md`
+- `_codex/tasks/archive/022_PRD019_RunBattle.md`
 - `_codex/tasks/023_PRD019_RewardMap.md`
 - `_codex/tasks/024_PRD019_RunShop.md`
 - `_codex/tasks/025_PRD019_SummaryValue.md`
 - `_codex/tasks/026_PRD019_SavedArmies.md`
 - `_codex/tasks/027_PRD019_BattleResult.md`
+
+Generator-current run tasks:
+
+- `_codex/tasks/035_PRD_RandomStartingArmiesRoutes.md`
+- `_codex/tasks/036_PRD_StartRunSlotAvailability.md`
+- `_codex/tasks/039_PRD_EnemyEncounterRuleCatalog.md`
+- `_codex/tasks/040_PRD_FullEncounterMaterializationBattleLaunchLoop.md`
 
 PRD030 child tasks:
 
@@ -200,7 +207,12 @@ Main code:
 - `StartRunModels.cs` - starting army, route preview, run-start DTOs.
 - `StartRunContracts.cs` - catalog/unit/store interfaces and in-memory test
   store.
-- `DefaultStartRunCatalog.cs` - authored V1 starting armies and route previews.
+- `DeterministicRunGenerationCatalog.cs` - current generator-backed starting
+  army offer source in production composition.
+- `ArmyGeneratorRuleSet.cs` and `RunGenerationSession.cs` - current Unity-side
+  generator configuration seams.
+- `DefaultStartRunCatalog.cs` - legacy/authored catalog retained for history,
+  compatibility, or tests. Do not use it as current gameplay design truth.
 - `DataMapperStartRunUnitSource.cs` - current unit definition bridge.
 - `StartRunService.cs` - screen data and begin-run command.
 - `OfflineStartRunAdapter.cs` - UI/service facade.
@@ -244,7 +256,11 @@ Main code:
 
 - `RunMapModels.cs` - route map, node, travel DTOs.
 - `RunMapContracts.cs` - path catalog/store interface and in-memory test store.
-- `DefaultRunMapPathCatalog.cs` - current authored route paths.
+- `DeterministicRunGenerationCatalog.cs` - current generator-backed route
+  topology source in production composition.
+- `DefaultRunMapPathCatalog.cs` - legacy/authored path catalog retained for
+  history, compatibility, or tests. Do not use it as current gameplay design
+  truth.
 - `RunMapService.cs` - create/load/travel rules.
 - `OfflineRunMapAdapter.cs` - UI/service facade.
 - `OfflineRunMapDbStore.cs` - loads and updates persisted route state.
@@ -280,7 +296,15 @@ Main code:
 
 - `RunBattleModels.cs` - battle launch, completion, losses, transition DTOs.
 - `RunBattleContracts.cs` - encounter source, launch adapter, store interface.
-- `DefaultRunBattleEncounterCatalog.cs` - small V1 local encounter catalog.
+- `EnemyEncounterRuleCatalog.cs` - current difficulty-to-enemy-rule-set
+  boundary for generated enemy armies.
+- `EnemyEncounterArmyMaterializer.cs` - current generated enemy snapshot
+  materializer for battle/final nodes.
+- `OfflineRunBattleEncounterCatalog.cs` - DB-backed encounter source for
+  materialized enemy snapshots.
+- `DefaultRunBattleEncounterCatalog.cs` - legacy/local authored encounter
+  catalog retained for history, compatibility, or tests. Do not use it as
+  current gameplay design truth.
 - `OfflineRunBattleLaunchAdapter.cs` - runtime snapshot battle input label.
 - `RunBattleService.cs` - prepare/complete battle behavior.
 - `OfflineRunBattleAdapter.cs` - service facade.
@@ -689,11 +713,12 @@ When moving data from one screen to another:
 
 ## Authored Catalogs That Stay Out Of DB
 
-These remain code/assets/catalog references, not SQLite-owned truth:
+Current generator/configuration truth remains code/assets/catalog references,
+not SQLite-owned truth:
 
-- starting army catalog,
-- route path catalog,
-- encounter catalog,
+- starting army generator rule sets,
+- route generator/map definition source,
+- enemy encounter rule catalog and enemy generator rule sets,
 - reward ruleset/catalog configuration,
 - run shop offer generation rules,
 - current unit catalog/DataMapper path,
@@ -705,6 +730,11 @@ The database stores runtime materialized generated results and references such
 as `unit_id`, `skill_id`, `template_id` or `catalog_entry_id`, reward id,
 `encounter_id`, selected/applied state, snapshots, and records. Runtime screens
 load these generated rows for the run/node instead of rolling new content.
+
+Legacy authored catalogs such as `DefaultStartRunCatalog`,
+`DefaultRunMapPathCatalog`, and `DefaultRunBattleEncounterCatalog` should not be
+used as current run-progression design sources unless a task explicitly targets
+authored/predefined content.
 
 ## Current Manual QA Surface
 
@@ -723,6 +753,8 @@ Backend-only Run Battle intentionally has no active PRD019 UI prefab.
 Manual integration task files:
 
 - `_codex/tasks/RunMetaGame_Tests/020_PRD019_StartRun_ManualIntegrationTest.md`
+  is historical for the archived authored Start Run slice; do not use it for
+  current generator-first Start Run validation.
 - `_codex/tasks/RunMetaGame_Tests/024_PRD019_RunShop_ManualIntegrationTest.md`
 
 ## Known Risks And Follow-Ups

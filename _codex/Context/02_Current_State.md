@@ -52,6 +52,11 @@ through some PUN classes and PlayFab calls.
 
 Current Offline Mode run-metagame recovery:
 
+- PRD035/040 moved the current Start Run and encounter direction to
+  generator-backed flows: generated starting army offers come from
+  `ArmyGeneratorRuleSet`/`DeterministicRunGenerationCatalog`, and generated
+  enemy armies come through `EnemyEncounterRuleCatalog` and enemy rule sets.
+  Older authored `Default*Catalog` examples are not current balance truth.
 - PRD37 closed the materialized Reward Map flow: normal battle wins persist
   reward rows, Reward Map loads persisted choices instead of rolling fallback
   screen-time rewards, clicking a legal card applies immediately, and successful
@@ -63,6 +68,23 @@ Current Offline Mode run-metagame recovery:
   from average live stack value so late-run Add Stack / More Units rewards no
   longer collapse to tiny early-run values.
 - Unity Test Runner and Play Mode smoke validation remain manual.
+
+Current Tactical Battle AI recovery:
+
+- PRD046 implemented Tactical Battle AI V1 as a pure-planning plus live
+  revalidation architecture. The AI now has battle snapshots, action intents,
+  candidate generation, fixed-budget profile/cache support, 3-ply search and
+  scoring, CastManager skill bridging, and live enemy-turn integration through
+  the current `MostStupidAIEver` entry point.
+- PRD047 implemented the first async decision pipeline. The battle AI captures
+  snapshot/profile/skill metadata on the main thread, runs search on a worker
+  task, then consumes matching results on the main thread through the existing
+  execution bridge. Legacy AI remains as fallback.
+- PRD046/047 are accepted for the current project state. Unity compilation,
+  EditMode tests, and Play Mode validation remain manual/user-side.
+- Future AI improvement should be a focused follow-up, not more PRD046 scope:
+  move async planning earlier after logical battle-state commit if the goal is
+  to hide more thinking time behind presentation.
 
 ## Current Combat Presentation Notes
 
@@ -101,6 +123,8 @@ are initial design drafts and some remain guided templates:
 - `_codex/Context/08_Current_Mechanics.md` remains a template for verified
   current mechanics and still needs local code inspection or Unity-side
   verification before it becomes current-state truth.
+- `_codex/Context/AI_Context.md` is active and captures the current Tactical
+  Battle AI V1/async-planning contract from PRD046/047.
 - `_codex/Context/CONTEXT-MAP.md` routes GDD, identity, feel, gameplay, current
   mechanics, production, cleanup, task-tracker work, and design-grill PRDs to
   local TArena files.

@@ -1,15 +1,21 @@
 # [TARENA] PRD019 Start Run - Manual Integration Test
 
-- Status: ready-for-manual-test
+- Status: historical-manual-test
 - Type: Manual QA / Integration PRD
 - Area: Run Metagame, Start Run, Starting Armies, Route Preview
-- Source task: `_codex/tasks/020_PRD019_StartRun.md`
+- Source task: `_codex/tasks/archive/020_PRD019_StartRun.md`
 - Unity prefab under test:
   `TArenaUnity3D/Assets/Resources/UI/PRD_19/020_StartRun/PRD_19_020_StartRun.prefab`
 - Subprefabs under test:
   `TArenaUnity3D/Assets/Resources/UI/PRD_19/020_StartRun/Prefabs/`
 
 ## Goal
+
+Project Director note, 2026-06-24: this manual test belongs to the archived
+authored Start Run slice. It references fixed starting army names and should
+not be used as the current generator-first Start Run validation. Current
+validation should use PRD035/PRD040 generator-backed flow and
+`ArmyGeneratorRuleSet`/`RunGenerationSession` configuration.
 
 Verify that PRD019 Start Run can present legal weaker starting armies, preview a
 route choice, and create an offline run record from the selected starting army

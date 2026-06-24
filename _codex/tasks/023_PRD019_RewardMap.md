@@ -5,7 +5,7 @@
 - Area: Reward Cards, Reward Catalog, Reward Resolver, Reward UI
 - Label: ready-for-agent
 - Parent: `_codex/tasks/019_PRD_RunMetagameRewardFramework.md`
-- Blocked by: `_codex/tasks/022_PRD019_RunBattle.md`
+- Blocked by: `_codex/tasks/archive/022_PRD019_RunBattle.md`
 
 ## HITL Gate
 

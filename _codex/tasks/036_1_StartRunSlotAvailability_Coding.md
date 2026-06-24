@@ -6,7 +6,7 @@
 - Label: ready-for-agent
 - Parent: `_codex/tasks/036_PRD_StartRunSlotAvailability.md`
 - Related:
-  - `_codex/tasks/020_PRD019_StartRun.md`
+  - `_codex/tasks/archive/020_PRD019_StartRun.md`
   - `_codex/tasks/030_DB-001_OfflineModeDatabasePersistence.md`
   - `_codex/tasks/035_PRD_RandomStartingArmiesRoutes.md`
   - `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md`

@@ -24,6 +24,11 @@ public class TurnManager : MonoBehaviour
     bool resolvingNewTurnSequence;
     bool advanceRoundAfterNewTurnSequence;
     bool isDestroying;
+
+    public bool IsResolvingNewTurnSequence
+    {
+        get { return resolvingNewTurnSequence; }
+    }
    
     private void Start()
     {

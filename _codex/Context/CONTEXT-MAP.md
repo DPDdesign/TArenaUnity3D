@@ -311,6 +311,19 @@ progress, offence/defence, ranking, or AI goals:
 Confirmed design boundaries:
 
 - Run map is node-route style, not a spatial adventure map.
+- Current Start Run army direction is generator-first. Do not design or report
+  exact starting stack lists as current truth unless the user explicitly asks
+  for authored/predefined armies. For current playtest design, tune
+  `ArmyGeneratorRuleSet`, `RunGenerationSession`, unit unlock pool, stack count,
+  tier caps, faction mix, starting gold, reroll tokens, and target value bands.
+- Current enemy encounter direction is generator-first. Battle/final nodes use
+  explicit encounter difficulty and `EnemyEncounterRuleCatalog` to select an
+  enemy `ArmyGeneratorRuleSet`; predefined/manual enemy armies are future or
+  special-case scope, not the default V1 balance source.
+- Legacy authored catalogs such as `DefaultStartRunCatalog`,
+  `DefaultRunMapPathCatalog`, and `DefaultRunBattleEncounterCatalog` are not
+  the gameplay-design source for current run progression. Treat them as legacy
+  compatibility/test history unless a task explicitly targets them.
 - Standard battle reward is a fast 1-of-3 card choice.
 - Current V1 Reward Map is materialized and DB-backed: normal battle wins route
   to Reward Map, concrete reward rows are loaded from persistence, clicking a
@@ -446,6 +459,23 @@ difficulty:
 For run routes, reward cards, shops, saved armies, account progress, or
 asynchronous offence/defence, also use the "Run, Metaprogression, And Async
 Defence Context" section above.
+
+For Tactical Battle AI work, also use `_codex/Context/AI_Context.md`.
+PRD046/047 are the current AI improvement baseline:
+
+- Tactical AI is battle-only and does not own run routes, rewards, shops,
+  saved-army defence, matchmaking, or strategic metagame decisions.
+- Planning uses pure `BattleSnapshot`/profile/skill metadata copies and returns
+  ordered `TacticalAIActionIntent` values.
+- Live execution remains authoritative through `TacticalAIExecutionBridge`,
+  `MouseControler`, `CastManager`, and `BattleActionLifecycle`.
+- Async planning from PRD047 is advisory and worker-thread based; results must
+  be consumed on the main thread and rejected when snapshot hash, actor id, or
+  profile hash drift.
+- `MostStupidAIEver` still owns the current enemy-turn entry point and keeps
+  legacy AI as fallback.
+- Unity compile, EditMode tests, and Play Mode validation remain manual unless
+  a future task explicitly allows Unity command execution.
 
 For Run Map UI work, also use `_codex/Context/RunMap_UI_Context.md`. The Run
 Map should read as a connected route map with background context, visible path

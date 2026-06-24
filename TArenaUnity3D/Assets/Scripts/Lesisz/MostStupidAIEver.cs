@@ -6,8 +6,9 @@ using UnityEngine;
 
 public class MostStupidAIEver : MonoBehaviour
 {
-
     public MouseControler MC;
+    TacticalAIAsyncTurnIntegrator asyncTurnIntegrator;
+    Coroutine activeAiRoutine;
     // Start is called before the first frame update
     void Start()
     {
@@ -20,10 +21,74 @@ public class MostStupidAIEver : MonoBehaviour
 
     }
 
+    void OnDisable()
+    {
+        if (activeAiRoutine != null)
+        {
+            StopCoroutine(activeAiRoutine);
+            activeAiRoutine = null;
+        }
+    }
+
 
     public void AskAIwhattodo()
     {
+        if (activeAiRoutine != null)
+        {
+            return;
+        }
 
+        EnsureAsyncTurnIntegrator();
+        activeAiRoutine = StartCoroutine(RunAsyncTacticalAI());
+    }
+
+    IEnumerator RunAsyncTacticalAI()
+    {
+        TacticalAILiveTurnIntegrationResult result;
+        if (asyncTurnIntegrator.TryBeginTurn(out result) == false)
+        {
+            HandleAsyncTurnResult(result);
+            activeAiRoutine = null;
+            yield break;
+        }
+
+        while (asyncTurnIntegrator.TryCompleteTurn(out result) == false)
+        {
+            yield return null;
+        }
+
+        HandleAsyncTurnResult(result);
+        activeAiRoutine = null;
+    }
+
+    void HandleAsyncTurnResult(TacticalAILiveTurnIntegrationResult result)
+    {
+        if (result != null && result.Started)
+        {
+            return;
+        }
+
+        Debug.LogWarning(TacticalAILiveTurnIntegrator.BuildFallbackLog(
+            result != null ? result.ActorUnitId : string.Empty,
+            result != null ? result.Plan : null,
+            result != null ? result.ExecutionResult : null,
+            result != null ? result.FallbackReason : "UnknownAsyncFailure"));
+        RunLegacyFallbackAI();
+    }
+
+    void EnsureAsyncTurnIntegrator()
+    {
+        if (asyncTurnIntegrator != null)
+        {
+            return;
+        }
+
+        asyncTurnIntegrator = TacticalAIAsyncTurnIntegrator.CreateFromScene(
+            TacticalAIProfileCatalog.LoadNormalProfileAsset());
+    }
+
+    void RunLegacyFallbackAI()
+    {
         MC.getSelectedToster();
 
         //      List<HexClass> hexarea = new List<HexClass>(mouseControler.getHexUnderMouse().hexMap.GetHexesWithinRadiusOf(mouseControler.getHexUnderMouse(), aoeradius);
@@ -90,8 +155,6 @@ public class MostStupidAIEver : MonoBehaviour
 
         MC.TryStartMoveAction(hexmaxpath[hexmaxpath.Count-1], MC.getSelectedToster());
         return;
-
-
     }
     #region ANALIZA
     TosterHexUnit TosterWithLeastHP(List<TosterHexUnit> tosters)

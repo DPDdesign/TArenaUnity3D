@@ -1,7 +1,7 @@
 # [TARENA] Current State
 
 Status: living document
-Last updated: 2026-06-18
+Last updated: 2026-06-24
 Owner: Project Director
 
 ## Purpose
@@ -15,7 +15,7 @@ Source priority used for this pass:
 - `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md`
 - `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
 - `_codex/Context/02_Current_State.md`
-- PRD/task files 019, 021, 035, 037, 038, 039
+- PRD/task files 019, archived 021, 035, 037, 038, 039, 040
 - matching QA reports from 2026-06-16 through 2026-06-18
 - code under `TArenaUnity3D/Assets/Scripts/RunMetagame/`
 
@@ -37,6 +37,17 @@ The newest run-map direction is:
 - enemy encounter difficulty has a separate ScriptableObject catalog;
 - the actual map definition itself is not yet a ScriptableObject.
 
+Project Director correction from 2026-06-24:
+
+- Do not use the older hand-authored `DefaultStartRunCatalog`,
+  `DefaultRunMapPathCatalog`, or `DefaultRunBattleEncounterCatalog` as current
+  run-progression design truth.
+- Current army design work should tune generator rule sets, value bands, tier
+  caps, faction mix, unlock pools, starting resources, and enemy difficulty
+  bands.
+- Exact fixed army stack lists are allowed only as future predefined-army design
+  or explanatory examples, not as the current Start Run source.
+
 Primary return target after vacation:
 
 ```text
@@ -54,7 +65,8 @@ User-confirmed short gameplay status on 2026-06-18:
 4. Starting army currently comes from the `Mock_startingArmyRuleSet` catalog.
 5. Enemy armies currently come from `EnemyArmyGenerator`.
 6. Encounters currently come from `Mock_EnemyEncounters`.
-7. Rewards are not in the playable flow yet.
+7. Rewards were later moved to materialized DB-backed reward flow; Unity
+   Play Mode validation remains manual.
 8. Random Events are not in the playable flow yet.
 
 ## What Exists Now
@@ -190,8 +202,6 @@ Open caveats:
 
 - Legacy `route_*` tables have been removed from runtime code; Unity compile
   and Play Mode validation are still pending.
-- `map_node_enemies` currently stores placeholders based on encounter ids and
-  risk hints; real enemy army snapshot materialization is not done.
 - Local DB reset/rebuild is needed for old databases.
 
 ### PRD038 Run Map Node Representation Binding
@@ -230,13 +240,12 @@ What exists:
   - missing ruleset for generated mode fails clearly.
 - Tests exist in `EnemyEncounterRuleCatalogTests`.
 
-What is not done:
+Current follow-up:
 
-- The catalog is not wired into run generation, `map_node_enemies`, or
-  `RunBattleService`.
-- There is no authored real catalog asset yet unless created manually in Unity.
-- Existing risk-band strings still need mapping to
-  `EnemyEncounterDifficulty`.
+- The catalog contract is wired by PRD040 for generated enemy materialization.
+- A usable Unity scene still needs an assigned `RunGenerationSession`
+  `EnemyEncounterRuleCatalog` asset with Low, Medium, High, and Boss entries.
+- Predefined enemy ids remain reserved until a predefined army catalog exists.
 
 ## Current Answer To "What Works?"
 
@@ -265,8 +274,6 @@ Treat these as "tests exist, need user-run verification".
 
 ### Works Only As Placeholder Or Contract
 
-- Enemy generation: encounter ids and placeholder enemy rows exist, but real
-  enemy army generation/materialization is not implemented.
 - Random events and empty nodes: node types exist, but event gameplay is not
   implemented.
 - Campaign/mission progression: IDs and route choice shape exist, but there is
@@ -279,10 +286,7 @@ Treat these as "tests exist, need user-run verification".
   `Node1`, `Type`, `Difficulty`, `ConnectsTo`.
 - A converter from that SO into `RunMapPathDefinition` or direct
   materialized DB map rows.
-- Integration of `EnemyEncounterRuleCatalog` into map generation and battle
-  preparation.
 - Predefined armies catalog for authored enemy/boss/special army references.
-- Real enemy army snapshot materialization into `map_node_enemies`.
 - Final Unity scene/prefab wiring proof for the full Start Run -> Run Map ->
   Battle -> Reward -> Run Map loop.
 

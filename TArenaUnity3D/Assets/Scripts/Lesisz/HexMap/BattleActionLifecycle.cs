@@ -30,6 +30,16 @@ public class BattleActionLifecycle : MonoBehaviour
         get { return isBusy; }
     }
 
+    public TosterHexUnit ActiveActor
+    {
+        get { return activeActor; }
+    }
+
+    public string ActiveKindName
+    {
+        get { return isBusy ? activeKind.ToString() : string.Empty; }
+    }
+
     public static bool IsActionBlocking
     {
         get

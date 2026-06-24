@@ -8,6 +8,7 @@ public static class DataMapperAssetBootstrap
 {
     private const string AssetPath = "Assets/Resources/0_Data/DataMapper.asset";
     private const string UnitCatalogPath = "Assets/Resources/0_Data/UnitCatalog.asset";
+    private const string SkillCatalogPath = "Assets/Resources/0_Data/SkillCatalog.asset";
     private const string UnitDefinitionsFolder = "Assets/Resources/0_Data/Units";
     private const string UnitsXmlPath = "Assets/Resources/0_Data/Units.xml";
 
@@ -22,7 +23,8 @@ public static class DataMapperAssetBootstrap
         }
 
         UnitCatalog unitCatalog = EnsureUnitCatalog();
-        AssignUnitCatalog(existingAsset, unitCatalog);
+        SkillCatalog skillCatalog = EnsureSkillCatalog();
+        AssignCatalogs(existingAsset, unitCatalog, skillCatalog);
         AssetDatabase.SaveAssets();
     }
 
@@ -37,7 +39,8 @@ public static class DataMapperAssetBootstrap
         }
 
         UnitCatalog unitCatalog = RebuildUnitCatalogFromXml();
-        AssignUnitCatalog(dataMapper, unitCatalog);
+        SkillCatalog skillCatalog = EnsureSkillCatalog();
+        AssignCatalogs(dataMapper, unitCatalog, skillCatalog);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
     }
@@ -51,6 +54,11 @@ public static class DataMapperAssetBootstrap
         }
 
         return unitCatalog;
+    }
+
+    private static SkillCatalog EnsureSkillCatalog()
+    {
+        return AssetDatabase.LoadAssetAtPath<SkillCatalog>(SkillCatalogPath);
     }
 
     private static UnitCatalog RebuildUnitCatalogFromXml()
@@ -206,7 +214,7 @@ public static class DataMapperAssetBootstrap
         }
     }
 
-    private static void AssignUnitCatalog(DataMapper dataMapper, UnitCatalog unitCatalog)
+    private static void AssignCatalogs(DataMapper dataMapper, UnitCatalog unitCatalog, SkillCatalog skillCatalog)
     {
         if (dataMapper == null)
         {
@@ -215,6 +223,7 @@ public static class DataMapperAssetBootstrap
 
         SerializedObject serializedDataMapper = new SerializedObject(dataMapper);
         serializedDataMapper.FindProperty("unitCatalog").objectReferenceValue = unitCatalog;
+        serializedDataMapper.FindProperty("skillCatalog").objectReferenceValue = skillCatalog;
         serializedDataMapper.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(dataMapper);
     }

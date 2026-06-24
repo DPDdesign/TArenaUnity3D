@@ -781,6 +781,266 @@ public class MouseControler : LocalNetworkBehaviour
             null);
     }
 
+    public bool TryStartSkillAction(
+        TosterHexUnit actor,
+        int skillSlot,
+        string skillId,
+        HexClass targetHex,
+        out string failureReason)
+    {
+        failureReason = string.Empty;
+        if (actor == null)
+        {
+            failureReason = "Skill actor is missing.";
+            return false;
+        }
+
+        if (castManager == null)
+        {
+            failureReason = "CastManager reference is missing.";
+            return false;
+        }
+
+        if (BattleActionLifecycle.IsActionBlocking)
+        {
+            failureReason = "Battle action lifecycle is currently blocking.";
+            return false;
+        }
+
+        if (IsSkillIndexValid(skillSlot, actor) == false)
+        {
+            failureReason = "Skill slot is invalid for the live actor.";
+            return false;
+        }
+
+        string liveSkillId = actor.skillstrings[skillSlot];
+        if (string.Equals(liveSkillId, skillId ?? string.Empty, StringComparison.Ordinal) == false)
+        {
+            failureReason = "Skill slot/id pair no longer matches the live actor.";
+            return false;
+        }
+
+        if (CanStartSkill(skillSlot, actor) == false)
+        {
+            failureReason = "MouseControler rejected the skill before CastManager preparation.";
+            return false;
+        }
+
+        if (castManager.HasSkillModeMethod(skillId) == false || castManager.HasSkillCastMethod(skillId) == false)
+        {
+            failureReason = "CastManager does not contain the required mode/cast methods for skill " + skillId + ".";
+            return false;
+        }
+
+        SelectedToster = actor;
+        if (actor.Hex != null)
+        {
+            hexUnderMouse = targetHex != null ? targetHex : actor.Hex;
+        }
+
+        if (TryPrepareSkillSelectionForLiveExecution(actor, skillSlot, skillId, out failureReason) == false)
+        {
+            return false;
+        }
+
+        if (selectedSkillCompletionRequested)
+        {
+            return true;
+        }
+
+        if (IsRepeatableToggleSkill(skillId))
+        {
+            castManager.CancelPreparedSkillWithoutCommit();
+            failureReason = "Repeatable toggle skill did not complete during CastManager mode preparation.";
+            return false;
+        }
+
+        if (castManager.isMove && castManager.rush == false)
+        {
+            castManager.CancelPreparedSkillWithoutCommit();
+            failureReason = "Skill requires staged movement/target selection that is not represented by one AI skill intent yet.";
+            return false;
+        }
+
+        HexClass executionHex;
+        if (TryResolvePreparedSkillExecutionHex(actor, targetHex, out executionHex, out failureReason) == false)
+        {
+            castManager.CancelPreparedSkillWithoutCommit();
+            return false;
+        }
+
+        hexUnderMouse = executionHex;
+        ApplyPreparedSkillTargetHighlights(executionHex);
+
+        try
+        {
+            castManager.startSpell(skillId, executionHex);
+        }
+        catch (Exception ex)
+        {
+            castManager.CancelPreparedSkillWithoutCommit();
+            Debug.LogException(ex);
+            failureReason = "CastManager threw while starting skill " + skillId + ".";
+            return false;
+        }
+
+        if (selectedSkillCompletionRequested ||
+            castManager.ActionInputBlockedByCommittedSkill ||
+            BattleActionLifecycle.IsActionBlocking)
+        {
+            return true;
+        }
+
+        if (castManager.isInProgress)
+        {
+            castManager.CancelPreparedSkillWithoutCommit();
+            failureReason = "Skill entered a multi-step CastManager state that cannot be completed from one AI skill intent.";
+            return false;
+        }
+
+        castManager.CancelPreparedSkillWithoutCommit();
+        failureReason = "CastManager did not complete or start a blocking skill action.";
+        return false;
+    }
+
+    bool TryPrepareSkillSelectionForLiveExecution(
+        TosterHexUnit actor,
+        int skillSlot,
+        string skillId,
+        out string failureReason)
+    {
+        failureReason = string.Empty;
+        SelectedSpellid = skillSlot;
+        selectedSkillCompletionRequested = false;
+        SkillState = true;
+        if (canvas != null)
+        {
+            canvas.UseSkill(SelectedSpellid);
+        }
+
+        selectedSkillId = skillId;
+        selectedSkillAllowsMoveAfterUse = castManager.CanMoveAfterSkill(skillId);
+        selectedSkillConsumesTurn = selectedSkillAllowsMoveAfterUse == false;
+
+        try
+        {
+            castManager.getMode(skillId, actor);
+        }
+        catch (Exception ex)
+        {
+            castManager.CancelPreparedSkillWithoutCommit();
+            Debug.LogException(ex);
+            failureReason = "CastManager threw while preparing skill mode for " + skillId + ".";
+            return false;
+        }
+
+        selectedSkillCooldown = Mathf.Max(1, castManager.cooldown);
+        if (castManager.isAvailable == false)
+        {
+            castManager.CancelPreparedSkillWithoutCommit();
+            CancelUpdateFunc();
+            failureReason = "CastManager marked skill " + skillId + " unavailable during mode preparation.";
+            return false;
+        }
+
+        return true;
+    }
+
+    bool TryResolvePreparedSkillExecutionHex(
+        TosterHexUnit actor,
+        HexClass targetHex,
+        out HexClass executionHex,
+        out string failureReason)
+    {
+        executionHex = null;
+        failureReason = string.Empty;
+
+        if (actor == null)
+        {
+            failureReason = "Skill actor is missing.";
+            return false;
+        }
+
+        if (castManager.SelfCast && targetHex == null)
+        {
+            executionHex = actor.Hex;
+            return executionHex != null;
+        }
+
+        if (castManager.MeleeisAoE && targetHex == null)
+        {
+            executionHex = actor.Hex;
+            return executionHex != null;
+        }
+
+        if (targetHex == null)
+        {
+            failureReason = "Skill requires an explicit target hex in the intent.";
+            return false;
+        }
+
+        if (castManager.RangeSelectingenemy)
+        {
+            if (targetHex.Tosters == null || targetHex.Tosters.Count == 0 || targetHex.Tosters[0].Team == actor.Team)
+            {
+                failureReason = "Skill target is not a live enemy unit.";
+                return false;
+            }
+        }
+
+        if (castManager.Rangeselectingfriend)
+        {
+            if (targetHex.Tosters == null || targetHex.Tosters.Count == 0 || targetHex.Tosters[0].Team != actor.Team)
+            {
+                failureReason = "Skill target is not a live friendly unit.";
+                return false;
+            }
+        }
+
+        if (castManager.MeleeisAoE || castManager.MeleeisAoEOnlyRadius)
+        {
+            if (actor.Hex == null)
+            {
+                failureReason = "Melee skill actor has no live hex.";
+                return false;
+            }
+
+            int radius = Mathf.Max(1, castManager.aoeradius);
+            if (Mathf.Abs(targetHex.C - actor.Hex.C) > radius || Mathf.Abs(targetHex.R - actor.Hex.R) > radius)
+            {
+                failureReason = "Melee skill target is outside the prepared CastManager radius.";
+                return false;
+            }
+        }
+
+        executionHex = targetHex;
+        return true;
+    }
+
+    void ApplyPreparedSkillTargetHighlights(HexClass executionHex)
+    {
+        if (executionHex == null || hexMap == null)
+        {
+            return;
+        }
+
+        if (castManager.rush)
+        {
+            HighlightLine();
+            return;
+        }
+
+        if (castManager.RangeisAoE)
+        {
+            hexMap.HighlightAroundHex(executionHex, castManager.aoeradius);
+        }
+
+        if (castManager.MeleeisAoE)
+        {
+            hexMap.HighlightAroundHex(SelectedToster.Hex, castManager.aoeradius);
+        }
+    }
+
     void CompleteSkillCommit(TosterHexUnit actor, bool consumesTurn)
     {
         string skillId = string.IsNullOrEmpty(selectedSkillId) == false
@@ -789,9 +1049,7 @@ public class MouseControler : LocalNetworkBehaviour
 
         if (IsRepeatableToggleSkill(skillId))
         {
-            canvas.UnUseSkill(SelectedSpellid);
-            hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
-            actor.Hex.hexMap.unHighlight(actor.Hex.C, actor.Hex.R, actor.GetMS());
+            CleanupSelectedSkillVisualState(actor);
             return;
         }
 
@@ -799,12 +1057,28 @@ public class MouseControler : LocalNetworkBehaviour
         actor.AddUsedSkillIdThisTurn(skillId);
         actor.CanMoveAfterSkillThisTurn = selectedSkillAllowsMoveAfterUse;
         ApplySelectedSkillCooldownIfNeeded(actor);
-        canvas.UnUseSkill(SelectedSpellid);
-        hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
-        actor.Hex.hexMap.unHighlight(actor.Hex.C, actor.Hex.R, actor.GetMS());
+        CleanupSelectedSkillVisualState(actor);
         if (actor.MovedThisTurn || (consumesTurn && selectedSkillAllowsMoveAfterUse == false))
         {
             actor.Moved = true;
+        }
+    }
+
+    void CleanupSelectedSkillVisualState(TosterHexUnit actor)
+    {
+        if (canvas != null)
+        {
+            canvas.UnUseSkill(SelectedSpellid);
+        }
+
+        if (hexMap != null && hexUnderMouse != null && castManager != null)
+        {
+            hexMap.unHighlightAroundHex(hexUnderMouse, castManager.aoeradius + 20);
+        }
+
+        if (actor != null && actor.Hex != null && actor.Hex.hexMap != null)
+        {
+            actor.Hex.hexMap.unHighlight(actor.Hex.C, actor.Hex.R, actor.GetMS());
         }
     }
 

@@ -79,6 +79,12 @@ skill model.
 - Any approximate prediction must be revalidated before execution.
 - The bridge may produce less precise long-range skill search than a future
   pure snapshot model.
+- If bridge-based skill prediction or execution probing creates poor
+  performance, frequent rejections, or too many uncertain skill decisions, that
+  is a trigger for the future skill extraction work rather than permission to
+  add a second temporary prediction catalog.
+- Tactical AI should log rejected or uncertain skill context during development
+  so the project can identify which skills need extraction first.
 - A future skill rework should move validation-relevant targeting and
   prediction data into the existing skill catalog model, using the current
   `skillId` as the stable join key.
@@ -127,4 +133,6 @@ Tactical AI implementation tasks should verify that:
 - cooldowns, target rules, action timing, and turn completion remain unchanged,
 - cached AI plans are discarded or recalculated when the live battle state no
   longer matches the planned state,
-- no live Unity objects are mutated during background planning.
+- no live Unity objects are mutated during background planning,
+- rejected or uncertain skill paths produce enough diagnostic context to guide
+  the future skill rework without changing live skill behavior.

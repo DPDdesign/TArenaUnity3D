@@ -5,8 +5,8 @@
 - Area: Start Run, Run Map, Offline DB
 - Parent: `_codex/tasks/030_DB-001_OfflineModeDatabasePersistence.md`
 - Related:
-  - `_codex/tasks/020_PRD019_StartRun.md`
-  - `_codex/tasks/021_PRD019_RunMap.md`
+  - `_codex/tasks/archive/020_PRD019_StartRun.md`
+  - `_codex/tasks/archive/021_PRD019_RunMap.md`
 - Blocked by:
   - `_codex/tasks/030_1_PRD030_DatabaseFoundation.md`
   - `_codex/tasks/030_2_PRD030_SharedArmySnapshotAndPersistenceModels.md`

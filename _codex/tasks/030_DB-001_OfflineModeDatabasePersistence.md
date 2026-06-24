@@ -6,9 +6,9 @@
 - Label: needs-grill
 - Parent: `_codex/tasks/019_PRD_RunMetagameRewardFramework.md`
 - Related:
-  - `_codex/tasks/020_PRD019_StartRun.md`
-  - `_codex/tasks/021_PRD019_RunMap.md`
-  - `_codex/tasks/022_PRD019_RunBattle.md`
+  - `_codex/tasks/archive/020_PRD019_StartRun.md`
+  - `_codex/tasks/archive/021_PRD019_RunMap.md`
+  - `_codex/tasks/archive/022_PRD019_RunBattle.md`
   - `_codex/tasks/023_PRD019_RewardMap.md`
   - `_codex/tasks/024_PRD019_RunShop.md`
   - `_codex/tasks/025_PRD019_SummaryValue.md`

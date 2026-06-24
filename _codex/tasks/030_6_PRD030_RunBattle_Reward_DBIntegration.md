@@ -5,7 +5,7 @@
 - Area: Run Battle, Reward Map, Events, Offline DB
 - Parent: `_codex/tasks/030_DB-001_OfflineModeDatabasePersistence.md`
 - Related:
-  - `_codex/tasks/022_PRD019_RunBattle.md`
+  - `_codex/tasks/archive/022_PRD019_RunBattle.md`
   - `_codex/tasks/023_PRD019_RewardMap.md`
 - Blocked by: `_codex/tasks/030_5_PRD030_StartRun_RunMap_DBIntegration.md`
 

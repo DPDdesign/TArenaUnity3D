@@ -61,10 +61,17 @@ Current progress notes:
   battle-completion routing into Reward Map / Summary Value.
 - PRD41 added reward value parity at the generator seam so materialized rewards
   are closer to comparable strategic choices.
+- PRD046/047 added the Tactical Battle AI V1 architecture: pure battle
+  snapshots, legal action intents, profile-budgeted 3-ply planning, live
+  revalidation through existing battle action paths, skill bridging through
+  `CastManager`, and an initial async worker-task planning pipeline.
 - These are architecture stabilization steps for the Offline Mode run loop, but
-  manual Unity validation is still required before calling the whole loop stable.
+  manual Unity validation is still required before calling the whole loop or the
+  new AI path stable.
 
 ## Current Priority
 
-Priority is M1, then M2. Do not start broad asset replacement or architecture
-rewrites until the code map and multiplayer/backend cut plan are usable.
+Priority remains M1, then M2. PRD046/047 are acceptable as the current tactical
+AI improvement baseline, so the next broad production pressure is still
+backend/multiplayer isolation and local-loop verification, not more speculative
+AI expansion.

@@ -50,6 +50,27 @@ public class CastManager : LocalNetworkBehaviour
         method.Invoke(this, null);
 
     }
+
+    public bool HasSkillModeMethod(string spellID)
+    {
+        if (string.IsNullOrEmpty(spellID))
+        {
+            return false;
+        }
+
+        return GetType().GetMethod(spellID + "M") != null;
+    }
+
+    public bool HasSkillCastMethod(string spellID)
+    {
+        if (string.IsNullOrEmpty(spellID))
+        {
+            return false;
+        }
+
+        return GetType().GetMethod(spellID) != null;
+    }
+
     public void getMode(string spellID, TosterHexUnit ST)
     {
         this.ST = ST;
@@ -77,9 +98,42 @@ public class CastManager : LocalNetworkBehaviour
     public void SetFalse()
 
     {
-        SelectedT().TextToSend = "";
-        SelectedT().TextToSend += SelectedT().Name + " użył skilla " + SelectedT().skillstrings[mouseControler.SelectedSpellid] + ".";
-        Chat.chat.SendSkillUseMessage(SelectedT(), SelectedT().skillstrings[mouseControler.SelectedSpellid]);
+        TosterHexUnit selectedToster = SelectedT();
+        if (selectedToster != null && mouseControler != null)
+        {
+            string selectedSkillId = string.Empty;
+            if (selectedToster.skillstrings != null &&
+                mouseControler.SelectedSpellid >= 0 &&
+                mouseControler.SelectedSpellid < selectedToster.skillstrings.Count)
+            {
+                selectedSkillId = selectedToster.skillstrings[mouseControler.SelectedSpellid];
+            }
+
+            selectedToster.TextToSend = "";
+            selectedToster.TextToSend += selectedToster.Name + " użył skilla " + selectedSkillId + ".";
+            if (Chat.chat != null && string.IsNullOrEmpty(selectedSkillId) == false)
+            {
+                Chat.chat.SendSkillUseMessage(selectedToster, selectedSkillId);
+            }
+        }
+
+        bool shouldCompleteCommittedSpell = committedSpellStarted && mouseControler != null && selectedToster != null;
+        committedSpellStarted = false;
+        ResetModeState();
+        if (shouldCompleteCommittedSpell)
+        {
+            mouseControler.CompleteSelectedSkillLocally(selectedToster);
+        }
+    }
+
+    public void CancelPreparedSkillWithoutCommit()
+    {
+        committedSpellStarted = false;
+        ResetModeState();
+    }
+
+    void ResetModeState()
+    {
         isMove = false;
         tempHex = null; 
          RangeSelectingenemy = false;
@@ -103,11 +157,6 @@ public class CastManager : LocalNetworkBehaviour
         isInProgress = false;
         SlashTarget = false;
         ActionInputBlockedByCommittedSkill = false;
-        if (committedSpellStarted && mouseControler != null)
-        {
-            committedSpellStarted = false;
-            mouseControler.CompleteSelectedSkillLocally(SelectedT());
-        }
     }
     public HexClass getHexUM()
     {

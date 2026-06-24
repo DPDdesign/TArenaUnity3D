@@ -650,6 +650,10 @@ Primary code:
 Rule:
 
 - Start Run creates the `offline_runs` row through the shared writer.
+- Current Start Run production direction is generator-backed. The selected
+  starting army should come from generator outputs configured through
+  `ArmyGeneratorRuleSet`/`RunGenerationSession` and current unit catalog truth,
+  not from hand-authored `DefaultStartRunCatalog` stack lists.
 - Start Run persists the starting army through `OfflineArmySnapshotDbRepository`.
 - Start Run reloads the returned `CreatedRunRecord` through
   `OfflineRunContextDbReader` after transaction commit, so the frontend receives
@@ -688,6 +692,14 @@ Primary code:
 - `OfflineRunBattleDbStore.SaveCompletion(...)`
 - `OfflineRunContextDbWriter.UpdateNodeArmyGoldScreen(...)`
 - `OfflineRunContextDbWriter.UpdateArmyGoldScreen(...)`
+
+Rule:
+
+- Current enemy army direction is generator-backed and materialized at run
+  creation for battle/final nodes. Encounter difficulty selects an enemy
+  generator rule through `EnemyEncounterRuleCatalog`; battle preparation should
+  read the persisted enemy army snapshot rather than inventing a hand-authored
+  encounter at screen time.
 
 ### Generate And Apply Reward
 

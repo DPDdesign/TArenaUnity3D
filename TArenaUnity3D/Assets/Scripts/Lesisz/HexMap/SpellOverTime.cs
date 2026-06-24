@@ -14,6 +14,66 @@ namespace TimeSpells
         public string nameofspell = null;
         public bool isStackable = false;
         List<int> SpecialEvents;
+        public TosterHexUnit SourceUnit
+        {
+            get { return target; }
+        }
+
+        public int HpModifier
+        {
+            get { return hp; }
+        }
+
+        public int AttackModifier
+        {
+            get { return att; }
+        }
+
+        public int DefenseModifier
+        {
+            get { return def; }
+        }
+
+        public int MovementModifier
+        {
+            get { return ms; }
+        }
+
+        public int InitiativeModifier
+        {
+            get { return ini; }
+        }
+
+        public int MaxDamageModifier
+        {
+            get { return maxdmg; }
+        }
+
+        public int MinDamageModifier
+        {
+            get { return mindmg; }
+        }
+
+        public int DamageOverTime
+        {
+            get { return dmgovertime; }
+        }
+
+        public int ResistanceModifier
+        {
+            get { return res; }
+        }
+
+        public int CounterAttacksModifier
+        {
+            get { return counterattacks; }
+        }
+
+        public int DamageModifier
+        {
+            get { return SpecialDMGModificator; }
+        }
+
      public   SpellOverTime(int Time,
                       TosterHexUnit target,
                       TosterHexUnit me,

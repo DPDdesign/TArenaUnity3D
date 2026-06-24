@@ -1,52 +1,39 @@
-﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 public class RightClickInfoSkill : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
-    public GameObject infopanel;
-    public Image infoImage;
-    public Text NameOfSkill;
-    public Text SNameOfSkill, InfoSkill, TypeSkill;
+    [SerializeField] private string skillId;
+    [SerializeField] private SkillInfoPresentation skillInfoPresentation;
+
+    public void Bind(string newSkillId, SkillInfoPresentation newSkillInfoPresentation)
+    {
+        skillId = newSkillId;
+        skillInfoPresentation = newSkillInfoPresentation;
+    }
+
+    public void SetSkillId(string newSkillId)
+    {
+        skillId = newSkillId;
+    }
+
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (eventData.button == PointerEventData.InputButton.Right)// && NameOfSkill.text)// != SNameOfSkill.text)
+        if (eventData.button != PointerEventData.InputButton.Right ||
+            skillInfoPresentation == null ||
+            string.IsNullOrEmpty(skillId))
         {
-            infopanel.SetActive(true);
-            SetPanelSkill(NameOfSkill.text);
-          //  infoImage.sprite = DataMapper.Instance.LoadInfoPageSprite(NameOfSkill.text);
+            return;
         }
+
+        skillInfoPresentation.ShowSkill(skillId);
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        if (eventData.button == PointerEventData.InputButton.Right)
+        if (eventData.button == PointerEventData.InputButton.Right && skillInfoPresentation != null)
         {
-            infopanel.SetActive(false);
+            skillInfoPresentation.Hide();
         }
-    }
-    public void SetPanelSkill(string name) //XML DATA LOAD
-    {
-        DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(name);
-        if (skillDefinition != null)
-        {
-            SNameOfSkill.text = skillDefinition.Name;
-            TypeSkill.text = skillDefinition.Type;
-            InfoSkill.text = skillDefinition.Info;
-        }
-
-    }
-    // Start is called before the first frame update
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 }

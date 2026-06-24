@@ -338,12 +338,28 @@ public class UICanvas : MonoBehaviour
 
     void SetSkillNameText(int index, string skillName)
     {
+        SetRightClickSkillId(index, skillName);
+
         if (ShowSkillName == false || SkillT == null || index < 0 || index >= SkillT.Count || SkillT[index] == null)
         {
             return;
         }
 
         SkillT[index].text = skillName;
+    }
+
+    void SetRightClickSkillId(int index, string skillName)
+    {
+        if (SkillButtons == null || index < 0 || index >= SkillButtons.Count || SkillButtons[index] == null)
+        {
+            return;
+        }
+
+        RightClickInfoSkill rightClickInfoSkill = SkillButtons[index].GetComponent<RightClickInfoSkill>();
+        if (rightClickInfoSkill != null)
+        {
+            rightClickInfoSkill.SetSkillId(skillName);
+        }
     }
 
     bool HasSkillButton(int index)
@@ -499,6 +515,7 @@ public class UICanvas : MonoBehaviour
             {
                 SkillT[i].text = "";
             }
+            SetRightClickSkillId(i, "");
             SetCooldownTextActive(i, false);
             SetCooldownFill(i, 0f);
         }

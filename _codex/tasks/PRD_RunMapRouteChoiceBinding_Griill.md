@@ -4,8 +4,8 @@
 - Type: HITL Task
 - Area: Run Metagame, Start Run, Run Map, Route Preview
 - Label: ready-for-agent
-- Parent: `_codex/tasks/019_PRD_RunMetagameRewardFramework.md` and `_codex/tasks/021_PRD019_RunMap.md`
-- Blocked by: `_codex/tasks/020_PRD019_StartRun.md`
+- Parent: `_codex/tasks/019_PRD_RunMetagameRewardFramework.md` and `_codex/tasks/archive/021_PRD019_RunMap.md`
+- Blocked by: `_codex/tasks/archive/020_PRD019_StartRun.md`
 
 ## Problem Statement
 

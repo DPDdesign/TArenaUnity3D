@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TArena Tactical AI Setup Guide</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f14;
+      --paper: #111923;
+      --paper-2: #17212c;
+      --line: #2d3e4f;
+      --line-strong: #41576c;
+      --text: #eef4f8;
+      --muted: #a8b6c2;
+      --soft: #c8d4de;
+      --accent: #5cc8b7;
+      --accent-2: #9dbfff;
+      --warning: #ffd080;
+      --danger: #ff947f;
+      --good: #9ee6ad;
+      --code-bg: #0b1118;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+      line-height: 1.55;
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 44px 24px 72px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      letter-spacing: 0;
+      line-height: 1.14;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 34px;
+    }
+
+    h2 {
+      border-bottom: 1px solid var(--line);
+      margin: 36px 0 16px;
+      padding-bottom: 8px;
+      font-size: 24px;
+      color: #ffffff;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: var(--text);
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    code {
+      background: var(--code-bg);
+      border: 1px solid #273747;
+      border-radius: 5px;
+      color: #d9f4ff;
+      padding: 2px 6px;
+      white-space: nowrap;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 18px;
+      padding-left: 24px;
+    }
+
+    li {
+      margin: 7px 0;
+    }
+
+    .lead {
+      max-width: 850px;
+      color: var(--soft);
+      font-size: 17px;
+    }
+
+    .manual-panel {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .warning {
+      border-color: rgba(255, 208, 128, 0.48);
+      background: #2a2115;
+      color: #ffe4ad;
+    }
+
+    .chapter {
+      border-top: 1px solid var(--line-strong);
+      padding-top: 22px;
+      margin-top: 30px;
+    }
+
+    .parameter {
+      border-top: 1px solid var(--line);
+      background: transparent;
+      border-radius: 0;
+      padding: 22px 0;
+      margin: 0;
+    }
+
+    .parameter h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .parameter h3 code {
+      display: inline-block;
+      background: #071622;
+      border: 1px solid #1d4f72;
+      border-radius: 5px;
+      color: #f3fbff;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.1;
+      padding: 3px 7px;
+    }
+
+    .default {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .parameter .summary {
+      color: var(--soft);
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+
+    .manual-lines {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .line {
+      border-left: 3px solid var(--line-strong);
+      padding-left: 14px;
+      color: var(--soft);
+    }
+
+    .line strong {
+      color: var(--text);
+    }
+
+    .line.up {
+      border-color: var(--good);
+    }
+
+    .line.down {
+      border-color: var(--danger);
+    }
+
+    .line.example {
+      border-color: var(--accent-2);
+    }
+
+    .line.note {
+      border-color: var(--warning);
+    }
+
+    .preset {
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+      border-radius: 6px;
+      padding: 16px;
+      margin: 14px 0;
+    }
+
+    .preset h3 {
+      color: #ffffff;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 16px;
+    }
+
+    .tag {
+      border: 1px solid rgba(92, 200, 183, 0.48);
+      background: rgba(92, 200, 183, 0.12);
+      color: #d0fff8;
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 13px;
+    }
+
+    .mini-index {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 20px;
+      margin-top: 14px;
+    }
+
+    .mini-index a {
+      color: var(--accent-2);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(157, 191, 255, 0.4);
+      width: fit-content;
+    }
+
+    .mini-index a:hover {
+      color: #ffffff;
+      border-bottom-color: #ffffff;
+    }
+
+    .footer {
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+      margin-top: 42px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 720px) {
+      main {
+        padding: 24px 14px 48px;
+      }
+
+      .mini-index {
+        grid-template-columns: 1fr;
+      }
+
+      code {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Tactical AI Profile: instrukcja strojenia</h1>
+    <p class="lead">
+      Ten dokument opisuje profil <code>TacticalAIProfile_Normal</code> tak, jak
+      powinien byc czytany przez designera gry. Nie jest to dokument techniczny
+      o klasach C#. To manual: ktory suwak ruszyc, jaki efekt zobaczysz w
+      walce i kiedy lepiej zostawic parametr w spokoju.
+    </p>
+
+    <section class="manual-panel warning">
+      <h2>Najpierw: czy trzeba cos podpinac?</h2>
+      <p>
+        Nie. Na obecnym etapie profil jest przygotowany jako asset, ale nie ma
+        jeszcze live AI controllera, ktory trzeba recznie uzbroic w Inspectorze.
+        Aktualna walka powinna dzialac tak jak przed dodaniem profilu.
+      </p>
+      <p>
+        Asset znajduje sie tutaj:
+        <code>Assets/Resources/0_Data/TacticalAIProfile_Normal.asset</code>.
+        Mozesz go otwierac, kopiowac i przygotowywac warianty, ale nie musisz
+        go teraz przypisywac do sceny.
+      </p>
+    </section>
+
+    <section class="manual-panel">
+      <h2>Jak czytac ten profil</h2>
+      <p>
+        Profil AI ma trzy warstwy. Pierwsza to <strong>budzet myslenia</strong>:
+        jak daleko AI moze patrzec i ile opcji moze porownac. Druga to
+        <strong>scoring</strong>: co AI uznaje za wartosciowe. Trzecia to
+        <strong>bias</strong>: male dopchniecia, gdy kilka akcji wypada podobnie.
+      </p>
+      <p>
+        Najwazniejsza zasada: profil nie daje ukrytych statystyk. Nie zmienia
+        HP, obrazen, cooldownow, zasiegu ani legalnosci skilli. AI ma nadal
+        grac tymi samymi zasadami co gracz.
+      </p>
+
+      <div class="mini-index">
+        <a href="#search-depth">Search Depth Plies</a>
+        <a href="#watchdog">Decision Watchdog Ms</a>
+        <a href="#own-beam">Own Action Beam</a>
+        <a href="#enemy-beam">Enemy Response Beam</a>
+        <a href="#candidate-caps">Candidate limits</a>
+        <a href="#opponent-response">Opponent response</a>
+        <a href="#scoring">Scoring weights</a>
+        <a href="#biases">Action type biases</a>
+        <a href="#presets">Gotowe przyklady AI</a>
+      </div>
+    </section>
+
+    <section class="chapter">
+      <h2>Rozdzial 1: budzet myslenia AI</h2>
+      <p>
+        Te parametry decyduja, jak "mocno" AI moze analizowac walke. Jezeli AI
+        podejmuje glupie decyzje, najpierw sprawdz beams i candidate caps. Depth
+        podnos dopiero wtedy, gdy wiesz, ze koszt obliczeniowy jest akceptowalny.
+      </p>
+
+      <article class="parameter" id="difficulty-name">
+        <h3><code>Difficulty Name</code> <span class="default">domyslnie: Normal</span></h3>
+        <p class="summary">
+          Nazwa profilu. Sluzy do czytelnosci w Inspectorze, logach i rozmowie
+          designerskiej. Sama nazwa nie powinna wzmacniac ani oslabiać AI.
+        </p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Gdy zmienisz na bardziej konkretna nazwe:</strong> latwiej rozpoznasz, czy testujesz profil <code>Normal</code>, <code>Fast Debug</code>, <code>Boss Planner</code> albo <code>Aggressive Skills</code>.</p>
+          <p class="line down"><strong>Gdy nazwa jest zbyt ogolna:</strong> szybciej pomylisz assety, zwlaszcza gdy pojawi sie kilka wariantow o podobnych wartosciach.</p>
+          <p class="line example"><strong>Przyklad:</strong> kopiujesz profil Normal, zmieniasz nazwe na <code>Tempo Finisher</code>, a potem stroisz kill bonus i tempo.</p>
+        </div>
+      </article>
+
+      <article class="parameter" id="search-depth">
+        <h3><code>Search Depth Plies</code> <span class="default">domyslnie: 3</span></h3>
+        <p class="summary">
+          To najprostszy opis tego, jak daleko AI patrzy w przyszlosc. Jeden
+          ply oznacza jedna okazje akcji w przewidywanej kolejce, nie zawsze
+          zmiane strony. Przy 3 ply AI powinno widziec: swoja akcje, odpowiedz
+          przeciwnika i swoj follow-up.
+        </p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI lepiej rozumie wymiany, pulapki pozycyjne i odpowiedzi gracza. Koszt rosnie mocno, bo kazdy dodatkowy ply mnozy liczbe galezi.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> decyzje sa szybsze i prostsze, ale AI zaczyna grac bardziej greedy. Moze wybrac atak, ktory wyglada dobrze teraz, ale przegrywa po odpowiedzi.</p>
+          <p class="line example"><strong>Przyklad uzycia:</strong> <code>3</code> zostaw dla Normal. <code>2</code> nadaje sie do szybkiego debugowania. <code>4</code> zostaw na bossow albo pozny run po testach wydajnosci.</p>
+          <p class="line note"><strong>Uwaga designerska:</strong> nie podnos depth jako pierwszego suwaka. Czesto lepszy efekt da szerszy beam albo lepszy scoring.</p>
+        </div>
+      </article>
+
+      <article class="parameter" id="watchdog">
+        <h3><code>Decision Watchdog Ms</code> <span class="default">domyslnie: 300</span></h3>
+        <p class="summary">
+          To bezpiecznik, nie budzet sily. Ma zatrzymac decyzje, jezeli cos
+          trwa za dlugo. Nie powinien pozwalac AI myslec "ile zdazy" na szybkim
+          komputerze.
+        </p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI rzadziej przerwie trudna decyzje i rzadziej spadnie do fallbacku. Nadal nie wolno mu przekroczyc depth, beam ani candidate caps.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> gra szybciej odzyska kontrole, jesli AI trafi na ciezki stan. Rosnie ryzyko, ze AI uzyje plytszego planu albo fallbacku.</p>
+          <p class="line example"><strong>Przyklad uzycia:</strong> <code>300</code> dla Normal. <code>100-150</code> dla profilu debugowego. <code>400-500</code> dopiero dla drozszego boss profile.</p>
+          <p class="line note"><strong>Uwaga designerska:</strong> jesli AI jest za slabe, nie zwiekszaj watchdog jako pierwszego. Zmien depth, beams, caps albo scoring.</p>
+        </div>
+      </article>
+
+      <article class="parameter" id="own-beam">
+        <h3><code>Own Action Beam</code> <span class="default">domyslnie: 8</span></h3>
+        <p class="summary">
+          Ile najlepszych akcji AI zostaje po wstepnym przycieciu. Ten parametr
+          decyduje, czy AI zachowa tylko kilka oczywistych opcji, czy pozwoli
+          sobie porownac rowniez mniej oczywiste skille i ruchy.
+        </p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI rzadziej zgubi silna, ale mniej oczywista akcje. Przydaje sie dla jednostek z wieloma skillami albo wieloma targetami.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> decyzje sa tansze, ale AI szybciej zawiesza sie na najprostszych akcjach.</p>
+          <p class="line example"><strong>Przyklad uzycia:</strong> jezeli AI prawie zawsze robi zwykly atak mimo dobrego skilla, podnies do <code>10-12</code>.</p>
+        </div>
+      </article>
+
+      <article class="parameter" id="enemy-beam">
+        <h3><code>Enemy Response Beam</code> <span class="default">domyslnie: 5</span></h3>
+        <p class="summary">
+          Ile odpowiedzi przeciwnika AI bierze na serio w symulacji. To jest
+          parametr "czy AI szanuje kontrplay".
+        </p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI czesciej zobaczy, ze po agresywnej akcji przeciwnik moze zabic stack, zablokowac pozycje albo zrobic lepsza wymiane.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI bedzie szybsze, ale moze grac tak, jakby przeciwnik mial mniej dobrych odpowiedzi niz naprawde.</p>
+          <p class="line example"><strong>Przyklad uzycia:</strong> podnies do <code>7</code>, gdy AI regularnie wchodzi w oczywista kare po swojej turze.</p>
+        </div>
+      </article>
+
+      <article class="parameter" id="candidate-caps">
+        <h3><code>Max Candidates...</code> <span class="default">domyslnie: 8 / 8 / 8 / 8 / 4</span></h3>
+        <p class="summary">
+          Te pola kontroluja, ile konkretnych propozycji akcji trafia do oceny:
+          <code>Max Candidates Per Action Type</code>, <code>Max Skill Candidates</code>,
+          <code>Max Move Candidates</code>, <code>Max Attack Candidates</code> i
+          <code>Max Fallback Candidates</code>.
+        </p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI widzi wiecej legalnych akcji. To pomaga, gdy mapa ma duzo pozycji, jednostka ma kilka skilli albo wiele celow jest w zasiegu.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> decyzje sa tansze i bardziej przewidywalne, ale dobre akcje moga zostac odrzucone zanim scoring je zobaczy.</p>
+          <p class="line example"><strong>Przyklad uzycia:</strong> dla profilu skillowego podnies <code>Max Skill Candidates</code> do <code>10-12</code>. Dla fast debug obniz wiekszosc capow do <code>4</code>.</p>
+          <p class="line note"><strong>Jak stroic:</strong> jesli AI nie znajduje dobrych ruchow pozycyjnych, rusz <code>Max Move Candidates</code>. Jesli zle wybiera cel, rusz <code>Max Attack Candidates</code>. Jesli skille sa ignorowane, rusz <code>Max Skill Candidates</code>.</p>
+        </div>
+      </article>
+
+      <article class="parameter" id="opponent-response">
+        <h3><code>Require Opponent Response When Reachable</code> <span class="default">domyslnie: wlaczone</span></h3>
+        <p class="summary">
+          Wymusza, zeby search Normal uwzglednil odpowiedz przeciwnika, jesli
+          przeciwnik ma realna okazje akcji. To chroni przed falszywym "3-ply",
+          w ktorym AI widzi tylko swoje kolejne ruchy.
+        </p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Wlaczenie:</strong> AI bedzie ostrozniejsze i bardziej fair, bo sprawdzi przynajmniej jedna odpowiedz przeciwnika tam, gdzie to ma sens.</p>
+          <p class="line down"><strong>Wylaczenie:</strong> AI moze szybciej konczyc search, ale latwiej przeoczy prosta kontre.</p>
+          <p class="line example"><strong>Przyklad uzycia:</strong> zostaw wlaczone dla wszystkich normalnych profili. Wylacz tylko do izolowanych testow searchu.</p>
+        </div>
+      </article>
+
+      <article class="parameter" id="tie-break">
+        <h3><code>Deterministic Tie Break Mode</code> i <code>Stable Tie Break Seed</code></h3>
+        <p class="summary">
+          Te pola decyduja, co zrobic, gdy kilka akcji ma taki sam albo bardzo
+          podobny wynik. Nie sa suwakami sily. Sa narzedziami powtarzalnosci.
+        </p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zmiana seed:</strong> moze zmienic wybor przy remisach bez zmiany zasad i bez zmiany scoringu.</p>
+          <p class="line down"><strong>Brak zmiany:</strong> decyzje pozostaja latwiejsze do debugowania i testowania.</p>
+          <p class="line example"><strong>Przyklad uzycia:</strong> dwa profile maja te same wagi, ale chcesz, zeby jeden w remisach czesciej wybieral inny stabilny wariant. Wtedy zmien seed.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="chapter" id="scoring">
+      <h2>Rozdzial 2: scoring, czyli co AI uwaza za dobra akcje</h2>
+      <p>
+        Scoring nie zmienia zasad gry. Zmienia tylko ocene legalnych akcji.
+        Jezeli AI robi rzeczy legalne, ale "glupie", zwykle problem siedzi
+        wlasnie tutaj: zle ceni damage, trade, tempo albo bezpieczenstwo.
+      </p>
+
+      <article class="parameter">
+        <h3><code>Enemy Value Removed</code> <span class="default">domyslnie: 1</span></h3>
+        <p class="summary">Premia za zabieranie wartosci z armii przeciwnika.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI mocniej szuka obrazen, focus fire i akcji, ktore realnie oslabiaja wroga.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI bedzie mniej damage-first i latwiej wybierze pozycje albo defensywe.</p>
+          <p class="line example"><strong>Przyklad:</strong> podnies do <code>1.1-1.3</code> dla agresywnego profilu.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Own Value Lost</code> <span class="default">domyslnie: 1.2</span></h3>
+        <p class="summary">Kara za utrate wlasnej wartosci po przewidywanej wymianie.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI zaczyna bardziej chronic stacki i unika wymian, w ktorych placi za duzo.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI staje sie bardziej ryzykowne i latwiej poswieca jednostki dla presji.</p>
+          <p class="line example"><strong>Przyklad:</strong> <code>1.2</code> dla Normal, bo wlasna strata powinna bolec lekko mocniej niz taki sam zysk damage.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Enemy Stack Kill Bonus</code> <span class="default">domyslnie: 25</span></h3>
+        <p class="summary">Dodatkowa premia za dobicie calego wrogiego stacka.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI czesciej domyka ranne cele zamiast rozkladac obrazenia po calej armii.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI bardziej patrzy na laczny damage niz na usuniecie konkretnego stacka z planszy.</p>
+          <p class="line example"><strong>Przyklad:</strong> <code>35-50</code> dla profilu Tempo Finisher.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Own Stack Loss Penalty</code> <span class="default">domyslnie: 25</span></h3>
+        <p class="summary">Dodatkowa kara za utrate calego wlasnego stacka.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI mniej chetnie zostawi jednostke na smierc po wlasnej akcji.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI latwiej zaakceptuje wymiane stack za tempo albo kill.</p>
+          <p class="line example"><strong>Przyklad:</strong> podnies do <code>35-45</code> dla profilu Cautious Defender.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Win Score</code> i <code>Loss Score</code> <span class="default">domyslnie: 1000 / -1000</span></h3>
+        <p class="summary">
+          Wartosc terminalna zwyciestwa i porazki. Te liczby powinny byc duze,
+          zeby AI rozumialo, ze wygranie walki jest wazniejsze niz ladny drobny
+          trade po drodze.
+        </p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Wyższy Win Score lub bardziej ujemny Loss Score:</strong> AI mocniej podporzadkuje decyzje finalnemu wynikowi walki.</p>
+          <p class="line down"><strong>Nizszy Win Score lub mniej ujemny Loss Score:</strong> AI bardziej slucha lokalnych heurystyk i moze przeceniac dobry damage w przegrywajacej linii.</p>
+          <p class="line example"><strong>Przyklad:</strong> zostaw <code>1000</code> i <code>-1000</code> na start. Biasy typu <code>0.15</code> nie powinny konkurowac z wygrana.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Damage Efficiency</code> <span class="default">domyslnie: 0.25</span></h3>
+        <p class="summary">Premia za damage, ktory jest wart kosztu i ryzyka.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI bardziej ceni akcje, ktore robia dobry damage bez absurdalnego kosztu pozycyjnego.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI mniej rozroznia dobry damage od pustego damage, ktory nie zmienia sytuacji.</p>
+          <p class="line example"><strong>Przyklad:</strong> podnies, gdy AI wybiera efektowny skill, ktory wyglada dobrze, ale nie poprawia realnej pozycji.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Position Safety</code> <span class="default">domyslnie: 0.2</span></h3>
+        <p class="summary">Premia za zostanie w bezpiecznej pozycji po akcji.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI rzadziej wchodzi pod latwa kontre i czesciej wybiera pole, ktore nie oddaje stacka za darmo.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI gra bardziej frontalnie, mniej przejmuje sie odpowiedzia przeciwnika.</p>
+          <p class="line example"><strong>Przyklad:</strong> <code>0.3-0.4</code> dla ostroznego przeciwnika albo obrony zapisanej armii.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Threat Control</code> <span class="default">domyslnie: 0.2</span></h3>
+        <p class="summary">Wartosc kontroli zasiegow, przyszlych atakow i ograniczania przeciwnika.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI bardziej ceni pozycje, ktore zmuszaja przeciwnika do gorszych ruchow.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI bardziej skupia sie na natychmiastowej wymianie niz na kontroli mapy.</p>
+          <p class="line example"><strong>Przyklad:</strong> podnies dla profilu range-heavy albo map-control.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Progress Tempo</code> <span class="default">domyslnie: 0.2</span></h3>
+        <p class="summary">Premia za pchanie walki do przodu i unikanie pustego stania.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI rzadziej wybiera wait, defend albo nic nie dajacy ruch, gdy ma sensowna aktywna opcje.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI moze grac cierpliwiej, ale latwiej wpadnie w pasywny styl.</p>
+          <p class="line example"><strong>Przyklad:</strong> podnies do <code>0.35</code>, gdy AI za dlugo krazy i nie wymusza postepu.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="chapter" id="biases">
+      <h2>Rozdzial 3: action type biases</h2>
+      <p>
+        Biasy to male preferencje przy podobnych wynikach. Traktuj je jak
+        przyprawe, nie jak glowny balans. Jesli bias sam wymusza akcje, mimo
+        ze plansza mowi cos innego, wartosc jest za wysoka.
+      </p>
+
+      <article class="parameter">
+        <h3><code>Skill</code> <span class="default">domyslnie: 0.15</span></h3>
+        <p class="summary">Lekka preferencja dla aktywnego skilla.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI czesciej wybierze skill, gdy skill i atak maja podobna wartosc.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI czesciej zostanie przy zwyklym ataku albo ruchu.</p>
+          <p class="line example"><strong>Przyklad:</strong> <code>0.2-0.25</code> dla profilu, ktory ma czesciej pokazywac kit jednostek.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Attack</code> <span class="default">domyslnie: 0.1</span></h3>
+        <p class="summary">Lekka preferencja dla zwyklego ataku.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI chetniej bierze pewny damage, jesli inne opcje sa blisko.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI latwiej wybierze skill, ruch albo defensywe.</p>
+          <p class="line example"><strong>Przyklad:</strong> podnies lekko dla agresywnego melee, ale nie tak wysoko, zeby ignorowalo safety.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Move And Attack</code> <span class="default">domyslnie: 0.05</span></h3>
+        <p class="summary">Preferencja dla doskoku zakonczonego atakiem.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI aktywniej skraca dystans i naciska przeciwnika.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI mniej ryzykuje wejscie w zasieg odpowiedzi.</p>
+          <p class="line example"><strong>Przyklad:</strong> podnies dla rusherow, obniz dla delikatnych jednostek dystansowych.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Move</code> <span class="default">domyslnie: 0</span></h3>
+        <p class="summary">Preferencja dla samego ruchu bez natychmiastowego ataku.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI czesciej zrobi setup pozycyjny, nawet bez damage w tej akcji.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI mniej chetnie rusza sie bez natychmiastowej wartosci.</p>
+          <p class="line example"><strong>Przyklad:</strong> zostaw <code>0</code> dla Normal. Ruch powinien zarabiac przez <code>Position Safety</code> i <code>Threat Control</code>.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Defend</code> <span class="default">domyslnie: -0.05</span></h3>
+        <p class="summary">Preferencja albo kara dla obrony.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI czesciej uzyje obrony, gdy atak jest slaby lub niebezpieczny.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI rzadziej bedzie konczyc ture defensywnie.</p>
+          <p class="line example"><strong>Przyklad:</strong> dla cautious defender podnies najwyzej do <code>0</code> albo <code>0.05</code>.</p>
+        </div>
+      </article>
+
+      <article class="parameter">
+        <h3><code>Wait</code> <span class="default">domyslnie: -0.1</span></h3>
+        <p class="summary">Preferencja albo kara dla czekania.</p>
+        <div class="manual-lines">
+          <p class="line up"><strong>Zwiekszenie:</strong> AI latwiej uzyje wait jako tempo play.</p>
+          <p class="line down"><strong>Zmniejszenie:</strong> AI bedzie bardziej aktywne i rzadziej odda inicjatywe.</p>
+          <p class="line example"><strong>Przyklad:</strong> zostaw ujemne dla Normal. Dla Tempo Finisher ustaw nawet <code>-0.2</code>.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="chapter" id="presets">
+      <h2>Rozdzial 4: przyklady AI, ktore mozna juz przygotowac</h2>
+      <p>
+        Te profile mozesz przygotowac jako kopie assetu
+        <code>TacticalAIProfile_Normal</code>. Nie zmienia jeszcze walki, dopoki
+        pozniejszy AI controller nie zacznie czytac przypisanego profilu.
+      </p>
+
+      <article class="preset">
+        <h3>Normal - bazowy fair opponent</h3>
+        <div class="tags"><span class="tag">balanced</span><span class="tag">3-ply</span><span class="tag">fair</span></div>
+        <p>
+          Startowy profil dla zwyklej walki. Ma probowac wygrac, uzywac tych
+          samych zasad co gracz i nie dostawac ukrytych bonusow.
+        </p>
+        <ul>
+          <li>Depth <code>3</code>, watchdog <code>300</code>, beams <code>8/5</code>.</li>
+          <li><code>Own Value Lost</code> lekko wyzej niz <code>Enemy Value Removed</code>.</li>
+          <li><code>Skill Bias</code> dodatni, ale maly.</li>
+        </ul>
+      </article>
+
+      <article class="preset">
+        <h3>Fast Debug - szybki test integracji</h3>
+        <div class="tags"><span class="tag">debug</span><span class="tag">cheap</span><span class="tag">fast</span></div>
+        <p>
+          Profil do sprawdzania, czy AI loop, cache i execution w ogole chodza.
+          Nie jest wzorcem finalnej inteligencji.
+        </p>
+        <ul>
+          <li>Depth <code>2</code>, watchdog <code>100-150</code>.</li>
+          <li>Beams <code>4/3</code>, candidate caps okolo <code>4</code>.</li>
+          <li>Dobry do testow, gdzie chcesz szybka i przewidywalna decyzje.</li>
+        </ul>
+      </article>
+
+      <article class="preset">
+        <h3>Aggressive Skill User - AI pokazujace kit</h3>
+        <div class="tags"><span class="tag">skills</span><span class="tag">pressure</span><span class="tag">showcase</span></div>
+        <p>
+          Profil dla przeciwnikow, ktorzy maja czesciej korzystac ze swoich
+          aktywnych umiejetnosci. Nie chodzi o cheatowanie skillami, tylko o to,
+          by skill wygrywal remisy z prostym atakiem, gdy jest sensowny.
+        </p>
+        <ul>
+          <li><code>Max Skill Candidates 10-12</code>.</li>
+          <li><code>Skill Bias 0.2-0.25</code>.</li>
+          <li>Lekko podnies <code>Damage Efficiency</code>, jesli skille maja byc wybierane za realna wartosc, nie za sam efekt.</li>
+        </ul>
+      </article>
+
+      <article class="preset">
+        <h3>Cautious Defender - AI chroniace armie</h3>
+        <div class="tags"><span class="tag">defensive</span><span class="tag">value</span><span class="tag">safe</span></div>
+        <p>
+          Profil dla obrony zapisanej armii albo przeciwnikow, ktorzy maja
+          wymuszac dobre decyzje gracza przez karanie zlych trade'ow.
+        </p>
+        <ul>
+          <li><code>Own Value Lost 1.4-1.6</code>.</li>
+          <li><code>Own Stack Loss Penalty 35-45</code>.</li>
+          <li><code>Position Safety 0.3-0.4</code>, <code>Defend Bias 0-0.05</code>.</li>
+        </ul>
+      </article>
+
+      <article class="preset">
+        <h3>Tempo Finisher - AI domykajace walke</h3>
+        <div class="tags"><span class="tag">tempo</span><span class="tag">kill secure</span><span class="tag">active</span></div>
+        <p>
+          Profil, ktory ma naciskac, dobijac ranne stacki i unikac pasywnego
+          krazenia. Dobry dla przeciwnikow, ktorzy maja sprawiac wrazenie, ze
+          rozumieja win condition.
+        </p>
+        <ul>
+          <li><code>Enemy Stack Kill Bonus 35-50</code>.</li>
+          <li><code>Progress Tempo 0.35</code>.</li>
+          <li><code>Attack Bias 0.15</code>, <code>Wait Bias -0.2</code>.</li>
+        </ul>
+      </article>
+
+      <article class="preset">
+        <h3>Boss Planner - drozszy profil na pozniej</h3>
+        <div class="tags"><span class="tag">boss</span><span class="tag">expensive</span><span class="tag">future</span></div>
+        <p>
+          Profil do przygotowania, ale nie do wlaczania jako default bez testow
+          PRD046-D. Ma byc silniejszy przez wiekszy budzet, nie przez bonusy do
+          statystyk.
+        </p>
+        <ul>
+          <li>Depth <code>4</code>, watchdog <code>400-500</code>.</li>
+          <li>Beams <code>10-12 / 7-8</code>.</li>
+          <li>Caps <code>10-12</code> dla skill, move i attack.</li>
+        </ul>
+      </article>
+    </section>
+
+    <p class="footer">
+      Dokument opisuje konfiguracje profilu PRD046-E. Realny efekt w walce
+      pojawi sie dopiero po podlaczeniu candidate generation, search/scoring,
+      live revalidation i execution bridge.
+    </p>
+  </main>
+</body>
+</html>

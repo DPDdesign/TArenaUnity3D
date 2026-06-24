@@ -5,7 +5,7 @@
 - Area: Final Encounter, Run Summary, Army Value, Saved Army Snapshot
 - Label: ready-for-agent
 - Parent: `_codex/tasks/019_PRD_RunMetagameRewardFramework.md`
-- Blocked by: `_codex/tasks/022_PRD019_RunBattle.md`, `_codex/tasks/023_PRD019_RewardMap.md`
+- Blocked by: `_codex/tasks/archive/022_PRD019_RunBattle.md`, `_codex/tasks/023_PRD019_RewardMap.md`
 - Implemented prerequisite pending manual QA: `_codex/tasks/024_PRD019_RunShop.md`
 
 ## HITL Gate

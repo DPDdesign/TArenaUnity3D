@@ -5,7 +5,7 @@
 - Area: Run Shop, One-Currency Purchases, Shop Resolver, Shop UI
 - Label: ready-for-agent
 - Parent: `_codex/tasks/019_PRD_RunMetagameRewardFramework.md`
-- Blocked by: `_codex/tasks/021_PRD019_RunMap.md`, `_codex/tasks/023_PRD019_RewardMap.md`
+- Blocked by: `_codex/tasks/archive/021_PRD019_RunMap.md`, `_codex/tasks/023_PRD019_RewardMap.md`
 
 ## HITL Gate
 

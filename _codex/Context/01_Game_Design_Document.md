@@ -109,7 +109,11 @@ Production rules:
 
 Confirmed intended play structure:
 
-1. Player starts a run with a smaller starting army.
+1. Player starts a run with a smaller starting army. Current V1 direction: the
+   starting army is produced by generator rules, not by a fixed hand-authored
+   list of exact stack counts. Design work should tune generator inputs such as
+   target value, min/max value band, stack count, tier caps, faction mix, unlock
+   pool, starting gold, and reroll tokens.
 2. The run uses a node-route map in the style of Mewgenics / Slay the Spire,
    not a spatial Heroes-style overworld.
 3. The player fights short run battles, chooses quick rewards, visits shops,
@@ -481,7 +485,9 @@ PlayFab/PUN/Photon implementations are not automatically preserved.
 ## 13. Open Questions For Grill
 
 1. Is `COBA` a final public-facing genre label or an internal shorthand?
-2. What exact starting army options does a new player have?
+2. What exact generator constraints should define new-player starting army
+   offers: target value, tier mix, stack count, faction mix, unlock pool,
+   starting gold, and reroll tokens?
 3. What exactly can a unit do in one turn: move, attack, skill, wait, all of
    these, or a restricted combination?
 4. Are phases global by turn count, by round count, by score, or by another

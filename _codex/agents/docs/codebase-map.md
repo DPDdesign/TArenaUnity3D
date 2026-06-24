@@ -213,6 +213,14 @@ Key files:
 
 - `Assets/Scripts/Lesisz/HexMap/MouseControler.cs`
 - `Assets/Scripts/Lesisz/MostStupidAIEver.cs`
+- `Assets/Scripts/Lesisz/HexMap/BattleSnapshot.cs`
+- `Assets/Scripts/Lesisz/HexMap/TacticalAIActionIntent.cs`
+- `Assets/Scripts/Lesisz/HexMap/TacticalAICandidateGenerator.cs`
+- `Assets/Scripts/Lesisz/HexMap/TacticalAIExecutionBridge.cs`
+- `Assets/Scripts/Lesisz/HexMap/TacticalAISearchScoring.cs`
+- `Assets/Scripts/Lesisz/HexMap/TacticalAIProfile.cs`
+- `Assets/Scripts/Lesisz/HexMap/TacticalAILiveTurnIntegrator.cs`
+- `Assets/Scripts/Lesisz/HexMap/TacticalAIAsyncDecisionPipeline.cs`
 - `Assets/UICanvas.cs`
 - `Assets/OutlineM.cs`
 - `Assets/UnityOutlineManagerMainToster.cs`
@@ -226,7 +234,12 @@ Responsibilities:
 - camera drag/scroll helper calls,
 - outline/highlight integration,
 - UI button callbacks,
-- AI prototype calls into the same move/attack coroutines.
+- Tactical Battle AI V1 planning through pure snapshots, action intents,
+  profile-budgeted search/scoring, ordered fallback intents, and async worker
+  planning,
+- AI live execution through the same move/attack/skill/lifecycle paths as
+  player actions after bridge revalidation,
+- legacy AI fallback through `MostStupidAIEver`.
 
 Risks:
 
@@ -236,6 +249,12 @@ Risks:
 - `MouseControler.Start()` calls `PlayFabControler.PFC.GetStats()`.
 - two early overloads throw `NotImplementedException`, while later overloads
   implement similarly named move/attack coroutines.
+- Tactical AI planning is now deliberately separated from live execution; do
+  not bypass `TacticalAIExecutionBridge` or mutate live Unity objects from pure
+  planner/search code.
+- PRD047 async planning must stay worker-safe: use copied immutable snapshot,
+  profile, and skill metadata; live execution and logging stay on the main
+  thread.
 
 ### Skills And Effects
 

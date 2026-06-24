@@ -6,8 +6,8 @@
 - Label: ready-for-agent
 - Related:
   - `_codex/tasks/019_PRD_RunMetagameRewardFramework.md`
-  - `_codex/tasks/020_PRD019_StartRun.md`
-  - `_codex/tasks/021_PRD019_RunMap.md`
+  - `_codex/tasks/archive/020_PRD019_StartRun.md`
+  - `_codex/tasks/archive/021_PRD019_RunMap.md`
   - `_codex/tasks/030_DB-001_OfflineModeDatabasePersistence.md`
   - `_codex/tasks/035_PRD_RandomStartingArmiesRoutes_Grill.html`
   - `_codex/Documentation/ADR_008_PRD035_UncertainGeneratorDecisions.md`

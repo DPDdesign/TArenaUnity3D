@@ -6,7 +6,7 @@
 - Label: ready-for-agent
 - Related:
   - `_codex/tasks/019_PRD_RunMetagameRewardFramework.md`
-  - `_codex/tasks/021_PRD019_RunMap.md`
+  - `_codex/tasks/archive/021_PRD019_RunMap.md`
   - `_codex/tasks/030_DB-001_OfflineModeDatabasePersistence.md`
   - `_codex/tasks/035_PRD_RandomStartingArmiesRoutes.md`
   - `_codex/tasks/037_PRD_MaterializedRunGenerationRewardsAndMapPersistence.md`
