@@ -85,14 +85,26 @@ public class CastManager : LocalNetworkBehaviour
 
     public bool CanUseSkillAfterMove(string spellID)
     {
-        DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(spellID);
-        return skillDefinition != null && skillDefinition.HasFlag("AM");
+        SkillDefinitionAsset skillDefinition = DataMapper.Instance.FindSkillAsset(spellID);
+        if (skillDefinition != null)
+        {
+            return skillDefinition.ActivationRule.canUseAfterMove;
+        }
+
+        DataMapper.SkillDefinition legacySkillDefinition = DataMapper.Instance.FindSkill(spellID);
+        return legacySkillDefinition != null && legacySkillDefinition.HasFlag("AM");
     }
 
     public bool CanMoveAfterSkill(string spellID)
     {
-        DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(spellID);
-        return skillDefinition != null && skillDefinition.HasFlag("NI");
+        SkillDefinitionAsset skillDefinition = DataMapper.Instance.FindSkillAsset(spellID);
+        if (skillDefinition != null)
+        {
+            return skillDefinition.ActivationRule.canMoveAfterUse;
+        }
+
+        DataMapper.SkillDefinition legacySkillDefinition = DataMapper.Instance.FindSkill(spellID);
+        return legacySkillDefinition != null && legacySkillDefinition.HasFlag("NI");
     }
 
     public void SetFalse()
@@ -157,6 +169,11 @@ public class CastManager : LocalNetworkBehaviour
         isInProgress = false;
         SlashTarget = false;
         ActionInputBlockedByCommittedSkill = false;
+        doubleThrowTargetCounter = 0;
+        if (doubleThrowTargets != null)
+        {
+            Array.Clear(doubleThrowTargets, 0, doubleThrowTargets.Length);
+        }
     }
     public HexClass getHexUM()
     {
@@ -1211,13 +1228,28 @@ public class CastManager : LocalNetworkBehaviour
     public void Long_Lick()
     {
 
-        if (getHexUM().Tosters.Count > 0 && getHexUM().Highlight == true && !getHexUM().Tosters.Contains(SelectedT()) && getHexUM().Tosters[0].Team != SelectedT().Team)
+        if (getHexUM().Tosters.Count > 0 &&
+            getHexUM().Highlight == true &&
+            !getHexUM().Tosters.Contains(SelectedT()) &&
+            getHexUM().Tosters[0].Team != SelectedT().Team &&
+            tempToster == null)
         {
-            Debug.Log("Tsoter");
-            hexum = getHexUM();
-            
-            long_Lick();
+            tempToster = getHexUM().Tosters[0];
+            SingleTarget = true;
+            MeleeisAoEOnlyRadius = false;
+            MeleeisAoE = true;
+            aoeradius = 1;
+            mouseControler.CastSkillOnlyBooleans(SelectedT());
+            return;
 
+        }
+
+        if (tempToster != null &&
+            getHexUM() != null &&
+            getHexUM().Highlight == true &&
+            getHexUM().Tosters.Count == 0)
+        {
+            long_Lick();
         }
 
     }
@@ -1226,44 +1258,22 @@ public class CastManager : LocalNetworkBehaviour
     public void long_Lick()
     {
 
-      /*  TosterHexUnit t = SelectedT();
-
-                if (hexum.hexMap.GetHexAt((SelectedT().Hex.C + hexum.C) / 2, (SelectedT().Hex.R + hexum.R) / 2).Tosters.Count == 0)
-                {
-            hexum.Tosters[0].AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
-            hexum.Tosters[0].SetHex(getHexUM().hexMap.GetHexAt((SelectedT().Hex.C + getHexUM().C) / 2, (SelectedT().Hex.R + getHexUM().R) / 2));
-                    Animator d = SelectedT().tosterView.GetComponentInChildren<Animator>();
-                    if (d != null)
-                    {
-                        // Debug.Log(mouseControler.SelectedSpellid-1);
-                        d.Play("skill" + (mouseControler.SelectedSpellid + 1));
-
-                    }
-                    SetFalse();
-                    return;
-                }
-        Debug.Log("Tsoter");*/
-        HexClass[] hexes = hexum.hexMap.GetHexesWithinRadiusOf(SelectedT().Hex, 1);
-
-        foreach (HexClass h in hexes)
+        HexClass destination = getHexUM();
+        TosterHexUnit target = tempToster;
+        if (destination != null && target != null && destination.Tosters.Count == 0)
         {
-
-            if (h != null && h.Tosters.Count == 0)
-            {
-                TosterHexUnit target = hexum.Tosters[0];
-                target.AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
-                PlaySequencedHexCastUnitImpactThenResults(
-                    "Long_Lick",
-                    h,
-                    target,
-                    SingleReveal(BuildStatusReveal(target)),
-                    () => target.TeleportToHex(h));
-                SetFalse();
-                return;
-            }
-
+            target.AddNewTimeSpell(2, SelectedT(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Taunt", false);
+            PlaySequencedHexCastUnitImpactThenResults(
+                "Long_Lick",
+                destination,
+                target,
+                SingleReveal(BuildStatusReveal(target)),
+                () => target.TeleportToHex(destination));
+            SetFalse();
+            return;
         }
-        Debug.Log("All Hexes full!!");
+
+        Debug.Log("Invalid Long_Lick destination.");
         SetFalse();
     }
 
@@ -1274,6 +1284,7 @@ public class CastManager : LocalNetworkBehaviour
         MeleeisAoEOnlyRadius = true;
         aoeradius = 3;
         isTurn = true;
+        tempToster = null;
 
     }
     #endregion

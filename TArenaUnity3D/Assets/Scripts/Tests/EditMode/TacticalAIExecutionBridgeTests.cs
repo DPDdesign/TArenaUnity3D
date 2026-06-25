@@ -1,9 +1,46 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnityEngine;
 
 public class TacticalAIExecutionBridgeTests
 {
+    [Test]
+    public void SkillRulesExecutor_UsesActionExecutorContract()
+    {
+        Assert.That(TacticalAISkillRulesExecutor.Instance, Is.InstanceOf<ITacticalAISkillActionExecutor>());
+    }
+
+    [Test]
+    public void PlannedSkillAction_DoesNotCarryLegacyIntent()
+    {
+        SkillCast cast = new SkillCast
+        {
+            ActorUnitId = "team-0-slot-0",
+            SkillId = "BattleCry"
+        };
+        cast.SelectedHexes.Add(new HexCoord(0, 0));
+
+        TacticalAIActionIntent candidate = new TacticalAIActionIntent
+        {
+            ActionType = TacticalAIActionType.Skill,
+            ActorUnitId = "team-0-slot-0",
+            SkillId = "BattleCry",
+            StableOrderKey = "skill|BattleCry",
+            ValidatedSkillCast = cast,
+            PreviewResult = new SkillResult()
+        };
+
+        TacticalAIPlannedAction action = TacticalAIPlannedAction.FromCandidateIntent(candidate);
+
+        Assert.That(action, Is.Not.Null);
+        Assert.That(action.ActionType, Is.EqualTo(TacticalAIActionType.Skill));
+        Assert.That(action.LegacyIntent, Is.Null);
+        Assert.That(action.SubmittedSkillUse, Is.Not.Null);
+        Assert.That(action.ValidatedSkillCast, Is.Not.Null);
+        Assert.That(action.ValidatedSkillCast.SkillId, Is.EqualTo("BattleCry"));
+    }
+
     [Test]
     public void Revalidator_AcceptsLegalMoveIntentAgainstLiveSnapshot()
     {
@@ -34,6 +71,39 @@ public class TacticalAIExecutionBridgeTests
         Assert.That(revalidated, Is.Not.Null);
         Assert.That(revalidated.DestinationHex.C, Is.EqualTo(1));
         Assert.That(revalidated.DestinationHex.R, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void Revalidator_RejectsLegacyMoveOutsideSharedMovementBudget()
+    {
+        BattleUnitSnapshot actor = ActorUnit(0, 0);
+        actor.MovementSpeed = 1;
+        BattleSnapshot liveSnapshot = CreateSnapshot(
+            actor,
+            EnemyUnit("team-1-slot-0", 1, 0, 3, 0));
+
+        TacticalAIActionIntent moveIntent = new TacticalAIActionIntent
+        {
+            ActionType = TacticalAIActionType.Move,
+            ActorUnitId = "team-0-slot-0",
+            SourceHex = new TacticalAIHexCoordinate(0, 0),
+            DestinationHex = new TacticalAIHexCoordinate(2, 0),
+            StableOrderKey = "move-outside-budget"
+        };
+
+        TacticalAIRevalidatedIntent revalidated;
+        string failureReason;
+        bool valid = TacticalAIIntentRevalidator.TryRevalidate(
+            moveIntent,
+            liveSnapshot,
+            liveSnapshot,
+            out revalidated,
+            out failureReason,
+            new TestSkillMetadataProvider());
+
+        Assert.That(valid, Is.False);
+        Assert.That(failureReason, Does.Contain("BattleActionRules rejected"));
+        Assert.That(revalidated, Is.Null);
     }
 
     [Test]
@@ -217,7 +287,7 @@ public class TacticalAIExecutionBridgeTests
     }
 
     [Test]
-    public void FallbackPlanner_UsesPlanThenFreshGreedyThenDefendThenWait()
+    public void FallbackPlanner_UsesRankedPlanOnlyWhenPlanExists()
     {
         BattleSnapshot liveSnapshot = CreateSnapshot(
             ActorUnit(0, 0, isRange: true),
@@ -245,11 +315,8 @@ public class TacticalAIExecutionBridgeTests
             new TestSkillMetadataProvider(),
             maxFallbackCandidates: 4);
 
-        Assert.That(queue.Count, Is.GreaterThanOrEqualTo(4));
+        Assert.That(queue.Count, Is.EqualTo(1));
         Assert.That(queue[0].StableOrderKey, Is.EqualTo("planned-move"));
-        Assert.That(queue[1].ActionType, Is.EqualTo(TacticalAIActionType.BasicRangedAttack));
-        Assert.That(queue[queue.Count - 2].ActionType, Is.EqualTo(TacticalAIActionType.Defend));
-        Assert.That(queue[queue.Count - 1].ActionType, Is.EqualTo(TacticalAIActionType.Wait));
     }
 
     [Test]
@@ -403,19 +470,86 @@ public class TacticalAIExecutionBridgeTests
         };
     }
 
-    sealed class TestSkillMetadataProvider : ITacticalAISkillMetadataProvider
+    sealed class TestSkillMetadataProvider : ITacticalAISkillMetadataProvider, ITacticalAISkillDefinitionProvider, ITacticalAISkillSpecProvider
     {
+        readonly Dictionary<string, SkillDefinitionAsset> definitions =
+            new Dictionary<string, SkillDefinitionAsset>();
+
+        public TestSkillMetadataProvider()
+        {
+            definitions["BattleCry"] = Skill("BattleCry", Targeting(1, SkillTargetRole.EnemyUnitHex), SkillResolutionFamily.DirectUnit);
+            definitions["FirstSkill"] = Skill("FirstSkill", Targeting(0), SkillResolutionFamily.None);
+            definitions["Range_Stance_Barb"] = Skill("Range_Stance_Barb", Targeting(0), SkillResolutionFamily.None, repeatable: true);
+        }
+
         public bool TryGetSkillMetadata(string skillId, out TacticalAISkillMetadata metadata)
         {
+            SkillDefinitionAsset definition;
+            definitions.TryGetValue(skillId ?? string.Empty, out definition);
+            ActivationRuleData activation = definition != null ? definition.ActivationRule : new ActivationRuleData();
             metadata = new TacticalAISkillMetadata
             {
                 SkillId = skillId ?? string.Empty,
-                IsPassive = false,
-                CanUseAfterMove = false,
-                CanMoveAfterSkill = false,
-                IsRepeatableToggle = TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId)
+                IsPassive = activation.activationKind == SkillActivationKind.Passive,
+                CanUseAfterMove = activation.canUseAfterMove,
+                CanMoveAfterSkill = activation.canMoveAfterUse,
+                IsRepeatableToggle = activation.repeatableInTurn || TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId)
             };
             return true;
+        }
+
+        public bool TryGetSkillDefinition(string skillId, out SkillDefinitionAsset definition)
+        {
+            return definitions.TryGetValue(skillId ?? string.Empty, out definition) && definition != null;
+        }
+
+        public bool TryGetSkillSpec(string skillId, out SkillDefinitionSpec spec)
+        {
+            SkillDefinitionAsset definition;
+            if (TryGetSkillDefinition(skillId, out definition) == false)
+            {
+                spec = null;
+                return false;
+            }
+
+            spec = SkillDefinitionSpec.FromAsset(definition);
+            return spec != null;
+        }
+
+        static SkillDefinitionAsset Skill(
+            string skillId,
+            TargetingRuleData targeting,
+            SkillResolutionFamily resolutionFamily,
+            bool repeatable = false)
+        {
+            SkillDefinitionAsset skill = ScriptableObject.CreateInstance<SkillDefinitionAsset>();
+            skill.Configure(skillId, "Active", string.Empty, string.Empty);
+            skill.ConfigureRules(
+                new ActivationRuleData
+                {
+                    activationKind = SkillActivationKind.Active,
+                    consumesTurn = repeatable == false,
+                    canUseAfterMove = false,
+                    canMoveAfterUse = false,
+                    repeatableInTurn = repeatable
+                },
+                targeting,
+                new ResolutionRuleData { resolutionFamily = resolutionFamily },
+                repeatable
+                    ? new[] { new SkillEffect { effectType = SkillEffectType.ToggleStance } }
+                    : new[] { new SkillEffect { effectType = SkillEffectType.Damage, targetSource = SkillEffectTargetSource.PrimaryUnit, damageMode = SkillDamageMode.BasicAttackDamage, damageScale = 1f } });
+            return skill;
+        }
+
+        static TargetingRuleData Targeting(int targetCount, params SkillTargetRole[] roles)
+        {
+            return new TargetingRuleData
+            {
+                targetFamily = targetCount == 0 ? SkillTargetFamily.Self : SkillTargetFamily.UnitTarget,
+                targetRoles = roles ?? new SkillTargetRole[0],
+                targetCount = targetCount,
+                requiresWalkable = true
+            };
         }
     }
 }

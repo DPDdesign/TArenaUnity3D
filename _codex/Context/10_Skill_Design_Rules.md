@@ -15,7 +15,33 @@ The current stable skill id is the string stored in
 `TosterHexUnit.skillstrings`, loaded from the unit `ScriptableObject` catalog.
 
 For now, any skill-side system must treat that exact string as the identifier.
-Do not introduce a second unrelated skill id without an explicit migration plan.
+It is also `SkillDefinitionAsset.skillName` and the join key for the skill
+catalog, skill UI, skill presentation, Tactical AI, and future server-side
+validation. Do not introduce a second unrelated skill id without an explicit
+migration plan.
+
+## Current PRD49 Skill API Rule
+
+After PRD49ABC, the current shared skill API/data model is:
+
+- `SkillDefinitionAsset` for activation, target, resolution, and effect data.
+- `SkillUse` for untrusted submitted skill intent.
+- `SkillContext` for snapshot/action context.
+- `SkillRules.CanUse(...)` for start legality.
+- `SkillRules.GetTargets(...)` for legal next-target generation.
+- `SkillRules.Validate(...)` for normalizing a submitted use into `SkillCast`.
+- `SkillRules.Preview(...)` / `SkillResult` for result/event shape.
+- `SkillQuery` for future AI/server-facing queries.
+
+This API is the basis for PRD49ED, anti-cheat, and server-side validation.
+Future validation must recompute legality from snapshot plus
+`SkillDefinitionAsset` data. Do not trust client/UI supplied affected units,
+damage, spawn hexes, or other resolved effect outputs.
+
+Current limitation: PRD49ABC did not finish full live runtime migration. Some
+commits can still pass through legacy `CastManager` reflection bodies, and
+passive trigger mutation can still live in legacy hooks. Treat those as PRD49ED
+and PRD49F cleanup scope, not as current architecture guidance.
 
 ## Skill Architecture Planning Rule
 
@@ -47,16 +73,21 @@ gameplay rules. Skill descriptions, activation rules, target contracts, and
 effect data should migrate into the skill SO model. See
 `_codex/Documentation/ADR_015_SkillActionDefinitionOwnsSkillTextAndRules.md`.
 
-## Reflection Contract
+## Legacy Reflection Reference
 
-Current executable skill logic lives mostly in `CastManager` and follows this
+Legacy executable skill logic can still exist in `CastManager` and follows this
 string convention:
 
 - `{SkillName}M` configures targeting and availability.
 - `{SkillName}` executes the committed skill.
 
-Changing a skill name affects XML assignment, UI icon lookup, skill info lookup,
-and `CastManager` reflection. Do not rename skill strings casually.
+Use this only for diagnosis and migration parity checks. New legality,
+targeting, AI planning, anti-cheat, and server-side validation should use the
+PRD49 API path above.
+
+Changing a skill name affects unit assignment, skill definition lookup, UI icon
+lookup, presentation lookup, and remaining compatibility execution paths. Do
+not rename skill strings casually.
 
 ## Skill Presentation Rule
 
@@ -67,7 +98,7 @@ The first pass should not change:
 - damage, healing, status values, or cooldowns,
 - targeting and range rules,
 - turn consumption,
-- existing unit skill assignment in XML,
+- existing unit skill assignment in the unit catalog,
 - public or serialized field names.
 
 Presentation may be missing for a skill and should fail as a silent no-op.

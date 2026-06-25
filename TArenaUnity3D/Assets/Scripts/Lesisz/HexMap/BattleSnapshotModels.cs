@@ -80,6 +80,9 @@ public class BattleSnapshot
 {
     public int MapWidth;
     public int MapHeight;
+    public int GameSeed;
+    public string BattleId = string.Empty;
+    public int NextActionIndex;
     public List<BattleHexSnapshot> Hexes = new List<BattleHexSnapshot>();
     public List<BattleUnitSnapshot> Units = new List<BattleUnitSnapshot>();
     public string ActiveUnitId = string.Empty;

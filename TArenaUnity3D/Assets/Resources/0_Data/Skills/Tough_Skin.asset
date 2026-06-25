@@ -16,3 +16,42 @@ MonoBehaviour:
   type: "Active"
   info: "Wzmacniająca mikstura zapewnia  do końca tury 25% redukcji obrażeń wybranemu lizardowi, 15% innym rasom. (CD 2)."
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 2
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 1
+    targetRoles:
+    - 4
+    targetCount: 1
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 2
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 1
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 2
+    targetSource: 1
+    damageMode: 0
+    movementMode: 0
+    statusId: "Tough_Skin"
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 2
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

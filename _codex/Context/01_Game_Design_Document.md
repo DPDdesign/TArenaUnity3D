@@ -2,7 +2,7 @@
 
 Status: Initial Design
 Project: TArenaUnity3D
-Last updated: 2026-06-24
+Last updated: 2026-06-25
 
 This document is the initial top-level game design charter for TArenaUnity3D.
 It is intentionally marked `Initial Design`: it captures the first synthesis of
@@ -23,21 +23,24 @@ Current reference sources:
 - `TArenaUnity3D/Assets/Resources/0_Data/UnitCatalog.asset` and its unit
   definition assets are the current runtime unit configuration source for unit
   names, stats, costs, sprites, and skill ids.
-- `TArenaUnity3D/Assets/Resources/Data/skills.xml` is the current skill
-  description source for skill UI/info text.
+- `TArenaUnity3D/Assets/Resources/0_Data/SkillCatalog.asset` and
+  `TArenaUnity3D/Assets/Resources/0_Data/Skills/*.asset` are the current
+  SO-backed skill definition sources for skill ids, UI/info text, activation,
+  targeting, resolution, and effect data.
 
 When these sources conflict:
 
 1. Current user instruction wins.
 2. Verified local Unity behavior wins for current-state claims.
-3. XML files describe current runtime data.
+3. ScriptableObject catalogs describe current runtime data.
 4. The invitational deck describes intended unit fantasy and early balance
    intent.
 5. Retsot GDD describes legacy origin and should be treated cautiously.
 
-Known source conflict: the invitational deck and `Units.xml` disagree on some
-unit stats, movement, initiative, cost, and skill values. Do not silently merge
-them. Record deck content as design intent and XML content as current data.
+Known source conflict: the invitational deck and old XML-era data may disagree
+with current ScriptableObject catalogs on some unit stats, movement,
+initiative, cost, and skill values. Do not silently merge them. Record deck
+content as design intent and SO catalog content as current data.
 
 ## 0. Current Production Snapshot
 

@@ -2,13 +2,67 @@
 
 Status: active
 Project: TArenaUnity3D
-Last updated: 2026-06-24
+Last updated: 2026-06-25
 
 Use this for Inspector wiring, scene setup, manual Unity checks, and repeatable
 setup recipes discovered in this project.
 
 Do not copy setup assumptions from another Unity project unless the user
 explicitly asks for migration and the setup has been verified here.
+
+## PRD49ABC Skill API Manual Check
+
+Use this after PRD49ABC skill API/data changes, or before PRD49ED/PRD49F work.
+
+### Unity Setup
+
+1. Open Unity and let scripts and skill assets import.
+2. Inspect several assets under `Assets/Resources/0_Data/Skills/`.
+3. Confirm each inspected `SkillDefinitionAsset` keeps its `Skill Name` and
+   has visible activation, targeting, resolution, and effect data.
+4. Confirm `Assets/Resources/0_Data/SkillCatalog.asset` references the active
+   skill assets.
+5. Confirm unit skill ownership still comes from
+   `Assets/Resources/0_Data/UnitCatalog.asset` and unit definition assets.
+6. Do not edit scenes, prefabs, or skill balance values during this check.
+
+### EditMode Tests
+
+Run this manually in Unity Test Runner:
+
+- `SkillRulesTests`
+
+Expected result: focused skill rule tests pass. These cover trap legality,
+duplicate `Double_Throw`, occupied `Force_Pull` destination rejection,
+`Stone_Throw` enemy targeting, passive exclusion, and stance repeatability.
+
+### Play Mode Smoke
+
+1. Start a tactical battle.
+2. Select units with representative skills:
+   `Spike_Trap`, `Rope_Trap`, `Double_Throw`, `Force_Pull`, `Long_Lick`,
+   `Stone_Throw`, and `Heavy_Fists`.
+3. Confirm legal target highlights match what can actually be clicked.
+4. Confirm illegal target clicks are rejected.
+5. Confirm cooldown display still matches skill use.
+6. Confirm right-click skill info still shows the expected skill id, type, and
+   description.
+7. Confirm `Long_Lick` requires enemy target plus selected adjacent empty
+   destination.
+8. Confirm `Stone_Throw` rejects empty hex targets and requires an enemy unit.
+
+### Current PRD49 Boundary
+
+Passing this check validates the PRD49ABC API/SO-data/targeting boundary. It
+does not prove PRD49ED execution migration is complete.
+
+Known remaining legacy boundary:
+
+- live skill commits can still execute through `CastManager` reflection bodies,
+- passive trigger mutation can still live in `TosterHexUnit`,
+  `SpellOverTime`, `HexClass`, and related hooks.
+
+Treat those as PRD49ED/PRD49F follow-up scope.
 
 ## Offline Mode Reward Map Manual Check
 
@@ -160,8 +214,8 @@ In Unity Play Mode:
 ## Skill VFX/SFX Setup
 
 Skill presentation is driven by one scene manager and one Inspector-authored
-catalog asset. Do not edit `Units.xml`, prefabs, scenes, or generated files to
-assign skill VFX/SFX data through code.
+catalog asset. Do not edit unit skill ownership, prefabs, scenes, or generated
+files to assign skill VFX/SFX data through code.
 
 ### Catalog Asset
 
@@ -174,8 +228,8 @@ assign skill VFX/SFX data through code.
 6. Use `Default Basic Ranged Attack Entry` for ordinary ranged shots after a
    unit enters ranged stance.
 
-Catalog `Entries` use the exact skill string from `Units.xml` /
-`TosterHexUnit.skillstrings`. Example ids:
+Catalog `Entries` use the exact skill string from the unit catalog,
+`SkillDefinitionAsset.skillName`, and `TosterHexUnit.skillstrings`. Example ids:
 
 - `Slash`
 - `Defence_Ritual`

@@ -12,7 +12,7 @@ public class TacticalAILiveTurnIntegrationTests
         TacticalAIExecutionResult executionResult = new TacticalAIExecutionResult
         {
             Status = TacticalAIExecutionStatus.Started,
-            ExecutedIntent = plan.BestIntent
+            ExecutedAction = plan.BestAction
         };
 
         TacticalAILiveTurnIntegrator integrator = new TacticalAILiveTurnIntegrator(
@@ -60,6 +60,7 @@ public class TacticalAILiveTurnIntegrationTests
             {
                 new TacticalAIExecutionAttempt
                 {
+                    Action = plan.BestAction,
                     Intent = plan.BestIntent,
                     Started = false,
                     FailureReason = "Skill rejected."
@@ -122,10 +123,24 @@ public class TacticalAILiveTurnIntegrationTests
             SkillId = skillId,
             StableOrderKey = actionType + "-test"
         };
+        if (actionType == TacticalAIActionType.Skill)
+        {
+            intent.ValidatedSkillCast = new SkillCast
+            {
+                ActorUnitId = "team-0-slot-0",
+                SkillId = skillId,
+                PrimaryTargetUnitId = targetUnitId,
+                SelectedHexes = new List<HexCoord> { new HexCoord(2, 0) }
+            };
+        }
+
+        TacticalAIPlannedAction action = TacticalAIPlannedAction.FromCandidateIntent(intent);
 
         return new TacticalAISearchPlan
         {
+            BestAction = action,
             BestIntent = intent,
+            OrderedActions = new List<TacticalAIPlannedAction> { action },
             OrderedActionIntents = new List<TacticalAIActionIntent> { intent },
             BestScore = 42.5f,
             CompletedDepth = 3,

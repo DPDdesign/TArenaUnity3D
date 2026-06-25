@@ -16,3 +16,42 @@ MonoBehaviour:
   type: "Active"
   info: "Odprawia grupowy rytuał. Zapewnia wszystkim +2 do obrony na 2 tury (CD 3)."
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 1
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 1
+    targetRoles:
+    - 13
+    targetCount: 0
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 0
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 2
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 2
+    targetSource: 3
+    damageMode: 0
+    movementMode: 0
+    statusId: "Defence_Ritual"
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 2
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

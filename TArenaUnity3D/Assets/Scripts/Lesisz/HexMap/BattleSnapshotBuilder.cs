@@ -11,11 +11,17 @@ public static class BattleSnapshotBuilder
         IEnumerable<BattleHexSnapshot> hexes,
         IEnumerable<BattleUnitSnapshot> units,
         string activeUnitId,
-        BattleTurnStateSnapshot turnState)
+        BattleTurnStateSnapshot turnState,
+        int gameSeed = 0,
+        string battleId = "",
+        int nextActionIndex = 0)
     {
         BattleSnapshot snapshot = new BattleSnapshot();
         snapshot.MapWidth = Math.Max(0, mapWidth);
         snapshot.MapHeight = Math.Max(0, mapHeight);
+        snapshot.GameSeed = gameSeed;
+        snapshot.BattleId = NormalizeString(battleId);
+        snapshot.NextActionIndex = Math.Max(0, nextActionIndex);
         snapshot.Hexes = CloneAndSortHexes(hexes);
         snapshot.Units = CloneAndSortUnits(units);
         snapshot.ActiveUnitId = NormalizeString(activeUnitId);
@@ -359,6 +365,10 @@ public static class BattleSnapshotBuilder
     {
         StringBuilder canonical = new StringBuilder(1024);
         canonical.Append("map|").Append(snapshot.MapWidth).Append('|').Append(snapshot.MapHeight).Append('\n');
+        canonical.Append("seed|")
+            .Append(snapshot.GameSeed).Append('|')
+            .Append(Escape(snapshot.BattleId)).Append('|')
+            .Append(snapshot.NextActionIndex).Append('\n');
         canonical.Append("active|").Append(Escape(snapshot.ActiveUnitId)).Append('\n');
         canonical.Append("turn|")
             .Append(snapshot.TurnState.RoundNumber).Append('|')

@@ -2,7 +2,7 @@
 
 Status: active
 Project: TArenaUnity3D
-Last updated: 2026-06-18
+Last updated: 2026-06-25
 
 ## Purpose
 
@@ -175,7 +175,7 @@ The current UI action availability flag is:
 active unit can receive player actions. Many movement/attack/turn-transition
 paths set it back to `false`.
 
-For new battle UI work, treat these as the current legacy bridge:
+For new battle UI work, treat these as the current battle UI bridge:
 
 ```csharp
 MouseControler mouseControler = FindObjectOfType<MouseControler>();
@@ -203,7 +203,8 @@ Current skill cooldowns are stored in matching slot order on:
 - disables passive skills,
 - shows cooldown text for skills on cooldown.
 
-The skill string is not just display text. It is the legacy skill id.
+The skill string is not just display text. It is the stable skill id and must
+match `SkillDefinitionAsset.skillName`.
 
 ## Footer Selected Unit Stats
 
@@ -264,17 +265,10 @@ Which then calls:
 - `MouseControler.SelectedSpellid`
 - `MouseControler.SkillState`
 
-Then it asks:
-
-- `CastManager.getMode(SelectedToster.skillstrings[SelectedSpellid],
-  SelectedToster)`
-
-`CastManager.getMode(...)` invokes `{SkillName}M` by reflection. After the
-player clicks the target hex, `MouseControler.startSpell(...)` calls:
-
-- `CastManager.startSpell(skillId, targetHex)`
-
-And `CastManager.startSpell(...)` invokes `{SkillName}` by reflection.
+After PRD49ABC, skill start legality, target highlights, and clicked-target
+validation should route through `SkillRules`. Current live/default commit can
+still call `CastManager.startSpell(...)` reflection bodies for mutation until
+PRD49ED replaces execution.
 
 For a new UI skill button, the safest current call is:
 
@@ -282,22 +276,24 @@ For a new UI skill button, the safest current call is:
 mouseControler.CastSkill(slotIndex);
 ```
 
-Do not call `CastManager` directly from new UI unless the skill/targeting flow
-is being intentionally refactored.
+Do not call `CastManager` directly from new UI. If the task is intentionally
+refactoring skill targeting or execution, route through the PRD49
+`SkillRules`/validated action path.
 
 ## Skill Metadata And Right Click Info
 
-Skill descriptions and skill type are loaded from:
-
-- `TArenaUnity3D/Assets/Resources/Data/skills.xml`
-
 Current right-click skill info uses:
 
-- `RightClickInfoSkill.SetPanelSkill(skillName)`
+- `RightClickInfoSkill.SetSkillId(skillName)`
+- `SkillInfoPresentation.ShowSkill(skillName)`
 
-That class reads `skills.xml` and fills name, type, and info text. Existing
-`UICanvas.GetTypeOfSkill(skillName)` also reads `skills.xml` and returns the
-skill type, currently used to disable passive skill buttons.
+Current right-click skill info uses `RightClickInfoSkill` and
+`SkillInfoPresentation`, then reads name, type, and info text through
+`DataMapper.FindSkill(skillName)`. `DataMapper` now builds that compatibility
+skill info from `SkillDefinitionAsset` data.
+
+Passive/active button state should use `SkillDefinitionAsset` / `SkillRules`
+where touched. Do not add new UI parsing of legacy XML flags.
 
 ## Skill Id Coupling Rule
 
@@ -305,13 +301,14 @@ The same skill string is currently expected to match all of these:
 
 - unit skill assignment in the unit catalog,
 - runtime `TosterHexUnit.skillstrings`,
+- skill definition `SkillDefinitionAsset.skillName`,
 - UI icon path `Resources/Sprites/Skill_Icons/{SkillName}`,
-- info entry in `Resources/Data/skills.xml`,
-- `CastManager` methods `{SkillName}M` and `{SkillName}`.
+- skill presentation catalog entry,
+- remaining compatibility execution paths.
 
 When building new UI, keep this string as the internal `skillId`. If the UI
 needs nicer labels, localized text, or separate visual names, add those as
-display data and keep the legacy id unchanged.
+display data and keep the id unchanged.
 
 ## Recommended New UI Adapter Shape
 
@@ -323,7 +320,8 @@ For near-term UI work, prefer a thin adapter over changing gameplay logic:
 - Read cooldowns from `SelectedToster.cooldowns`.
 - Load icons by current Resources path until a deliberate asset migration exists.
 - On click, call `MouseControler.CastSkill(slotIndex)`.
-- For descriptions, use the same skill id against `skills.xml`.
+- For descriptions, use the same skill id through `DataMapper` /
+  `SkillDefinitionAsset`.
 
 ## Massochism UI Note
 
@@ -337,7 +335,8 @@ the UI as a thin bridge over existing runtime logic rather than moving the
 `Massochism` calculation into UI code.
 
 Keep this adapter small. Do not rename public/serialized fields or move skill
-ownership out of XML unless the user explicitly asks for a broader refactor.
+ownership out of the unit catalog unless the user explicitly asks for a broader
+refactor.
 
 ## Known UI Risks
 
@@ -345,7 +344,8 @@ ownership out of XML unless the user explicitly asks for a broader refactor.
 - UI is tightly coupled to `MouseControler` and `TosterHexUnit`.
 - Skill ids are fragile strings and can break UI, icon lookup, info lookup, and
   skill execution if renamed.
-- Passive detection depends on `skills.xml` type text being exactly `Passive`.
+- Some compatibility code still exposes old `DataMapper.SkillDefinition` shape;
+  prefer SO-backed `SkillDefinitionAsset` / `SkillRules` for new work.
 - Some scenes use `MouseControler.CastSkill(int)` in button `OnClick`; one older
   scene uses wrapper methods `CastSkill1B` through `CastSkill4B`.
 - `UICanvas` is legacy UI. A new UI should bridge to the existing flow first,

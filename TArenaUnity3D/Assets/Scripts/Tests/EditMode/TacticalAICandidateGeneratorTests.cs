@@ -124,6 +124,35 @@ public class TacticalAICandidateGeneratorTests
     }
 
     [Test]
+    public void StanceCandidates_ExcludeNoOpCurrentStance()
+    {
+        BattleUnitSnapshot meleeActor = ActorUnit(0, 0, isRange: false);
+        meleeActor.SkillIdsBySlot = new List<string> { "Range_Stance_Barb", "Melee_Stance_Barb" };
+        meleeActor.CooldownsBySlot = new List<int> { 0, 0 };
+
+        List<TacticalAIActionIntent> meleeCandidates = TacticalAICandidateGenerator.GenerateCandidates(
+            CreateSnapshot(meleeActor, EnemyUnit("team-1-slot-0", 1, 0, 2, 0)),
+            CreateOptions(),
+            new TestSkillMetadataProvider());
+
+        Assert.That(ContainsSkill(meleeCandidates, "Range_Stance_Barb"), Is.True);
+        Assert.That(ContainsSkill(meleeCandidates, "Melee_Stance_Barb"), Is.False);
+
+        BattleUnitSnapshot rangeActor = ActorUnit(0, 0, isRange: true);
+        rangeActor.SkillIdsBySlot = new List<string> { "Range_Stance_Barb", "Melee_Stance_Barb" };
+        rangeActor.CooldownsBySlot = new List<int> { 0, 0 };
+
+        List<TacticalAIActionIntent> rangeCandidates = TacticalAICandidateGenerator.GenerateCandidates(
+            CreateSnapshot(rangeActor, EnemyUnit("team-1-slot-0", 1, 0, 2, 0)),
+            CreateOptions(),
+            new TestSkillMetadataProvider());
+
+        Assert.That(ContainsSkill(rangeCandidates, "Range_Stance_Barb"), Is.False);
+        Assert.That(ContainsSkill(rangeCandidates, "Melee_Stance_Barb"), Is.True);
+    }
+
+
+    [Test]
     public void CandidateOrdering_IsStableAcrossEquivalentSnapshots()
     {
         BattleSnapshot first = CreateSnapshot(
@@ -329,6 +358,21 @@ public class TacticalAICandidateGeneratorTests
                 action.DestinationHex != null &&
                 action.DestinationHex.C == c &&
                 action.DestinationHex.R == r)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static bool ContainsSkill(List<TacticalAIActionIntent> actions, string skillId)
+    {
+        for (int i = 0; i < actions.Count; i++)
+        {
+            TacticalAIActionIntent action = actions[i];
+            if (action.ActionType == TacticalAIActionType.Skill &&
+                string.Equals(action.SkillId, skillId, System.StringComparison.Ordinal))
             {
                 return true;
             }

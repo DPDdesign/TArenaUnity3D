@@ -1,7 +1,7 @@
 # TArenaUnity3D Codebase Map
 
 Status: active
-Last updated: 2026-06-24
+Last updated: 2026-06-25
 
 Unity project root:
 
@@ -260,6 +260,16 @@ Risks:
 
 Key files:
 
+- `Assets/Scripts/SkillDefinitionAsset.cs`
+- `Assets/Scripts/SkillCatalog.cs`
+- `Assets/Scripts/DataMapper.cs`
+- `Assets/Scripts/Lesisz/Skills/SkillRules.cs`
+- `Assets/Scripts/Lesisz/Skills/SkillQuery.cs`
+- `Assets/Scripts/Lesisz/Skills/SkillUse.cs`
+- `Assets/Scripts/Lesisz/Skills/SkillCast.cs`
+- `Assets/Scripts/Lesisz/Skills/SkillResult.cs`
+- `Assets/Scripts/Lesisz/Skills/SkillContext.cs`
+- `Assets/Scripts/Lesisz/Skills/SkillTarget.cs`
 - `Assets/Scripts/Lesisz/Skills/CastManager.cs`
 - `Assets/Scripts/Lesisz/HexMap/SpellOverTime.cs`
 - `Assets/Scripts/Lesisz/HexMap/TosterHexUnit.cs`
@@ -269,39 +279,47 @@ Key files:
 - `Assets/UICanvas.cs`
 - `Assets/RightClickInfo.cs`
 - `Assets/RightClickInfoSkill.cs`
+- `Assets/SkillInfoPresentation.cs`
+- `Assets/Resources/0_Data/SkillCatalog.asset`
+- `Assets/Resources/0_Data/Skills/*.asset`
 - `Assets/Resources/0_Data/UnitCatalog.asset`
 - `Assets/Resources/0_Data/Units/*.asset`
-- `Assets/Resources/Data/skills.xml`
 
 Responsibilities:
 
 - load unit skill assignment from the unit `ScriptableObject` catalog into
   `TosterHexUnit.skillstrings`,
+- load skill definitions from `SkillCatalog` / `SkillDefinitionAsset`,
 - display skill buttons and icons from `SelectedToster.skillstrings`,
-- load skill metadata/right-click info from Resources XML,
+- expose skill metadata/right-click info through `DataMapper`,
+- validate skill start/target legality through `SkillRules`,
+- expose future AI/server-facing skill queries through `SkillQuery`,
 - route selected skill slots through `MouseControler.SelectedSpellid`,
-- resolve skill modes by reflection (`spellID + "M"`),
-- apply skill targeting flags,
-- cast individual named skills,
+- stage and validate selected skill targets,
+- keep legacy live skill mutation working until PRD49ED replaces it,
 - apply temporary status/stat modifiers through `SpellOverTime`,
-- load skill metadata and icons from Resources XML/sprite paths.
+- load skill icons through `DataMapper` / Resources sprite paths.
 
 Current structure:
 
 - `UnitCatalog.asset` is the current source for unit tier and which skill
   strings each unit can legally have.
+- `SkillCatalog.asset` and `Resources/0_Data/Skills/*.asset` are the current
+  source for active skill definition data.
+- `SkillDefinitionAsset.skillName` is the canonical skill id.
+- PRD49ABC added `ActivationRuleData`, `TargetingRuleData`,
+  `ResolutionRuleData`, ordered `SkillEffect[]`, and the shared `SkillRules`
+  API/data model.
 - run, reward, shop, and future player progression state may lock or unlock
   those legal skills for a specific stack.
 - `TosterHexUnit.InitateType(name)` loads those strings into
   `TosterHexUnit.skillstrings`.
 - `UICanvas` uses the same skill strings to load icons from
   `Resources/Sprites/Skill_Icons/{SkillName}`.
-- `MouseControler.CastSkillBooleans(...)` selects a skill slot and asks
-  `CastManager.getMode(...)` to configure targeting.
-- `CastManager.getMode(spellID, ST)` invokes `{SkillName}M` by reflection.
-- `MouseControler.startSpell(...)` commits the clicked target and calls
-  `CastManager.startSpell(...)`.
-- `CastManager.startSpell(spellID, hex)` invokes `{SkillName}` by reflection.
+- `MouseControler` selects a skill slot and should use `SkillRules` for skill
+  start legality, target highlights, and clicked-target validation.
+- Current live/default skill commit can still call `CastManager.startSpell(...)`
+  reflection bodies for actual mutation until PRD49ED replaces execution.
 - Some skills directly play Animator states such as `Skill1`, `Skill2`, or
   `"Skill" + (SelectedSpellid + 1)`.
 - Some skills directly instantiate projectiles from `CastManager.Projectiles` or
@@ -311,14 +329,17 @@ Risks:
 
 - `CastManager` is over 2000 lines and mixes targeting mode, skill definitions,
   animation/projectile setup, RPCs, and cooldown changes.
-- skill names are string-based and must match Resources XML, method names, and
-  icon paths.
-- several passive skills are represented as empty cast bodies plus mode methods.
+- skill names are string-based and must match the unit catalog, skill catalog,
+  icon paths, presentation entries, and remaining compatibility execution paths.
+- passive skills have SO metadata after PRD49ABC, but trigger mutation can still
+  live in `TosterHexUnit`, `SpellOverTime`, `HexClass`, and related hooks.
 - future skill VFX/SFX data on unit models can drift from unit catalog skill assignment
   unless both use the exact skill string as the join key.
 - `CastManager.Projectiles[index]`, `Axe(...)`, and `FireBall(...)` are legacy
   projectile paths; planned skill VFX/SFX work should replace them with
   catalog-driven projectile VFX moved by code, without Rigidbody physics.
+- `skills.xml` is not current skill truth. Treat it as legacy/migration history
+  unless current code inspection proves a remaining runtime dependency.
 
 ### Pathfinding
 
@@ -442,8 +463,10 @@ Game-code markers found during the scan:
 - hard-coded old product text in `PlayFabControler.cs`: "Retsot account".
 - `BinaryFormatter` used for local build files in menu/team/selection code.
 - `Resources.Load` string paths for units, skills, icons, and toster models.
-- skill assignment, skill UI, and skill execution are coupled by string names
-  across the unit catalog, icon paths, info XML, and `CastManager` method names.
+- skill assignment, skill UI, skill definitions, presentation, and remaining
+  compatibility execution are coupled by string ids across the unit catalog,
+  skill catalog, icon paths, presentation entries, and legacy `CastManager`
+  method names.
 - many public fields used by Unity Inspector; do not rename without permission.
 - root and `Scripts` files are mostly in the global namespace, with only small
   pockets such as `HPath`, `Priority_Queue`, `TimeSpells`, `Traps`, `Tostery`,
@@ -460,7 +483,9 @@ Game-code markers found during the scan:
    can be removed after Unity scene reference checks.
 4. Create an architecture task to extract `PanelArmii.BuildG` into a plain data
    type only after serialized compatibility is understood.
-5. Create a skill-system mapping task before refactoring `CastManager`.
+5. Continue PRD49ED before skill cleanup: route Tactical AI selection and live
+   skill execution through the shared `SkillRules` / validated action /
+   SO-driven executor path.
 6. When adding skill VFX/SFX, keep `UnitCatalog.asset` as the skill ownership source and
    use the existing skill string as the join key for any model-local
    presentation data.

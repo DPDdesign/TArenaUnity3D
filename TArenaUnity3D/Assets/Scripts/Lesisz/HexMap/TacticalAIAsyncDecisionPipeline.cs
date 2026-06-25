@@ -14,13 +14,17 @@ public enum TacticalAIAsyncDecisionState
     Cancelled
 }
 
-public sealed class TacticalAICopiedSkillMetadataProvider : ITacticalAISkillMetadataProvider
+public sealed class TacticalAICopiedSkillMetadataProvider : ITacticalAISkillMetadataProvider, ITacticalAISkillSpecProvider
 {
     readonly Dictionary<string, TacticalAISkillMetadata> metadataBySkillId;
+    readonly Dictionary<string, SkillDefinitionSpec> specsBySkillId;
 
-    TacticalAICopiedSkillMetadataProvider(Dictionary<string, TacticalAISkillMetadata> metadataBySkillId)
+    TacticalAICopiedSkillMetadataProvider(
+        Dictionary<string, TacticalAISkillMetadata> metadataBySkillId,
+        Dictionary<string, SkillDefinitionSpec> specsBySkillId)
     {
         this.metadataBySkillId = metadataBySkillId ?? new Dictionary<string, TacticalAISkillMetadata>(StringComparer.Ordinal);
+        this.specsBySkillId = specsBySkillId ?? new Dictionary<string, SkillDefinitionSpec>(StringComparer.Ordinal);
     }
 
     public static TacticalAICopiedSkillMetadataProvider Capture(
@@ -29,10 +33,14 @@ public sealed class TacticalAICopiedSkillMetadataProvider : ITacticalAISkillMeta
     {
         Dictionary<string, TacticalAISkillMetadata> copiedMetadata =
             new Dictionary<string, TacticalAISkillMetadata>(StringComparer.Ordinal);
+        Dictionary<string, SkillDefinitionSpec> copiedSpecs =
+            new Dictionary<string, SkillDefinitionSpec>(StringComparer.Ordinal);
         if (snapshot == null || snapshot.Units == null)
         {
-            return new TacticalAICopiedSkillMetadataProvider(copiedMetadata);
+            return new TacticalAICopiedSkillMetadataProvider(copiedMetadata, copiedSpecs);
         }
+
+        ITacticalAISkillSpecProvider specProvider = liveProvider as ITacticalAISkillSpecProvider;
 
         for (int unitIndex = 0; unitIndex < snapshot.Units.Count; unitIndex++)
         {
@@ -50,6 +58,12 @@ public sealed class TacticalAICopiedSkillMetadataProvider : ITacticalAISkillMeta
                     continue;
                 }
 
+                SkillDefinitionSpec spec;
+                if (specProvider != null && specProvider.TryGetSkillSpec(skillId, out spec) && spec != null)
+                {
+                    copiedSpecs.Add(skillId, spec);
+                }
+
                 TacticalAISkillMetadata liveMetadata;
                 if (liveProvider != null && liveProvider.TryGetSkillMetadata(skillId, out liveMetadata) && liveMetadata != null)
                 {
@@ -61,7 +75,7 @@ public sealed class TacticalAICopiedSkillMetadataProvider : ITacticalAISkillMeta
             }
         }
 
-        return new TacticalAICopiedSkillMetadataProvider(copiedMetadata);
+        return new TacticalAICopiedSkillMetadataProvider(copiedMetadata, copiedSpecs);
     }
 
     public bool TryGetSkillMetadata(string skillId, out TacticalAISkillMetadata metadata)
@@ -80,6 +94,17 @@ public sealed class TacticalAICopiedSkillMetadataProvider : ITacticalAISkillMeta
 
         metadata = CloneMetadata(copiedMetadata);
         return true;
+    }
+
+    public bool TryGetSkillSpec(string skillId, out SkillDefinitionSpec spec)
+    {
+        spec = null;
+        if (string.IsNullOrEmpty(skillId))
+        {
+            return false;
+        }
+
+        return specsBySkillId.TryGetValue(skillId, out spec) && spec != null;
     }
 
     static TacticalAISkillMetadata CloneMetadata(TacticalAISkillMetadata metadata)
@@ -129,7 +154,7 @@ public sealed class TacticalAIAsyncTurnIntegrator
     readonly Func<TacticalAIResolvedProfile> profileResolver;
     readonly Func<BattleSnapshot, TacticalAIResolvedProfile, ITacticalAISkillMetadataProvider, TacticalAISearchPlan> planBuilder;
     readonly Func<BattleSnapshot, ITacticalAISkillMetadataProvider> skillMetadataCapture;
-    readonly Func<IEnumerable<TacticalAIActionIntent>, BattleSnapshot, TacticalAIExecutionResult> executor;
+    readonly Func<IEnumerable<TacticalAIPlannedAction>, BattleSnapshot, TacticalAIExecutionResult> executor;
 
     PendingDecision pendingDecision;
     int nextDecisionId;
@@ -139,7 +164,7 @@ public sealed class TacticalAIAsyncTurnIntegrator
         Func<TacticalAIResolvedProfile> profileResolver,
         Func<BattleSnapshot, TacticalAIResolvedProfile, ITacticalAISkillMetadataProvider, TacticalAISearchPlan> planBuilder,
         Func<BattleSnapshot, ITacticalAISkillMetadataProvider> skillMetadataCapture,
-        Func<IEnumerable<TacticalAIActionIntent>, BattleSnapshot, TacticalAIExecutionResult> executor)
+        Func<IEnumerable<TacticalAIPlannedAction>, BattleSnapshot, TacticalAIExecutionResult> executor)
     {
         this.snapshotProvider = snapshotProvider ?? (() => null);
         this.profileResolver = profileResolver ?? (() => TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(null));
@@ -154,14 +179,14 @@ public sealed class TacticalAIAsyncTurnIntegrator
 
     public static TacticalAIAsyncTurnIntegrator CreateFromScene(
         TacticalAIProfile assignedProfile = null,
-        ITacticalAISkillIntentExecutor skillIntentExecutor = null,
+        ITacticalAISkillActionExecutor skillActionExecutor = null,
         ITacticalAISkillMetadataProvider skillMetadataProvider = null)
     {
         TacticalAIProfile resolvedProfileAsset = assignedProfile ?? TacticalAIProfileCatalog.LoadNormalProfileAsset();
         ITacticalAISkillMetadataProvider liveSkillMetadataProvider = skillMetadataProvider ?? TacticalAIDataMapperSkillMetadataProvider.Instance;
         TacticalAIExecutionBridge bridge = TacticalAIExecutionBridge.CreateFromScene(
             resolvedProfileAsset,
-            skillIntentExecutor,
+            skillActionExecutor,
             liveSkillMetadataProvider);
 
         return new TacticalAIAsyncTurnIntegrator(
@@ -169,7 +194,7 @@ public sealed class TacticalAIAsyncTurnIntegrator
             () => TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(resolvedProfileAsset),
             (snapshot, profile, copiedSkillMetadataProvider) => TacticalAISearchEngine.Search(snapshot, profile, copiedSkillMetadataProvider),
             snapshot => TacticalAICopiedSkillMetadataProvider.Capture(snapshot, liveSkillMetadataProvider),
-            (orderedIntents, plannedSnapshot) => bridge.TryExecuteOrderedIntents(orderedIntents, plannedSnapshot));
+            (orderedActions, plannedSnapshot) => bridge.TryExecuteOrderedActions(orderedActions, plannedSnapshot));
     }
 
     public bool TryBeginTurn(out TacticalAILiveTurnIntegrationResult immediateResult)
@@ -286,8 +311,9 @@ public sealed class TacticalAIAsyncTurnIntegrator
             return false;
         }
 
-        if (pendingDecision.Plan == null || pendingDecision.Plan.OrderedActionIntents == null || pendingDecision.Plan.OrderedActionIntents.Count == 0)
+        if (pendingDecision.Plan == null || pendingDecision.Plan.OrderedActions == null || pendingDecision.Plan.OrderedActions.Count == 0)
         {
+            Debug.LogError("[TacticalAI] async-empty-plan actor=" + Safe(pendingDecision.ActorUnitId) + " reason=NoLegalRankedActions");
             result = BuildFallbackResult(
                 pendingDecision.ActorUnitId,
                 pendingDecision.Snapshot,
@@ -321,7 +347,7 @@ public sealed class TacticalAIAsyncTurnIntegrator
         }
 
         TacticalAIExecutionResult executionResult = executor(
-            pendingDecision.Plan.OrderedActionIntents,
+            pendingDecision.Plan.OrderedActions,
             pendingDecision.Snapshot) ?? new TacticalAIExecutionResult
         {
             Status = TacticalAIExecutionStatus.InvalidContext,
@@ -333,7 +359,7 @@ public sealed class TacticalAIAsyncTurnIntegrator
             return false;
         }
 
-        if (executionResult.Status == TacticalAIExecutionStatus.Started && executionResult.ExecutedIntent != null)
+        if (executionResult.Status == TacticalAIExecutionStatus.Started && executionResult.ExecutedAction != null)
         {
             result = new TacticalAILiveTurnIntegrationResult
             {
@@ -346,7 +372,7 @@ public sealed class TacticalAIAsyncTurnIntegrator
             };
             Debug.Log(TacticalAILiveTurnIntegrator.BuildStartedLog(
                 pendingDecision.ActorUnitId,
-                executionResult.ExecutedIntent));
+                executionResult.ExecutedAction));
             pendingDecision.State = TacticalAIAsyncDecisionState.Consumed;
             pendingDecision = null;
             return true;

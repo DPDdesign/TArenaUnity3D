@@ -1,18 +1,37 @@
 # [TARENA] PRD: Skill XML Consistency Cleanup
 
-- Status: ready-for-agent
+- Status: superseded by SO skill catalog migration and PRD49ABC
 - Type: PRD
 - Area: Skills, Data Integrity, UI Info
-- Label: ready-for-agent
+- Label: superseded
+
+## Supersession Note - 2026-06-25
+
+This PRD describes the old XML-era skill consistency problem. It is no longer a
+current implementation task.
+
+Current skill context is:
+
+- unit skill ownership: `UnitCatalog.asset` and unit definition assets,
+- skill definition data: `SkillCatalog.asset` and `SkillDefinitionAsset`,
+- shared API: `SkillRules`, `SkillUse`, `SkillCast`, `SkillResult`,
+  `SkillQuery`,
+- remaining cleanup: PRD49ED for execution migration and PRD49F for legacy
+  removal.
+
+Use this file only as historical context for why string-id consistency mattered
+before the SO migration. Do not treat `Units.xml`, `skills.xml`, or
+`CastManager` reflection as current skill architecture.
 
 ## Problem Statement
 
-TArenaUnity3D currently identifies skills by string IDs loaded from unit XML.
-Those same IDs are expected to connect unit ownership, UI button text, right
-click descriptions, icon lookup, and skill execution. The current data is not
-fully consistent: some skills are assigned to units but have no skill info
-entry, some skill info entries are not assigned to any unit, and a backup unit
-XML contains at least one skill ID not present in the primary unit XML.
+At the time this superseded PRD was written, TArenaUnity3D identified skills by
+string IDs loaded from unit XML. Those same IDs were expected to connect unit
+ownership, UI button text, right click descriptions, icon lookup, and skill
+execution. The old XML-era data was not fully consistent: some skills were
+assigned to units but had no skill info entry, some skill info entries were not
+assigned to any unit, and a backup unit XML contained at least one skill ID not
+present in the primary unit XML.
 
 From the user's perspective, this makes skill work risky. A skill may appear on
 a unit but have missing or empty UI information, a documented skill may not be
@@ -21,23 +40,22 @@ assets for IDs that are stale, duplicated, or misspelled.
 
 ## Solution
 
-Create a small, explicit skill data consistency pass that audits the current
-skill IDs, classifies every inconsistency, and then normalizes the data in safe
-steps. The work should preserve the current skill ID rule: the stable skill ID
-is the exact string assigned to units and used by the current skill execution
-flow.
+This superseded PRD proposed a small, explicit skill data consistency pass that
+audited the old XML-era skill IDs, classified every inconsistency, and then
+normalized the data in safe steps. The stable skill ID rule survived the
+migration: the exact string assigned to units remains the skill id.
 
-The first implementation should not rewrite the skill system. It should make
-the existing XML data easier to trust by identifying and resolving mismatches
-between unit assignment, skill info definitions, optional copied XML files,
-icons, and executable skill methods.
+The original implementation was not intended to rewrite the skill system. It
+was intended to make the then-existing XML data easier to trust by identifying
+and resolving mismatches between unit assignment, skill info definitions,
+optional copied XML files, icons, and executable skill methods.
 
 The cleanup should be supported by a repeatable validation report so future
 changes can be checked before broader skill presentation or balance work.
 
 ## User Stories
 
-1. As a designer, I want to see every skill ID assigned to a unit, so that I know what skills are currently playable.
+1. As a designer, I want to see every skill ID assigned to a unit, so that I know what skills were then playable.
 2. As a designer, I want to see every skill info definition, so that I know what skills have player-facing text.
 3. As a designer, I want assigned skills with missing info to be listed clearly, so that I can fill in missing UI descriptions.
 4. As a designer, I want defined but unassigned skills to be listed clearly, so that I can decide whether they are planned, stale, or should be assigned.
@@ -60,8 +78,8 @@ changes can be checked before broader skill presentation or balance work.
 
 ## Implementation Decisions
 
-- Treat the primary unit skill assignment XML as the source of which skills are
-  currently playable.
+- Treat the primary unit skill assignment XML as the source of which skills were
+  then playable.
 - Treat the skill info XML as the source of player-facing skill type and
   description text.
 - Treat exact skill ID strings as stable identifiers. Do not rename IDs as part
@@ -129,7 +147,7 @@ changes can be checked before broader skill presentation or balance work.
 
 ## Further Notes
 
-Current audit snapshot from the local XML data:
+Historical audit snapshot from the old local XML data:
 
 - 42 unique skill IDs are assigned to units in the primary unit XML.
 - 33 skill IDs are defined in the skill info XML.
@@ -156,5 +174,5 @@ Current audit snapshot from the local XML data:
   - The copied unit XML contains `Range_Stance`, which is not present in the
     primary unit XML.
 
-This PRD is intentionally focused on making current skill data trustworthy
+This PRD was intentionally focused on making old XML-era skill data trustworthy
 before larger skill presentation, icon, or data migration work.

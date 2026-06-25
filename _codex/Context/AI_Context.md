@@ -2,7 +2,7 @@
 
 Status: active
 Project: TArenaUnity3D
-Last updated: 2026-06-24
+Last updated: 2026-06-25
 
 This file captures stable TArenaUnity3D AI context for future planning and
 implementation work.
@@ -65,6 +65,34 @@ Implemented PRD046/047 surfaces:
 - The legacy `MostStupidAIEver` path remains as a temporary safety fallback
   when Tactical AI cannot produce or execute a valid action.
 
+## PRD49 Skill API Handoff
+
+PRD49ABC is closed as the skill API/SO-data/validation-boundary foundation.
+Future AI skill work should use the PRD49 API instead of private skill target
+guessing:
+
+- `SkillRules` / `SkillQuery` are the shared source for usable skills, legal
+  targets, validation, preview/result shape, and future server-facing queries.
+- `SkillUse` is the player-equivalent untrusted command shape.
+- `SkillCast` is the trusted normalized validator output.
+- `SkillResult` is the ordered result/event shape.
+
+049D and 049E are superseded by 049ED. Use
+`_codex/tasks/049ED_PRD_TacticalAIActionSelectionAndExecutionMigration.md` for
+the current Tactical AI + SO-driven execution migration route.
+
+Current boundary after 049ABC:
+
+- live/default skill execution can still depend on `MouseControler` /
+  `CastManager` reflection bodies,
+- passive trigger mutation can still live in legacy hooks,
+- 049ED must cover all current active asset-backed and unit-assigned skills,
+  not only skills that lacked SO data before ABC.
+
+AI must be treated as another player/client for architecture purposes. It may
+score legal actions, but commit should reduce to the same submitted intent and
+validation/result path used by the player and future server-side authority.
+
 ## Current Follow-Ups
 
 - Unity compilation, EditMode test execution, and Play Mode validation remain
@@ -86,6 +114,9 @@ Implemented PRD046/047 surfaces:
 
 - `_codex/tasks/archive/046_PRD_TacticalBattleAI_V1.md`
 - `_codex/tasks/archive/047_PRD_TacticalAI_AsyncDecisionPipeline.md`
+- `_codex/tasks/049_PRD_TacticalActionSkillMigrationProgram.md`
+- `_codex/tasks/archive/049ABC_PRD_SkillAPIAndFullMigration.md`
+- `_codex/tasks/049ED_PRD_TacticalAIActionSelectionAndExecutionMigration.md`
 - `_codex/Documentation/ADR_013_TacticalAI_CastManagerSkillBridge.md`
 - `_codex/Documentation/ADR_014_TacticalAI_MultiplayerCompatibleValidation.md`
 - `_codex/Context/BattleActionRules.md`

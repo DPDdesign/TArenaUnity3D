@@ -429,6 +429,12 @@ public class UICanvas : MonoBehaviour
 
     int GetSkillMaxCooldown(string skillName)
     {
+        SkillDefinitionAsset skillAsset = DataMapper.Instance != null ? DataMapper.Instance.FindSkillAsset(skillName) : null;
+        if (skillAsset != null && skillAsset.ActivationRule.cooldownTurns > 0)
+        {
+            return skillAsset.ActivationRule.cooldownTurns;
+        }
+
         DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(skillName);
         if (skillDefinition == null || string.IsNullOrEmpty(skillDefinition.Info))
         {

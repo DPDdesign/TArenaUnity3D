@@ -14,5 +14,70 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillDefinitionAsset
   skillName: "Stone_Throw"
   type: "Active"
-  info: "Rzuca swoją połową (50% ilości jednostek ) w zaznaczony punkt. Po upadku w pobliżu celu pojawia się jednostka Stone Golema z 50% ilości początkowej. Upadek powoduje zadanie sobie 12 DMG na rzuconą jednostkę. Cel otrzymuje 10 DMG za każdego nowego golema. (CD 3)"
+  info: "Rzuca swoja polowa (50% ilosci jednostek) w wybrana wroga jednostke. Po trafieniu w poblizu celu pojawia sie Stone Golem z 50% ilosci poczatkowej. Upadek zadaje 12 DMG rzuconej jednostce. Cel otrzymuje 10 DMG za kazdego nowego golema. (CD 3)"
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 3
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 1
+    targetRoles:
+    - 2
+    targetCount: 1
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 2
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 10
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 1
+    targetSource: 1
+    damageMode: 3
+    movementMode: 0
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 10
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0
+  - effectType: 5
+    targetSource: 0
+    damageMode: 0
+    movementMode: 0
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: -1
+    skipIfNoTarget: 0
+  - effectType: 6
+    targetSource: 6
+    damageMode: 0
+    movementMode: 0
+    statusId: ""
+    trapId: ""
+    unitId: "StoneGolem"
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

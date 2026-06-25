@@ -96,6 +96,12 @@ public class DataMapper : ScriptableObject
         return definition;
     }
 
+    public SkillDefinitionAsset FindSkillAsset(string skillName)
+    {
+        ResolveMissingCatalogReferences();
+        return skillCatalog == null ? null : skillCatalog.FindSkillAsset(skillName);
+    }
+
     public List<UnitDefinition> GetAllUnits()
     {
         EnsureUnitCache();

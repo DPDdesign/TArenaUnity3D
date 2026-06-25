@@ -1,11 +1,18 @@
 # 049AC PRD Skill Target And Effect Data Model
 
-- Status: grilled draft
+- Status: merged into closed 049ABC; retained as reference map
 - Type: PRD
 - Area: skills, target families, ScriptableObjects, effect parameters, migration
 - Owner: TBD
 
 ## Goal
+
+Reference note - 2026-06-25:
+
+This standalone 049AC PRD was merged into
+`_codex/tasks/archive/049ABC_PRD_SkillAPIAndFullMigration.md`. Do not start it
+as a new active task. Use it as the reference target/effect map behind the
+PRD49ABC SO-data migration and future PRD49ED execution work.
 
 Create one migration map for active skill targeting and effect data so every
 current active skill can be represented by `SkillDefinitionAsset` data instead

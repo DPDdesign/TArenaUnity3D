@@ -1,14 +1,14 @@
 # 049F PRD Legacy Skill System Cleanup
 
-- Status: draft
+- Status: future draft after 049ED replacement paths are proven
 - Type: PRD
 - Area: skill cleanup, legacy removal, validation/execution migration
 - Owner: TBD
 
 ## Goal
 
-Remove or retire legacy skill-system sources of truth after the new
-`SkillActionDefinition`, validator, AI integration, and SO-driven execution
+Remove or retire legacy skill-system sources of truth after the extended
+`SkillDefinitionAsset`, validator, AI integration, and SO-driven execution
 paths are in place.
 
 049F is deliberately last. Cleanup should happen only after replacement paths
@@ -52,7 +52,7 @@ to safely remove the old paths without breaking active gameplay.
 
 A legacy path can be removed only when:
 
-- the skill has a complete `SkillActionDefinition`,
+- the skill has a complete `SkillDefinitionAsset` action definition,
 - validator/UI target flow uses the new model,
 - AI integration uses legal action API if relevant,
 - execution has migrated for that skill or family,
@@ -175,7 +175,63 @@ Done when:
 - XML flags no longer act as source of truth for migrated skills.
 - `skills.xml` has no runtime dependency and is removed after SO descriptions
   and rules replace it.
-- Documentation points future work to `SkillActionDefinition` and shared
+- Documentation points future work to `SkillDefinitionAsset` and shared
   validator APIs.
 - Manual regression confirms every skill in the cleaned family still executes
   correctly.
+
+## Implementation - 2026-06-25
+
+### What Changed
+
+- `TacticalAIExecutionBridge`: removed the legacy skill-intent executor contract and now executes AI skills through `ITacticalAISkillActionExecutor` / `TacticalAISkillRulesExecutor` using the revalidated `SkillCast`.
+- `TacticalAISkillRulesExecutor`: renamed the execution entry from `TryExecuteSkillIntent(...)` to `TryExecuteSkillAction(...)` and removed the unused legacy `TacticalAIActionIntent` parameter.
+- `TacticalAIAsyncDecisionPipeline`: updated scene construction to accept the new action executor contract.
+- Removed `TacticalAICastManagerSkillIntentExecutor.cs`, the old AI bridge to `MouseControler.TryStartSkillAction(...)` / CastManager-compatible skill execution.
+- `TacticalAIExecutionBridgeTests`: added coverage for the new executor contract and for skill planned actions not carrying `LegacyIntent`.
+- No Inspector fields changed.
+
+### Automatic Test
+
+- Not run automatically. Unity compilation and Unity Test Runner execution remain manual.
+- Source checks run: old executor symbols are gone and changed-file brace balance passed.
+- Added/updated EditMode tests in `TArenaUnity3D/Assets/Scripts/Tests/EditMode/TacticalAIExecutionBridgeTests.cs`:
+  - `SkillRulesExecutor_UsesActionExecutorContract`
+  - `PlannedSkillAction_DoesNotCarryLegacyIntent`
+- In Unity, run `Window > General > Test Runner > EditMode`, then run `TacticalAIExecutionBridgeTests`. Expected result: the new 049F tests pass with the existing suite.
+
+### Unity Test
+
+#### Unity Setup
+
+- No new scene, prefab, asset, or Inspector setup is required.
+- Keep existing `DataMapper`, skill catalog, and unit catalog references wired.
+
+#### Play Mode Test
+
+- Start a tactical battle where an enemy AI unit has an active skill.
+- Let the enemy AI turn execute through the async/live Tactical AI path.
+- Confirm skill execution still applies through `TacticalAISkillRulesExecutor` / `SkillRules`.
+- Confirm there are no CastManager AI skill bridge logs or errors.
+- Validate `Stone_Throw` specifically because PRD049ED already marked it as the highest-risk parity case.
+
+### QA Verdict
+
+- QA status: pass for the focused PRD049F cleanup slice.
+- QA report: `_codex/tasks/QA/2026-06-25_2107_049F_QA_ArchitectureReview.md`
+- Actionable findings: none.
+- Non-blocking observation: legacy intent terminology remains in non-skill AI compatibility surfaces and should be removed only after movement, attack, wait, and defend have a replacement action model.
+- Follow-up fixes applied: none required after QA.
+
+### Notes
+
+- This is not full PRD049F closure.
+- `TacticalAIActionIntent`, `TacticalAICandidateGenerator`, `TacticalAISearchCandidateExpander`, and `TacticalAIIntentRevalidator` still remain for non-skill action compatibility.
+- `TacticalAIActionIntent` also remains as an internal search candidate container before skill candidates are converted to `TacticalAIPlannedAction`; skill execution no longer consumes it.
+- No gameplay float values, serialized Inspector fields, assets, prefabs, or scenes were changed.
+
+### Next Steps
+
+- Run Unity compile/import.
+- Run `TacticalAIExecutionBridgeTests` in EditMode.
+- Run the Play Mode enemy AI skill scenario above, with special attention to `Stone_Throw`.

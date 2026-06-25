@@ -1,16 +1,22 @@
 using System;
+using System.Collections.Generic;
 
 public sealed class TacticalAIRevalidatedIntent
 {
     public TacticalAIActionType ActionType;
+    public BattleActionUse Use;
+    public BattleAction Action;
+    public BattleActionResult Result;
     public BattleUnitSnapshot Actor;
     public BattleUnitSnapshot Target;
     public TacticalAIHexCoordinate DestinationHex;
     public TacticalAIHexCoordinate TargetHex;
     public int SkillSlot = -1;
     public string SkillId = string.Empty;
+    public SkillCast ValidatedSkillCast;
 }
 
+// TODO_LEGACY_REVIEW: Legacy TacticalAIActionIntent revalidation remains until PRD050 removes intent execution paths.
 public static class TacticalAIIntentRevalidator
 {
     public static bool TryRevalidate(
@@ -36,9 +42,10 @@ public static class TacticalAIIntentRevalidator
             return false;
         }
 
-        if (liveSnapshot.TurnState != null && liveSnapshot.TurnState.IsActionBlocking)
+        if (liveSnapshot.TurnState != null &&
+            (liveSnapshot.TurnState.IsActionBlocking || liveSnapshot.TurnState.IsResolvingNewTurnSequence))
         {
-            failureReason = "Battle action lifecycle is currently blocking.";
+            failureReason = "Battle turn state is currently blocking action execution.";
             return false;
         }
 
@@ -93,6 +100,26 @@ public static class TacticalAIIntentRevalidator
             SkillSlot = intent.SkillSlot,
             SkillId = intent.SkillId ?? string.Empty
         };
+
+        if (intent.ActionType != TacticalAIActionType.Skill)
+        {
+            BattleActionUse use = ToBattleActionUse(intent);
+            BattleActionValidationResult validation = BattleActionRules.Validate(use, liveSnapshot, skillMetadataProvider);
+            if (validation.IsValid == false || validation.Action == null)
+            {
+                failureReason = "BattleActionRules rejected legacy intent: " + validation.RejectReason;
+                return false;
+            }
+
+            request.Use = use;
+            request.Action = validation.Action.Clone();
+            request.Result = BattleActionRules.Apply(liveSnapshot, validation.Action);
+            request.DestinationHex = ToAIHex(validation.Action.DestinationHex);
+            request.TargetHex = ToAIHex(validation.Action.ImpactHex);
+            request.Target = FindUnit(liveSnapshot, validation.Action.PrimaryTargetUnitId);
+            revalidatedIntent = request;
+            return true;
+        }
 
         switch (intent.ActionType)
         {
@@ -170,15 +197,22 @@ public static class TacticalAIIntentRevalidator
                 }
                 break;
             case TacticalAIActionType.Skill:
-                if (TryResolveSkill(intent, liveActor, skillMetadataProvider, out request.SkillSlot, out request.SkillId, out failureReason) == false)
+                if (TryResolveSkill(
+                        intent,
+                        liveSnapshot,
+                        liveActor,
+                        skillMetadataProvider,
+                        out request.SkillSlot,
+                        out request.SkillId,
+                        out request.ValidatedSkillCast,
+                        out failureReason) == false)
                 {
                     return false;
                 }
 
-                if (TryResolveOptionalSkillTarget(intent, liveSnapshot, out request.Target, out request.TargetHex, out request.DestinationHex, out failureReason) == false)
-                {
-                    return false;
-                }
+                request.Target = FindUnit(liveSnapshot, request.ValidatedSkillCast.PrimaryTargetUnitId);
+                request.TargetHex = ToAIHex(FirstHex(request.ValidatedSkillCast.SelectedHexes));
+                request.DestinationHex = ToAIHex(request.ValidatedSkillCast.DestinationHex);
                 break;
             default:
                 failureReason = "Unsupported tactical AI action type: " + intent.ActionType;
@@ -187,6 +221,30 @@ public static class TacticalAIIntentRevalidator
 
         revalidatedIntent = request;
         return true;
+    }
+
+    static BattleActionUse ToBattleActionUse(TacticalAIActionIntent intent)
+    {
+        BattleActionUse use = new BattleActionUse
+        {
+            ActorUnitId = intent != null ? intent.ActorUnitId ?? string.Empty : string.Empty,
+            ActionKind = intent != null ? TacticalAIPlannedAction.ToBattleActionKind(intent.ActionType) : BattleActionKind.Wait,
+            TargetUnitId = intent != null ? intent.TargetUnitId ?? string.Empty : string.Empty,
+            SkillSlot = intent != null ? intent.SkillSlot : -1,
+            SkillId = intent != null ? intent.SkillId ?? string.Empty : string.Empty
+        };
+
+        if (intent != null && intent.DestinationHex != null)
+        {
+            use.SelectedHexes.Add(new HexCoord(intent.DestinationHex.C, intent.DestinationHex.R));
+        }
+
+        if (intent != null && intent.TargetHex != null)
+        {
+            use.SelectedHexes.Add(new HexCoord(intent.TargetHex.C, intent.TargetHex.R));
+        }
+
+        return use;
     }
 
     static bool TryValidatePlannedActor(
@@ -367,14 +425,17 @@ public static class TacticalAIIntentRevalidator
 
     static bool TryResolveSkill(
         TacticalAIActionIntent intent,
+        BattleSnapshot liveSnapshot,
         BattleUnitSnapshot liveActor,
         ITacticalAISkillMetadataProvider skillMetadataProvider,
         out int skillSlot,
         out string skillId,
+        out SkillCast validatedSkillCast,
         out string failureReason)
     {
         skillSlot = -1;
         skillId = string.Empty;
+        validatedSkillCast = null;
         failureReason = string.Empty;
 
         if (liveActor == null || liveActor.SkillIdsBySlot == null || liveActor.CooldownsBySlot == null)
@@ -440,6 +501,28 @@ public static class TacticalAIIntentRevalidator
 
         skillSlot = intent.SkillSlot;
         skillId = liveSkillId;
+
+        SkillDefinitionAsset definition = ResolveSkillDefinition(liveSkillId, skillMetadataProvider);
+        if (definition == null)
+        {
+            failureReason = "Intent skill has no action definition asset for shared validation.";
+            return false;
+        }
+
+        SkillContext context = SkillContext.Create(liveSnapshot, liveActor.RuntimeUnitId, definition, intent.SkillSlot);
+        List<HexCoord> selectedHexes = intent.ValidatedSkillCast != null
+            ? CopyHexes(intent.ValidatedSkillCast.SelectedHexes)
+            : CopyIntentTargetHex(intent);
+        SkillValidationResult validation = SkillRules.Validate(
+            new SkillUse(liveActor.RuntimeUnitId, liveSkillId, selectedHexes),
+            context);
+        if (validation.IsValid == false || validation.Cast == null)
+        {
+            failureReason = "SkillRules rejected the live AI skill command: " + validation.RejectReason;
+            return false;
+        }
+
+        validatedSkillCast = validation.Cast.Clone();
         return true;
     }
 
@@ -458,6 +541,60 @@ public static class TacticalAIIntentRevalidator
             SkillId = skillId ?? string.Empty,
             IsRepeatableToggle = TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId)
         };
+    }
+
+    static SkillDefinitionAsset ResolveSkillDefinition(
+        string skillId,
+        ITacticalAISkillMetadataProvider skillMetadataProvider)
+    {
+        ITacticalAISkillDefinitionProvider definitionProvider = skillMetadataProvider as ITacticalAISkillDefinitionProvider;
+        SkillDefinitionAsset definition;
+        if (definitionProvider != null && definitionProvider.TryGetSkillDefinition(skillId, out definition))
+        {
+            return definition;
+        }
+
+        return DataMapper.Instance != null ? DataMapper.Instance.FindSkillAsset(skillId) : null;
+    }
+
+    static List<HexCoord> CopyHexes(List<HexCoord> source)
+    {
+        List<HexCoord> result = new List<HexCoord>();
+        if (source == null)
+        {
+            return result;
+        }
+
+        for (int i = 0; i < source.Count; i++)
+        {
+            if (source[i] != null)
+            {
+                result.Add(new HexCoord(source[i].C, source[i].R));
+            }
+        }
+
+        return result;
+    }
+
+    static List<HexCoord> CopyIntentTargetHex(TacticalAIActionIntent intent)
+    {
+        List<HexCoord> result = new List<HexCoord>();
+        if (intent != null && intent.TargetHex != null)
+        {
+            result.Add(new HexCoord(intent.TargetHex.C, intent.TargetHex.R));
+        }
+
+        return result;
+    }
+
+    static HexCoord FirstHex(List<HexCoord> hexes)
+    {
+        return hexes != null && hexes.Count > 0 ? hexes[0] : null;
+    }
+
+    static TacticalAIHexCoordinate ToAIHex(HexCoord hex)
+    {
+        return hex == null ? null : new TacticalAIHexCoordinate(hex.C, hex.R);
     }
 
     static bool CanStartMovement(BattleUnitSnapshot actor)

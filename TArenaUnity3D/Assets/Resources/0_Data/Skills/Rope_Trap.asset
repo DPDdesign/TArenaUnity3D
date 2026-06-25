@@ -16,3 +16,42 @@ MonoBehaviour:
   type: "Active"
   info: "Ustawia niewidzialną dla przeciwnika pułapkę, która go unieruchamia. Cel otrzymuje 30% obrażeń do końca tury. (CD 2)"
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 2
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 2
+    targetRoles:
+    - 6
+    targetCount: 1
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 1
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 1
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 3
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 3
+    targetSource: 4
+    damageMode: 0
+    movementMode: 0
+    statusId: ""
+    trapId: "Rope_Trap"
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 999
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

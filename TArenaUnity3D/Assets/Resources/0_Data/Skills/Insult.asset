@@ -16,3 +16,42 @@ MonoBehaviour:
   type: "Active"
   info: "Poniża przeciwników, zmniejsza inicjatywę o 1 na 1 turę.(NI) (CD 4)."
   flags: "NI"
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 4
+    consumesTurn: 0
+    canUseAfterMove: 0
+    canMoveAfterUse: 1
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 1
+    targetRoles:
+    - 12
+    targetCount: 0
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 0
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 2
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 2
+    targetSource: 3
+    damageMode: 0
+    movementMode: 0
+    statusId: "Insult"
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 2
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

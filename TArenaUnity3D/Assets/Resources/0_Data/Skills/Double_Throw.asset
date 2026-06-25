@@ -16,3 +16,43 @@ MonoBehaviour:
   type: "Active"
   info: "Rzuca dwa razy pod rząd, każdy rzut zadaje 40% obrażeń."
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 1
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 1
+    targetRoles:
+    - 2
+    - 2
+    targetCount: 2
+    allowDuplicateTargets: 1
+    teamFilter: 0
+    occupancyRequirement: 2
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 2
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 1
+    targetSource: 2
+    damageMode: 2
+    movementMode: 0
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 0.4
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

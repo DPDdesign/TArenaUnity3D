@@ -94,7 +94,7 @@ public class TeamClass
             if (CanReceiveTurn(t) && t.Moved==false&&t.GetIni()>Initiative)
             {
 
-                if (t.Waited == false && t.Blinded==false)
+                if (t.Waited == false)
                 {
                     T = t;
                     Initiative = t.GetIni();
@@ -105,7 +105,7 @@ public class TeamClass
         if (T == null)
             foreach (TosterHexUnit t in Tosters)
             {
-            if (CanReceiveTurn(t) && t.Moved == false && t.GetIni() <= Initiative && t.Blinded==false)
+            if (CanReceiveTurn(t) && t.Moved == false && t.GetIni() <= Initiative)
             {
                 T = t;
                 Initiative = t.GetIni();
@@ -126,18 +126,15 @@ public class TeamClass
             if (CanReceiveTurn(t) && t.GetIni() > Initiative)
             {
 
-                if (t.Blinded==false)
-                {
-                    T = t;
-                    Initiative = t.GetIni();
-                }
+                T = t;
+                Initiative = t.GetIni();
             }
         }
         Initiative = 99;
         if (T == null)
             foreach (TosterHexUnit t in Tosters)
             {
-            if (CanReceiveTurn(t) && t.GetIni() <= Initiative && t.Blinded==false)
+            if (CanReceiveTurn(t) && t.GetIni() <= Initiative)
             {
                 T = t;
                 Initiative = t.GetIni();

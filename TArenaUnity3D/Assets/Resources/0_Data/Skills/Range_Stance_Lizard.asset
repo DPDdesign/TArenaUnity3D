@@ -16,3 +16,41 @@ MonoBehaviour:
   type: "Active"
   info: "w trybie zasięgowym zadaje 20% mniej obrażeń, otrzymuje 20% więcej."
   flags: ""
+  activationRule:
+    activationKind: 2
+    cooldownTurns: 0
+    consumesTurn: 0
+    canUseAfterMove: 1
+    canMoveAfterUse: 1
+    repeatableInTurn: 1
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 0
+    targetRoles: []
+    targetCount: 0
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 0
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 1
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 9
+    targetSource: 0
+    damageMode: 0
+    movementMode: 0
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

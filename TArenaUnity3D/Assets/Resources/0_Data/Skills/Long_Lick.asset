@@ -14,5 +14,58 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillDefinitionAsset
   skillName: "Long_Lick"
   type: "Active"
-  info: "Wyrzuca język i przyciąga i tauntuje wrogą jednostkę w odległości trzech pól na losowe miejsce obok siebie."
+  info: "Wyrzuca jezyk i przyciaga oraz tauntuje wroga jednostke w odleglosci trzech pol. Najpierw wybierz wroga, potem puste pole obok rzucajacego jako miejsce przyciagniecia."
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 1
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 3
+    targetRoles:
+    - 2
+    - 11
+    targetCount: 2
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 0
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 3
+  resolutionRule:
+    resolutionFamily: 8
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 4
+    targetSource: 1
+    damageMode: 0
+    movementMode: 3
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0
+  - effectType: 2
+    targetSource: 1
+    damageMode: 0
+    movementMode: 0
+    statusId: "Taunt"
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 2
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

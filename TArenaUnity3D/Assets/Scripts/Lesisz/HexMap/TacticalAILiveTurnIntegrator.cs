@@ -30,13 +30,13 @@ public sealed class TacticalAILiveTurnIntegrator
     readonly Func<BattleSnapshot> snapshotProvider;
     readonly Func<TacticalAIResolvedProfile> profileResolver;
     readonly Func<BattleSnapshot, TacticalAIResolvedProfile, TacticalAISearchPlan> planBuilder;
-    readonly Func<IEnumerable<TacticalAIActionIntent>, BattleSnapshot, TacticalAIExecutionResult> executor;
+    readonly Func<IEnumerable<TacticalAIPlannedAction>, BattleSnapshot, TacticalAIExecutionResult> executor;
 
     public TacticalAILiveTurnIntegrator(
         Func<BattleSnapshot> snapshotProvider,
         Func<TacticalAIResolvedProfile> profileResolver,
         Func<BattleSnapshot, TacticalAIResolvedProfile, TacticalAISearchPlan> planBuilder,
-        Func<IEnumerable<TacticalAIActionIntent>, BattleSnapshot, TacticalAIExecutionResult> executor)
+        Func<IEnumerable<TacticalAIPlannedAction>, BattleSnapshot, TacticalAIExecutionResult> executor)
     {
         this.snapshotProvider = snapshotProvider ?? (() => null);
         this.profileResolver = profileResolver ?? (() => TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(null));
@@ -65,7 +65,7 @@ public sealed class TacticalAILiveTurnIntegrator
             BattleSnapshotLiveAdapter.BuildCurrentSceneSnapshot,
             () => TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(resolvedProfileAsset),
             (snapshot, profile) => resolvedPlanner.BuildPlan(snapshot, profile, resolvedSkillMetadataProvider),
-            (orderedIntents, plannedSnapshot) => bridge.TryExecuteOrderedIntents(orderedIntents, plannedSnapshot));
+            (orderedActions, plannedSnapshot) => bridge.TryExecuteOrderedActions(orderedActions, plannedSnapshot));
     }
 
     public TacticalAILiveTurnIntegrationResult TryStartTurn()
@@ -91,23 +91,23 @@ public sealed class TacticalAILiveTurnIntegrator
         result.Plan = plan;
         Debug.Log(BuildPlanLog(result.ActorUnitId, plan));
 
-        if (plan.OrderedActionIntents == null || plan.OrderedActionIntents.Count == 0)
+        if (plan.OrderedActions == null || plan.OrderedActions.Count == 0)
         {
             result.FallbackReason = "EmptyPlan";
             return result;
         }
 
-        TacticalAIExecutionResult executionResult = executor(plan.OrderedActionIntents, snapshot) ?? new TacticalAIExecutionResult
+        TacticalAIExecutionResult executionResult = executor(plan.OrderedActions, snapshot) ?? new TacticalAIExecutionResult
         {
             Status = TacticalAIExecutionStatus.InvalidContext,
             Message = "Tactical AI execution returned no result."
         };
         result.ExecutionResult = executionResult;
 
-        if (executionResult.Status == TacticalAIExecutionStatus.Started && executionResult.ExecutedIntent != null)
+        if (executionResult.Status == TacticalAIExecutionStatus.Started && executionResult.ExecutedAction != null)
         {
             result.Status = TacticalAILiveTurnStatus.Started;
-            Debug.Log(BuildStartedLog(result.ActorUnitId, executionResult.ExecutedIntent));
+            Debug.Log(BuildStartedLog(result.ActorUnitId, executionResult.ExecutedAction));
             return result;
         }
 
@@ -125,22 +125,23 @@ public sealed class TacticalAILiveTurnIntegrator
 
     public static string BuildPlanLog(string actorUnitId, TacticalAISearchPlan plan)
     {
-        TacticalAIActionIntent bestIntent = plan != null ? plan.BestIntent : null;
-        int fallbackCount = plan != null && plan.OrderedActionIntents != null
-            ? Math.Max(0, plan.OrderedActionIntents.Count - 1)
+        TacticalAIPlannedAction bestAction = plan != null ? plan.BestAction : null;
+        int fallbackCount = plan != null && plan.OrderedActions != null
+            ? Math.Max(0, plan.OrderedActions.Count - 1)
             : 0;
 
         return "[TacticalAI] plan actor=" + Safe(actorUnitId) +
-            " best=" + DescribeIntent(bestIntent) +
+            " best=" + DescribeAction(bestAction) +
             " score=" + FormatScore(plan != null ? plan.BestScore : 0f) +
             " depth=" + (plan != null ? plan.CompletedDepth : 0) +
             " fallbackCount=" + fallbackCount +
+            " ranked=" + DescribeRankedActions(plan) +
             " opponentResponse=" + (plan != null && plan.CoveredOpponentResponse ? "covered" : "not-covered");
     }
 
-    public static string BuildStartedLog(string actorUnitId, TacticalAIActionIntent intent)
+    public static string BuildStartedLog(string actorUnitId, TacticalAIPlannedAction action)
     {
-        return "[TacticalAI] started actor=" + Safe(actorUnitId) + " " + DescribeIntent(intent);
+        return "[TacticalAI] started actor=" + Safe(actorUnitId) + " " + DescribeAction(action);
     }
 
     public static string BuildFallbackLog(
@@ -158,7 +159,7 @@ public sealed class TacticalAILiveTurnIntegrator
             " reason=" + Safe(fallbackReason) +
             " status=" + status +
             " attempts=" + attempts +
-            " best=" + DescribeIntent(plan != null ? plan.BestIntent : null);
+            " best=" + DescribeAction(plan != null ? plan.BestAction : null);
     }
 
     public static string BuildExecutionFallbackReason(TacticalAIExecutionResult executionResult)
@@ -210,6 +211,62 @@ public sealed class TacticalAILiveTurnIntegrator
         }
 
         return description;
+    }
+
+    static string DescribeAction(TacticalAIPlannedAction action)
+    {
+        if (action == null)
+        {
+            return "None";
+        }
+
+        if (action.ActionType != TacticalAIActionType.Skill)
+        {
+            return DescribeIntent(action.LegacyIntent);
+        }
+
+        string description = "Skill";
+        if (action.ValidatedSkillCast != null && string.IsNullOrEmpty(action.ValidatedSkillCast.SkillId) == false)
+        {
+            description += " skill=" + action.ValidatedSkillCast.SkillId;
+        }
+
+        if (action.ValidatedSkillCast != null && string.IsNullOrEmpty(action.ValidatedSkillCast.PrimaryTargetUnitId) == false)
+        {
+            description += " target=" + action.ValidatedSkillCast.PrimaryTargetUnitId;
+        }
+
+        return description;
+    }
+
+    static string DescribeRankedActions(TacticalAISearchPlan plan)
+    {
+        if (plan == null || plan.OrderedActions == null || plan.OrderedActions.Count == 0)
+        {
+            return "none";
+        }
+
+        int limit = Math.Min(5, plan.OrderedActions.Count);
+        List<string> descriptions = new List<string>();
+        for (int i = 0; i < limit; i++)
+        {
+            TacticalAIPlannedAction action = plan.OrderedActions[i];
+            if (action == null)
+            {
+                continue;
+            }
+
+            if (action.ActionType == TacticalAIActionType.Skill && action.ValidatedSkillCast != null)
+            {
+                descriptions.Add("Skill:" + action.ValidatedSkillCast.SkillId);
+            }
+            else
+            {
+                descriptions.Add(action.ActionType.ToString());
+            }
+        }
+
+        return descriptions.Count == 0 ? "none" : string.Join(">", descriptions.ToArray());
     }
 
     static string FormatScore(float score)

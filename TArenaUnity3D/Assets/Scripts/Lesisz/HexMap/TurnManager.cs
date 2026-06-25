@@ -732,32 +732,93 @@ void SetQueuePlayerBars(Transform parent, bool isFirstPlayer)
             return units;
         }
 
-        units.AddRange(Teams[0].Tosters);
-        units.AddRange(Teams[1].Tosters);
+        TeamClass team1 = CreateQueuePreviewTeam(0);
+        TeamClass team2 = CreateQueuePreviewTeam(1);
+        while (true)
+        {
+            TosterHexUnit nextUnit = AskWhosTurnSimulator(team1, team2);
+            if (nextUnit == null)
+            {
+                break;
+            }
+
+            units.Add(nextUnit);
+            RemoveQueuePreviewUnit(team1, team2, nextUnit);
+        }
+
         return units;
     }
 
     IEnumerator ResolveNewTurnSpellsByGroups(List<TosterHexUnit> units)
     {
-        List<string> spellOrder = BuildNewTurnSpellOrder(units);
-        for (int i = 0; i < spellOrder.Count; i++)
+        for (int unitIndex = 0; unitIndex < units.Count; unitIndex++)
         {
-            List<SpellOverTime> spells = CollectNewTurnSpells(units, spellOrder[i]);
-            if (spells.Count == 0)
+            TosterHexUnit unit = units[unitIndex];
+            if (CanReceiveTurn(unit) == false || unit.SpellsGoingOn == null)
             {
                 continue;
             }
 
+            List<SpellOverTime> spells = BuildOrderedNewTurnSpells(unit);
             for (int spellIndex = 0; spellIndex < spells.Count; spellIndex++)
             {
-                SpellOverTime spell = spells[spellIndex];
-                if (spell != null && spell.me != null)
+                if (CanReceiveTurn(unit) == false)
                 {
-                    spell.me.ResolveNewTurnSpell(spell, false);
+                    break;
                 }
-            }
 
-            yield return SkillPresentationManager.WaitForBlockingPresentation(TosterHexUnit.PassiveResolveMaxWaitSeconds);
+                SpellOverTime spell = spells[spellIndex];
+                if (spell == null || unit.SpellsGoingOn.Contains(spell) == false)
+                {
+                    continue;
+                }
+
+                unit.ResolveNewTurnSpell(spell, false);
+                yield return SkillPresentationManager.WaitForBlockingPresentation(TosterHexUnit.PassiveResolveMaxWaitSeconds);
+            }
+        }
+    }
+
+    List<SpellOverTime> BuildOrderedNewTurnSpells(TosterHexUnit unit)
+    {
+        List<SpellOverTime> orderedSpells = new List<SpellOverTime>();
+        if (unit == null || unit.SpellsGoingOn == null)
+        {
+            return orderedSpells;
+        }
+
+        List<SpellOverTime> spellSnapshot = new List<SpellOverTime>(unit.SpellsGoingOn);
+        for (int i = 0; i < TosterHexUnit.AutocastTurnOrder.Length; i++)
+        {
+            AddMatchingUnitSpells(orderedSpells, spellSnapshot, TosterHexUnit.AutocastTurnOrder[i]);
+        }
+
+        for (int i = 0; i < spellSnapshot.Count; i++)
+        {
+            SpellOverTime spell = spellSnapshot[i];
+            if (spell != null && orderedSpells.Contains(spell) == false)
+            {
+                orderedSpells.Add(spell);
+            }
+        }
+
+        return orderedSpells;
+    }
+
+    void AddMatchingUnitSpells(List<SpellOverTime> orderedSpells, List<SpellOverTime> spellSnapshot, string spellName)
+    {
+        if (orderedSpells == null || spellSnapshot == null || string.IsNullOrEmpty(spellName))
+        {
+            return;
+        }
+
+        for (int i = 0; i < spellSnapshot.Count; i++)
+        {
+            SpellOverTime spell = spellSnapshot[i];
+            if (spell != null && spell.nameofspell == spellName && orderedSpells.Contains(spell) == false)
+            {
+                orderedSpells.Add(spell);
+            }
         }
     }
 

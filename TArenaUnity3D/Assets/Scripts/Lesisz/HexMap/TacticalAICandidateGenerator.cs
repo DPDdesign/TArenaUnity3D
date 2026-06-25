@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 
+// TODO_LEGACY_REVIEW: PRD050 should route AI candidates through BattleActionRules instead of legacy intents.
 public static class TacticalAICandidateGenerator
 {
     static readonly TacticalAIActionType[] ActionTypeOrder =
@@ -20,6 +21,12 @@ public static class TacticalAICandidateGenerator
     {
         List<TacticalAIActionIntent> orderedCandidates = new List<TacticalAIActionIntent>();
         if (snapshot == null || string.IsNullOrEmpty(snapshot.ActiveUnitId))
+        {
+            return orderedCandidates;
+        }
+
+        if (snapshot.TurnState != null &&
+            (snapshot.TurnState.IsActionBlocking || snapshot.TurnState.IsResolvingNewTurnSequence))
         {
             return orderedCandidates;
         }
@@ -351,7 +358,7 @@ public static class TacticalAICandidateGenerator
 
         if (metadata.IsRepeatableToggle)
         {
-            return true;
+            return IsNoOpRepeatableToggle(actor, skillId) == false;
         }
 
         if (actor.MovedThisTurn && metadata.CanUseAfterMove == false)
@@ -365,6 +372,26 @@ public static class TacticalAICandidateGenerator
         }
 
         return true;
+    }
+
+    static bool IsNoOpRepeatableToggle(BattleUnitSnapshot actor, string skillId)
+    {
+        if (actor == null || string.IsNullOrEmpty(skillId))
+        {
+            return false;
+        }
+
+        if (skillId.StartsWith("Range_Stance", StringComparison.Ordinal))
+        {
+            return actor.IsRange;
+        }
+
+        if (skillId.StartsWith("Melee_Stance", StringComparison.Ordinal))
+        {
+            return actor.IsRange == false;
+        }
+
+        return false;
     }
 
     static Dictionary<string, int> FindReachableHexCosts(BattleUnitSnapshot actor, SnapshotIndex index)

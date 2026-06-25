@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnityEngine;
 
 public class TacticalAISearchScoringTests
 {
@@ -41,6 +42,108 @@ public class TacticalAISearchScoringTests
             new TestSkillMetadataProvider());
 
         Assert.That(CountActions(candidates, TacticalAIActionType.Skill), Is.LessThanOrEqualTo(2));
+    }
+
+    [Test]
+    public void SearchCandidateExpansion_EmitsValidatedSkillCastAndPreview()
+    {
+        TacticalAIResolvedProfile profile = TestProfile();
+        profile.MaxCandidatesPerActionType = 8;
+        profile.MaxSkillCandidates = 8;
+
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit("team-0-slot-0", 0, 0, 0, 0, skillIds: new List<string> { "Bolt" }),
+            Unit("team-1-slot-0", 1, 0, 2, 0));
+
+        List<TacticalAIActionIntent> candidates = TacticalAISearchCandidateExpander.BuildSearchCandidates(
+            snapshot,
+            profile,
+            new TestSkillMetadataProvider());
+
+        TacticalAIActionIntent skillCandidate = FindAction(candidates, TacticalAIActionType.Skill);
+        Assert.That(skillCandidate, Is.Not.Null);
+        Assert.That(skillCandidate.ValidatedSkillCast, Is.Not.Null);
+        Assert.That(skillCandidate.ValidatedSkillCast.SkillId, Is.EqualTo("Bolt"));
+        Assert.That(skillCandidate.ValidatedSkillCast.PrimaryTargetUnitId, Is.EqualTo("team-1-slot-0"));
+        Assert.That(skillCandidate.PreviewResult, Is.Not.Null);
+        Assert.That(skillCandidate.PreviewResult.Events.Exists(e => e.EventType == SkillResultEventType.DamageApplied), Is.True);
+    }
+
+    [Test]
+    public void SearchCandidateExpansion_DropsAreaDamageSkillWhenNoUnitWouldBeHit()
+    {
+        TacticalAIResolvedProfile profile = TestProfile();
+        profile.MaxCandidatesPerActionType = 8;
+        profile.MaxSkillCandidates = 8;
+
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit("team-0-slot-0", 0, 0, 0, 0, skillIds: new List<string> { "Chope" }),
+            Unit("team-1-slot-0", 1, 0, 4, 4));
+
+        List<TacticalAIActionIntent> candidates = TacticalAISearchCandidateExpander.BuildSearchCandidates(
+            snapshot,
+            profile,
+            new TestSkillMetadataProvider());
+
+        Assert.That(CountActions(candidates, TacticalAIActionType.Skill), Is.EqualTo(0));
+    }
+
+    [Test]
+    public void SearchCandidateExpansion_KeepsAreaDamageSkillWhenUnitWouldBeHit()
+    {
+        TacticalAIResolvedProfile profile = TestProfile();
+        profile.MaxCandidatesPerActionType = 8;
+        profile.MaxSkillCandidates = 8;
+
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit("team-0-slot-0", 0, 0, 0, 0, skillIds: new List<string> { "Chope" }),
+            Unit("team-1-slot-0", 1, 0, 0, 1));
+
+        List<TacticalAIActionIntent> candidates = TacticalAISearchCandidateExpander.BuildSearchCandidates(
+            snapshot,
+            profile,
+            new TestSkillMetadataProvider());
+
+        Assert.That(CountActions(candidates, TacticalAIActionType.Skill), Is.EqualTo(1));
+    }
+
+    [Test]
+    public void SearchPlan_SkillActionDoesNotCarryLegacyIntent()
+    {
+        TacticalAIResolvedProfile profile = TestProfile();
+        profile.ActionTypeBiases.Skill = 1000f;
+
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit("team-0-slot-0", 0, 0, 0, 0, skillIds: new List<string> { "Bolt" }),
+            Unit("team-1-slot-0", 1, 0, 2, 0));
+
+        TacticalAISearchPlan plan = TacticalAISearchEngine.Search(snapshot, profile, new TestSkillMetadataProvider());
+
+        Assert.That(plan.BestAction, Is.Not.Null);
+        Assert.That(plan.BestAction.ActionType, Is.EqualTo(TacticalAIActionType.Skill));
+        Assert.That(plan.BestAction.ValidatedSkillCast, Is.Not.Null);
+        Assert.That(plan.BestAction.LegacyIntent, Is.Null);
+    }
+
+    [Test]
+    public void Search_DoesNotDropLegalSkillWhenWatchdogExpiresBeforeDeepSearch()
+    {
+        TacticalAIResolvedProfile profile = TestProfile();
+        profile.DecisionWatchdogMs = 0;
+        profile.OwnActionBeam = 1;
+        profile.RequireOpponentResponseWhenReachable = false;
+        profile.ProfileHash = TacticalAIProfileHasher.ComputeHash(profile);
+
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit("team-0-slot-0", 0, 0, 0, 0, skillIds: new List<string> { "Bolt" }),
+            Unit("team-1-slot-0", 1, 0, 2, 0));
+
+        TacticalAISearchPlan plan = TacticalAISearchEngine.Search(snapshot, profile, new TestSkillMetadataProvider());
+
+        Assert.That(plan.WatchdogExpired, Is.True);
+        Assert.That(plan.BestAction, Is.Not.Null);
+        Assert.That(plan.BestAction.ActionType, Is.EqualTo(TacticalAIActionType.Skill));
+        Assert.That(plan.BestAction.ValidatedSkillCast, Is.Not.Null);
     }
 
     [Test]
@@ -91,6 +194,9 @@ public class TacticalAISearchScoringTests
     public void Search_PrefersImmediateKillTarget()
     {
         TacticalAIResolvedProfile profile = TestProfile();
+        profile.SearchDepthPlies = 1;
+        profile.ProfileHash = TacticalAIProfileHasher.ComputeHash(profile);
+
         BattleSnapshot snapshot = CreateSnapshot(
             ActorUnit("team-0-slot-0", 0, 0, 0, 0, isRange: true, minDamage: 5, maxDamage: 5, skillIds: EmptySkills()),
             Unit("team-1-slot-0", 1, 0, 2, 0, amount: 1, tempHp: 5),
@@ -286,8 +392,99 @@ public class TacticalAISearchScoringTests
         return count;
     }
 
-    sealed class TestSkillMetadataProvider : ITacticalAISkillMetadataProvider
+    static TacticalAIActionIntent FindAction(List<TacticalAIActionIntent> actions, TacticalAIActionType actionType)
     {
+        for (int i = 0; i < actions.Count; i++)
+        {
+            if (actions[i].ActionType == actionType)
+            {
+                return actions[i];
+            }
+        }
+
+        return null;
+    }
+
+    sealed class TestSkillMetadataProvider : ITacticalAISkillMetadataProvider, ITacticalAISkillDefinitionProvider, ITacticalAISkillSpecProvider
+    {
+        readonly Dictionary<string, SkillDefinitionAsset> definitions =
+            new Dictionary<string, SkillDefinitionAsset>();
+
+        public TestSkillMetadataProvider()
+        {
+            Add("BattleCry");
+            Add("Bolt");
+            Add("Blast");
+            Add("Mark");
+            AddAreaAroundCasterDamage("Chope");
+        }
+
+        void Add(string skillId)
+        {
+            SkillDefinitionAsset skill = ScriptableObject.CreateInstance<SkillDefinitionAsset>();
+            skill.Configure(skillId, "Active", string.Empty, string.Empty);
+            skill.ConfigureRules(
+                new ActivationRuleData
+                {
+                    activationKind = SkillActivationKind.Active,
+                    consumesTurn = true
+                },
+                new TargetingRuleData
+                {
+                    targetFamily = SkillTargetFamily.UnitTarget,
+                    targetRoles = new[] { SkillTargetRole.EnemyUnitHex },
+                    targetCount = 1,
+                    requiresWalkable = true
+                },
+                new ResolutionRuleData { resolutionFamily = SkillResolutionFamily.DirectUnit },
+                new[]
+                {
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.Damage,
+                        targetSource = SkillEffectTargetSource.PrimaryUnit,
+                        damageMode = SkillDamageMode.BasicAttackDamage,
+                        damageScale = 1f
+                    }
+                });
+            definitions[skillId] = skill;
+        }
+
+        void AddAreaAroundCasterDamage(string skillId)
+        {
+            SkillDefinitionAsset skill = ScriptableObject.CreateInstance<SkillDefinitionAsset>();
+            skill.Configure(skillId, "Active", string.Empty, string.Empty);
+            skill.ConfigureRules(
+                new ActivationRuleData
+                {
+                    activationKind = SkillActivationKind.Active,
+                    consumesTurn = true
+                },
+                new TargetingRuleData
+                {
+                    targetFamily = SkillTargetFamily.Self,
+                    targetRoles = new[] { SkillTargetRole.ActorSelf },
+                    targetCount = 0,
+                    requiresWalkable = true
+                },
+                new ResolutionRuleData
+                {
+                    resolutionFamily = SkillResolutionFamily.AreaAroundCaster,
+                    radius = 1
+                },
+                new[]
+                {
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.Damage,
+                        targetSource = SkillEffectTargetSource.AffectedUnits,
+                        damageMode = SkillDamageMode.BasicAttackDamage,
+                        damageScale = 1f
+                    }
+                });
+            definitions[skillId] = skill;
+        }
+
         public bool TryGetSkillMetadata(string skillId, out TacticalAISkillMetadata metadata)
         {
             metadata = new TacticalAISkillMetadata
@@ -299,6 +496,24 @@ public class TacticalAISearchScoringTests
                 IsRepeatableToggle = TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId)
             };
             return true;
+        }
+
+        public bool TryGetSkillDefinition(string skillId, out SkillDefinitionAsset definition)
+        {
+            return definitions.TryGetValue(skillId ?? string.Empty, out definition) && definition != null;
+        }
+
+        public bool TryGetSkillSpec(string skillId, out SkillDefinitionSpec spec)
+        {
+            SkillDefinitionAsset definition;
+            if (TryGetSkillDefinition(skillId, out definition) == false)
+            {
+                spec = null;
+                return false;
+            }
+
+            spec = SkillDefinitionSpec.FromAsset(definition);
+            return spec != null;
         }
     }
 }

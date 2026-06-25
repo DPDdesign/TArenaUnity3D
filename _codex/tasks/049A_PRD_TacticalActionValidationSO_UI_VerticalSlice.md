@@ -1,12 +1,19 @@
 # 049A PRD Tactical Action Validation Execution UI Vertical Slice
 
-- Status: ready for implementation planning
+- Status: merged into closed 049ABC; retained as reference
 - Type: PRD
 - Area: battle actions, skill validation, skill data, deterministic execution,
   UI targeting, preview
 - Owner: TBD
 
 ## Goal
+
+Reference note - 2026-06-25:
+
+This standalone 049A PRD was merged into
+`_codex/tasks/archive/049ABC_PRD_SkillAPIAndFullMigration.md`. Do not start it
+as a new active task. Use it only as historical/reference detail for the
+validator/UI slice that informed PRD49ABC and future PRD49ED work.
 
 Create the first complete vertical slice of the future tactical action model:
 extended `SkillDefinitionAsset` data, a pure snapshot-based validator,

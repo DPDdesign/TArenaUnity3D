@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: TacticalAIProfile_Normal
   m_EditorClassIdentifier: Assembly-CSharp::TacticalAIProfile
   difficultyName: Normal
-  searchDepthPlies: 3
-  decisionWatchdogMs: 300
-  ownActionBeam: 8
+  searchDepthPlies: 2
+  decisionWatchdogMs: 500
+  ownActionBeam: 10
   enemyResponseBeam: 5
-  maxCandidatesPerActionType: 8
-  maxSkillCandidates: 8
+  maxCandidatesPerActionType: 10
+  maxSkillCandidates: 12
   maxMoveCandidates: 8
   maxAttackCandidates: 8
   maxFallbackCandidates: 4
@@ -26,20 +26,20 @@ MonoBehaviour:
   deterministicTieBreakMode: 0
   stableTieBreakSeed: 46046
   scoringWeights:
-    EnemyValueRemoved: 1
-    OwnValueLost: 1.2
-    EnemyStackKillBonus: 25
-    OwnStackLossPenalty: 25
+    EnemyValueRemoved: 1.5
+    OwnValueLost: 0.8
+    EnemyStackKillBonus: 35
+    OwnStackLossPenalty: 18
     WinScore: 1000
     LossScore: -1000
-    DamageEfficiency: 0.25
-    PositionSafety: 0.2
-    ThreatControl: 0.2
-    ProgressTempo: 0.2
+    DamageEfficiency: 0.5
+    PositionSafety: 0.1
+    ThreatControl: 0.15
+    ProgressTempo: 0.05
   actionTypeBiases:
-    Skill: 0.15
-    Attack: 0.1
-    MoveAndAttack: 0.05
-    Move: 0
-    Defend: -0.05
-    Wait: -0.1
+    Skill: 8
+    Attack: 2
+    MoveAndAttack: 1
+    Move: -0.5
+    Defend: -2
+    Wait: -4

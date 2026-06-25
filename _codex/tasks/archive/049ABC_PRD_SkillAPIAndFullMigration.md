@@ -1,6 +1,6 @@
 # 049ABC PRD Skill API And Full Migration
 
-- Status: ready for implementation planning
+- Status: closed - accepted 2026-06-25 with runtime execution follow-up deferred to PRD49ED/PRD49E
 - Type: execution PRD
 - Area: battle skills, `SkillDefinitionAsset`, targeting, validation, execution, UI, AI/API preparation
 - Owner: Coding Agent
@@ -609,3 +609,68 @@ PRD49ABC implementation is done when:
    - remaining legacy references,
    - automated tests added,
    - manual Unity checks still required.
+
+## Implementation - 2026-06-25
+
+### What Changed
+
+`SkillDefinitionAsset` now has new Inspector-backed rule groups: `activationRule`, `targetingRule`, `resolutionRule`, and ordered `effects`. These affect skill legality, targeting, normalized cast resolution, and preview/result event shape. Higher cooldown values delay reuse longer; target counts above `1` create staged selection; wider radius values include more surrounding hexes. Tuning hint: change values only after Play Mode validation because these fields now feed shared player/AI/server-facing rules.
+
+Added `SkillContext`, `SkillUse`, `SkillCast`, `SkillTarget`, `SkillResult`, `SkillRules`, `SkillQuery`, and `SkillDefinitionMigrationDefaults`. `BattleSnapshot` now includes `GameSeed`, `BattleId`, and `NextActionIndex`.
+
+Migrated all 33 `Resources/0_Data/Skills/*.asset` skill assets with activation, targeting, resolution, and effect data. `Long_Lick` and `Stone_Throw` descriptions were updated to match the approved PRD49ABC target contracts.
+
+`MouseControler` now asks `SkillRules` for skill start legality, target highlights, and click validation before the legacy live body runs. `CastManager` permission helpers and Tactical AI skill metadata now read SO activation rules first. `UICanvas` cooldown-fill max now reads SO cooldown data first.
+
+### Automatic Test
+
+Added `TArenaUnity3D/Assets/Scripts/Tests/EditMode/SkillRulesTests.cs`. It checks trap placement/rejection, duplicate `Double_Throw`, occupied `Force_Pull` destination rejection, `Stone_Throw` enemy targeting, passive exclusion, and stance repeatability. Run manually in Unity Test Runner: EditMode -> `SkillRulesTests`; expected result is all tests pass. Tests were not run automatically by command line.
+
+### Unity Test
+
+#### Unity Setup
+
+Open Unity and let the updated `.cs` files and migrated skill assets import. Inspect several skill assets under `Assets/Resources/0_Data/Skills/` and confirm the new rule groups are visible. No scene or prefab wiring was intentionally changed.
+
+#### Play Mode Test
+
+Run the PRD manual checklist for all migrated skills. Prioritize `Spike_Trap`, `Rope_Trap`, `Double_Throw`, `Force_Pull`, `Long_Lick`, `Stone_Throw`, and `Heavy_Fists`. Confirm illegal highlighted/clicked targets are rejected, cooldowns and turn use match old behavior, and `Long_Lick` now requires enemy target plus selected adjacent empty destination.
+
+### QA Verdict
+
+Follow-up required. QA report: `_codex/tasks/QA/2026-06-25_1655_049ABC_QA_ArchitectureReview.md`.
+
+Actionable findings: active live commits still call `CastManager.startSpell(...)` reflection after `SkillRules` validation, and passive trigger mutation still lives in legacy hooks. A focused highlight over-selection issue was fixed before the QA report by filtering highlighted hexes through `SkillRules.GetTargets`.
+
+### Notes
+
+This pass completes the SO schema, asset migration, query/validation API, UI legality boundary, and focused tests, but it does not fully close the PRD49ABC definition of done. Remaining legacy references are intentional blockers, not hidden completion: `CastManager` still owns live low-level skill mutation, and passive hooks remain in `TosterHexUnit`, `SpellOverTime`, and `HexClass`.
+
+### Next Steps
+
+Run Unity import/compile and EditMode `SkillRulesTests`. Then implement the QA follow-up: replace final skill commit with `SkillRules.Apply(...)` plus a live runtime adapter, and extract passive triggers into the new skill/status/trap result model.
+
+## Closure - 2026-06-25
+
+Project owner accepted the current implementation as the closing scope for ABC after Play Mode verification showed skills still work as before.
+
+Closed scope:
+
+- `SkillDefinitionAsset` schema exists and remains the main skill asset type.
+- All 33 active skill assets under `Resources/0_Data/Skills/` have migrated activation, targeting, resolution, and effect data.
+- `SkillRules` / `SkillQuery` API exists for shared skill legality, target query, validation, preview, and future AI/server callers.
+- Player skill start and target click legality now pass through the new rule API.
+- Skill UI cooldown display reads SO activation cooldown data first.
+- `Long_Lick` and `Stone_Throw` target contracts match the approved PRD49ABC changes.
+- Existing Play Mode skill behavior remains functional after migration.
+
+Deferred out of ABC and into PRD49ED/PRD49E:
+
+- replacing final live skill execution with `SkillRules.Apply(...)` / runtime adapter,
+- removing active-skill dependence on `CastManager.startSpell(...)` reflection,
+- extracting passive trigger mutation from `TosterHexUnit`, `SpellOverTime`, and `HexClass`.
+
+Closure verdict:
+
+- ABC is closed as the API/data/validation-boundary migration.
+- The QA report remains valid as a scope handoff, not a blocker for closing ABC under the accepted split.

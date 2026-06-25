@@ -862,6 +862,7 @@ public class SkillPresentationManager : MonoBehaviour
         }
 
         bool canPlayImpactSfx = true;
+        int pendingProjectiles = 0;
         for (int i = 0; i < reveals.Count; i++)
         {
             FrontendResultReveal reveal = reveals[i];
@@ -870,8 +871,55 @@ public class SkillPresentationManager : MonoBehaviour
                 continue;
             }
 
-            StartBlockingCoroutine(PlaySingleProjectileImpactRevealSequence(entry, caster, reveal, canPlayImpactSfx));
+            pendingProjectiles++;
+            StartCoroutine(PlaySingleProjectileImpactRevealAndSignal(entry, caster, reveal, canPlayImpactSfx, () => pendingProjectiles--));
             canPlayImpactSfx = false;
+        }
+
+        while (pendingProjectiles > 0)
+        {
+            yield return null;
+        }
+    }
+
+    IEnumerator PlaySingleProjectileImpactRevealAndSignal(
+        SkillPresentationEntry entry,
+        TosterHexUnit caster,
+        FrontendResultReveal reveal,
+        bool playImpactSfx,
+        Action onComplete)
+    {
+        IEnumerator projectileRoutine = PlaySingleProjectileImpactRevealSequence(entry, caster, reveal, playImpactSfx);
+        while (projectileRoutine != null)
+        {
+            bool hasNext;
+            object current = null;
+
+            try
+            {
+                hasNext = projectileRoutine.MoveNext();
+                if (hasNext)
+                {
+                    current = projectileRoutine.Current;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                break;
+            }
+
+            if (!hasNext)
+            {
+                break;
+            }
+
+            yield return current;
+        }
+
+        if (onComplete != null)
+        {
+            onComplete();
         }
     }
 

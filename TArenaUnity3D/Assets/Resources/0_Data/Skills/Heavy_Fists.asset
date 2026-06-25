@@ -16,3 +16,69 @@ MonoBehaviour:
   type: "Active"
   info: "Idzie w punkt, a następnie swoimi potężnymi pięściami atakuje dany obszar bez opamiętania.\nZadaje 130% podstawowych obrażeń wszystkim w stożku przed nim, zasięg 2. Traci przy tym 10% maksymalnego życia."
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 1
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 3
+    targetRoles:
+    - 8
+    - 9
+    targetCount: 2
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 0
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 1
+  resolutionRule:
+    resolutionFamily: 7
+    radius: 1
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 7
+    targetSource: 0
+    damageMode: 0
+    movementMode: 0
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 20
+    stackAmountDelta: 0
+    skipIfNoTarget: 0
+  - effectType: 4
+    targetSource: 0
+    damageMode: 0
+    movementMode: 1
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0
+  - effectType: 1
+    targetSource: 3
+    damageMode: 1
+    movementMode: 0
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 0.7
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

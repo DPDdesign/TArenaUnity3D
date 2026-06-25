@@ -40,6 +40,8 @@ public class TacticalAIActionIntent
     public TacticalAIHexCoordinate TargetHex;
     public int SkillSlot = -1;
     public string SkillId = string.Empty;
+    public SkillCast ValidatedSkillCast;
+    public SkillResult PreviewResult;
     public int PredictedPriority;
     public string StableOrderKey = string.Empty;
 }
@@ -63,6 +65,16 @@ public interface ITacticalAISkillMetadataProvider
     bool TryGetSkillMetadata(string skillId, out TacticalAISkillMetadata metadata);
 }
 
+public interface ITacticalAISkillDefinitionProvider
+{
+    bool TryGetSkillDefinition(string skillId, out SkillDefinitionAsset definition);
+}
+
+public interface ITacticalAISkillSpecProvider
+{
+    bool TryGetSkillSpec(string skillId, out SkillDefinitionSpec spec);
+}
+
 [Serializable]
 public class TacticalAISkillMetadata
 {
@@ -74,6 +86,8 @@ public class TacticalAISkillMetadata
 }
 
 public sealed class TacticalAIDataMapperSkillMetadataProvider : ITacticalAISkillMetadataProvider
+    , ITacticalAISkillDefinitionProvider
+    , ITacticalAISkillSpecProvider
 {
     static TacticalAIDataMapperSkillMetadataProvider instance;
 
@@ -108,15 +122,42 @@ public sealed class TacticalAIDataMapperSkillMetadataProvider : ITacticalAISkill
             return false;
         }
 
-        DataMapper.SkillDefinition skillDefinition = DataMapper.Instance.FindSkill(skillId);
+        SkillDefinitionAsset skillDefinition = DataMapper.Instance.FindSkillAsset(skillId);
         if (skillDefinition == null)
         {
             return false;
         }
 
-        metadata.IsPassive = skillDefinition.Type == "Passive";
-        metadata.CanUseAfterMove = skillDefinition.HasFlag("AM");
-        metadata.CanMoveAfterSkill = skillDefinition.HasFlag("NI");
+        ActivationRuleData activationRule = skillDefinition.ActivationRule;
+        metadata.IsPassive = activationRule.activationKind == SkillActivationKind.Passive;
+        metadata.CanUseAfterMove = activationRule.canUseAfterMove;
+        metadata.CanMoveAfterSkill = activationRule.canMoveAfterUse;
+        metadata.IsRepeatableToggle = activationRule.repeatableInTurn;
         return true;
+    }
+
+    public bool TryGetSkillDefinition(string skillId, out SkillDefinitionAsset definition)
+    {
+        definition = null;
+        if (string.IsNullOrEmpty(skillId) || DataMapper.Instance == null)
+        {
+            return false;
+        }
+
+        definition = DataMapper.Instance.FindSkillAsset(skillId);
+        return definition != null;
+    }
+
+    public bool TryGetSkillSpec(string skillId, out SkillDefinitionSpec spec)
+    {
+        spec = null;
+        SkillDefinitionAsset definition;
+        if (TryGetSkillDefinition(skillId, out definition) == false)
+        {
+            return false;
+        }
+
+        spec = SkillDefinitionSpec.FromAsset(definition);
+        return spec != null;
     }
 }

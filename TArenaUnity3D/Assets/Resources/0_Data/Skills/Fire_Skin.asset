@@ -16,3 +16,28 @@ MonoBehaviour:
   type: "Passive"
   info: "Jednostki przebywające w okolicy Żywiołaka Ognia przez 1 turę mają zredukowane statystyki o 1 INT/MS oraz tracą 10% Def. (Passive)"
   flags: ""
+  activationRule:
+    activationKind: 1
+    cooldownTurns: 0
+    consumesTurn: 0
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 0
+    targetRoles: []
+    targetCount: 0
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 0
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 1
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects: []

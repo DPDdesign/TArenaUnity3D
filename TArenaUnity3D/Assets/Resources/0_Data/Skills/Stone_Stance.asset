@@ -16,3 +16,42 @@ MonoBehaviour:
   type: "Active"
   info: "Zamienia się w skałę i otrzymuje całkowitą niewrażliwość do końca następnej tury, podczas której może się ruszać. Traci możliwość kontr. (CD 5)"
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 5
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 0
+    targetRoles:
+    - 1
+    targetCount: 0
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 0
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 1
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 2
+    targetSource: 0
+    damageMode: 0
+    movementMode: 0
+    statusId: "Stone_Stance"
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 2
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

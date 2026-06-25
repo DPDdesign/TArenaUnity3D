@@ -16,3 +16,43 @@ MonoBehaviour:
   type: "Active"
   info: "Teleportuje sojuszniczą jednostkę na miejsce w promieniu 2 pól od siebie."
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 1
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 3
+    targetRoles:
+    - 3
+    - 10
+    targetCount: 2
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 0
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 2
+  resolutionRule:
+    resolutionFamily: 8
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 4
+    targetSource: 1
+    damageMode: 0
+    movementMode: 3
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

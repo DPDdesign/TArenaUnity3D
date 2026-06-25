@@ -16,3 +16,55 @@ MonoBehaviour:
   type: "Active"
   info: "Wyzywa wybrany cel. Zadają sobie wzajemnie +50% obrażeń. Na dwie tury.  (NI) (CD 2)"
   flags: "NI"
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 2
+    consumesTurn: 0
+    canUseAfterMove: 0
+    canMoveAfterUse: 1
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 1
+    targetRoles:
+    - 2
+    targetCount: 1
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 2
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 1
+    radius: 0
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 2
+    targetSource: 0
+    damageMode: 0
+    movementMode: 0
+    statusId: "Hate"
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 2
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0
+  - effectType: 2
+    targetSource: 1
+    damageMode: 0
+    movementMode: 0
+    statusId: "Hate"
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 2
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

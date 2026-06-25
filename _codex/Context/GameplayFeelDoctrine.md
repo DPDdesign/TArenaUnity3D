@@ -17,12 +17,14 @@ Initial feel sources:
 - `_codex/Context/Opisy jednostek invitational.pptx` for unit fantasy and skill
   flavor.
 - `_codex/Context/Retsot GDD.md` for legacy influence only.
-- the unit catalog and `skills.xml` for current skill ids and UI/info text.
-- Current skill context documents for the unit-catalog/reflection skill contract.
+- the unit catalog, skill catalog, and `SkillDefinitionAsset` data for current
+  skill ids and UI/info text.
+- Current skill context documents for the unit-catalog / PRD49 skill API
+  contract.
 
 Do not turn feel work into balance work. If a feel task changes damage,
 cooldowns, targeting, turn rules, unit ownership, public fields, serialized
-fields, or XML skill ids, it is no longer only a feel task.
+fields, or skill ids, it is no longer only a feel task.
 
 ## Target Feel
 

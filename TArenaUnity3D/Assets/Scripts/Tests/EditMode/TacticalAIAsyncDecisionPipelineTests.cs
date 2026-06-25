@@ -23,8 +23,12 @@ public class TacticalAIAsyncDecisionPipelineTests
 
         TacticalAISkillMetadata copiedMetadata;
         bool found = copiedProvider.TryGetSkillMetadata("BattleCry", out copiedMetadata);
+        SkillDefinitionSpec copiedSpec;
+        bool foundSpec = copiedProvider.TryGetSkillSpec("BattleCry", out copiedSpec);
 
         Assert.That(found, Is.True);
+        Assert.That(foundSpec, Is.True);
+        Assert.That(copiedSpec.SkillName, Is.EqualTo("BattleCry"));
         Assert.That(copiedMetadata.CanUseAfterMove, Is.True);
         Assert.That(copiedMetadata.CanMoveAfterSkill, Is.True);
         Assert.That(liveProvider.CallCount, Is.EqualTo(1));
@@ -42,7 +46,7 @@ public class TacticalAIAsyncDecisionPipelineTests
             (orderedIntents, plannedSnapshot) => new TacticalAIExecutionResult
             {
                 Status = TacticalAIExecutionStatus.Started,
-                ExecutedIntent = FirstIntent(orderedIntents)
+                ExecutedAction = FirstAction(orderedIntents)
             });
 
         TacticalAILiveTurnIntegrationResult beginResult;
@@ -83,7 +87,7 @@ public class TacticalAIAsyncDecisionPipelineTests
                 return new TacticalAIExecutionResult
                 {
                     Status = TacticalAIExecutionStatus.Started,
-                    ExecutedIntent = FirstIntent(orderedIntents)
+                    ExecutedAction = FirstAction(orderedIntents)
                 };
             });
 
@@ -108,7 +112,7 @@ public class TacticalAIAsyncDecisionPipelineTests
             (orderedIntents, plannedSnapshot) => new TacticalAIExecutionResult
             {
                 Status = TacticalAIExecutionStatus.Started,
-                ExecutedIntent = FirstIntent(orderedIntents)
+                ExecutedAction = FirstAction(orderedIntents)
             });
 
         TacticalAILiveTurnIntegrationResult beginResult;
@@ -150,7 +154,9 @@ public class TacticalAIAsyncDecisionPipelineTests
 
         return new TacticalAISearchPlan
         {
+            BestAction = TacticalAIPlannedAction.FromLegacyIntent(intent),
             BestIntent = intent,
+            OrderedActions = new List<TacticalAIPlannedAction> { TacticalAIPlannedAction.FromLegacyIntent(intent) },
             OrderedActionIntents = new List<TacticalAIActionIntent> { intent },
             BestScore = 12f,
             CompletedDepth = 2,
@@ -158,16 +164,16 @@ public class TacticalAIAsyncDecisionPipelineTests
         };
     }
 
-    static TacticalAIActionIntent FirstIntent(IEnumerable<TacticalAIActionIntent> orderedIntents)
+    static TacticalAIPlannedAction FirstAction(IEnumerable<TacticalAIPlannedAction> orderedActions)
     {
-        if (orderedIntents == null)
+        if (orderedActions == null)
         {
             return null;
         }
 
-        foreach (TacticalAIActionIntent intent in orderedIntents)
+        foreach (TacticalAIPlannedAction action in orderedActions)
         {
-            return intent;
+            return action;
         }
 
         return null;
@@ -274,7 +280,7 @@ public class TacticalAIAsyncDecisionPipelineTests
         return string.Empty;
     }
 
-    sealed class CountingSkillMetadataProvider : ITacticalAISkillMetadataProvider
+    sealed class CountingSkillMetadataProvider : ITacticalAISkillMetadataProvider, ITacticalAISkillSpecProvider
     {
         public int CallCount;
         public TacticalAISkillMetadata Metadata = new TacticalAISkillMetadata
@@ -296,6 +302,41 @@ public class TacticalAIAsyncDecisionPipelineTests
                 CanUseAfterMove = Metadata.CanUseAfterMove,
                 CanMoveAfterSkill = Metadata.CanMoveAfterSkill,
                 IsRepeatableToggle = Metadata.IsRepeatableToggle
+            };
+            return true;
+        }
+
+        public bool TryGetSkillSpec(string skillId, out SkillDefinitionSpec spec)
+        {
+            spec = new SkillDefinitionSpec
+            {
+                SkillName = skillId ?? string.Empty,
+                ActivationRule = new ActivationRuleData
+                {
+                    activationKind = SkillActivationKind.Active,
+                    canUseAfterMove = Metadata.CanUseAfterMove,
+                    canMoveAfterUse = Metadata.CanMoveAfterSkill,
+                    consumesTurn = true
+                },
+                TargetingRule = new TargetingRuleData
+                {
+                    targetCount = 1,
+                    targetRoles = new[] { SkillTargetRole.EnemyUnitHex }
+                },
+                ResolutionRule = new ResolutionRuleData
+                {
+                    resolutionFamily = SkillResolutionFamily.DirectUnit
+                },
+                Effects = new[]
+                {
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.Damage,
+                        targetSource = SkillEffectTargetSource.PrimaryUnit,
+                        damageMode = SkillDamageMode.BasicAttackDamage,
+                        damageScale = 1f
+                    }
+                }
             };
             return true;
         }

@@ -331,6 +331,58 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
         }
     }
 
+    public bool IsBattleReadyForTacticalActions
+    {
+        get
+        {
+            if (isCreated == false || hexes == null || Teams == null || Teams.Count == 0)
+            {
+                return false;
+            }
+
+            for (int teamIndex = 0; teamIndex < Teams.Count; teamIndex++)
+            {
+                TeamClass team = Teams[teamIndex];
+                if (team == null || team.Tosters == null)
+                {
+                    return false;
+                }
+
+                for (int unitIndex = 0; unitIndex < team.Tosters.Count; unitIndex++)
+                {
+                    TosterHexUnit unit = team.Tosters[unitIndex];
+                    if (unit == null)
+                    {
+                        return false;
+                    }
+
+                    if (unit.isDead || unit.Amount <= 0)
+                    {
+                        continue;
+                    }
+
+                    if (unit.Hex == null || unit.skillstrings == null || unit.cooldowns == null)
+                    {
+                        return false;
+                    }
+
+                    if (unit.cooldowns.Count < unit.skillstrings.Count)
+                    {
+                        return false;
+                    }
+
+                    HexClass mapHex = GetHexAt(unit.Hex.C, unit.Hex.R);
+                    if (mapHex != unit.Hex || unit.Hex.Tosters == null || unit.Hex.Tosters.Contains(unit) == false)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+    }
+
 
     public IEnumerator DoUnitMoves(TosterHexUnit u)
     {
@@ -667,22 +719,43 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
     public HexClass[] GetHexesWithinRadiusOf(HexClass centerhex, int radius)
     {
         List<HexClass> results = new List<HexClass>();
-        if (centerhex == null)
+        if (centerhex == null || centerhex.hexMap != this)
         {
             return results.ToArray();
         }
 
-        for (int dx = -radius; dx < radius + 1; dx++)
+        int safeRadius = Mathf.Max(0, radius);
+        Queue<HexClass> frontier = new Queue<HexClass>();
+        Dictionary<HexClass, int> distances = new Dictionary<HexClass, int>();
+
+        frontier.Enqueue(centerhex);
+        distances[centerhex] = 0;
+        results.Add(centerhex);
+
+        while (frontier.Count > 0)
         {
-            for (int dy = Mathf.Max(-radius, -dx - radius); dy < Mathf.Min(radius, -dx + radius) + 1; dy++)
+            HexClass current = frontier.Dequeue();
+            int currentDistance = distances[current];
+            if (currentDistance >= safeRadius)
             {
-                HexClass hex = GetHexAtWithoutWrap(centerhex.C + dx, centerhex.R + dy);
-                if (hex != null)
+                continue;
+            }
+
+            IPathTile[] neighbours = current.GetNeighbours();
+            for (int i = 0; i < neighbours.Length; i++)
+            {
+                HexClass neighbour = neighbours[i] as HexClass;
+                if (neighbour == null || distances.ContainsKey(neighbour))
                 {
-                    results.Add(hex);
+                    continue;
                 }
+
+                distances[neighbour] = currentDistance + 1;
+                frontier.Enqueue(neighbour);
+                results.Add(neighbour);
             }
         }
+
         return results.ToArray();
     }
 

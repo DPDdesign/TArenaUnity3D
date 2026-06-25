@@ -27,16 +27,17 @@ The current accepted rule set is:
 - DEFENCE is available only before movement and before non-stance skills. It
   applies defence and ends the unit's turn.
 - Any active non-passive skill may be used before movement.
-- A skill without `NI` ends the unit's turn when used.
-- A skill with `NI` does not end the unit's turn; after it, the unit may use
-  other legal skills and may still move.
-- After movement, only skills with `AM` are legal.
+- A skill that consumes the turn ends the unit's turn when used.
+- A skill marked as non-turn-consuming does not end the unit's turn; after it,
+  the unit may use other legal skills and may still move.
+- After movement, only skills whose activation rule allows post-move use are
+  legal.
 - The same non-toggle skill cannot be used twice in the same turn window.
 - Melee Stance and Range Stance are not turn actions. They are free toggles that
   only switch whether the unit attacks in melee or range mode. They do not
   affect movement, queue position, cooldown, or turn completion.
-- For now, no skills carry `AM`; future skills can opt into post-move use by
-  adding `AM` explicitly.
+- For now, no active skills are post-move allowed. Future skills can opt into
+  post-move use explicitly through activation data.
 
 The current accepted UI stability scope is:
 
@@ -65,14 +66,14 @@ The current accepted UI stability scope is:
    meaningful commitment.
 6. As a player, I want any active skill to be usable before movement, so that I
    do not need special flags for normal pre-move skill use.
-7. As a player, I want a non-`NI` skill to end the unit's turn, so that powerful
-   skills have an obvious cost.
-8. As a player, I want an `NI` skill to leave the unit active, so that utility
-   skills can be chained intentionally.
-9. As a player, I want an `NI` skill to still allow movement, so that support
-   actions can happen before repositioning.
-10. As a player, I want post-move skills to require `AM`, so that moving first
-    has a restricted and readable follow-up rule.
+7. As a player, I want turn-consuming skills to end the unit's turn, so that
+   powerful skills have an obvious cost.
+8. As a player, I want non-turn-consuming skills to leave the unit active, so
+   that utility skills can be chained intentionally.
+9. As a player, I want non-turn-consuming skills to still allow movement, so
+   that support actions can happen before repositioning.
+10. As a player, I want post-move skills to opt in explicitly, so that moving
+    first has a restricted and readable follow-up rule.
 11. As a player, I want the same non-toggle skill blocked after I use it once,
     so that I cannot repeat a skill in the same turn window.
 12. As a player, I want Melee/Range Stance to stay repeatable, so that I can
@@ -85,13 +86,13 @@ The current accepted UI stability scope is:
     TextMeshPro migration, so that I can understand skill availability.
 16. As a player, I want chat messages to render after the UI hierarchy changes,
     so that combat feedback remains readable.
-17. As a developer, I want skill flags to mean one thing, so that XML data does
-    not encode hidden default behavior.
+17. As a developer, I want skill activation rules to mean one thing, so that
+    legacy flag data does not encode hidden default behavior.
 18. As a developer, I want missing UI references to fail softly where possible,
     so that prefab migration mistakes do not stop the battle loop.
 19. As a developer, I want chat prefab layout to be sane by default, so that
     arrows, content, and text are visible after instantiation.
-20. As a designer, I want `AM` absent by default, so that post-move skill use is
+20. As a designer, I want post-move skill use absent by default, so that it is
     a deliberate opt-in.
 
 ## Implementation Decisions
@@ -106,13 +107,14 @@ The current accepted UI stability scope is:
 - Treat stance skill ids as a special category: repeatable, no cooldown, no used
   skill id entry, no movement lock, no turn completion.
 - Treat passive skills as never directly castable from action buttons.
-- Treat missing `AM` as "not usable after movement".
-- Treat missing `NI` as "ends the turn when used".
-- Keep `Flags` in skill XML as optional text. Empty `Flags` means no optional
-  behavior.
-- Keep `NI` and `AM` as independent flags:
-  - `NI`: can continue after skill.
-  - `AM`: can be used after movement.
+- Treat missing post-move activation as "not usable after movement".
+- Treat missing non-turn-consuming activation as "ends the turn when used".
+- PRD49ABC moved active skill activation data into `SkillDefinitionAsset`
+  `ActivationRuleData`. Legacy `NI` and `AM` names may appear in older tasks as
+  migration vocabulary only.
+- Keep the two activation meanings independent:
+  - non-turn-consuming: can continue after skill.
+  - post-move allowed: can be used after movement.
 - Keep `Melee_Stance` and `Range_Stance` outside the flag model because they
   are attack-mode toggles, not turn actions.
 - Preserve TextMeshPro-based UI fields and make UI code tolerant of missing
@@ -162,8 +164,9 @@ The current accepted UI stability scope is:
 
 ## Further Notes
 
-- Current accepted XML state removes `AM` from all skills. `NI` remains only on
-  skills that should allow continued action after use.
+- Current accepted activation state has no post-move active skills by default.
+  Non-turn-consuming remains only on skills that should allow continued action
+  after use.
 - The current implementation is intentionally local and pragmatic. A future
   architecture task should extract battle action validation from the input/UI
   monolith into a small, testable rules module.

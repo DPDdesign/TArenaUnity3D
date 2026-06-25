@@ -16,3 +16,68 @@ MonoBehaviour:
   type: "Active"
   info: "Zamyka oczy i biegnie. Dostaje do końca tury +2 ataku, obrony i maksymalnego życia."
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 1
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 3
+    targetRoles:
+    - 7
+    targetCount: 1
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 0
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 0
+  resolutionRule:
+    resolutionFamily: 6
+    radius: 0
+    skipMissingPrimaryTarget: 1
+  effects:
+  - effectType: 4
+    targetSource: 0
+    damageMode: 0
+    movementMode: 2
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 1
+  - effectType: 1
+    targetSource: 1
+    damageMode: 1
+    movementMode: 0
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 1
+  - effectType: 2
+    targetSource: 0
+    damageMode: 0
+    movementMode: 0
+    statusId: "Rush"
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 1
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

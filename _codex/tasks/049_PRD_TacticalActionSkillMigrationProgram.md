@@ -15,6 +15,28 @@ targeting, UI highlights, AI candidates, and execution are spread across
 `CastManager`, `MouseControler`, reflection methods, XML flags, and ad hoc AI
 logic.
 
+## Current State After 049ABC
+
+049ABC is treated as completed for the shared API and skill-data foundation:
+
+- `SkillDefinitionAsset` has the action-capable data fields.
+- `SkillRules`, `SkillUse`, `SkillCast`, `SkillResult`, `SkillQuery`, and the
+  related API/data model exist.
+- Current skill assets have migrated SO data.
+
+049ABC did not fully replace the live/default gameplay script path. Play Mode
+skill commits can still execute through legacy `MouseControler` /
+`CastManager` reflection bodies, and passive trigger mutation can still live in
+legacy hooks.
+
+Therefore remaining 049 work must treat every current active asset-backed and
+unit-assigned skill as still in scope for runtime migration until a later task
+proves that the skill no longer depends on legacy commit/passive paths. Do not
+skip any active skill because it was listed as in-scope for 049ABC.
+
+Legacy `CastManager` methods with no current skill asset and no unit assignment
+remain reference-audit only unless implementation finds a live demo reference.
+
 ## Core Program Rule
 
 The shared validator is for player, AI, and future server-side validation.
@@ -110,6 +132,9 @@ execution must not depend on it as an authority or fallback.
 - AI compares skills, movement, basic attacks, wait, and defend together.
 - If a non-skill action scores better than a skill, AI may choose it.
 - Unsupported legacy-only skills are skipped and logged with warnings.
+- This skip rule applies only to legacy methods with no current skill asset and
+  no unit assignment. Every active asset-backed/unit-assigned skill must be
+  handled by the 049 migration.
 
 ### Execution
 
@@ -153,8 +178,8 @@ Purpose:
 
 Status:
 
-- Grilled into implementation-ready direction.
-- Ready to split into mini-tasks inside 049A.
+- Merged into closed 049ABC.
+- Retained only as reference detail for the validator/UI slice.
 
 Implementation boundaries:
 
@@ -184,9 +209,9 @@ Purpose:
 
 Status:
 
-- Grilled draft.
+- Merged into closed 049ABC.
+- Retained as the reference target/effect map.
 - Supersedes archived 049B and 049C drafts.
-- Needs later detailed skill-value audits before implementation.
 
 ### 049ED - Tactical AI Action Selection And Execution Migration
 
@@ -198,8 +223,8 @@ Purpose:
 - AI receives legal `ValidatedTacticalAction` candidates from the shared API,
 - AI scoring remains separate from legality,
 - no heuristic skill target fallback,
-- move execution from legacy `CastManager` behavior toward SO-driven action
-  execution,
+- move all current active asset-backed/unit-assigned skill execution from
+  legacy `CastManager` behavior toward SO-driven action execution,
 - consume `ValidatedTacticalAction` directly without a `TacticalAIActionIntent`
   adapter,
 - apply movement, damage, status, trap, spawn, cooldown, and turn-cost effects
@@ -207,8 +232,10 @@ Purpose:
 
 Status:
 
+- Current PRD49 production/planning route after ABC.
 - Draft created by merging former 049D and 049E.
-- Needs continued implementation grill.
+- Needs continued implementation grill before coding if implementation details
+  are still open.
 
 ### 049F - Legacy Skill System Cleanup
 
@@ -229,25 +256,23 @@ Status:
 
 ## Dependency Order
 
-Recommended dependency chain:
+Current dependency chain after 049ABC:
 
-1. 049A creates the first validator/UI slice.
-2. 049AC keeps the full target-family and effect-data migration map alive.
-3. 049ED integrates AI selection and SO-driven execution after legal action API
-   and effect data are concrete enough.
+1. 049ABC has created the shared API/SO-data/validation-boundary foundation.
+2. 049A and 049AC are retained as reference detail inside the closed ABC scope.
+3. 049ED integrates AI selection and SO-driven execution after the 049ABC
+   API/SO data foundation exists. It must not assume that live/default gameplay
+   scripts already execute through the new API.
 4. 049F removes legacy paths after replacement and validation.
 
-Do not implement 049ED before 049A has a usable validator and 049AC has enough
-effect data to avoid recreating hidden hardcoded skill logic. Do not start 049F
-deletions before the replacement family has passed reference audit and manual
-Unity validation.
+After 049ABC, do not exclude active skills from 049ED just because their SO data
+exists. Do not start 049F deletions before the replacement family has passed
+reference audit and manual Unity validation.
 
 ## Recommended Grill Order
 
-1. Grill 049A into an implementation breakdown when ready to code.
-2. Grill 049AC skill/effect details before migrating target groups.
-3. Grill 049ED before AI selection/execution implementation.
-4. Grill 049F only when cleanup candidates are concrete.
+1. Grill 049ED before AI selection/execution implementation.
+2. Grill 049F only when cleanup candidates are concrete.
 
 ## How To Grill A Sub-PRD
 
@@ -283,6 +308,8 @@ been grilled enough to be implementation-ready.
 The 049 program is complete when:
 
 - every active skill has a complete `SkillDefinitionAsset`,
+- every active asset-backed/unit-assigned skill commits through the shared
+  SkillRules/validated action/executor path instead of legacy reflection,
 - player targeting UI uses shared validator output,
 - Tactical AI uses legal action API candidates,
 - execution no longer needs `CastManager` as source of skill behavior,

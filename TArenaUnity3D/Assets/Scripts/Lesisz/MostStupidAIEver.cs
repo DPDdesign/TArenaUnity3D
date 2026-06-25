@@ -9,6 +9,8 @@ public class MostStupidAIEver : MonoBehaviour
     public MouseControler MC;
     TacticalAIAsyncTurnIntegrator asyncTurnIntegrator;
     Coroutine activeAiRoutine;
+    bool battleNotReadyWarningShown;
+    int battleReadyObservedFrame = -1;
     // Start is called before the first frame update
     void Start()
     {
@@ -38,6 +40,18 @@ public class MostStupidAIEver : MonoBehaviour
             return;
         }
 
+        if (IsBattleReadyForAI() == false)
+        {
+            if (battleNotReadyWarningShown == false)
+            {
+                battleNotReadyWarningShown = true;
+                Debug.LogWarning("[TacticalAI] waiting-for-ready-battle-state");
+            }
+
+            return;
+        }
+
+        battleNotReadyWarningShown = false;
         EnsureAsyncTurnIntegrator();
         activeAiRoutine = StartCoroutine(RunAsyncTacticalAI());
     }
@@ -73,7 +87,30 @@ public class MostStupidAIEver : MonoBehaviour
             result != null ? result.Plan : null,
             result != null ? result.ExecutionResult : null,
             result != null ? result.FallbackReason : "UnknownAsyncFailure"));
-        RunLegacyFallbackAI();
+        Debug.LogError("[TacticalAI] no shared-rule AI action was started; legacy fallback is disabled for PRD049 shared execution.");
+    }
+
+    bool IsBattleReadyForAI()
+    {
+        bool ready = MC != null &&
+            MC.getSelectedToster() != null &&
+            HexMap.Instance != null &&
+            HexMap.Instance.IsBattleReadyForTacticalActions &&
+            BattleActionLifecycle.IsActionBlocking == false;
+
+        if (ready == false)
+        {
+            battleReadyObservedFrame = -1;
+            return false;
+        }
+
+        if (battleReadyObservedFrame < 0)
+        {
+            battleReadyObservedFrame = Time.frameCount;
+            return false;
+        }
+
+        return Time.frameCount - battleReadyObservedFrame >= 2;
     }
 
     void EnsureAsyncTurnIntegrator()

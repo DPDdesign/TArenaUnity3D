@@ -25,7 +25,7 @@ public static class BattleSnapshotLiveAdapter
         TurnManager turnManager,
         BattleActionLifecycle actionLifecycle)
     {
-        if (hexMap == null)
+        if (hexMap == null || hexMap.IsBattleReadyForTacticalActions == false)
         {
             return null;
         }

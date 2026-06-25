@@ -1,7 +1,7 @@
 # TArenaUnity3D Context Map
 
 Status: active
-Last updated: 2026-06-24
+Last updated: 2026-06-25
 
 ## Purpose
 
@@ -487,14 +487,64 @@ army bar, not as a debug grid of buttons.
 
 Current skill model: unit skill ownership is loaded from the unit
 `ScriptableObject` catalog into `TosterHexUnit.skillstrings`.
-`MouseControler` selects a skill slot and
-`CastManager` invokes `{SkillName}M` and `{SkillName}` methods by reflection.
-Skill strings also drive UI icons and skill info, so string drift is a runtime
-risk.
+`SkillDefinitionAsset.skillName` is the canonical skill id for skill data.
+After PRD49ABC, `SkillRules` / `SkillQuery` are the shared API for skill start
+legality, target generation, validation, preview/result shape, and future
+AI/server-facing queries. `MouseControler` still selects a skill slot from
+`SelectedToster.skillstrings`, but target legality should route through
+`SkillRules`.
+
+Remaining legacy boundary: live/default skill commit can still call
+`CastManager.startSpell(...)` reflection bodies for mutation, and passive
+trigger mutation can still live in `TosterHexUnit`, `SpellOverTime`, and
+`HexClass`. Treat those paths as PRD49ED/PRD49F migration debt, not the desired
+architecture.
 
 The unit catalog stores full legal skill ownership and unit tier. Run,
 reward, shop, and future player progression state can mark those legal skills
 as locked or unlocked for a specific stack.
+
+## Skill API And PRD49 Context
+
+Use this when the user asks about skill API, skill definitions, targeting,
+skill validation, skill execution migration, Tactical AI skill actions,
+anti-cheat, server-side validation, `SkillRules`, `SkillQuery`, `SkillUse`,
+`SkillCast`, `SkillResult`, `SkillDefinitionAsset`, `CastManager` cleanup, or
+`skills.xml` cleanup:
+
+- `_codex/Context/09_CurrentSkills.md`
+- `_codex/Context/10_Skill_Design_Rules.md`
+- `_codex/Documentation/CurrentSkills.md`
+- `_codex/tasks/049_PRD_TacticalActionSkillMigrationProgram.md`
+- `_codex/tasks/archive/049ABC_PRD_SkillAPIAndFullMigration.md`
+- `_codex/tasks/049ED_PRD_TacticalAIActionSelectionAndExecutionMigration.md`
+- `_codex/tasks/049F_PRD_LegacySkillSystemCleanup.md`
+- `_codex/Documentation/ADR_015_SkillActionDefinitionOwnsSkillTextAndRules.md`
+- `_codex/agents/docs/codebase-map.md`
+
+Current PRD49 status:
+
+- 049ABC is closed as the API/SO-data/validation-boundary foundation.
+- 049D and 049E are superseded by 049ED.
+- 049ED is the current planning route for Tactical AI legal action selection
+  plus SO-driven execution migration.
+- 049F is future cleanup after replacement paths are proven.
+
+Answering "what is the skill API?" should start from the PRD49ABC API
+responsibilities:
+
+- `SkillUse` is the untrusted submitted request.
+- `SkillContext` carries snapshot/action context.
+- `SkillRules.CanUse(...)` checks start legality.
+- `SkillRules.GetTargets(...)` returns legal next targets.
+- `SkillRules.Validate(...)` normalizes into `SkillCast`.
+- `SkillRules.Preview(...)` / `SkillResult` provide preview/result event shape.
+- `SkillQuery` is the AI/server-facing query helper.
+
+For future anti-cheat and server-side validation, assume the server must
+recompute legality and results from `BattleSnapshot` plus skill definition data.
+Do not trust client/UI supplied affected units, damage, spawned unit state, or
+resolved target lists.
 
 ## Agent Guidance Context
 

@@ -16,3 +16,42 @@ MonoBehaviour:
   type: "Active"
   info: "Kręci się dookoła i zadaje 40% obrażeń wszystkim jednostkom dookoła."
   flags: ""
+  activationRule:
+    activationKind: 0
+    cooldownTurns: 1
+    consumesTurn: 1
+    canUseAfterMove: 0
+    canMoveAfterUse: 0
+    repeatableInTurn: 0
+    blocksWaitDefend: 0
+  targetingRule:
+    targetFamily: 0
+    targetRoles:
+    - 1
+    targetCount: 0
+    allowDuplicateTargets: 0
+    teamFilter: 0
+    occupancyRequirement: 0
+    requiresWalkable: 1
+    requiresEmptyDestination: 0
+    rejectsExistingTrap: 0
+    range: 0
+    radius: 1
+  resolutionRule:
+    resolutionFamily: 5
+    radius: 1
+    skipMissingPrimaryTarget: 0
+  effects:
+  - effectType: 1
+    targetSource: 3
+    damageMode: 1
+    movementMode: 0
+    statusId: ""
+    trapId: ""
+    unitId: ""
+    damageScale: 1.0
+    fixedDamageValue: 0
+    durationTurns: 0
+    hpCost: 0
+    stackAmountDelta: 0
+    skipIfNoTarget: 0

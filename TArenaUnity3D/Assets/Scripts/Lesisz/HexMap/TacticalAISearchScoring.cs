@@ -5,6 +5,8 @@ using System.Diagnostics;
 [Serializable]
 public sealed class TacticalAISearchPlan
 {
+    public TacticalAIPlannedAction BestAction;
+    public List<TacticalAIPlannedAction> OrderedActions = new List<TacticalAIPlannedAction>();
     public TacticalAIActionIntent BestIntent;
     public List<TacticalAIActionIntent> OrderedActionIntents = new List<TacticalAIActionIntent>();
     public float BestScore;
@@ -19,8 +21,8 @@ public sealed class TacticalAISearchPlan
 
 public sealed class TacticalAISearchPlanner
 {
-    readonly TacticalAIPlanCache<TacticalAIActionIntent> planCache =
-        new TacticalAIPlanCache<TacticalAIActionIntent>();
+    readonly TacticalAIPlanCache<TacticalAIPlannedAction> planCache =
+        new TacticalAIPlanCache<TacticalAIPlannedAction>();
 
     public TacticalAISearchPlan BuildPlan(
         BattleSnapshot snapshot,
@@ -37,13 +39,15 @@ public sealed class TacticalAISearchPlanner
         ITacticalAISkillMetadataProvider skillMetadataProvider = null)
     {
         profile = profile ?? TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(null);
-        TacticalAIPlanCacheValue<TacticalAIActionIntent> cachedPlan;
+        TacticalAIPlanCacheValue<TacticalAIPlannedAction> cachedPlan;
         if (planCache.TryGetAdvisoryPlan(snapshot, profile, out cachedPlan))
         {
             return new TacticalAISearchPlan
             {
-                BestIntent = FirstOrNull(cachedPlan.OrderedActionIntents),
-                OrderedActionIntents = cachedPlan.OrderedActionIntents,
+                BestAction = FirstOrNull(cachedPlan.OrderedActionIntents),
+                OrderedActions = cachedPlan.OrderedActionIntents,
+                BestIntent = LegacyIntentOrNull(FirstOrNull(cachedPlan.OrderedActionIntents)),
+                OrderedActionIntents = ToLegacyIntents(cachedPlan.OrderedActionIntents),
                 BestScore = cachedPlan.BestScore,
                 CompletedDepth = cachedPlan.CompletedDepth,
                 PlannedSnapshotHash = snapshot != null ? snapshot.SnapshotHash : string.Empty,
@@ -52,12 +56,12 @@ public sealed class TacticalAISearchPlanner
         }
 
         TacticalAISearchPlan plan = TacticalAISearchEngine.Search(snapshot, profile, skillMetadataProvider);
-        if (plan != null && plan.OrderedActionIntents.Count > 0)
+        if (plan != null && plan.OrderedActions.Count > 0)
         {
             planCache.StoreAdvisoryPlan(
                 snapshot,
                 profile,
-                plan.OrderedActionIntents,
+                plan.OrderedActions,
                 plan.BestScore,
                 plan.CompletedDepth);
         }
@@ -70,9 +74,33 @@ public sealed class TacticalAISearchPlanner
         planCache.Clear();
     }
 
-    static TacticalAIActionIntent FirstOrNull(List<TacticalAIActionIntent> intents)
+    static TacticalAIPlannedAction FirstOrNull(List<TacticalAIPlannedAction> actions)
     {
-        return intents != null && intents.Count > 0 ? intents[0] : null;
+        return actions != null && actions.Count > 0 ? actions[0] : null;
+    }
+
+    static TacticalAIActionIntent LegacyIntentOrNull(TacticalAIPlannedAction action)
+    {
+        return action != null ? action.LegacyIntent : null;
+    }
+
+    static List<TacticalAIActionIntent> ToLegacyIntents(List<TacticalAIPlannedAction> actions)
+    {
+        List<TacticalAIActionIntent> intents = new List<TacticalAIActionIntent>();
+        if (actions == null)
+        {
+            return intents;
+        }
+
+        for (int i = 0; i < actions.Count; i++)
+        {
+            if (actions[i] != null && actions[i].LegacyIntent != null)
+            {
+                intents.Add(actions[i].LegacyIntent);
+            }
+        }
+
+        return intents;
     }
 }
 
@@ -114,6 +142,20 @@ public static class TacticalAISearchEngine
         Stopwatch stopwatch = Stopwatch.StartNew();
         for (int i = 0; i < prunedRootCandidates.Count; i++)
         {
+            TacticalAIActionIntent intent = prunedRootCandidates[i].Intent;
+            scoredRootIntents.Add(new ScoredRootIntent
+            {
+                Intent = intent,
+                Score = prunedRootCandidates[i].Score,
+                CompletedDepth = 1,
+                EvaluatedLeafCount = 0,
+                CoveredOpponentResponse = false,
+                StableOrderKey = intent != null ? intent.StableOrderKey : string.Empty
+            });
+        }
+
+        for (int i = 0; i < prunedRootCandidates.Count; i++)
+        {
             if (context.Budget.IsWatchdogExpired(stopwatch.ElapsedMilliseconds))
             {
                 context.WatchdogExpired = true;
@@ -132,7 +174,7 @@ public static class TacticalAISearchEngine
                 stopwatch);
 
             float actionScore = TacticalAISnapshotScorer.GetActionBias(intent, profile, activeUnit.TeamIndex, context.AITeamIndex);
-            scoredRootIntents.Add(new ScoredRootIntent
+            scoredRootIntents[i] = new ScoredRootIntent
             {
                 Intent = intent,
                 Score = branch.Score + actionScore,
@@ -140,7 +182,7 @@ public static class TacticalAISearchEngine
                 EvaluatedLeafCount = branch.EvaluatedLeafCount,
                 CoveredOpponentResponse = branch.CoveredOpponentResponse,
                 StableOrderKey = intent != null ? intent.StableOrderKey : string.Empty
-            });
+            };
         }
 
         scoredRootIntents.Sort((left, right) => CompareRootIntents(left, right, profile));
@@ -157,7 +199,8 @@ public static class TacticalAISearchEngine
         if (scoredRootIntents.Count > 0)
         {
             ScoredRootIntent best = scoredRootIntents[0];
-            plan.BestIntent = best.Intent;
+            plan.BestAction = ToPlannedAction(snapshot, best.Intent, skillMetadataProvider);
+            plan.BestIntent = plan.BestAction != null ? plan.BestAction.LegacyIntent : null;
             plan.BestScore = best.Score;
             plan.CompletedDepth = best.CompletedDepth;
             plan.CoveredOpponentResponse = best.CoveredOpponentResponse;
@@ -165,11 +208,79 @@ public static class TacticalAISearchEngine
             int fallbackLimit = Math.Max(1, profile.MaxFallbackCandidates + 1);
             for (int i = 0; i < scoredRootIntents.Count && i < fallbackLimit; i++)
             {
-                plan.OrderedActionIntents.Add(scoredRootIntents[i].Intent);
+                TacticalAIPlannedAction action = ToPlannedAction(snapshot, scoredRootIntents[i].Intent, skillMetadataProvider);
+                if (action != null)
+                {
+                    plan.OrderedActions.Add(action);
+                    if (action.LegacyIntent != null)
+                    {
+                        plan.OrderedActionIntents.Add(action.LegacyIntent);
+                    }
+                }
             }
         }
 
         return plan;
+    }
+
+    static TacticalAIPlannedAction ToPlannedAction(
+        BattleSnapshot snapshot,
+        TacticalAIActionIntent intent,
+        ITacticalAISkillMetadataProvider skillMetadataProvider)
+    {
+        if (intent == null)
+        {
+            return null;
+        }
+
+        BattleActionUse use = ToBattleActionUse(intent);
+        BattleActionValidationResult validation = BattleActionRules.Validate(use, snapshot, skillMetadataProvider);
+        if (validation.IsValid && validation.Action != null)
+        {
+            TacticalAIPlannedAction plannedAction = TacticalAIPlannedAction.FromBattleAction(
+                validation.Action,
+                BattleActionRules.Apply(snapshot, validation.Action));
+            if (plannedAction != null &&
+                validation.Action.ActionKind != BattleActionKind.Skill &&
+                validation.Action.ActionKind != BattleActionKind.Stance)
+            {
+                plannedAction.LegacyIntent = intent;
+            }
+
+            return plannedAction;
+        }
+
+        return TacticalAIPlannedAction.FromCandidateIntent(intent);
+    }
+
+    static BattleActionUse ToBattleActionUse(TacticalAIActionIntent intent)
+    {
+        BattleActionUse use = new BattleActionUse
+        {
+            ActorUnitId = intent.ActorUnitId ?? string.Empty,
+            ActionKind = TacticalAIPlannedAction.ToBattleActionKind(intent.ActionType),
+            TargetUnitId = intent.TargetUnitId ?? string.Empty,
+            SkillSlot = intent.SkillSlot,
+            SkillId = intent.SkillId ?? string.Empty
+        };
+
+        if (intent.ValidatedSkillCast != null)
+        {
+            use.SelectedHexes = BattleActionModelUtility.CopyHexes(intent.ValidatedSkillCast.SelectedHexes);
+            return use;
+        }
+
+        if (intent.DestinationHex != null)
+        {
+            use.SelectedHexes.Add(new HexCoord(intent.DestinationHex.C, intent.DestinationHex.R));
+        }
+
+        if (intent.TargetHex != null)
+        {
+            use.SelectedHexes.Add(new HexCoord(intent.TargetHex.C, intent.TargetHex.R));
+        }
+
+        return use;
     }
 
     static SearchBranchResult SearchBranch(
@@ -301,10 +412,101 @@ public static class TacticalAISearchEngine
         int beam = context.Budget.ClampBeamWidth(isOpponentPly, scored.Count);
         if (beam < scored.Count)
         {
-            scored.RemoveRange(beam, scored.Count - beam);
+            scored = PreserveActionTypeDiversity(scored, beam, isOpponentPly);
         }
 
         return scored;
+    }
+
+    static List<ScoredCandidate> PreserveActionTypeDiversity(List<ScoredCandidate> scored, int beam, bool isOpponentPly)
+    {
+        if (scored == null || scored.Count <= beam)
+        {
+            return scored;
+        }
+
+        TacticalAIActionType[] preferredTypes =
+        {
+            TacticalAIActionType.Skill,
+            TacticalAIActionType.BasicRangedAttack,
+            TacticalAIActionType.MoveAndAttack,
+            TacticalAIActionType.Move,
+            TacticalAIActionType.Wait,
+            TacticalAIActionType.Defend
+        };
+
+        List<ScoredCandidate> kept = new List<ScoredCandidate>();
+        for (int typeIndex = 0; typeIndex < preferredTypes.Length; typeIndex++)
+        {
+            if (kept.Count >= beam)
+            {
+                break;
+            }
+
+            TacticalAIActionType actionType = preferredTypes[typeIndex];
+            int sourceIndex = FindFirstActionTypeIndex(scored, actionType);
+            if (sourceIndex >= 0)
+            {
+                AddCandidateIfMissing(kept, scored[sourceIndex]);
+            }
+        }
+
+        for (int i = 0; i < scored.Count && kept.Count < beam; i++)
+        {
+            AddCandidateIfMissing(kept, scored[i]);
+        }
+
+        kept.Sort((left, right) =>
+        {
+            int scoreCompare = isOpponentPly
+                ? left.Score.CompareTo(right.Score)
+                : right.Score.CompareTo(left.Score);
+            if (scoreCompare != 0)
+            {
+                return scoreCompare;
+            }
+
+            return string.CompareOrdinal(left.StableOrderKey, right.StableOrderKey);
+        });
+        return kept;
+    }
+
+    static void AddCandidateIfMissing(List<ScoredCandidate> candidates, ScoredCandidate candidate)
+    {
+        if (candidates == null || candidate.Intent == null)
+        {
+            return;
+        }
+
+        string stableKey = candidate.StableOrderKey ?? string.Empty;
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            if (string.Equals(candidates[i].StableOrderKey ?? string.Empty, stableKey, StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
+
+        candidates.Add(candidate);
+    }
+
+    static int FindFirstActionTypeIndex(List<ScoredCandidate> candidates, TacticalAIActionType actionType)
+    {
+        if (candidates == null)
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            TacticalAIActionIntent intent = candidates[i].Intent;
+            if (intent != null && intent.ActionType == actionType)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     static bool IsBetterBranch(
@@ -506,61 +708,233 @@ public static class TacticalAISearchCandidateExpander
         ITacticalAISkillMetadataProvider skillMetadataProvider)
     {
         BattleUnitSnapshot actor = TacticalAISnapshotQuery.FindUnit(snapshot, skillCandidate.ActorUnitId);
-        TacticalAISkillMetadata metadata = ResolveSkillMetadata(skillCandidate.SkillId, skillMetadataProvider);
-        if (actor == null)
+        SkillDefinitionSpec definition = ResolveSkillSpec(skillCandidate.SkillId, skillMetadataProvider);
+        if (actor == null || definition == null)
         {
             return;
         }
 
-        if (metadata.IsRepeatableToggle)
+        SkillContext context = SkillContext.Create(snapshot, actor.RuntimeUnitId, definition, skillCandidate.SkillSlot);
+        SkillValidationResult canUse = SkillRules.CanUse(context);
+        if (canUse.IsValid == false)
         {
-            expanded.Add(CloneSkillIntent(skillCandidate, null, null));
             return;
         }
 
-        List<BattleUnitSnapshot> enemyTargets = TacticalAISnapshotQuery.FindAliveEnemies(snapshot, actor.TeamIndex);
-        enemyTargets.Sort(CompareTargetsByDurability);
-        int limit = Math.Min(enemyTargets.Count, Math.Max(1, profile.MaxSkillCandidates));
-        int addedCount = 0;
-        for (int i = 0; i < limit; i++)
-        {
-            BattleUnitSnapshot target = enemyTargets[i];
-            expanded.Add(CloneSkillIntent(
-                skillCandidate,
-                target.RuntimeUnitId,
-                new TacticalAIHexCoordinate(target.C, target.R)));
-            addedCount++;
-        }
+        TargetingRuleData targeting = definition.TargetingRule;
+        int targetCount = targeting != null ? Math.Max(0, targeting.targetCount) : 0;
+        int limit = Math.Max(1, profile != null ? profile.MaxSkillCandidates : TacticalAICandidateGenerationOptions.Default.MaxSkillCandidates);
+        List<SkillCast> validatedCasts = new List<SkillCast>();
+        AddValidatedSkillCasts(validatedCasts, context, skillCandidate.SkillId, new List<HexCoord>(), targetCount, limit);
 
-        if (addedCount == 0)
+        for (int i = 0; i < validatedCasts.Count; i++)
         {
-            expanded.Add(CloneSkillIntent(skillCandidate, actor.RuntimeUnitId, new TacticalAIHexCoordinate(actor.C, actor.R)));
+            TacticalAIActionIntent intent = CreateValidatedSkillIntent(skillCandidate, context, validatedCasts[i]);
+            if (HasMeaningfulSkillPreview(intent != null ? intent.PreviewResult : null))
+            {
+                expanded.Add(intent);
+            }
         }
     }
 
-    static TacticalAIActionIntent CloneSkillIntent(
-        TacticalAIActionIntent source,
-        string targetUnitId,
-        TacticalAIHexCoordinate targetHex)
+    static void AddValidatedSkillCasts(
+        List<SkillCast> validatedCasts,
+        SkillContext context,
+        string skillId,
+        List<HexCoord> selected,
+        int targetCount,
+        int limit)
     {
-        string targetKey = targetUnitId ?? string.Empty;
-        string targetC = targetHex != null ? targetHex.C.ToString() : string.Empty;
-        string targetR = targetHex != null ? targetHex.R.ToString() : string.Empty;
+        if (validatedCasts == null || context == null || validatedCasts.Count >= limit)
+        {
+            return;
+        }
+
+        if (selected.Count >= targetCount)
+        {
+            SkillValidationResult validation = SkillRules.Validate(
+                new SkillUse(context.ActorUnitId, skillId, selected),
+                context);
+            if (validation.IsValid && validation.Cast != null)
+            {
+                validatedCasts.Add(validation.Cast.Clone());
+            }
+
+            return;
+        }
+
+        List<SkillTarget> legalTargets = SkillRules.GetTargets(context, selected);
+        legalTargets.Sort(CompareSkillTargets);
+        for (int i = 0; i < legalTargets.Count && validatedCasts.Count < limit; i++)
+        {
+            SkillTarget target = legalTargets[i];
+            if (target == null || target.Hex == null)
+            {
+                continue;
+            }
+
+            List<HexCoord> nextSelected = new List<HexCoord>(selected);
+            nextSelected.Add(new HexCoord(target.Hex.C, target.Hex.R));
+            AddValidatedSkillCasts(validatedCasts, context, skillId, nextSelected, targetCount, limit);
+        }
+    }
+
+    static TacticalAIActionIntent CreateValidatedSkillIntent(
+        TacticalAIActionIntent source,
+        SkillContext context,
+        SkillCast cast)
+    {
+        SkillResult preview = SkillRules.Preview(cast, context);
+        string targetUnitId = cast != null ? FirstOrEmpty(cast.TargetUnitIds) : string.Empty;
+        TacticalAIHexCoordinate targetHex = ToAIHex(FirstHex(cast != null ? cast.SelectedHexes : null));
+        TacticalAIHexCoordinate destinationHex = ToAIHex(cast != null ? cast.DestinationHex : null);
         return new TacticalAIActionIntent
         {
             ActionType = TacticalAIActionType.Skill,
             ActorUnitId = source.ActorUnitId,
             SourceHex = CloneCoordinate(source.SourceHex),
-            DestinationHex = CloneCoordinate(source.DestinationHex),
-            TargetUnitId = targetKey,
-            TargetHex = CloneCoordinate(targetHex),
+            DestinationHex = destinationHex,
+            TargetUnitId = targetUnitId,
+            TargetHex = targetHex,
             SkillSlot = source.SkillSlot,
             SkillId = source.SkillId ?? string.Empty,
+            ValidatedSkillCast = cast != null ? cast.Clone() : null,
+            PreviewResult = preview,
             PredictedPriority = source.PredictedPriority,
-            StableOrderKey = "Skill|" + (source.ActorUnitId ?? string.Empty) + "|" +
-                source.SkillSlot + "|" + (source.SkillId ?? string.Empty) + "|" +
-                targetKey + "|" + targetC + "|" + targetR
+            StableOrderKey = BuildSkillStableOrderKey(source, cast)
         };
+    }
+
+    static bool HasMeaningfulSkillPreview(SkillResult preview)
+    {
+        if (preview == null || preview.Events == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < preview.Events.Count; i++)
+        {
+            SkillResultEvent resultEvent = preview.Events[i];
+            if (resultEvent == null)
+            {
+                continue;
+            }
+
+            switch (resultEvent.EventType)
+            {
+                case SkillResultEventType.DamageApplied:
+                case SkillResultEventType.StatusApplied:
+                    if (string.IsNullOrEmpty(resultEvent.TargetUnitId) == false)
+                    {
+                        return true;
+                    }
+                    break;
+                case SkillResultEventType.UnitMoved:
+                case SkillResultEventType.TrapPlaced:
+                case SkillResultEventType.UnitSpawned:
+                    if (resultEvent.Hex != null)
+                    {
+                        return true;
+                    }
+                    break;
+                case SkillResultEventType.StackAmountChanged:
+                case SkillResultEventType.HpCostApplied:
+                    if (resultEvent.Amount != 0)
+                    {
+                        return true;
+                    }
+                    break;
+                case SkillResultEventType.StanceChanged:
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    static SkillDefinitionSpec ResolveSkillSpec(
+        string skillId,
+        ITacticalAISkillMetadataProvider skillMetadataProvider)
+    {
+        ITacticalAISkillSpecProvider specProvider = skillMetadataProvider as ITacticalAISkillSpecProvider;
+        SkillDefinitionSpec spec;
+        if (specProvider != null && specProvider.TryGetSkillSpec(skillId, out spec))
+        {
+            return spec;
+        }
+
+        SkillDefinitionAsset definition = DataMapper.Instance != null ? DataMapper.Instance.FindSkillAsset(skillId) : null;
+        return SkillDefinitionSpec.FromAsset(definition);
+    }
+
+    static string BuildSkillStableOrderKey(TacticalAIActionIntent source, SkillCast cast)
+    {
+        return "Skill|" + (source != null ? source.ActorUnitId ?? string.Empty : string.Empty) + "|" +
+            (source != null ? source.SkillSlot : -1) + "|" +
+            (source != null ? source.SkillId ?? string.Empty : string.Empty) + "|" +
+            BuildHexListKey(cast != null ? cast.SelectedHexes : null) + "|" +
+            BuildStringListKey(cast != null ? cast.TargetUnitIds : null) + "|" +
+            GetHexKey(cast != null ? cast.DestinationHex : null) + "|" +
+            GetHexKey(cast != null ? cast.ImpactHex : null);
+    }
+
+    static int CompareSkillTargets(SkillTarget left, SkillTarget right)
+    {
+        string leftUnit = left != null ? left.UnitId ?? string.Empty : string.Empty;
+        string rightUnit = right != null ? right.UnitId ?? string.Empty : string.Empty;
+        int unitCompare = string.CompareOrdinal(leftUnit, rightUnit);
+        if (unitCompare != 0)
+        {
+            return unitCompare;
+        }
+
+        return string.CompareOrdinal(GetHexKey(left != null ? left.Hex : null), GetHexKey(right != null ? right.Hex : null));
+    }
+
+    static string BuildHexListKey(List<HexCoord> hexes)
+    {
+        if (hexes == null || hexes.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        List<string> keys = new List<string>();
+        for (int i = 0; i < hexes.Count; i++)
+        {
+            keys.Add(GetHexKey(hexes[i]));
+        }
+
+        return string.Join(";", keys.ToArray());
+    }
+
+    static string BuildStringListKey(List<string> values)
+    {
+        if (values == null || values.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return string.Join(";", values.ToArray());
+    }
+
+    static string GetHexKey(HexCoord hex)
+    {
+        return hex == null ? string.Empty : hex.C + "," + hex.R;
+    }
+
+    static string FirstOrEmpty(List<string> values)
+    {
+        return values != null && values.Count > 0 ? values[0] ?? string.Empty : string.Empty;
+    }
+
+    static HexCoord FirstHex(List<HexCoord> hexes)
+    {
+        return hexes != null && hexes.Count > 0 ? hexes[0] : null;
+    }
+
+    static TacticalAIHexCoordinate ToAIHex(HexCoord hex)
+    {
+        return hex == null ? null : new TacticalAIHexCoordinate(hex.C, hex.R);
     }
 
     static TacticalAISkillMetadata ResolveSkillMetadata(
@@ -942,7 +1316,7 @@ public static class TacticalAISnapshotSimulator
                 actor.MovedThisTurn = true;
                 break;
             case TacticalAIActionType.Skill:
-                ApplySkill(actor, units, intent, skillMetadataProvider);
+                ApplySkill(snapshot, actor, units, hexes, intent, skillMetadataProvider);
                 break;
         }
 
@@ -951,59 +1325,364 @@ public static class TacticalAISnapshotSimulator
     }
 
     static void ApplySkill(
+        BattleSnapshot sourceSnapshot,
         BattleUnitSnapshot actor,
         List<BattleUnitSnapshot> units,
+        List<BattleHexSnapshot> hexes,
         TacticalAIActionIntent intent,
         ITacticalAISkillMetadataProvider skillMetadataProvider)
     {
-        TacticalAISkillMetadata metadata = ResolveSkillMetadata(intent.SkillId, skillMetadataProvider);
+        SkillCast cast = intent.ValidatedSkillCast != null ? intent.ValidatedSkillCast.Clone() : null;
+        SkillDefinitionSpec definition = ResolveSkillSpec(intent.SkillId, skillMetadataProvider);
+        if (cast == null && definition != null)
+        {
+            SkillContext context = SkillContext.Create(sourceSnapshot, actor.RuntimeUnitId, definition, intent.SkillSlot);
+            SkillValidationResult validation = SkillRules.Validate(
+                new SkillUse(actor.RuntimeUnitId, intent.SkillId, new List<HexCoord>()),
+                context);
+            cast = validation.IsValid ? validation.Cast : null;
+        }
+
+        if (cast == null)
+        {
+            return;
+        }
+
+        SkillResult result = intent.PreviewResult ?? SkillRules.Preview(
+            cast,
+            SkillContext.Create(sourceSnapshot, actor.RuntimeUnitId, definition, intent.SkillSlot));
+        ApplySkillResultEvents(result, actor, units, hexes, cast);
+
         if (actor.UsedSkillIdsThisTurn == null)
         {
             actor.UsedSkillIdsThisTurn = new List<string>();
         }
 
-        if (metadata.IsRepeatableToggle == false && actor.UsedSkillIdsThisTurn.Contains(intent.SkillId) == false)
+        bool repeatable = cast.RepeatableInTurn;
+        if (repeatable == false && actor.UsedSkillIdsThisTurn.Contains(intent.SkillId) == false)
         {
             actor.UsedSkillIdsThisTurn.Add(intent.SkillId ?? string.Empty);
         }
 
-        actor.UsedSkillThisTurn = metadata.IsRepeatableToggle == false;
-        actor.CanMoveAfterSkillThisTurn = metadata.CanMoveAfterSkill;
+        actor.UsedSkillThisTurn = repeatable == false;
+        actor.CanMoveAfterSkillThisTurn = cast.CanMoveAfterUse;
 
-        BattleUnitSnapshot target = FindMutableUnit(units, intent.TargetUnitId);
-        if (target != null && target.TeamIndex != actor.TeamIndex)
-        {
-            int predictedDamage = (int)Math.Ceiling(TacticalAIDamagePredictor.PredictAverageDamage(actor, target) * 0.85f);
-            ApplyDamageToTarget(units, target.RuntimeUnitId, predictedDamage);
-        }
-
-        if (metadata.IsRepeatableToggle)
-        {
-            return;
-        }
-
-        if (metadata.CanMoveAfterSkill == false)
+        if (repeatable == false && cast.ConsumesTurn && cast.CanMoveAfterUse == false)
         {
             actor.Moved = true;
         }
     }
 
-    static TacticalAISkillMetadata ResolveSkillMetadata(
+    static void ApplySkillResultEvents(
+        SkillResult result,
+        BattleUnitSnapshot actor,
+        List<BattleUnitSnapshot> units,
+        List<BattleHexSnapshot> hexes,
+        SkillCast cast)
+    {
+        if (result == null || result.Events == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < result.Events.Count; i++)
+        {
+            SkillResultEvent resultEvent = result.Events[i];
+            if (resultEvent == null)
+            {
+                continue;
+            }
+
+            switch (resultEvent.EventType)
+            {
+                case SkillResultEventType.DamageApplied:
+                    ApplyDamageToTarget(units, resultEvent.TargetUnitId, ResolveSkillDamage(actor, FindMutableUnit(units, resultEvent.TargetUnitId), resultEvent.Amount, cast));
+                    break;
+                case SkillResultEventType.HpCostApplied:
+                    ApplyDamageToTarget(units, actor.RuntimeUnitId, Math.Max(0, resultEvent.Amount));
+                    break;
+                case SkillResultEventType.UnitMoved:
+                    BattleUnitSnapshot movedUnit = FindMutableUnit(units, string.IsNullOrEmpty(resultEvent.TargetUnitId) ? actor.RuntimeUnitId : resultEvent.TargetUnitId);
+                    if (movedUnit != null && resultEvent.Hex != null)
+                    {
+                        movedUnit.C = resultEvent.Hex.C;
+                        movedUnit.R = resultEvent.Hex.R;
+                    }
+                    break;
+                case SkillResultEventType.TrapPlaced:
+                    BattleHexSnapshot trapHex = resultEvent.Hex != null ? FindMutableHex(hexes, resultEvent.Hex.C, resultEvent.Hex.R) : null;
+                    if (trapHex != null)
+                    {
+                        trapHex.TrapName = string.IsNullOrEmpty(resultEvent.TrapId) ? resultEvent.SkillId : resultEvent.TrapId;
+                        trapHex.TrapSourceUnitId = actor.RuntimeUnitId;
+                    }
+                    break;
+                case SkillResultEventType.StackAmountChanged:
+                    actor.Amount = Math.Max(0, actor.Amount + resultEvent.Amount);
+                    actor.IsAlive = actor.Amount > 0;
+                    break;
+                case SkillResultEventType.StatusApplied:
+                    ApplyStatusToTarget(units, actor, resultEvent, cast);
+                    break;
+                case SkillResultEventType.UnitSpawned:
+                    ApplySpawnToSnapshot(units, hexes, actor, resultEvent, cast);
+                    break;
+                case SkillResultEventType.StanceChanged:
+                    ApplyStanceToSnapshot(actor, cast);
+                    break;
+            }
+        }
+    }
+
+    static void ApplyStanceToSnapshot(BattleUnitSnapshot actor, SkillCast cast)
+    {
+        if (actor == null || cast == null || string.IsNullOrEmpty(cast.SkillId))
+        {
+            return;
+        }
+
+        if (cast.SkillId.StartsWith("Range_Stance", StringComparison.Ordinal))
+        {
+            actor.IsRange = true;
+            ReplaceStanceSkillId(actor, cast.SkillId, "Melee_Stance");
+        }
+        else if (cast.SkillId.StartsWith("Melee_Stance", StringComparison.Ordinal))
+        {
+            actor.IsRange = false;
+            ReplaceStanceSkillId(actor, cast.SkillId, "Range_Stance");
+        }
+    }
+
+    static void ReplaceStanceSkillId(BattleUnitSnapshot actor, string currentSkillId, string replacementPrefix)
+    {
+        if (actor == null ||
+            actor.SkillIdsBySlot == null ||
+            string.IsNullOrEmpty(currentSkillId) ||
+            string.IsNullOrEmpty(replacementPrefix))
+        {
+            return;
+        }
+
+        int separator = currentSkillId.IndexOf('_', "Range_Stance".Length);
+        if (separator < 0)
+        {
+            separator = currentSkillId.IndexOf('_', "Melee_Stance".Length);
+        }
+
+        if (separator < 0 || separator >= currentSkillId.Length)
+        {
+            return;
+        }
+
+        string replacementSkillId = replacementPrefix + currentSkillId.Substring(separator);
+        for (int i = 0; i < actor.SkillIdsBySlot.Count; i++)
+        {
+            if (string.Equals(actor.SkillIdsBySlot[i], currentSkillId, StringComparison.Ordinal))
+            {
+                actor.SkillIdsBySlot[i] = replacementSkillId;
+                return;
+            }
+        }
+    }
+
+    static void ApplyStatusToTarget(
+        List<BattleUnitSnapshot> units,
+        BattleUnitSnapshot actor,
+        SkillResultEvent resultEvent,
+        SkillCast cast)
+    {
+        BattleUnitSnapshot target = FindMutableUnit(
+            units,
+            string.IsNullOrEmpty(resultEvent.TargetUnitId) ? actor.RuntimeUnitId : resultEvent.TargetUnitId);
+        SkillEffect effect = FirstStatusEffect(cast, resultEvent.StatusId);
+        if (target == null || effect == null)
+        {
+            return;
+        }
+
+        if (target.Statuses == null)
+        {
+            target.Statuses = new List<BattleStatusSnapshot>();
+        }
+
+        target.Statuses.Add(new BattleStatusSnapshot
+        {
+            StatusId = string.IsNullOrEmpty(effect.statusId) ? cast.SkillId : effect.statusId,
+            SourceSkillId = cast.SkillId,
+            SourceUnitId = actor.RuntimeUnitId,
+            RemainingDurationOrTurns = Math.Max(0, effect.durationTurns),
+            HpModifier = effect.hpModifier,
+            AttackModifier = effect.attackModifier,
+            DefenseModifier = effect.defenseModifier,
+            MovementModifier = effect.movementModifier,
+            InitiativeModifier = effect.initiativeModifier,
+            MaxDamageModifier = effect.maxDamageModifier,
+            MinDamageModifier = effect.minDamageModifier,
+            DamageOverTime = effect.damageOverTime,
+            ResistanceModifier = effect.resistanceModifier,
+            CounterAttacksModifier = effect.counterAttacksModifier,
+            DamageModifier = effect.damageModifier,
+            IsStackable = effect.isStackable
+        });
+    }
+
+    static void ApplySpawnToSnapshot(
+        List<BattleUnitSnapshot> units,
+        List<BattleHexSnapshot> hexes,
+        BattleUnitSnapshot actor,
+        SkillResultEvent resultEvent,
+        SkillCast cast)
+    {
+        if (units == null || actor == null)
+        {
+            return;
+        }
+
+        SkillEffect effect = FirstSpawnEffect(cast);
+        HexCoord destination = resultEvent.Hex ?? (cast != null ? cast.DestinationHex : null);
+        if (effect == null || destination == null)
+        {
+            return;
+        }
+
+        BattleHexSnapshot spawnHex = FindMutableHex(hexes, destination.C, destination.R);
+        if (spawnHex == null || string.IsNullOrEmpty(spawnHex.OccupyingUnitId) == false)
+        {
+            return;
+        }
+
+        int spawnedAmount = effect.stackAmountDelta > 0 ? effect.stackAmountDelta : Math.Max(1, actor.Amount / 2);
+        string runtimeId = actor.RuntimeUnitId + "-spawn-" + units.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        BattleUnitSnapshot spawned = new BattleUnitSnapshot
+        {
+            RuntimeUnitId = runtimeId,
+            TeamIndex = actor.TeamIndex,
+            RosterIndexWithinTeam = units.Count,
+            UnitName = string.IsNullOrEmpty(effect.unitId) ? actor.UnitName : effect.unitId,
+            UnitType = string.IsNullOrEmpty(effect.unitId) ? actor.UnitType : effect.unitId,
+            C = destination.C,
+            R = destination.R,
+            Amount = spawnedAmount,
+            TempHP = actor.BaseHP,
+            BaseHP = actor.BaseHP,
+            Attack = actor.Attack,
+            Defense = actor.Defense,
+            MovementSpeed = actor.MovementSpeed,
+            Initiative = actor.Initiative,
+            MinDamage = actor.MinDamage,
+            MaxDamage = actor.MaxDamage,
+            IsAlive = spawnedAmount > 0,
+            IsRange = actor.IsRange,
+            Moved = true,
+            MovedThisTurn = true,
+            UsedSkillIdsThisTurn = new List<string>(),
+            CooldownsBySlot = new List<int>(),
+            SkillIdsBySlot = new List<string>(),
+            Statuses = new List<BattleStatusSnapshot>()
+        };
+
+        units.Add(spawned);
+        spawnHex.OccupyingUnitId = runtimeId;
+    }
+
+    static int ResolveSkillDamage(BattleUnitSnapshot actor, BattleUnitSnapshot target, int eventAmount, SkillCast cast)
+    {
+        if (eventAmount > 0)
+        {
+            return eventAmount;
+        }
+
+        SkillEffect effect = FirstDamageEffect(cast);
+        if (effect == null)
+        {
+            return 0;
+        }
+
+        int baseDamage = TacticalAIDamagePredictor.PredictAverageDamage(actor, target);
+        if (effect.damageMode == SkillDamageMode.FixedDamageThroughDefense && effect.fixedDamageValue > 0)
+        {
+            baseDamage = effect.fixedDamageValue;
+        }
+
+        return Math.Max(0, (int)Math.Ceiling(baseDamage * Math.Max(0f, effect.damageScale)));
+    }
+
+    static SkillEffect FirstDamageEffect(SkillCast cast)
+    {
+        SkillEffect[] effects = cast != null ? cast.Effects : null;
+        if (effects == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < effects.Length; i++)
+        {
+            if (effects[i] != null && effects[i].effectType == SkillEffectType.Damage)
+            {
+                return effects[i];
+            }
+        }
+
+        return null;
+    }
+
+    static SkillEffect FirstStatusEffect(SkillCast cast, string statusId)
+    {
+        SkillEffect[] effects = cast != null ? cast.Effects : null;
+        if (effects == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < effects.Length; i++)
+        {
+            SkillEffect effect = effects[i];
+            if (effect == null || effect.effectType != SkillEffectType.ApplyStatus)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(statusId) || string.Equals(effect.statusId, statusId, StringComparison.Ordinal))
+            {
+                return effect;
+            }
+        }
+
+        return null;
+    }
+
+    static SkillEffect FirstSpawnEffect(SkillCast cast)
+    {
+        SkillEffect[] effects = cast != null ? cast.Effects : null;
+        if (effects == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < effects.Length; i++)
+        {
+            if (effects[i] != null && effects[i].effectType == SkillEffectType.SpawnUnit)
+            {
+                return effects[i];
+            }
+        }
+
+        return null;
+    }
+
+    static SkillDefinitionSpec ResolveSkillSpec(
         string skillId,
         ITacticalAISkillMetadataProvider skillMetadataProvider)
     {
-        TacticalAISkillMetadata metadata;
-        if (skillMetadataProvider != null && skillMetadataProvider.TryGetSkillMetadata(skillId, out metadata) && metadata != null)
+        ITacticalAISkillSpecProvider specProvider = skillMetadataProvider as ITacticalAISkillSpecProvider;
+        SkillDefinitionSpec spec;
+        if (specProvider != null && specProvider.TryGetSkillSpec(skillId, out spec))
         {
-            metadata.IsRepeatableToggle = metadata.IsRepeatableToggle || TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId);
-            return metadata;
+            return spec;
         }
 
-        return new TacticalAISkillMetadata
-        {
-            SkillId = skillId ?? string.Empty,
-            IsRepeatableToggle = TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId)
-        };
+        SkillDefinitionAsset definition = DataMapper.Instance != null ? DataMapper.Instance.FindSkillAsset(skillId) : null;
+        return SkillDefinitionSpec.FromAsset(definition);
     }
 
     static void ApplyMove(BattleUnitSnapshot actor, TacticalAIHexCoordinate destinationHex, List<BattleHexSnapshot> hexes)
@@ -1078,6 +1757,24 @@ public static class TacticalAISnapshotSimulator
             if (units[i] != null && string.Equals(units[i].RuntimeUnitId, unitId, StringComparison.Ordinal))
             {
                 return units[i];
+            }
+        }
+
+        return null;
+    }
+
+    static BattleHexSnapshot FindMutableHex(List<BattleHexSnapshot> hexes, int c, int r)
+    {
+        if (hexes == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < hexes.Count; i++)
+        {
+            if (hexes[i] != null && hexes[i].C == c && hexes[i].R == r)
+            {
+                return hexes[i];
             }
         }
 
@@ -1579,8 +2276,61 @@ public static class TacticalAISnapshotQuery
             return 0f;
         }
 
-        float averageDamage = (Math.Max(0, unit.MinDamage) + Math.Max(0, unit.MaxDamage)) * 0.5f;
-        return unit.Amount * (Math.Max(1, unit.BaseHP) + Math.Max(0, unit.Attack) + Math.Max(0, unit.Defense) + averageDamage);
+        int hp = Math.Max(1, unit.BaseHP + SumStatus(unit, StatusValueKind.Hp));
+        int attack = Math.Max(0, unit.Attack + SumStatus(unit, StatusValueKind.Attack));
+        int defense = Math.Max(0, unit.Defense + SumStatus(unit, StatusValueKind.Defense));
+        int minDamage = Math.Max(0, unit.MinDamage + SumStatus(unit, StatusValueKind.MinDamage));
+        int maxDamage = Math.Max(0, unit.MaxDamage + SumStatus(unit, StatusValueKind.MaxDamage));
+        float averageDamage = (minDamage + maxDamage) * 0.5f;
+        return unit.Amount * (hp + attack + defense + averageDamage);
+    }
+
+    enum StatusValueKind
+    {
+        Hp,
+        Attack,
+        Defense,
+        MinDamage,
+        MaxDamage
+    }
+
+    static int SumStatus(BattleUnitSnapshot unit, StatusValueKind kind)
+    {
+        int total = 0;
+        if (unit == null || unit.Statuses == null)
+        {
+            return total;
+        }
+
+        for (int i = 0; i < unit.Statuses.Count; i++)
+        {
+            BattleStatusSnapshot status = unit.Statuses[i];
+            if (status == null)
+            {
+                continue;
+            }
+
+            switch (kind)
+            {
+                case StatusValueKind.Hp:
+                    total += status.HpModifier;
+                    break;
+                case StatusValueKind.Attack:
+                    total += status.AttackModifier;
+                    break;
+                case StatusValueKind.Defense:
+                    total += status.DefenseModifier;
+                    break;
+                case StatusValueKind.MinDamage:
+                    total += status.MinDamageModifier;
+                    break;
+                case StatusValueKind.MaxDamage:
+                    total += status.MaxDamageModifier;
+                    break;
+            }
+        }
+
+        return total;
     }
 
     public static int GetUnitDurability(BattleUnitSnapshot unit)
