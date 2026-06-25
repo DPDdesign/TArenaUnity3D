@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
@@ -11,22 +12,28 @@ public class EnemyEncounterRuleCatalogTests
         ArmyGeneratorRuleSet lowRules = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
         ArmyGeneratorRuleSet mediumRules = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
         ArmyGeneratorRuleSet highRules = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
+        RewardGeneratorRuleSet lowRewardRules = ScriptableObject.CreateInstance<RewardGeneratorRuleSet>();
+        RewardGeneratorRuleSet mediumRewardRules = ScriptableObject.CreateInstance<RewardGeneratorRuleSet>();
+        RewardGeneratorRuleSet highRewardRules = ScriptableObject.CreateInstance<RewardGeneratorRuleSet>();
 
         catalog.Entries = new List<EnemyEncounterRule>
         {
-            Generated(EnemyEncounterDifficulty.Low, lowRules),
-            Generated(EnemyEncounterDifficulty.Medium, mediumRules),
-            Generated(EnemyEncounterDifficulty.High, highRules)
+            Generated(EnemyEncounterDifficulty.Low, lowRules, lowRewardRules),
+            Generated(EnemyEncounterDifficulty.Medium, mediumRules, mediumRewardRules),
+            Generated(EnemyEncounterDifficulty.High, highRules, highRewardRules)
         };
 
-        AssertResolvedGenerated(catalog, EnemyEncounterDifficulty.Low, lowRules);
-        AssertResolvedGenerated(catalog, EnemyEncounterDifficulty.Medium, mediumRules);
-        AssertResolvedGenerated(catalog, EnemyEncounterDifficulty.High, highRules);
+        AssertResolvedGenerated(catalog, EnemyEncounterDifficulty.Low, lowRules, lowRewardRules);
+        AssertResolvedGenerated(catalog, EnemyEncounterDifficulty.Medium, mediumRules, mediumRewardRules);
+        AssertResolvedGenerated(catalog, EnemyEncounterDifficulty.High, highRules, highRewardRules);
 
         Object.DestroyImmediate(catalog);
         Object.DestroyImmediate(lowRules);
         Object.DestroyImmediate(mediumRules);
         Object.DestroyImmediate(highRules);
+        Object.DestroyImmediate(lowRewardRules);
+        Object.DestroyImmediate(mediumRewardRules);
+        Object.DestroyImmediate(highRewardRules);
     }
 
     [Test]
@@ -122,10 +129,11 @@ public class EnemyEncounterRuleCatalogTests
 
         EnemyEncounterRuleCatalog duplicateCatalog = ScriptableObject.CreateInstance<EnemyEncounterRuleCatalog>();
         ArmyGeneratorRuleSet lowRules = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
+        RewardGeneratorRuleSet lowRewardRules = ScriptableObject.CreateInstance<RewardGeneratorRuleSet>();
         duplicateCatalog.Entries = new List<EnemyEncounterRule>
         {
-            Generated(EnemyEncounterDifficulty.Low, lowRules),
-            Generated(EnemyEncounterDifficulty.Low, lowRules)
+            Generated(EnemyEncounterDifficulty.Low, lowRules, lowRewardRules),
+            Generated(EnemyEncounterDifficulty.Low, lowRules, lowRewardRules)
         };
 
         EnemyEncounterRuleLookupResult duplicate = duplicateCatalog.Resolve(EnemyEncounterDifficulty.Low);
@@ -136,13 +144,18 @@ public class EnemyEncounterRuleCatalogTests
         Object.DestroyImmediate(missingCatalog);
         Object.DestroyImmediate(duplicateCatalog);
         Object.DestroyImmediate(lowRules);
+        Object.DestroyImmediate(lowRewardRules);
     }
 
-    private static EnemyEncounterRule Generated(EnemyEncounterDifficulty difficulty, ArmyGeneratorRuleSet rules)
+    private static EnemyEncounterRule Generated(
+        EnemyEncounterDifficulty difficulty,
+        ArmyGeneratorRuleSet rules,
+        RewardGeneratorRuleSet rewardRules)
     {
         return new EnemyEncounterRule(
             difficulty,
             rules,
+            rewardRules,
             string.Empty);
     }
 
@@ -160,12 +173,15 @@ public class EnemyEncounterRuleCatalogTests
     private static void AssertResolvedGenerated(
         EnemyEncounterRuleCatalog catalog,
         EnemyEncounterDifficulty difficulty,
-        ArmyGeneratorRuleSet expectedRules)
+        ArmyGeneratorRuleSet expectedRules,
+        RewardGeneratorRuleSet expectedRewardRules)
     {
         EnemyEncounterRuleLookupResult result = catalog.Resolve(difficulty);
         Assert.That(result.Success, Is.True);
         Assert.That(result.Error, Is.EqualTo(EnemyEncounterRuleLookupError.None));
         Assert.That(result.Rule.ResolvedArmyGeneratorRuleSet, Is.EqualTo(expectedRules));
+        Assert.That(result.Rule.ResolvedRewardGeneratorRuleSet, Is.EqualTo(expectedRewardRules));
         Assert.That(result.Rule.ResolvedPredefinedEnemyId, Is.EqualTo(string.Empty));
     }
 }
+#endif

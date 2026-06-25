@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -127,6 +128,7 @@ public class OfflineRunBattleRewardDbTests
                 "barbarian-starter-v1",
                 "barbarian-starter",
                 "iron-line"));
+            MoveRunToNode(databasePath, startRun.CreatedRun, "node-pressure-1");
 
             RewardMapArmySnapshot army = new RewardMapArmySnapshot(
                 "army-slot-target-test",
@@ -170,7 +172,7 @@ public class OfflineRunBattleRewardDbTests
             RewardMapCardViewData savedCard = saved.Cards[0];
 
             Assert.That(savedCard.Operation.StackId, Is.EqualTo("stack-thrower"));
-            Assert.That(savedCard.AffectedStackId, Is.EqualTo("stack-thrower"));
+            Assert.That(savedCard.AffectedStackId, Is.EqualTo("slot-1"));
 
             RewardMapService service = new RewardMapService(new DefaultRewardMapTemplateCatalog(), units, store);
             RewardMapChoiceViewData loaded = service.BuildChoice(
@@ -212,6 +214,7 @@ public class OfflineRunBattleRewardDbTests
                 "barbarian-starter-v1",
                 "barbarian-starter",
                 "iron-line"));
+            MoveRunToNode(databasePath, startRun.CreatedRun, "node-pressure-1");
 
             RewardMapArmySnapshot army = new RewardMapArmySnapshot(
                 "army-semantic-target-test",
@@ -271,6 +274,7 @@ public class OfflineRunBattleRewardDbTests
         {
             TestUnitCatalog units = new TestUnitCatalog();
             StartRunResult startRun = CreateStartedRun(databasePath, units);
+            MoveRunToNode(databasePath, startRun.CreatedRun, "node-pressure-1");
             RewardMapArmySnapshot army = CreateTwoStackRewardArmy();
 
             RewardMapCardViewData disabledAdd = CreateRewardCard(
@@ -383,6 +387,7 @@ public class OfflineRunBattleRewardDbTests
         {
             TestUnitCatalog units = new TestUnitCatalog();
             StartRunResult startRun = CreateStartedRun(databasePath, units);
+            MoveRunToNode(databasePath, startRun.CreatedRun, "node-pressure-1");
             RewardMapArmySnapshot army = CreateTwoStackRewardArmy();
 
             RewardMapCardViewData first = CreateRewardCard(
@@ -494,6 +499,21 @@ public class OfflineRunBattleRewardDbTests
 
         Assert.That(startRun.Success, Is.True);
         return startRun;
+    }
+
+    private static void MoveRunToNode(string databasePath, CreatedRunRecord createdRun, string nodeId)
+    {
+        RunMapService runMapService = new RunMapService(
+            new DefaultRunMapPathCatalog(),
+            new OfflineRunMapDbStore(databasePath, new DefaultRunMapPathCatalog()));
+        RunMapScreenViewData screen = runMapService.CreateOrLoad(
+            new RunMapCreateRequest(createdRun.RunId, createdRun.RoutePreviewOptionId, createdRun.StartingCurrency, null),
+            nodeId);
+
+        Assert.That(screen.Paths.Count, Is.EqualTo(4));
+
+        RunMapTravelResult travel = runMapService.Travel(new RunMapTravelCommand(createdRun.RunId, nodeId));
+        Assert.That(travel.Success, Is.True);
     }
 
     private static RewardMapArmySnapshot CreateTwoStackRewardArmy()
@@ -698,7 +718,7 @@ public class OfflineRunBattleRewardDbTests
         private readonly Dictionary<string, StartRunUnitDefinition> startRunUnits = new Dictionary<string, StartRunUnitDefinition>
         {
             { "Rusher", StartRunUnit("Rusher", "Rusher", "I", 31, "Chope", "Rush") },
-            { "Thrower", StartRunUnit("Thrower", "Thrower", "I", 60, "Range_Stance_Barb", "Double_Throw") },
+            { "Thrower", StartRunUnit("Thrower", "Thrower", "I", 60, "Range_Stance_Barb", "Double_Throw", "Axe_Rain") },
             { "Healer", StartRunUnit("Healer", "Healer", "I", 60, "Tough_Skin", "Defence_Ritual") },
             { "Wisp", StartRunUnit("Wisp", "Wisp", "I", 6, "Blind_by_light", "Unstoppable_Light") },
             { "Trapper", StartRunUnit("Trapper", "Trapper", "I", 45, "Range_Stance_Lizard", "Spike_Trap") },
@@ -709,7 +729,7 @@ public class OfflineRunBattleRewardDbTests
         private readonly Dictionary<string, RunShopUnitDefinition> rewardUnits = new Dictionary<string, RunShopUnitDefinition>
         {
             { "Rusher", RewardUnit("Rusher", "Rusher", "I", 31, "Chope", "Rush") },
-            { "Thrower", RewardUnit("Thrower", "Thrower", "I", 60, "Range_Stance_Barb", "Double_Throw") },
+            { "Thrower", RewardUnit("Thrower", "Thrower", "I", 60, "Range_Stance_Barb", "Double_Throw", "Axe_Rain") },
             { "Healer", RewardUnit("Healer", "Healer", "I", 60, "Tough_Skin", "Defence_Ritual") },
             { "Wisp", RewardUnit("Wisp", "Wisp", "I", 6, "Blind_by_light", "Unstoppable_Light") },
             { "Trapper", RewardUnit("Trapper", "Trapper", "I", 45, "Range_Stance_Lizard", "Spike_Trap") },
@@ -751,3 +771,4 @@ public class OfflineRunBattleRewardDbTests
         }
     }
 }
+#endif

@@ -2,7 +2,7 @@
 
 Status: active
 Project: TArenaUnity3D
-Last updated: 2026-06-13
+Last updated: 2026-06-25
 
 ## Purpose
 
@@ -16,6 +16,36 @@ The current stable skill id is the string stored in
 
 For now, any skill-side system must treat that exact string as the identifier.
 Do not introduce a second unrelated skill id without an explicit migration plan.
+
+## Skill Architecture Planning Rule
+
+When grilling or planning future skill architecture, treat `ScriptableObject`
+skill definitions as the authoring source that describes a skill, while C# code
+owns execution and validation behavior. Do not plan skill architecture as
+reflection-only `CastManager` methods or as hardcoded AI special cases.
+
+The desired planning model is:
+
+- one `ScriptableObject` skill/action definition per skill id,
+- enum-driven rule data and simple serialized fields for activation, target
+  contract, and resolution shape,
+- code-side validators and executors that read those rules,
+- no separate skill identity system beyond the existing stable skill id.
+
+Do not plan custom per-skill sub-rules, polymorphic nested rule objects, or
+ScriptableObject rule plugins for the default skill definition model. If a
+skill family needs special behavior, first express it through explicit enum
+values and simple fields that the shared validator can understand.
+
+Targeting should be planned by target family, not by unit. Future migration PRDs
+should move all active skills to explicit target contracts such as self,
+target-hex, empty-hex placement, enemy-on-hex, ally-on-hex, area center, line
+endpoint, movement/path, and other families discovered during migration.
+
+`skills.xml` is not a long-term source of truth for skill text, flags, or
+gameplay rules. Skill descriptions, activation rules, target contracts, and
+effect data should migrate into the skill SO model. See
+`_codex/Documentation/ADR_015_SkillActionDefinitionOwnsSkillTextAndRules.md`.
 
 ## Reflection Contract
 

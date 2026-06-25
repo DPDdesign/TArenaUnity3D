@@ -1,5 +1,7 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
@@ -128,6 +130,8 @@ public class TacticalAIAsyncDecisionPipelineTests
             {
                 return result;
             }
+
+            Thread.Sleep(1);
         }
 
         Assert.Fail("Async integrator did not reach a terminal result in the expected polling window.");
@@ -297,3 +301,4 @@ public class TacticalAIAsyncDecisionPipelineTests
         }
     }
 }
+#endif

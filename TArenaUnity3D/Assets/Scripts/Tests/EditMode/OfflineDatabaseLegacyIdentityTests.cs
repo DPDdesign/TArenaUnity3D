@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -66,3 +67,4 @@ public class OfflineDatabaseLegacyIdentityTests
         Assert.That(seed.Paths[3].Nodes[0].NextNodeId, Is.EqualTo(0));
     }
 }
+#endif

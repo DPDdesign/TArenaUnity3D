@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -383,3 +384,4 @@ public class TacticalAICandidateGeneratorTests
         }
     }
 }
+#endif

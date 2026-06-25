@@ -77,7 +77,12 @@ public static class RunBattleTacticalResultBridge
 
         IRunBattleEncounterSource encounterSource = new OfflineRunBattleEncounterCatalog(null, new DefaultRunBattleEncounterCatalog());
         IOfflineArmySnapshotCatalogResolver resolver = new DataMapperOfflineArmySnapshotCatalogResolver(DataMapper.Instance);
-        OfflineRunBattleDbStore store = new OfflineRunBattleDbStore(null, resolver, encounterSource, new RewardMapDataMapperUnitSource(DataMapper.Instance));
+        OfflineRunBattleDbStore store = new OfflineRunBattleDbStore(
+            null,
+            resolver,
+            encounterSource,
+            new RewardMapDataMapperUnitSource(DataMapper.Instance),
+            OfflineModeDatabaseComposition.ResolveEnemyEncounterRuleCatalog());
         return store.FindPreparedBattle(runBattleId);
     }
 

@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using NUnit.Framework;
 
 public class RunMapServiceTests
@@ -89,3 +90,4 @@ public class RunMapServiceTests
         return null;
     }
 }
+#endif

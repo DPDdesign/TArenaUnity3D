@@ -12,10 +12,22 @@ public sealed class RewardMapMaterializedGenerator
     private const float ArmyShapeRewardMultiplier = 1.00f;
 
     private readonly IRewardMapUnitDefinitionSource unitSource;
+    private readonly RewardGeneratorRuleSet rewardRuleSet;
+    private readonly RewardGeneratorValueContext valueContext;
 
     public RewardMapMaterializedGenerator(IRewardMapUnitDefinitionSource unitSource)
+        : this(unitSource, null, null)
+    {
+    }
+
+    public RewardMapMaterializedGenerator(
+        IRewardMapUnitDefinitionSource unitSource,
+        RewardGeneratorRuleSet rewardRuleSet,
+        RewardGeneratorValueContext valueContext)
     {
         this.unitSource = unitSource;
+        this.rewardRuleSet = rewardRuleSet;
+        this.valueContext = valueContext;
     }
 
     public RewardMapChoiceViewData BuildChoice(
@@ -122,7 +134,7 @@ public sealed class RewardMapMaterializedGenerator
 
     private RewardMapCardViewData BuildIncreaseStack(RewardMapArmySnapshot army, int slotIndex, Random random)
     {
-        int targetGain = CalculateTargetGain(army, RawGrowthRewardMultiplier);
+        int targetGain = CalculateTargetGain(army, RewardMapOperationType.AddUnits, RawGrowthRewardMultiplier);
         List<RewardValueCandidate> candidates = new List<RewardValueCandidate>();
         for (int i = 0; army != null && army.Stacks != null && i < army.Stacks.Count; i++)
         {
@@ -176,7 +188,8 @@ public sealed class RewardMapMaterializedGenerator
 
     private RewardMapCardViewData BuildPromoteOrDowngrade(RewardMapArmySnapshot army, int slotIndex, Random random, bool promote)
     {
-        int targetGain = CalculateTargetGain(army, ArmyShapeRewardMultiplier);
+        RewardMapOperationType operationType = promote ? RewardMapOperationType.PromoteStack : RewardMapOperationType.DowngradeStack;
+        int targetGain = CalculateTargetGain(army, operationType, ArmyShapeRewardMultiplier);
         List<RewardValueCandidate> candidates = new List<RewardValueCandidate>();
         for (int i = 0; army != null && army.Stacks != null && i < army.Stacks.Count; i++)
         {
@@ -247,7 +260,7 @@ public sealed class RewardMapMaterializedGenerator
             return null;
         }
 
-        int targetGain = CalculateTargetGain(army, RawGrowthRewardMultiplier);
+        int targetGain = CalculateTargetGain(army, RewardMapOperationType.AddStack, RawGrowthRewardMultiplier);
         List<RewardValueCandidate> valueCandidates = new List<RewardValueCandidate>();
         for (int i = 0; i < candidates.Count; i++)
         {
@@ -296,6 +309,7 @@ public sealed class RewardMapMaterializedGenerator
 
     private RewardMapCardViewData BuildRunGoldFallback(int slotIndex)
     {
+        int currencyDelta = CalculateRunGoldFallbackAmount();
         RewardMapOperation operation = new RewardMapOperation(
             RewardMapOperationType.GainCurrency,
             string.Empty,
@@ -304,7 +318,7 @@ public sealed class RewardMapMaterializedGenerator
             string.Empty,
             string.Empty,
             0,
-            RunGoldFallbackAmount);
+            currencyDelta);
 
         return Card(
             "prd37-run-gold-fallback-v1",
@@ -315,7 +329,7 @@ public sealed class RewardMapMaterializedGenerator
             "Emergency RUN GOLD",
             "Used only when normal rewards cannot fill the offer.",
             "No legal normal reward",
-            "+" + RunGoldFallbackAmount + " RUN GOLD",
+            "+" + currencyDelta + " RUN GOLD",
             string.Empty,
             operation);
     }
@@ -670,9 +684,31 @@ public sealed class RewardMapMaterializedGenerator
         return count == 0 ? 100 : Math.Max(1, armyTotal / count);
     }
 
-    private int CalculateTargetGain(RewardMapArmySnapshot army, float familyMultiplier)
+    private int CalculateTargetGain(RewardMapArmySnapshot army, RewardMapOperationType operationType, float legacyFamilyMultiplier)
     {
-        return Math.Max(1, (int)Math.Round(AverageExistingStackValue(army) * BaseRewardGainRatio * familyMultiplier));
+        if (rewardRuleSet != null && valueContext != null)
+        {
+            return rewardRuleSet.CalculateRewardValue(
+                operationType,
+                valueContext.BattleLossValue,
+                valueContext.EnemyArmyValue,
+                valueContext.ArmyValueBeforeBattle);
+        }
+
+        return Math.Max(1, (int)Math.Round(AverageExistingStackValue(army) * BaseRewardGainRatio * legacyFamilyMultiplier));
+    }
+
+    private int CalculateRunGoldFallbackAmount()
+    {
+        if (rewardRuleSet == null || valueContext == null)
+        {
+            return RunGoldFallbackAmount;
+        }
+
+        return rewardRuleSet.CalculateArmyGrowthReward(
+            valueContext.BattleLossValue,
+            valueContext.EnemyArmyValue,
+            valueContext.ArmyValueBeforeBattle);
     }
 
     private static int CalculateAmountForTargetValue(int targetValue, int unitCost)
@@ -858,5 +894,19 @@ public sealed class RewardMapMaterializedGenerator
             Amount = Math.Max(0, amount);
             Score = Math.Max(0, score);
         }
+    }
+}
+
+public sealed class RewardGeneratorValueContext
+{
+    public readonly int BattleLossValue;
+    public readonly int EnemyArmyValue;
+    public readonly int ArmyValueBeforeBattle;
+
+    public RewardGeneratorValueContext(int battleLossValue, int enemyArmyValue, int armyValueBeforeBattle)
+    {
+        BattleLossValue = Math.Max(0, battleLossValue);
+        EnemyArmyValue = Math.Max(0, enemyArmyValue);
+        ArmyValueBeforeBattle = Math.Max(0, armyValueBeforeBattle);
     }
 }

@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -150,3 +151,4 @@ public class PRD44TacticalRewardStackIdentityTests
         return null;
     }
 }
+#endif

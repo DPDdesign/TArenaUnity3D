@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,6 +6,8 @@ using NUnit.Framework;
 
 public class OfflineRunShopDbTests
 {
+    private const int StartingShopCurrency = 100;
+
     [Test]
     public void RunShopVisitPurchaseAndLeave_PersistAcrossOfflineDatabase()
     {
@@ -43,7 +46,7 @@ public class OfflineRunShopDbTests
                 units,
                 new OfflineRunShopDbStore(databasePath, units, new DefaultRunMapPathCatalog()));
             RunShopVisitViewData firstVisit = firstShopService.BuildVisit(
-                new RunShopVisitRequest(startRun.CreatedRun.RunId, "node-recovery-2", startRun.CreatedRun.StartingCurrency, CreateShopArmy()),
+                new RunShopVisitRequest(startRun.CreatedRun.RunId, "node-recovery-2", StartingShopCurrency, CreateShopArmy()),
                 "shop-teach-skill");
 
             Assert.That(firstVisit.VisitId, Does.StartWith("shop-visit-"));
@@ -302,3 +305,4 @@ public class OfflineRunShopDbTests
         }
     }
 }
+#endif

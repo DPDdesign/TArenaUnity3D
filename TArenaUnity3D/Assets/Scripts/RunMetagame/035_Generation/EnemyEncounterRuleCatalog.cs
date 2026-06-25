@@ -15,7 +15,8 @@ public enum EnemyEncounterRuleLookupError
     None,
     MissingEntry,
     DuplicateEntry,
-    MissingArmyGeneratorRuleSet
+    MissingArmyGeneratorRuleSet,
+    MissingRewardGeneratorRuleSet
 }
 
 [CreateAssetMenu(fileName = "EnemyEncounterRuleCatalog", menuName = "TArena/Run Metagame/Enemy Encounter Rule Catalog")]
@@ -86,6 +87,8 @@ public class EnemyEncounterRuleCatalog : ScriptableObject
         {
             case EnemyEncounterRuleLookupError.MissingArmyGeneratorRuleSet:
                 return "Enemy encounter rule requires an ArmyGeneratorRuleSet when no predefined enemy id is assigned.";
+            case EnemyEncounterRuleLookupError.MissingRewardGeneratorRuleSet:
+                return "Enemy encounter rule requires a RewardGeneratorRuleSet for reward-producing generated battle difficulties.";
             case EnemyEncounterRuleLookupError.DuplicateEntry:
                 return "Enemy encounter rule has duplicate entries.";
             case EnemyEncounterRuleLookupError.MissingEntry:
@@ -101,15 +104,26 @@ public class EnemyEncounterRule
 {
     public EnemyEncounterDifficulty Difficulty;
     public ArmyGeneratorRuleSet ArmyGeneratorRuleSet;
+    public RewardGeneratorRuleSet RewardGeneratorRuleSet;
     public string PredefinedEnemyId;
 
     public EnemyEncounterRule(
         EnemyEncounterDifficulty difficulty,
         ArmyGeneratorRuleSet armyGeneratorRuleSet,
         string predefinedEnemyId)
+        : this(difficulty, armyGeneratorRuleSet, null, predefinedEnemyId)
+    {
+    }
+
+    public EnemyEncounterRule(
+        EnemyEncounterDifficulty difficulty,
+        ArmyGeneratorRuleSet armyGeneratorRuleSet,
+        RewardGeneratorRuleSet rewardGeneratorRuleSet,
+        string predefinedEnemyId)
     {
         Difficulty = difficulty;
         ArmyGeneratorRuleSet = armyGeneratorRuleSet;
+        RewardGeneratorRuleSet = rewardGeneratorRuleSet;
         PredefinedEnemyId = predefinedEnemyId;
     }
 
@@ -128,6 +142,11 @@ public class EnemyEncounterRule
         get { return IsGenerated ? ArmyGeneratorRuleSet : null; }
     }
 
+    public RewardGeneratorRuleSet ResolvedRewardGeneratorRuleSet
+    {
+        get { return IsGenerated ? RewardGeneratorRuleSet : null; }
+    }
+
     public string ResolvedPredefinedEnemyId
     {
         get { return IsPredefined ? TrimmedPredefinedEnemyId : string.Empty; }
@@ -140,7 +159,17 @@ public class EnemyEncounterRule
             return EnemyEncounterRuleLookupError.MissingArmyGeneratorRuleSet;
         }
 
+        if (IsGenerated && RequiresRewardGeneratorRuleSet && RewardGeneratorRuleSet == null)
+        {
+            return EnemyEncounterRuleLookupError.MissingRewardGeneratorRuleSet;
+        }
+
         return EnemyEncounterRuleLookupError.None;
+    }
+
+    private bool RequiresRewardGeneratorRuleSet
+    {
+        get { return Difficulty != EnemyEncounterDifficulty.Boss; }
     }
 
     private string TrimmedPredefinedEnemyId

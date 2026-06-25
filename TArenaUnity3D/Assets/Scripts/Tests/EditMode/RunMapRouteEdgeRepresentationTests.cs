@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
@@ -137,3 +138,4 @@ public class RunMapRouteEdgeRepresentationTests
             canTravel);
     }
 }
+#endif

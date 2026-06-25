@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -66,7 +67,7 @@ public class OfflineArmySnapshotMapperTests
         Assert.That(mapped.SnapshotId, Is.EqualTo("snapshot-unsaved"));
         Assert.That(mapped.TotalArmyValue, Is.EqualTo(144));
         Assert.That(mapped.Stacks.Count, Is.EqualTo(1));
-        Assert.That(mapped.Stacks[0].StackId, Is.EqualTo("slot-5"));
+        Assert.That(mapped.Stacks[0].StackId, Is.EqualTo("stack-archer"));
         Assert.That(mapped.Stacks[0].DisplayName, Is.EqualTo("Archer"));
         Assert.That(mapped.Stacks[0].Tier, Is.EqualTo("II"));
         Assert.That(mapped.Stacks[0].Level, Is.EqualTo(1));
@@ -137,3 +138,4 @@ public class OfflineArmySnapshotMapperTests
         }
     }
 }
+#endif

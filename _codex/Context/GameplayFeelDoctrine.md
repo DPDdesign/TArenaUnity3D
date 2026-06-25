@@ -2,7 +2,7 @@
 
 Status: Initial Design
 Project: TArenaUnity3D
-Last updated: 2026-06-24
+Last updated: 2026-06-25
 
 This document defines the initial feel direction for TArenaUnity3D. It is
 marked `Initial Design`: it is a working draft for future grilling, not final
@@ -178,6 +178,12 @@ Final, boss, offence, and defence battles:
 - shop offer clarity,
 - stack growth/loss preview,
 - skill assignment target clarity.
+
+Stack growth/loss previews should eventually use the same domain
+StackModification preview model across rewards, skill effects, and battle
+damage. A player should learn the likely before/after stack outcome from one
+consistent feedback language instead of separate reward-only and combat-only
+presentation rules.
 
 ### 3. Nice After Basics Work
 

@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -327,7 +328,7 @@ WHERE summaries.run_id = @runId
         private readonly Dictionary<string, StartRunUnitDefinition> startRunUnits = new Dictionary<string, StartRunUnitDefinition>
         {
             { "Rusher", CreateStartRunUnit("Rusher", "Rusher", "I", 31, "Chope", "Rush") },
-            { "Thrower", CreateStartRunUnit("Thrower", "Thrower", "I", 60, "Range_Stance_Barb", "Double_Throw") },
+            { "Thrower", CreateStartRunUnit("Thrower", "Thrower", "I", 60, "Range_Stance_Barb", "Double_Throw", "Axe_Rain") },
             { "Healer", CreateStartRunUnit("Healer", "Healer", "I", 60, "Tough_Skin", "Defence_Ritual") },
             { "Wisp", CreateStartRunUnit("Wisp", "Wisp", "I", 6, "Blind_by_light", "Unstoppable_Light") },
             { "Trapper", CreateStartRunUnit("Trapper", "Trapper", "I", 45, "Range_Stance_Lizard", "Spike_Trap") },
@@ -379,3 +380,4 @@ WHERE summaries.run_id = @runId
         }
     }
 }
+#endif

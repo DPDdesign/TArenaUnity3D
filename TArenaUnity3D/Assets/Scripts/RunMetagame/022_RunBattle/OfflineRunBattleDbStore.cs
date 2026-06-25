@@ -9,6 +9,7 @@ public class OfflineRunBattleDbStore : IRunBattleStore
     private readonly IOfflineArmySnapshotCatalogResolver resolver;
     private readonly IRunBattleEncounterSource encounterSource;
     private readonly IRewardMapUnitDefinitionSource rewardUnitSource;
+    private readonly EnemyEncounterRuleCatalog enemyEncounterRuleCatalog;
     private readonly OfflineArmySnapshotDbRepository snapshotRepository = new OfflineArmySnapshotDbRepository();
     private readonly OfflineRunContextDbWriter runContextWriter = new OfflineRunContextDbWriter();
 
@@ -16,7 +17,7 @@ public class OfflineRunBattleDbStore : IRunBattleStore
         string databasePath,
         IOfflineArmySnapshotCatalogResolver resolver,
         IRunBattleEncounterSource encounterSource)
-        : this(databasePath, resolver, encounterSource, null)
+        : this(databasePath, resolver, encounterSource, null, null)
     {
     }
 
@@ -25,11 +26,22 @@ public class OfflineRunBattleDbStore : IRunBattleStore
         IOfflineArmySnapshotCatalogResolver resolver,
         IRunBattleEncounterSource encounterSource,
         IRewardMapUnitDefinitionSource rewardUnitSource)
+        : this(databasePath, resolver, encounterSource, rewardUnitSource, null)
+    {
+    }
+
+    public OfflineRunBattleDbStore(
+        string databasePath,
+        IOfflineArmySnapshotCatalogResolver resolver,
+        IRunBattleEncounterSource encounterSource,
+        IRewardMapUnitDefinitionSource rewardUnitSource,
+        EnemyEncounterRuleCatalog enemyEncounterRuleCatalog)
     {
         this.databasePath = databasePath;
         this.resolver = resolver;
         this.encounterSource = encounterSource ?? new DefaultRunBattleEncounterCatalog();
         this.rewardUnitSource = rewardUnitSource;
+        this.enemyEncounterRuleCatalog = enemyEncounterRuleCatalog;
     }
 
     public RunBattleLaunchViewData SavePreparedBattle(RunBattleLaunchViewData preparedBattle)
@@ -420,7 +432,15 @@ WHERE run_battle_id = @runBattleId;",
         IRewardMapUnitDefinitionSource source = rewardUnitSource ?? new RewardMapResolverUnitSource(resolver);
         RewardMapArmySnapshot rewardArmy = ToRewardMapArmy(completionRecord.ArmyAfterBattle);
         List<RewardMapOperationType> plannedOperationTypes = LoadPlannedRewardOperationTypes(runId, nodeId, runSeedVersion);
-        RewardMapChoiceViewData choice = new RewardMapMaterializedGenerator(source).BuildChoice(
+        RewardGeneratorRuleSet rewardRuleSet = ResolveRewardRuleSet(nodeId);
+        RewardGeneratorValueContext valueContext = rewardRuleSet == null
+            ? null
+            : new RewardGeneratorValueContext(
+                CalculateArmyValue(completionRecord.ArmyBeforeBattle) - CalculateArmyValue(completionRecord.ArmyAfterBattle),
+                LoadEnemyArmyValue(nodeId),
+                CalculateArmyValue(completionRecord.ArmyBeforeBattle));
+
+        RewardMapChoiceViewData choice = new RewardMapMaterializedGenerator(source, rewardRuleSet, valueContext).BuildChoice(
             OfflineDatabaseLegacyIdentity.ToLegacyRunId(runId),
             nodeId,
             runSeed,
@@ -435,6 +455,78 @@ WHERE run_battle_id = @runBattleId;",
             plannedOperationTypes.Count == 0 ? null : plannedOperationTypes);
 
         store.SaveChoice(choice);
+    }
+
+    private RewardGeneratorRuleSet ResolveRewardRuleSet(int nodeId)
+    {
+        if (enemyEncounterRuleCatalog == null)
+        {
+            return null;
+        }
+
+        EnemyEncounterDifficulty difficulty = LoadEnemyEncounterDifficulty(nodeId);
+        EnemyEncounterRuleLookupResult lookup = enemyEncounterRuleCatalog.Resolve(difficulty);
+        if (lookup == null || !lookup.Success || lookup.Rule == null)
+        {
+            throw new InvalidOperationException(lookup == null ? "Enemy encounter reward rule lookup failed." : lookup.Message);
+        }
+
+        RewardGeneratorRuleSet ruleSet = lookup.Rule.ResolvedRewardGeneratorRuleSet;
+        if (ruleSet == null)
+        {
+            throw new InvalidOperationException("Generated reward-producing battle is missing a RewardGeneratorRuleSet.");
+        }
+
+        return ruleSet;
+    }
+
+    private EnemyEncounterDifficulty LoadEnemyEncounterDifficulty(int nodeId)
+    {
+        using (IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
+        {
+            object result = OfflineDatabaseSql.ExecuteScalar(
+                connection,
+                @"
+SELECT enemy_rule_id
+FROM map_node_enemies
+WHERE node_id = @nodeId AND is_active = 1
+LIMIT 1;",
+                null,
+                new OfflineDatabaseSqlParameter("@nodeId", nodeId));
+            string value = OfflineDatabaseSql.ReadText(result);
+            EnemyEncounterDifficulty parsed;
+            if (Enum.TryParse(value, true, out parsed))
+            {
+                return parsed;
+            }
+        }
+
+        throw new InvalidOperationException("Reward materialization requires a materialized enemy rule id for the completed battle node.");
+    }
+
+    private int LoadEnemyArmyValue(int nodeId)
+    {
+        using (IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
+        {
+            object result = OfflineDatabaseSql.ExecuteScalar(
+                connection,
+                @"
+SELECT army_snapshot_id
+FROM map_node_enemies
+WHERE node_id = @nodeId AND is_active = 1
+LIMIT 1;",
+                null,
+                new OfflineDatabaseSqlParameter("@nodeId", nodeId));
+            int snapshotId = OfflineDatabaseSql.ReadInt(result);
+            OfflineArmySnapshotRecord snapshot = snapshotRepository.LoadSnapshot(connection, snapshotId);
+            int value = CalculateArmyValue(snapshot);
+            if (value > 0)
+            {
+                return value;
+            }
+        }
+
+        throw new InvalidOperationException("Reward materialization requires a materialized enemy army snapshot with a positive value.");
     }
 
     private List<RewardMapOperationType> LoadPlannedRewardOperationTypes(int runId, int nodeId, int runSeedVersion)
@@ -484,6 +576,42 @@ WHERE run_battle_id = @runBattleId;",
         }
 
         return new RewardMapArmySnapshot(army == null ? string.Empty : army.SnapshotId, army == null ? 0 : army.TotalArmyValue, stacks);
+    }
+
+    private int CalculateArmyValue(RunBattleArmySnapshot army)
+    {
+        if (army == null)
+        {
+            return 0;
+        }
+
+        int stackTotal = 0;
+        for (int i = 0; army.Stacks != null && i < army.Stacks.Count; i++)
+        {
+            RunBattleStackSnapshot stack = army.Stacks[i];
+            stackTotal += stack == null ? 0 : Math.Max(0, stack.CombatValue);
+        }
+
+        return Math.Max(Math.Max(0, army.TotalArmyValue), stackTotal);
+    }
+
+    private int CalculateArmyValue(OfflineArmySnapshotRecord snapshot)
+    {
+        int total = 0;
+        for (int i = 0; snapshot != null && snapshot.Stacks != null && i < snapshot.Stacks.Count; i++)
+        {
+            OfflineArmySnapshotStackRecord stack = snapshot.Stacks[i];
+            if (stack == null || !stack.IsActive || stack.Amount <= 0)
+            {
+                continue;
+            }
+
+            OfflineArmySnapshotUnitCatalogEntry unit = resolver == null ? null : resolver.FindUnit(stack.UnitId);
+            int unitValue = unit == null ? 0 : unit.CombatValue;
+            total += stack.Amount * Math.Max(0, unitValue);
+        }
+
+        return Math.Max(0, total);
     }
 
     private static RunBattleLaunchViewData ClonePreparedBattle(RunBattleLaunchViewData source, int runBattleId)

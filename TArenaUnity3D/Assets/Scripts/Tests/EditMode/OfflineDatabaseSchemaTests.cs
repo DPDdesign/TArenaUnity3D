@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -226,3 +227,4 @@ CREATE TABLE map_node_rewards (
         }
     }
 }
+#endif

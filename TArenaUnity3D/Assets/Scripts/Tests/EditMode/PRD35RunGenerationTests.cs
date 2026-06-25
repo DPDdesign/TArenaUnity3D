@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -43,7 +44,7 @@ public class PRD35RunGenerationTests
     }
 
     [Test]
-    public void BuildScreen_ReturnsNoStartingArmyWhenUnlocksAreTooNarrow()
+    public void BuildScreen_KeepsFallbackStartingArmyWhenUnlocksAreTooNarrowForVariety()
     {
         FakeUnitPoolSource units = new FakeUnitPoolSource();
         StartRunGenerationUnlockContext unlocks = new StartRunGenerationUnlockContext(
@@ -54,10 +55,24 @@ public class PRD35RunGenerationTests
 
         StartRunScreenViewData screen = service.BuildScreen(string.Empty, string.Empty);
 
-        Assert.That(screen.CanBeginRun, Is.False);
-        Assert.That(screen.SelectedStartingArmy, Is.Null);
-        Assert.That(screen.ValidationError, Is.EqualTo(StartRunValidationError.MissingStartingArmy));
-        Assert.That(screen.StartingArmies.Count, Is.EqualTo(0));
+        Assert.That(screen.CanBeginRun, Is.True);
+        Assert.That(screen.SelectedStartingArmy, Is.Not.Null);
+        Assert.That(screen.ValidationError, Is.EqualTo(StartRunValidationError.None));
+        Assert.That(screen.StartingArmies.Count, Is.GreaterThan(0));
+
+        for (int armyIndex = 0; armyIndex < screen.StartingArmies.Count; armyIndex++)
+        {
+            StartingArmyOptionViewData army = screen.StartingArmies[armyIndex];
+            Assert.That(army.Stacks.Count, Is.EqualTo(4));
+
+            for (int stackIndex = 0; stackIndex < army.Stacks.Count; stackIndex++)
+            {
+                StartRunStackViewData stack = army.Stacks[stackIndex];
+                Assert.That(stack.UnitId, Is.EqualTo("Wisp"));
+                Assert.That(CountUnlockedSkills(stack), Is.EqualTo(1));
+                Assert.That(units.SkillIsLegal(stack.UnitId, FirstUnlockedSkill(stack)), Is.True);
+            }
+        }
     }
 
     [Test]
@@ -384,3 +399,4 @@ public class PRD35RunGenerationTests
         }
     }
 }
+#endif

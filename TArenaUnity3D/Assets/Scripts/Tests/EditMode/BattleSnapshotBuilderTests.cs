@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -298,3 +299,4 @@ public class BattleSnapshotBuilderTests
         return false;
     }
 }
+#endif

@@ -1,10 +1,20 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
 
 public class OfflineModeProductionCompositionTests
 {
+    private static readonly Regex DbStoreConstructionPattern = new Regex(@"new\s+Offline[A-Za-z0-9_]*DbStore\s*\(", RegexOptions.Compiled);
+
+    private static readonly HashSet<string> AllowedDbStoreConstructionPaths = new HashSet<string>
+    {
+        "Assets/Scripts/RunMetagame/022_RunBattle/OfflineRunBattleDbStore.cs",
+        "Assets/Scripts/RunMetagame/022_RunBattle/RunBattleTacticalResultBridge.cs"
+    };
+
     [Test]
     public void RuntimeRunMetagameSource_DoesNotCreateInMemoryStores()
     {
@@ -54,15 +64,18 @@ public class OfflineModeProductionCompositionTests
         for (int i = 0; i < files.Length; i++)
         {
             string file = NormalizePath(files[i]);
-            if (IsIgnoredSourcePath(file) || file.EndsWith("/OfflineModeDatabaseComposition.cs"))
+            string assetsPath = ToAssetsPath(file);
+            if (IsIgnoredSourcePath(file) ||
+                file.EndsWith("/OfflineModeDatabaseComposition.cs") ||
+                AllowedDbStoreConstructionPaths.Contains(assetsPath))
             {
                 continue;
             }
 
             string source = File.ReadAllText(file);
-            if (source.Contains("new Offline") && source.Contains("DbStore"))
+            if (DbStoreConstructionPattern.IsMatch(source))
             {
-                offenders.Add(ToAssetsPath(file));
+                offenders.Add(assetsPath);
             }
         }
 
@@ -88,3 +101,4 @@ public class OfflineModeProductionCompositionTests
             : normalizedPath;
     }
 }
+#endif

@@ -257,6 +257,7 @@ public class RewardMapScreenController : MonoBehaviour
             ? preview == null ? null : preview.AffectedStackPreview
             : focusedCard.AfterStackPreview;
         int changedSlotIndex = focusedCard == null ? -1 : focusedCard.AffectedSlotIndex;
+        changedSlotIndex = RewardMapArmyFooterSlotMapper.ResolveVisibleSlotIndex(choice.ArmyBeforeReward, changedStack, changedSlotIndex);
         BindChangedStackPreview(changedStack, changedSlotIndex);
         BindFocusedSummary(preview);
         SetText(statusText, string.IsNullOrEmpty(statusMessage) ? BuildFocusStatus() : statusMessage);
@@ -271,6 +272,7 @@ public class RewardMapScreenController : MonoBehaviour
             ? FindStack(result.ArmyAfterReward, affectedStackId)
             : result.Reward.AfterStackPreview;
         int changedSlotIndex = result.Reward == null ? -1 : result.Reward.AffectedSlotIndex;
+        changedSlotIndex = RewardMapArmyFooterSlotMapper.ResolveVisibleSlotIndex(result.ArmyAfterReward, changedStack, changedSlotIndex);
         BindChangedStackPreview(changedStack, changedSlotIndex);
         SetText(walletText, result.RunGoldAfterReward + " RUN GOLD");
         SetText(inventoryText, BuildInventorySummary());

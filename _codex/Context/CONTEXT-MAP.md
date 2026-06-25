@@ -120,6 +120,9 @@ Rules:
 - Do not promote `Initial Design` claims to final truth until the user confirms
   them.
 - For current-state claims, require code inspection or Unity-side verification.
+- For skill architecture grills, use `_codex/Context/10_Skill_Design_Rules.md`;
+  plan skills as `ScriptableObject` definitions with enum/rule data, with code
+  owning validation and execution.
 - Keep GDD, Identity, and Feel separate:
   - GDD defines intended play structure and scope.
   - Identity defines what makes the game recognizably TArena.

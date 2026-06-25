@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -405,7 +406,7 @@ ORDER BY reward_slot_index;",
         private readonly Dictionary<string, StartRunUnitDefinition> startRunUnits = new Dictionary<string, StartRunUnitDefinition>
         {
             { "Rusher", StartUnit("Rusher", "I", 31, "Chope", "Rush") },
-            { "Thrower", StartUnit("Thrower", "I", 60, "Range_Stance_Barb", "Double_Throw") },
+            { "Thrower", StartUnit("Thrower", "I", 60, "Range_Stance_Barb", "Double_Throw", "Axe_Rain") },
             { "Healer", StartUnit("Healer", "I", 60, "Tough_Skin", "Defence_Ritual") },
             { "Wisp", StartUnit("Wisp", "I", 6, "Blind_by_light", "Unstoppable_Light") },
             { "Trapper", StartUnit("Trapper", "I", 45, "Range_Stance_Lizard", "Spike_Trap") },
@@ -417,7 +418,7 @@ ORDER BY reward_slot_index;",
         private readonly Dictionary<string, RunShopUnitDefinition> rewardUnits = new Dictionary<string, RunShopUnitDefinition>
         {
             { "Rusher", RewardUnit("Rusher", "I", 31, "Chope", "Rush") },
-            { "Thrower", RewardUnit("Thrower", "I", 60, "Range_Stance_Barb", "Double_Throw") },
+            { "Thrower", RewardUnit("Thrower", "I", 60, "Range_Stance_Barb", "Double_Throw", "Axe_Rain") },
             { "Healer", RewardUnit("Healer", "I", 60, "Tough_Skin", "Defence_Ritual") },
             { "Wisp", RewardUnit("Wisp", "I", 6, "Blind_by_light", "Unstoppable_Light") },
             { "Trapper", RewardUnit("Trapper", "I", 45, "Range_Stance_Lizard", "Spike_Trap") },
@@ -462,3 +463,4 @@ ORDER BY reward_slot_index;",
         }
     }
 }
+#endif

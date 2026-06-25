@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -13,11 +14,12 @@ public class PRD40EncounterMaterializationTests
     {
         string databasePath = BuildTempDatabasePath();
         ArmyGeneratorRuleSet ruleSet = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
+        RewardGeneratorRuleSet rewardRuleSet = ScriptableObject.CreateInstance<RewardGeneratorRuleSet>();
         EnemyEncounterRuleCatalog enemyCatalog = ScriptableObject.CreateInstance<EnemyEncounterRuleCatalog>();
         try
         {
             ruleSet.ConfigureMockDefaults();
-            enemyCatalog.Entries = BuildEnemyRules(ruleSet);
+            enemyCatalog.Entries = BuildEnemyRules(ruleSet, rewardRuleSet);
             TestUnitCatalog units = new TestUnitCatalog();
             DeterministicRunGenerationCatalog catalog = CreateCatalog(units, ruleSet);
 
@@ -38,6 +40,7 @@ public class PRD40EncounterMaterializationTests
         finally
         {
             UnityEngine.Object.DestroyImmediate(enemyCatalog);
+            UnityEngine.Object.DestroyImmediate(rewardRuleSet);
             UnityEngine.Object.DestroyImmediate(ruleSet);
             TryDelete(databasePath);
         }
@@ -48,11 +51,12 @@ public class PRD40EncounterMaterializationTests
     {
         string databasePath = BuildTempDatabasePath();
         ArmyGeneratorRuleSet ruleSet = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
+        RewardGeneratorRuleSet rewardRuleSet = ScriptableObject.CreateInstance<RewardGeneratorRuleSet>();
         EnemyEncounterRuleCatalog enemyCatalog = ScriptableObject.CreateInstance<EnemyEncounterRuleCatalog>();
         try
         {
             ruleSet.ConfigureMockDefaults();
-            enemyCatalog.Entries = BuildEnemyRules(ruleSet);
+            enemyCatalog.Entries = BuildEnemyRules(ruleSet, rewardRuleSet);
             TestUnitCatalog units = new TestUnitCatalog();
             DeterministicRunGenerationCatalog catalog = CreateCatalog(units, ruleSet);
             BeginGeneratedRun(databasePath, catalog, units, enemyCatalog);
@@ -78,6 +82,7 @@ public class PRD40EncounterMaterializationTests
         finally
         {
             UnityEngine.Object.DestroyImmediate(enemyCatalog);
+            UnityEngine.Object.DestroyImmediate(rewardRuleSet);
             UnityEngine.Object.DestroyImmediate(ruleSet);
             TryDelete(databasePath);
         }
@@ -88,11 +93,12 @@ public class PRD40EncounterMaterializationTests
     {
         string databasePath = BuildTempDatabasePath();
         ArmyGeneratorRuleSet ruleSet = ScriptableObject.CreateInstance<ArmyGeneratorRuleSet>();
+        RewardGeneratorRuleSet rewardRuleSet = ScriptableObject.CreateInstance<RewardGeneratorRuleSet>();
         EnemyEncounterRuleCatalog enemyCatalog = ScriptableObject.CreateInstance<EnemyEncounterRuleCatalog>();
         try
         {
             ruleSet.ConfigureMockDefaults();
-            enemyCatalog.Entries = BuildEnemyRules(ruleSet);
+            enemyCatalog.Entries = BuildEnemyRules(ruleSet, rewardRuleSet);
             TestUnitCatalog units = new TestUnitCatalog();
             DeterministicRunGenerationCatalog catalog = CreateCatalog(units, ruleSet);
             BeginGeneratedRun(databasePath, catalog, units, enemyCatalog);
@@ -135,6 +141,7 @@ public class PRD40EncounterMaterializationTests
         finally
         {
             UnityEngine.Object.DestroyImmediate(enemyCatalog);
+            UnityEngine.Object.DestroyImmediate(rewardRuleSet);
             UnityEngine.Object.DestroyImmediate(ruleSet);
             TryDeleteBuild(OfflineRunBattleLaunchAdapter.RuntimePlayerBuildSlot);
             TryDeleteBuild(OfflineRunBattleLaunchAdapter.RuntimeEnemyBuildSlot);
@@ -215,13 +222,15 @@ public class PRD40EncounterMaterializationTests
             null);
     }
 
-    private static List<EnemyEncounterRule> BuildEnemyRules(ArmyGeneratorRuleSet ruleSet)
+    private static List<EnemyEncounterRule> BuildEnemyRules(
+        ArmyGeneratorRuleSet ruleSet,
+        RewardGeneratorRuleSet rewardRuleSet)
     {
         return new List<EnemyEncounterRule>
         {
-            new EnemyEncounterRule(EnemyEncounterDifficulty.Low, ruleSet, string.Empty),
-            new EnemyEncounterRule(EnemyEncounterDifficulty.Medium, ruleSet, string.Empty),
-            new EnemyEncounterRule(EnemyEncounterDifficulty.High, ruleSet, string.Empty),
+            new EnemyEncounterRule(EnemyEncounterDifficulty.Low, ruleSet, rewardRuleSet, string.Empty),
+            new EnemyEncounterRule(EnemyEncounterDifficulty.Medium, ruleSet, rewardRuleSet, string.Empty),
+            new EnemyEncounterRule(EnemyEncounterDifficulty.High, ruleSet, rewardRuleSet, string.Empty),
             new EnemyEncounterRule(EnemyEncounterDifficulty.Boss, ruleSet, string.Empty)
         };
     }
@@ -334,3 +343,4 @@ ORDER BY formation_slot, snapshot_stack_id;",
         }
     }
 }
+#endif

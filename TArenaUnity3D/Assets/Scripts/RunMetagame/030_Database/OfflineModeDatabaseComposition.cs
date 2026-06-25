@@ -1,5 +1,7 @@
 public static class OfflineModeDatabaseComposition
 {
+    private const string DefaultEnemyEncounterCatalogResourcePath = "0_Data/Encounters/Mock_EnemyEncounters";
+
     private static StartRunService runtimeStartRunService;
 
     public static OfflineDatabaseOpenResult OpenDefaultDatabase()
@@ -78,7 +80,7 @@ public static class OfflineModeDatabaseComposition
         return new RunBattleService(
             encounterCatalog,
             new OfflineRunBattleLaunchAdapter(null, new OfflineArmySnapshotDbRepository(), CreateSnapshotResolver(), DataMapper.Instance),
-            new OfflineRunBattleDbStore(null, CreateSnapshotResolver(), encounterCatalog, rewardUnitSource));
+            new OfflineRunBattleDbStore(null, CreateSnapshotResolver(), encounterCatalog, rewardUnitSource, ResolveEnemyEncounterRuleCatalog()));
     }
 
     public static OfflineRewardMapAdapter CreateRewardMapAdapter()
@@ -190,6 +192,16 @@ public static class OfflineModeDatabaseComposition
         StartRunGenerationUnlockContext unlockContext)
     {
         return RunGenerationSession.EnsureActive(unitSource, unlockContext);
+    }
+
+    public static EnemyEncounterRuleCatalog ResolveEnemyEncounterRuleCatalog()
+    {
+        if (RunGenerationSession.Instance != null && RunGenerationSession.Instance.EnemyEncounterRuleCatalog != null)
+        {
+            return RunGenerationSession.Instance.EnemyEncounterRuleCatalog;
+        }
+
+        return UnityEngine.Resources.Load<EnemyEncounterRuleCatalog>(DefaultEnemyEncounterCatalogResourcePath);
     }
 
     private static void EnsureDefaultDatabase()

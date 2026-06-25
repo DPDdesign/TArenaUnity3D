@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
@@ -243,3 +244,4 @@ public class RunMapNodeRepresentationTests
             canTravel);
     }
 }
+#endif
