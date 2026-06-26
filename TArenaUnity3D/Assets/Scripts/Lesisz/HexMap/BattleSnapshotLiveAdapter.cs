@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,9 +14,9 @@ public static class BattleSnapshotLiveAdapter
     public static BattleSnapshot BuildCurrentSceneSnapshot()
     {
         return BuildSnapshot(
-            Object.FindObjectOfType<HexMap>(),
-            Object.FindObjectOfType<MouseControler>(),
-            Object.FindObjectOfType<TurnManager>(),
+            UnityEngine.Object.FindObjectOfType<HexMap>(),
+            UnityEngine.Object.FindObjectOfType<MouseControler>(),
+            UnityEngine.Object.FindObjectOfType<TurnManager>(),
             BattleActionLifecycle.Instance);
     }
 
@@ -54,7 +55,8 @@ public static class BattleSnapshotLiveAdapter
             hexes,
             units,
             activeUnitId,
-            turnState);
+            turnState,
+            usesLegacyHexLayout: hexMap.useLegacyMap);
     }
 
     static Dictionary<TosterHexUnit, RuntimeUnitReference> BuildRuntimeUnitReferences(List<TeamClass> teams)
@@ -114,7 +116,7 @@ public static class BattleSnapshotLiveAdapter
                 BaseHP = unit.HP,
                 Attack = unit.Att,
                 Defense = unit.Def,
-                MovementSpeed = unit.MovmentSpeed,
+                MovementSpeed = unit.GetMS(),
                 Initiative = unit.Initiative,
                 MinDamage = unit.mindmg,
                 MaxDamage = unit.maxdmg,
@@ -124,6 +126,9 @@ public static class BattleSnapshotLiveAdapter
                 Moved = unit.Moved,
                 MovedThisTurn = unit.MovedThisTurn,
                 UsedSkillThisTurn = unit.UsedSkillThisTurn,
+                CounterAttackAvailable = unit.CounterAttackAvaible,
+                CounterAttacks = unit.CounterAttacks,
+                TempCounterAttacks = unit.TempCounterAttacks,
                 UsedSkillIdsThisTurn = new List<string>(unit.UsedSkillIdsThisTurn ?? new List<string>()),
                 CanMoveAfterSkillThisTurn = unit.CanMoveAfterSkillThisTurn,
                 CooldownsBySlot = new List<int>(unit.cooldowns ?? new List<int>()),
@@ -182,16 +187,28 @@ public static class BattleSnapshotLiveAdapter
         Dictionary<TosterHexUnit, RuntimeUnitReference> runtimeUnitReferences)
     {
         List<BattleHexSnapshot> hexes = new List<BattleHexSnapshot>();
+        HashSet<string> addedHexKeys = new HashSet<string>(StringComparer.Ordinal);
         for (int c = 0; c < hexMap.CurrentLength; c++)
         {
             for (int r = 0; r < hexMap.CurrentWidth; r++)
             {
                 HexClass hex = hexMap.GetHexAt(c, r);
+                if (hex == null)
+                {
+                    continue;
+                }
+
+                string key = BattleHexGridUtility.GetHexKey(hex.C, hex.R);
+                if (addedHexKeys.Add(key) == false)
+                {
+                    continue;
+                }
+
                 BattleHexSnapshot snapshot = new BattleHexSnapshot
                 {
-                    C = c,
-                    R = r,
-                    IsWalkable = hex != null && hex.BaseMovementCost() >= 0,
+                    C = hex.C,
+                    R = hex.R,
+                    IsWalkable = hex.BaseMovementCost() >= 0,
                     OccupyingUnitId = ResolveOccupyingUnitId(hex, runtimeUnitReferences)
                 };
 

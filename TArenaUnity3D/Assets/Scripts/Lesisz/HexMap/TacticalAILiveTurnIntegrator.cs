@@ -58,7 +58,6 @@ public sealed class TacticalAILiveTurnIntegrator
         ITacticalAISkillMetadataProvider resolvedSkillMetadataProvider = skillMetadataProvider ?? TacticalAIDataMapperSkillMetadataProvider.Instance;
         TacticalAIExecutionBridge bridge = TacticalAIExecutionBridge.CreateFromScene(
             resolvedProfileAsset,
-            null,
             resolvedSkillMetadataProvider);
 
         return new TacticalAILiveTurnIntegrator(
@@ -184,35 +183,6 @@ public sealed class TacticalAILiveTurnIntegrator
         }
     }
 
-    static string DescribeIntent(TacticalAIActionIntent intent)
-    {
-        if (intent == null)
-        {
-            return "None";
-        }
-
-        string description = intent.ActionType.ToString();
-        if (string.IsNullOrEmpty(intent.SkillId) == false)
-        {
-            description += " skill=" + intent.SkillId;
-        }
-
-        if (string.IsNullOrEmpty(intent.TargetUnitId) == false)
-        {
-            description += " target=" + intent.TargetUnitId;
-        }
-        else if (intent.TargetHex != null)
-        {
-            description += " targetHex=" + intent.TargetHex.C + "," + intent.TargetHex.R;
-        }
-        else if (intent.DestinationHex != null)
-        {
-            description += " destination=" + intent.DestinationHex.C + "," + intent.DestinationHex.R;
-        }
-
-        return description;
-    }
-
     static string DescribeAction(TacticalAIPlannedAction action)
     {
         if (action == null)
@@ -220,23 +190,58 @@ public sealed class TacticalAILiveTurnIntegrator
             return "None";
         }
 
-        if (action.ActionType != TacticalAIActionType.Skill)
+        if (action.ActionType == TacticalAIActionType.Skill)
         {
-            return DescribeIntent(action.LegacyIntent);
+            string skillDescription = "Skill";
+            if (action.Action != null && string.IsNullOrEmpty(action.Action.SkillId) == false)
+            {
+                skillDescription += " skill=" + action.Action.SkillId;
+            }
+
+            if (action.Action != null && string.IsNullOrEmpty(action.Action.PrimaryTargetUnitId) == false)
+            {
+                skillDescription += " target=" + action.Action.PrimaryTargetUnitId;
+            }
+
+            return skillDescription;
         }
 
-        string description = "Skill";
-        if (action.ValidatedSkillCast != null && string.IsNullOrEmpty(action.ValidatedSkillCast.SkillId) == false)
+        BattleAction battleAction = action.Action;
+        BattleActionUse use = action.Use;
+        string description = action.ActionType.ToString();
+        string skillId = battleAction != null ? battleAction.SkillId : use != null ? use.SkillId : string.Empty;
+        if (string.IsNullOrEmpty(skillId) == false)
         {
-            description += " skill=" + action.ValidatedSkillCast.SkillId;
+            description += " skill=" + skillId;
         }
 
-        if (action.ValidatedSkillCast != null && string.IsNullOrEmpty(action.ValidatedSkillCast.PrimaryTargetUnitId) == false)
+        string targetUnitId = battleAction != null ? battleAction.PrimaryTargetUnitId : use != null ? use.TargetUnitId : string.Empty;
+        if (string.IsNullOrEmpty(targetUnitId) == false)
         {
-            description += " target=" + action.ValidatedSkillCast.PrimaryTargetUnitId;
+            description += " target=" + targetUnitId;
+        }
+        else
+        {
+            HexCoord targetHex = battleAction != null ? battleAction.ImpactHex : FirstHex(use);
+            HexCoord destinationHex = battleAction != null ? battleAction.DestinationHex : FirstHex(use);
+            if (targetHex != null)
+            {
+                description += " targetHex=" + targetHex.C + "," + targetHex.R;
+            }
+            else if (destinationHex != null)
+            {
+                description += " destination=" + destinationHex.C + "," + destinationHex.R;
+            }
         }
 
         return description;
+    }
+
+    static HexCoord FirstHex(BattleActionUse use)
+    {
+        return use != null && use.SelectedHexes != null && use.SelectedHexes.Count > 0
+            ? use.SelectedHexes[0]
+            : null;
     }
 
     static string DescribeRankedActions(TacticalAISearchPlan plan)
@@ -256,9 +261,9 @@ public sealed class TacticalAILiveTurnIntegrator
                 continue;
             }
 
-            if (action.ActionType == TacticalAIActionType.Skill && action.ValidatedSkillCast != null)
+            if (action.ActionType == TacticalAIActionType.Skill && action.Action != null)
             {
-                descriptions.Add("Skill:" + action.ValidatedSkillCast.SkillId);
+                descriptions.Add("Skill:" + action.Action.SkillId);
             }
             else
             {

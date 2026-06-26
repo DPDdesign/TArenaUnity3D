@@ -33,6 +33,7 @@ public enum BattleActionResultEventType
     DefenseApplied,
     StanceChanged,
     PassiveTriggered,
+    TrapExpired,
     ActionRejected
 }
 
@@ -142,6 +143,24 @@ public sealed class BattleActionResultEvent
     public string TrapId = string.Empty;
     public int Amount;
     public string Message = string.Empty;
+    public int Duration;
+    public int HpModifier;
+    public int AttackModifier;
+    public int DefenseModifier;
+    public int MovementModifier;
+    public int InitiativeModifier;
+    public int MaxDamageModifier;
+    public int MinDamageModifier;
+    public int DamageOverTime;
+    public int ResistanceModifier;
+    public int CounterAttacksModifier;
+    public int DamageModifier;
+    public int SpecialResistanceModifier;
+    public bool IsStackable;
+    public bool RemoveTrap;
+    public bool ShowTrapImmediately = true;
+    public string PresentationSkillId = string.Empty;
+    public int TrimPathSteps;
 }
 
 [Serializable]
@@ -212,5 +231,16 @@ public static class BattleActionModelUtility
         }
 
         return result;
+    }
+}
+
+public static class BattleActionSkillUtility
+{
+    public static bool IsRepeatableToggleSkillId(string skillId)
+    {
+        return string.Equals(skillId, "Melee_Stance_Barb", StringComparison.Ordinal) ||
+            string.Equals(skillId, "Range_Stance_Barb", StringComparison.Ordinal) ||
+            string.Equals(skillId, "Melee_Stance_Lizard", StringComparison.Ordinal) ||
+            string.Equals(skillId, "Range_Stance_Lizard", StringComparison.Ordinal);
     }
 }

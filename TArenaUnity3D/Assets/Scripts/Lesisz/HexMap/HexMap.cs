@@ -227,12 +227,8 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
          if(   h.isTraped)
             {
                 Debug.Log(h.trap.Time);
-                h.trap.Time--;
-                if (h.trap.Time==0)
-                {
-                    Debug.Log("RemoveTraP");
-                    h.RemoveTrap();
-                }
+                BattleActionResult result = BattleActionAutomaticResultApplier.CreateTrapTurnTickResult(h);
+                BattleActionAutomaticResultApplier.ApplyTrapTurnTickResult(h, result);
             }
         }
     }

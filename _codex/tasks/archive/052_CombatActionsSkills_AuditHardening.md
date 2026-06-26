@@ -1,11 +1,11 @@
 # [TARENA] 052 Combat Actions And Skills Full Audit Hardening
 
-- Status: draft
+- Status: completed-qa-pass-unity-validation-pending
 - Type: implementation task
 - Area: tactical battle, skills, basic actions, Battle Action API, validator, AI
 - Owner: Coding Agent
 - Source prompt: `C:\Users\piotr\.codex\attachments\8afd851d-3ae2-46aa-a581-22353477b204\pasted-text.txt`
-- Depends on: `_codex/tasks/051_CombatAPIValidatorAI_AuditHardening.md`
+- Depends on: `_codex/tasks/archive/051_CombatAPIValidatorAI_AuditHardening.md`
 
 ## Goal
 
@@ -32,7 +32,7 @@ personality.
 
 ## Required Previous Result
 
-Start only after `_codex/tasks/051_CombatAPIValidatorAI_AuditHardening.md` has
+Start only after `_codex/tasks/archive/051_CombatAPIValidatorAI_AuditHardening.md` has
 produced its completion report.
 
 Use that report as the current truth for:
@@ -88,7 +88,7 @@ Current legacy debt to watch:
 
 Read these before changing code:
 
-- the completion report from `_codex/tasks/051_CombatAPIValidatorAI_AuditHardening.md`
+- the completion report from `_codex/tasks/archive/051_CombatAPIValidatorAI_AuditHardening.md`
 - `AGENTS.md`
 - `_codex/agents/coding-agent.md`
 - `_codex/agents/runbooks/unity-coding.md`

@@ -1,13 +1,13 @@
 ---
 name: implement-task
-description: Run the Retsot task implementation workflow. Use when the user writes "/implement taskID", "implement task taskID", "zaimplementuj task taskID", or asks for Coding Agent to implement a markdown task and then run QA Review. The workflow is Coding Agent implementation, QA Review, focused Coding Agent follow-up fixes when QA finds issues, final QA verdict, focused EditMode tests for manual Unity execution, and a final Implementation summary written into the task markdown.
+description: Run the TArenaUnity3D task implementation workflow. Use when the user writes "/implement taskID", "implement task taskID", "zaimplementuj task taskID", or asks for Coding Agent to implement a markdown task and then run QA Review. The workflow is Coding Agent implementation, QA Review, focused Coding Agent follow-up fixes when QA finds issues, final QA verdict, focused EditMode tests for manual Unity execution, and a final Implementation summary written into the task markdown.
 ---
 
 # Implement Task
 
 ## Purpose
 
-Use this skill to run one complete Retsot implementation loop for a local markdown task.
+Use this skill to run one complete TArenaUnity3D implementation loop for a local markdown task.
 
 This is a workflow skill, not a gameplay design skill.
 
@@ -20,7 +20,7 @@ steps, use TMP types such as `TMP_Text` and `TextMeshProUGUI`, never legacy
 It coordinates:
 
 1. Coding Agent implementation.
-2. QA Architecture Review through `.agents/skills/qa-review/SKILL.md`.
+2. QA Architecture Review through `_codex/skills/qa-review/SKILL.md`.
 3. Coding Agent response to QA findings.
 4. Final QA check after follow-up fixes when fixes were needed.
 5. Coding Agent unit/EditMode test writing after the final QA verdict.
@@ -68,7 +68,7 @@ Do not scan the whole project.
 
 If the task is not a coding task, stop and explain which agent/workflow should handle it instead.
 
-If a matching report from `.agents/skills/analyze-task/SKILL.md` exists, read
+If a matching report from `_codex/skills/analyze-task/SKILL.md` exists, read
 it before inspecting C# files. Treat it as orientation, not as authority:
 verify the task and current code have not drifted before implementing.
 
@@ -76,7 +76,7 @@ verify the task and current code have not drifted before implementing.
 
 Use Coding Agent rules:
 
-- inspect only relevant files in `Assets/1_Scripts`,
+- inspect only relevant files under `TArenaUnity3D/Assets`,
 - implement the requested runtime/code change first,
 - do not write unit/EditMode tests yet; tests are written after the QA review/follow-up loop,
 - preserve public and serialized field names,
@@ -85,9 +85,9 @@ Use Coding Agent rules:
   only when the user explicitly requested a mockup in the prompt/task, or after
   asking the user whether they want one. In TArena, "mockup" means a Unity UGUI
   prefab unless the task explicitly says it is only a product sketch,
-- do not create or update HTML, JavaScript, browser prototypes, or
-  `_codex/Gen_Im/RETSOT ONLINE/` as the task mockup deliverable; those do not
-  satisfy TArena UI mockup work,
+- do not create or update HTML, JavaScript, browser prototypes, or legacy
+  `_codex/Gen_Im/RETSOT ONLINE/` output as the task mockup deliverable; those
+  do not satisfy TArena UI mockup work,
 - do not run Git, `dotnet`, Unity builds, external build scripts, package restore commands, or SDK installation commands,
 - do not create or edit `.asmdef` / `.asmref` without explicit user permission,
 - run Unity EditMode tests from command line only when the Unity executable path is known and the user allows that command,
@@ -109,7 +109,7 @@ Practical boundary:
 
 After the completion protocol exists, use:
 
-- `.agents/skills/qa-review/SKILL.md`
+- `_codex/skills/qa-review/SKILL.md`
 
 Run QA Review against the current task/protocol, not an unrelated latest protocol if a specific task was implemented.
 
@@ -147,7 +147,7 @@ If QA finds actionable issues:
 - do not broaden scope,
 - do not redesign systems,
 - create a follow-up Coding Agent completion protocol in `_codex/tasks/QA/`,
-- run `.agents/skills/qa-review/SKILL.md` one more time for the follow-up protocol.
+- run `_codex/skills/qa-review/SKILL.md` one more time for the follow-up protocol.
 - read the second QA report and use it as the final QA verdict.
 
 Stop after one follow-up QA loop unless the user explicitly asks for another iteration.
@@ -157,8 +157,8 @@ Stop after one follow-up QA loop unless the user explicitly asks for another ite
 After the final QA verdict:
 
 - read `_codex/agents/runbooks/testing.md` before authoring tests,
-- add focused EditMode NUnit tests under `Assets/1_Scripts/Tests/EditMode/` when the final implementation has deterministic logic that can be isolated,
-- do not use Unity `LogAssert` in Retsot EditMode tests; assert state/behavior instead, or use the local `UnityLogGuard.Expect(...)` helper only when a known warning must be accepted,
+- add focused EditMode NUnit tests under `TArenaUnity3D/Assets/Scripts/Tests/EditMode/` when the final implementation has deterministic logic that can be isolated,
+- do not use Unity `LogAssert` in TArena EditMode tests; assert state/behavior instead, or use the local `UnityLogGuard.Expect(...)` helper only when a known warning must be accepted,
 - do not create or edit `.asmdef` / `.asmref` without explicit user permission,
 - do not run `dotnet test`,
 - do not start Unity test execution automatically in this workflow,

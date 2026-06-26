@@ -271,16 +271,6 @@ public static class SkillRules
         return result;
     }
 
-    public static SkillResult Apply(SkillCast cast, SkillContext context, ISkillRuntime runtime)
-    {
-        if (runtime != null)
-        {
-            return runtime.Apply(cast, context);
-        }
-
-        return Preview(cast, context);
-    }
-
     static SkillValidationResult ResolveCast(
         SkillContext context,
         SkillSnapshotIndex index,
@@ -612,7 +602,7 @@ public static class SkillRules
 
     static void AddMovementTargets(List<SkillTarget> targets, SkillSnapshotIndex index, BattleUnitSnapshot actor, SkillTargetRole role)
     {
-        Dictionary<string, int> reachable = FindReachableHexCosts(actor, index);
+        Dictionary<string, int> reachable = BattleHexGridUtility.FindReachableHexCosts(index.Snapshot, actor);
         foreach (KeyValuePair<string, int> pair in reachable)
         {
             BattleHexSnapshot hex = index.GetHexByKey(pair.Key);
@@ -643,7 +633,7 @@ public static class SkillRules
         }
 
         HexCoord from = selectedTargets[0];
-        List<HexCoord> neighbours = GetNeighbourCoordinates(from.C, from.R);
+        List<HexCoord> neighbours = index.GetNeighbourCoordinates(from.C, from.R);
         for (int i = 0; i < neighbours.Count; i++)
         {
             BattleHexSnapshot hex = index.GetHex(neighbours[i].C, neighbours[i].R);
@@ -707,6 +697,9 @@ public static class SkillRules
             target = actor;
         }
 
+        cast.ImpactHex = selected.Count > 0
+            ? new HexCoord(selected[0].C, selected[0].R)
+            : new HexCoord(target.C, target.R);
         cast.PrimaryTargetUnitId = target.RuntimeUnitId;
         cast.TargetUnitIds.Add(target.RuntimeUnitId);
         cast.AffectedUnitIds.Add(target.RuntimeUnitId);
@@ -899,7 +892,7 @@ public static class SkillRules
         cast.TargetUnitIds.Add(target.RuntimeUnitId);
         cast.AffectedUnitIds.Add(target.RuntimeUnitId);
 
-        List<HexCoord> neighbours = GetNeighbourCoordinates(target.C, target.R);
+        List<HexCoord> neighbours = index.GetNeighbourCoordinates(target.C, target.R);
         neighbours.Sort(delegate(HexCoord left, HexCoord right)
         {
             int leftDistance = HexDistance(actor.C, actor.R, left.C, left.R);
@@ -1109,53 +1102,6 @@ public static class SkillRules
         return result;
     }
 
-    static Dictionary<string, int> FindReachableHexCosts(BattleUnitSnapshot actor, SkillSnapshotIndex index)
-    {
-        Dictionary<string, int> reachable = new Dictionary<string, int>(StringComparer.Ordinal);
-        Queue<ReachableNode> frontier = new Queue<ReachableNode>();
-        frontier.Enqueue(new ReachableNode(actor.C, actor.R, 0));
-        reachable[SkillSnapshotIndex.GetHexKey(actor.C, actor.R)] = 0;
-
-        while (frontier.Count > 0)
-        {
-            ReachableNode current = frontier.Dequeue();
-            if (current.Cost >= actor.MovementSpeed)
-            {
-                continue;
-            }
-
-            List<HexCoord> neighbours = GetNeighbourCoordinates(current.C, current.R);
-            for (int i = 0; i < neighbours.Count; i++)
-            {
-                HexCoord neighbour = neighbours[i];
-                BattleHexSnapshot hex = index.GetHex(neighbour.C, neighbour.R);
-                if (hex == null || hex.IsWalkable == false)
-                {
-                    continue;
-                }
-
-                bool isActorSource = neighbour.C == actor.C && neighbour.R == actor.R;
-                if (isActorSource == false && string.IsNullOrEmpty(hex.OccupyingUnitId) == false)
-                {
-                    continue;
-                }
-
-                int nextCost = current.Cost + 1;
-                string key = SkillSnapshotIndex.GetHexKey(neighbour.C, neighbour.R);
-                int knownCost;
-                if (reachable.TryGetValue(key, out knownCost) && knownCost <= nextCost)
-                {
-                    continue;
-                }
-
-                reachable[key] = nextCost;
-                frontier.Enqueue(new ReachableNode(neighbour.C, neighbour.R, nextCost));
-            }
-        }
-
-        return reachable;
-    }
-
     static int HexDistance(int c1, int r1, int c2, int r2)
     {
         int s1 = -(c1 + r1);
@@ -1176,20 +1122,6 @@ public static class SkillRules
         };
     }
 
-    struct ReachableNode
-    {
-        public readonly int C;
-        public readonly int R;
-        public readonly int Cost;
-
-        public ReachableNode(int c, int r, int cost)
-        {
-            C = c;
-            R = r;
-            Cost = cost;
-        }
-    }
-
     sealed class SkillSnapshotIndex
     {
         readonly Dictionary<string, BattleUnitSnapshot> unitsById;
@@ -1198,6 +1130,7 @@ public static class SkillRules
 
         SkillSnapshotIndex(BattleSnapshot snapshot)
         {
+            Snapshot = snapshot;
             MapWidth = snapshot == null ? 0 : snapshot.MapWidth;
             MapHeight = snapshot == null ? 0 : snapshot.MapHeight;
             Units = snapshot == null || snapshot.Units == null ? new List<BattleUnitSnapshot>() : snapshot.Units;
@@ -1246,6 +1179,7 @@ public static class SkillRules
         public int MapHeight { get; private set; }
         public List<BattleUnitSnapshot> Units { get; private set; }
         public List<BattleHexSnapshot> Hexes { get; private set; }
+        public BattleSnapshot Snapshot { get; private set; }
 
         public static SkillSnapshotIndex Build(BattleSnapshot snapshot)
         {
@@ -1254,7 +1188,12 @@ public static class SkillRules
 
         public static string GetHexKey(int c, int r)
         {
-            return c + "|" + r;
+            return BattleHexGridUtility.GetHexKey(c, r);
+        }
+
+        public List<HexCoord> GetNeighbourCoordinates(int c, int r)
+        {
+            return BattleHexGridUtility.GetNeighbourCoordinates(Snapshot, c, r);
         }
 
         public BattleUnitSnapshot GetUnitOrNull(string runtimeUnitId)

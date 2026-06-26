@@ -25,20 +25,17 @@ touches text components, require TMP types such as `TMP_Text` and
 Start with only the sources needed for the current question:
 
 - `AGENTS.md`
+- `_codex/agents/project-director-agent.md`
 - `_codex/Context/CONTEXT-MAP.md`
-- `_codex/Context/02_Current_State.md`
-- `_codex/Context/03_Production_Rules.md`
-- `_codex/Context/04_Milestones.md`
-- `_codex/tasks/`
-
-For gameplay design, UI design, programming plans, run metagame work, database
-state, persistence, or screen data-flow changes, also read:
-
-- `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md`
-- `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
+- the single domain map under `_codex/Context/maps/` that matches the current
+  question
+- the specific `_codex/tasks/` file, when provided
 
 If a document is still a template, say so briefly and work from the latest local
 facts.
+
+PRD files and PRD-specific maps are task-scoped only. Load them only when the
+current prompt, selected task, or brief explicitly requires that PRD scope.
 
 ## Response Style
 

@@ -14,11 +14,13 @@ public static class BattleSnapshotBuilder
         BattleTurnStateSnapshot turnState,
         int gameSeed = 0,
         string battleId = "",
-        int nextActionIndex = 0)
+        int nextActionIndex = 0,
+        bool usesLegacyHexLayout = false)
     {
         BattleSnapshot snapshot = new BattleSnapshot();
         snapshot.MapWidth = Math.Max(0, mapWidth);
         snapshot.MapHeight = Math.Max(0, mapHeight);
+        snapshot.UsesLegacyHexLayout = usesLegacyHexLayout;
         snapshot.GameSeed = gameSeed;
         snapshot.BattleId = NormalizeString(battleId);
         snapshot.NextActionIndex = Math.Max(0, nextActionIndex);
@@ -125,6 +127,9 @@ public static class BattleSnapshotBuilder
             Moved = unit.Moved,
             MovedThisTurn = unit.MovedThisTurn,
             UsedSkillThisTurn = unit.UsedSkillThisTurn,
+            CounterAttackAvailable = unit.CounterAttackAvailable,
+            CounterAttacks = unit.CounterAttacks,
+            TempCounterAttacks = unit.TempCounterAttacks,
             CanMoveAfterSkillThisTurn = unit.CanMoveAfterSkillThisTurn,
             SkillIdsBySlot = CopyStringsPreservingOrder(unit.SkillIdsBySlot),
             CooldownsBySlot = CopyIntsPreservingOrder(unit.CooldownsBySlot),
@@ -364,7 +369,10 @@ public static class BattleSnapshotBuilder
     static string ComputeHash(BattleSnapshot snapshot)
     {
         StringBuilder canonical = new StringBuilder(1024);
-        canonical.Append("map|").Append(snapshot.MapWidth).Append('|').Append(snapshot.MapHeight).Append('\n');
+        canonical.Append("map|")
+            .Append(snapshot.MapWidth).Append('|')
+            .Append(snapshot.MapHeight).Append('|')
+            .Append(B(snapshot.UsesLegacyHexLayout)).Append('\n');
         canonical.Append("seed|")
             .Append(snapshot.GameSeed).Append('|')
             .Append(Escape(snapshot.BattleId)).Append('|')
@@ -415,6 +423,9 @@ public static class BattleSnapshotBuilder
                 .Append(B(unit.Moved)).Append('|')
                 .Append(B(unit.MovedThisTurn)).Append('|')
                 .Append(B(unit.UsedSkillThisTurn)).Append('|')
+                .Append(B(unit.CounterAttackAvailable)).Append('|')
+                .Append(unit.CounterAttacks).Append('|')
+                .Append(unit.TempCounterAttacks).Append('|')
                 .Append(B(unit.CanMoveAfterSkillThisTurn)).Append('\n');
 
             AppendSkillSlots(canonical, unit);

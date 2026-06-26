@@ -1,6 +1,6 @@
 # [TARENA] PRD 048: Reward Generator Rule Sets
 
-- Status: ready-for-agent
+- Status: completed-qa-pass-unity-validation-pending
 - Type: PRD
 - Area: Run Metagame, Reward Generation, Enemy Encounters, Offline Mode
 - Label: ready-for-agent

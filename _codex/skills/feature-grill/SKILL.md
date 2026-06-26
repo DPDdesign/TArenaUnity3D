@@ -5,11 +5,13 @@ description: Create or extend a feature-planning grill as a local autosaving HTM
 
 # Feature Grill
 
-Use this skill to turn feature planning into an HTML questionnaire artifact.
+Use this skill to turn feature planning into an HTML questionnaire artifact for
+the user. Generated HTML grills are not canonical knowledge sources for agents
+unless the user explicitly asks to use a specific HTML file.
 
 ## Workflow
 
-1. Read the relevant local project context, task files, code, schemas, and data before writing questions.
+1. Read the relevant local project context maps, task files, code, schemas, and data before writing questions.
 2. Create or update one local HTML file under the project task/documentation area.
 3. The first tab must contain exactly 20 primary grill questions.
 4. Each question must include:
@@ -65,5 +67,10 @@ For TArenaUnity3D:
 
 - Place PRD grill HTML files in `_codex/tasks/` unless the user names another local path.
 - Start titles with `[TARENA]`.
-- Inspect `_codex/Context/CONTEXT-MAP.md`, relevant PRDs, and relevant C# files before generating questions.
+- Inspect `_codex/Context/CONTEXT-MAP.md`, the smallest relevant domain map,
+  and relevant C# files before generating questions.
+- Load PRDs only when the user prompt, selected task, or domain map explicitly
+  requires that PRD scope.
+- Treat generated HTML grill files as explicit user artifacts, not as current
+  project truth for future agents.
 - Do not implement code from the grill unless the user explicitly asks for implementation.

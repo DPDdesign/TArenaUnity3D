@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="7" result="Failed(Child)" total="7" passed="3" failed="4" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:54Z" duration="0,2145132">
+  <test-suite type="TestSuite" id="1270" name="TArenaUnity3D" fullname="TArenaUnity3D" runstate="Runnable" testcasecount="224" result="Failed" site="Child" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:54Z" duration="0.214513" total="7" passed="3" failed="4" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="Assembly" id="1267" name="Assembly-CSharp.dll" fullname="D:/Unity/Projects/TArenaUnity3D/TArenaUnity3D/Library/ScriptAssemblies/Assembly-CSharp.dll" runstate="Runnable" testcasecount="224" result="Failed" site="Child" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:54Z" duration="0.198613" total="7" passed="3" failed="4" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="19116" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestFixture" id="1216" name="BattleActionLegalActionGenerationTests" fullname="BattleActionLegalActionGenerationTests" classname="BattleActionLegalActionGenerationTests" runstate="Runnable" testcasecount="7" result="Failed" site="Child" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:53Z" duration="0.055935" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-case id="1221" name="PassiveAndCooldownBlockedSkills_AreNotLegalActions" fullname="BattleActionLegalActionGenerationTests.PassiveAndCooldownBlockedSkills_AreNotLegalActions" methodname="PassiveAndCooldownBlockedSkills_AreNotLegalActions" classname="BattleActionLegalActionGenerationTests" runstate="Runnable" seed="118293578" result="Failed" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:53Z" duration="0.039853" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: 1
+  But was:  2
+]]></message>
+            <stack-trace><![CDATA[at BattleActionLegalActionGenerationTests.PassiveAndCooldownBlockedSkills_AreNotLegalActions () [0x000ad] in D:\Unity\Projects\TArenaUnity3D\TArenaUnity3D\Assets\Scripts\Tests\EditMode\TacticalAICandidateGeneratorTests.cs:123
+]]></stack-trace>
+          </failure>
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1224" name="TacticalAIExecutionBridgeTests" fullname="TacticalAIExecutionBridgeTests" classname="TacticalAIExecutionBridgeTests" runstate="Runnable" testcasecount="11" result="Failed" site="Child" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:53Z" duration="0.008085" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-case id="1231" name="BattleActionRules_AcceptsSkillAndPreservesSlotIdPair" fullname="TacticalAIExecutionBridgeTests.BattleActionRules_AcceptsSkillAndPreservesSlotIdPair" methodname="BattleActionRules_AcceptsSkillAndPreservesSlotIdPair" classname="TacticalAIExecutionBridgeTests" runstate="Runnable" seed="442840509" result="Failed" label="Error" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:53Z" duration="0.004589" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[System.NullReferenceException : Object reference not set to an instance of an object]]></message>
+            <stack-trace><![CDATA[  at TacticalAIExecutionBridgeTests.BattleActionRules_AcceptsSkillAndPreservesSlotIdPair () [0x0010d] in D:\Unity\Projects\TArenaUnity3D\TArenaUnity3D\Assets\Scripts\Tests\EditMode\TacticalAIExecutionBridgeTests.cs:180 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <f713e1c3c5f545ce9b1df47230f4f853>:0 ]]></stack-trace>
+          </failure>
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1241" name="TacticalAIProfileTests" fullname="TacticalAIProfileTests" classname="TacticalAIProfileTests" runstate="Runnable" testcasecount="9" result="Failed" site="Child" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:53Z" duration="0.006448" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-case id="1243" name="NormalProfileAsset_ExistsWithRecommendedDefaults" fullname="TacticalAIProfileTests.NormalProfileAsset_ExistsWithRecommendedDefaults" methodname="NormalProfileAsset_ExistsWithRecommendedDefaults" classname="TacticalAIProfileTests" runstate="Runnable" seed="326894310" result="Failed" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:53Z" duration="0.003029" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: 3
+  But was:  2
+]]></message>
+            <stack-trace><![CDATA[at TacticalAIProfileTests.NormalProfileAsset_ExistsWithRecommendedDefaults () [0x0002a] in D:\Unity\Projects\TArenaUnity3D\TArenaUnity3D\Assets\Scripts\Tests\EditMode\TacticalAIProfileTests.cs:28
+]]></stack-trace>
+          </failure>
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1251" name="TacticalAISearchScoringTests" fullname="TacticalAISearchScoringTests" classname="TacticalAISearchScoringTests" runstate="Runnable" testcasecount="12" result="Failed" site="Child" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:54Z" duration="0.123171" total="4" passed="3" failed="1" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-case id="1258" name="Search_DoesNotDropLegalSkillWhenWatchdogExpiresBeforeDeepSearch" fullname="TacticalAISearchScoringTests.Search_DoesNotDropLegalSkillWhenWatchdogExpiresBeforeDeepSearch" methodname="Search_DoesNotDropLegalSkillWhenWatchdogExpiresBeforeDeepSearch" classname="TacticalAISearchScoringTests" runstate="Runnable" seed="1984851256" result="Passed" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:53Z" duration="0.014377" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1255" name="SearchCandidateExpansion_DropsAreaDamageSkillWhenNoUnitWouldBeHit" fullname="TacticalAISearchScoringTests.SearchCandidateExpansion_DropsAreaDamageSkillWhenNoUnitWouldBeHit" methodname="SearchCandidateExpansion_DropsAreaDamageSkillWhenNoUnitWouldBeHit" classname="TacticalAISearchScoringTests" runstate="Runnable" seed="674904782" result="Failed" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:53Z" duration="0.001484" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: 0
+  But was:  1
+]]></message>
+            <stack-trace><![CDATA[at TacticalAISearchScoringTests.SearchCandidateExpansion_DropsAreaDamageSkillWhenNoUnitWouldBeHit () [0x0006a] in D:\Unity\Projects\TArenaUnity3D\TArenaUnity3D\Assets\Scripts\Tests\EditMode\TacticalAISearchScoringTests.cs:91
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1254" name="SearchCandidateExpansion_EmitsValidatedSkillCastAndPreview" fullname="TacticalAISearchScoringTests.SearchCandidateExpansion_EmitsValidatedSkillCastAndPreview" methodname="SearchCandidateExpansion_EmitsValidatedSkillCastAndPreview" classname="TacticalAISearchScoringTests" runstate="Runnable" seed="2131610214" result="Passed" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:53Z" duration="0.001437" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1257" name="SearchPlan_SkillActionCarriesBattleActionUsePayload" fullname="TacticalAISearchScoringTests.SearchPlan_SkillActionCarriesBattleActionUsePayload" methodname="SearchPlan_SkillActionCarriesBattleActionUsePayload" classname="TacticalAISearchScoringTests" runstate="Runnable" seed="288515381" result="Passed" start-time="2026-06-26 19:55:53Z" end-time="2026-06-26 19:55:54Z" duration="0.102214" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <output><![CDATA[Saving results to: C:/Users/piotr/AppData/LocalLow/DefaultCompany/TArenaUnity3D\TestResults.xml
+]]></output>
+        </test-case>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

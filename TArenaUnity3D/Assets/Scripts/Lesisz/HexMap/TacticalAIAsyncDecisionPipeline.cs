@@ -129,7 +129,7 @@ public sealed class TacticalAICopiedSkillMetadataProvider : ITacticalAISkillMeta
         return new TacticalAISkillMetadata
         {
             SkillId = skillId ?? string.Empty,
-            IsRepeatableToggle = TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId)
+            IsRepeatableToggle = BattleActionSkillUtility.IsRepeatableToggleSkillId(skillId)
         };
     }
 }
@@ -179,14 +179,12 @@ public sealed class TacticalAIAsyncTurnIntegrator
 
     public static TacticalAIAsyncTurnIntegrator CreateFromScene(
         TacticalAIProfile assignedProfile = null,
-        ITacticalAISkillActionExecutor skillActionExecutor = null,
         ITacticalAISkillMetadataProvider skillMetadataProvider = null)
     {
         TacticalAIProfile resolvedProfileAsset = assignedProfile ?? TacticalAIProfileCatalog.LoadNormalProfileAsset();
         ITacticalAISkillMetadataProvider liveSkillMetadataProvider = skillMetadataProvider ?? TacticalAIDataMapperSkillMetadataProvider.Instance;
         TacticalAIExecutionBridge bridge = TacticalAIExecutionBridge.CreateFromScene(
             resolvedProfileAsset,
-            skillActionExecutor,
             liveSkillMetadataProvider);
 
         return new TacticalAIAsyncTurnIntegrator(

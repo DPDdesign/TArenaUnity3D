@@ -4,7 +4,7 @@
 - Type: execution PRD
 - Area: battle skills, `SkillDefinitionAsset`, targeting, validation, execution, UI, AI/API preparation
 - Owner: Coding Agent
-- Sources merged: `_codex/tasks/049A_PRD_TacticalActionValidationSO_UI_VerticalSlice.md` and `_codex/tasks/049AC_PRD_SkillTargetAndEffectDataModel.md`
+- Sources merged: `_codex/tasks/archive/049A_PRD_TacticalActionValidationSO_UI_VerticalSlice.md` and `_codex/tasks/archive/049AC_PRD_SkillTargetAndEffectDataModel.md`
 - Source note: no separate local `049BC` file was found. Current local B/C material is `049AC`, which supersedes archived `049B` and `049C`.
 - Audience: Coding Agent implementing Unity/C# changes, not project-owner briefing.
 
@@ -58,8 +58,8 @@ Current active asset-backed skills under `TArenaUnity3D/Assets/Resources/0_Data/
 
 Files / systems to inspect before implementation:
 
-- `_codex/tasks/049A_PRD_TacticalActionValidationSO_UI_VerticalSlice.md`
-- `_codex/tasks/049AC_PRD_SkillTargetAndEffectDataModel.md`
+- `_codex/tasks/archive/049A_PRD_TacticalActionValidationSO_UI_VerticalSlice.md`
+- `_codex/tasks/archive/049AC_PRD_SkillTargetAndEffectDataModel.md`
 - `_codex/tasks/049_PRD_TacticalActionSkillMigrationProgram.md`
 - `_codex/Context/09_CurrentSkills.md`
 - `_codex/Context/10_Skill_Design_Rules.md`

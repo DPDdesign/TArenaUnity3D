@@ -368,7 +368,26 @@ namespace TimeSpells
                     if(h!=null&&h.Tosters.Count>0 && h.Tosters[0]!=me)
                     {
                         Debug.LogError(h.Tosters[0].Name);
-                        h.Tosters[0].AddNewTimeSpell(2, h.Tosters[0], 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, -10, FireSkinDebuffSpellName, false) ;
+                        global::BattleActionResult result = global::BattleActionAutomaticResultApplier.CreateStatusApplicationResult(
+                            h.Tosters[0],
+                            h.Tosters[0],
+                            FireSkinDebuffSpellName,
+                            2,
+                            0,
+                            0,
+                            0,
+                            -1,
+                            -1,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            -10,
+                            false,
+                            global::BattleActionKind.Passive);
+                        global::BattleActionAutomaticResultApplier.ApplyStatusApplicationResult(h.Tosters[0], h.Tosters[0], result);
                         reveals.Add(h.Tosters[0].BuildStatusFrontendReveal(me, FrontendResultRevealSource.Skill));
                     }
                 }
@@ -384,7 +403,26 @@ namespace TimeSpells
                     if (h!=null&&h.Tosters.Count > 0 && h.Tosters[0] != me)
                     {
 
-                        h.Tosters[0].AddNewTimeSpell(2, h.Tosters[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 0, 0, TerrifyingPresenceDebuffSpellName, false);
+                        global::BattleActionResult result = global::BattleActionAutomaticResultApplier.CreateStatusApplicationResult(
+                            h.Tosters[0],
+                            h.Tosters[0],
+                            TerrifyingPresenceDebuffSpellName,
+                            2,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            -5,
+                            0,
+                            0,
+                            false,
+                            global::BattleActionKind.Passive);
+                        global::BattleActionAutomaticResultApplier.ApplyStatusApplicationResult(h.Tosters[0], h.Tosters[0], result);
                         h.Tosters[0].CounterAttackAvaible = false;
                         Debug.Log(h.Tosters[0].Name);
                         reveals.Add(h.Tosters[0].BuildStatusFrontendReveal(me, FrontendResultRevealSource.Skill));

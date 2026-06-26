@@ -16,7 +16,7 @@ pair it with TMP-based text components such as `TMP_Text` and
 Run the search script from the repository root:
 
 ```powershell
-py .agents\skills\find-icon\scripts\find_icon.py "opis ikony" --min 5 --limit 8
+py -3 _codex\skills\find-icon\scripts\find_icon.py "opis ikony" --min 5 --limit 8
 ```
 
 Then return at least five results. For each result, include:
@@ -28,14 +28,14 @@ Then return at least five results. For each result, include:
 Show icon previews in the final answer, not only during tool use. Prefer a compact markdown image next to each candidate:
 
 ```markdown
-![Icon 1](D:/Unity/Projects/RetsotHorde/Assets/...)
+![Icon 1](D:/Unity/Projects/TArenaUnity3D/TArenaUnity3D/Assets/...)
 ```
 
 Also use `view_image` while deciding, so obviously wrong visual picks can be skipped. If image embedding is unavailable in the final renderer, still include markdown image links and clearly say that the previews may need to be opened from the listed paths.
 
 ## Defaults
 
-- Prefer `Assets\RPG Icons Pixel Art`.
+- Prefer `TArenaUnity3D\Assets\RPG Icons Pixel Art`.
 - Prefer `Transperent` variants for Unity UI unless the query asks for background/framed icons.
 - Keep at least five icon candidates even when the match is broad.
 - If the user asks for more variety, increase `--limit` to 12 or 20.
@@ -45,19 +45,19 @@ Also use `view_image` while deciding, so obviously wrong visual picks can be ski
 
 The generated index lives in:
 
-- `.agents\skills\find-icon\references\icon_index.jsonl`
-- `.agents\skills\find-icon\references\icon_summary.md`
+- `_codex\skills\find-icon\references\icon_index.jsonl`
+- `_codex\skills\find-icon\references\icon_summary.md`
 
 Rebuild it after adding/removing icon PNGs:
 
 ```powershell
-py .agents\skills\find-icon\scripts\build_icon_index.py --root "Assets\RPG Icons Pixel Art"
+py -3 _codex\skills\find-icon\scripts\build_icon_index.py --root "TArenaUnity3D\Assets\RPG Icons Pixel Art"
 ```
 
 Use a different root only when the user points to another icon folder:
 
 ```powershell
-py .agents\skills\find-icon\scripts\build_icon_index.py --root "Assets\Some Other Icons"
+py -3 _codex\skills\find-icon\scripts\build_icon_index.py --root "TArenaUnity3D\Assets\Some Other Icons"
 ```
 
 ## Search Notes
@@ -79,8 +79,8 @@ Answer in Polish when the user asks in Polish:
 ```markdown
 Znalazlem pasujace ikony:
 
-1. ![Icon 1](D:/Unity/Projects/RetsotHorde/Assets/RPG Icons Pixel Art/Pyromanser/PNG/Icon12.png)
-   `Assets\RPG Icons Pixel Art\Pyromanser\PNG\Icon12.png`
+1. ![Icon 1](D:/Unity/Projects/TArenaUnity3D/TArenaUnity3D/Assets/RPG Icons Pixel Art/Pyromanser/PNG/Icon12.png)
+   `TArenaUnity3D\Assets\RPG Icons Pixel Art\Pyromanser\PNG\Icon12.png`
    Powod: fire, mage, skill
 ...
 ```

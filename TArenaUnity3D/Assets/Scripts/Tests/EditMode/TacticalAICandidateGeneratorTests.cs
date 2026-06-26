@@ -1,8 +1,11 @@
 #if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
+using UnityEngine;
 
-public class TacticalAICandidateGeneratorTests
+public class BattleActionLegalActionGenerationTests
 {
     [Test]
     public void WaitAndDefend_AreAvailableOnlyBeforeMovementAndNonToggleSkillUse()
@@ -11,149 +14,152 @@ public class TacticalAICandidateGeneratorTests
             ActorUnit(0, 0, movedThisTurn: false, usedSkillThisTurn: false, waited: false),
             EnemyUnit("team-1-slot-0", 1, 0, 2, 0));
 
-        List<TacticalAIActionIntent> openingCandidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> openingActions = BattleActionRules.GenerateLegalActions(
             openingSnapshot,
-            CreateOptions(),
+            CreateProfile(),
             new TestSkillMetadataProvider());
 
-        Assert.That(HasAction(openingCandidates, TacticalAIActionType.Wait), Is.True);
-        Assert.That(HasAction(openingCandidates, TacticalAIActionType.Defend), Is.True);
+        Assert.That(HasAction(openingActions, BattleActionKind.Wait), Is.True);
+        Assert.That(HasAction(openingActions, BattleActionKind.Defend), Is.True);
 
         BattleSnapshot movedSnapshot = CreateSnapshot(
             ActorUnit(0, 0, movedThisTurn: true, usedSkillThisTurn: false, waited: false),
             EnemyUnit("team-1-slot-0", 1, 0, 2, 0));
 
-        List<TacticalAIActionIntent> movedCandidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> movedActions = BattleActionRules.GenerateLegalActions(
             movedSnapshot,
-            CreateOptions(),
+            CreateProfile(),
             new TestSkillMetadataProvider());
 
-        Assert.That(HasAction(movedCandidates, TacticalAIActionType.Wait), Is.False);
-        Assert.That(HasAction(movedCandidates, TacticalAIActionType.Defend), Is.False);
+        Assert.That(HasAction(movedActions, BattleActionKind.Wait), Is.False);
+        Assert.That(HasAction(movedActions, BattleActionKind.Defend), Is.False);
 
         BattleSnapshot usedSkillSnapshot = CreateSnapshot(
             ActorUnit(0, 0, movedThisTurn: false, usedSkillThisTurn: true, waited: false),
             EnemyUnit("team-1-slot-0", 1, 0, 2, 0));
 
-        List<TacticalAIActionIntent> usedSkillCandidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> usedSkillActions = BattleActionRules.GenerateLegalActions(
             usedSkillSnapshot,
-            CreateOptions(),
+            CreateProfile(),
             new TestSkillMetadataProvider());
 
-        Assert.That(HasAction(usedSkillCandidates, TacticalAIActionType.Wait), Is.False);
-        Assert.That(HasAction(usedSkillCandidates, TacticalAIActionType.Defend), Is.False);
+        Assert.That(HasAction(usedSkillActions, BattleActionKind.Wait), Is.False);
+        Assert.That(HasAction(usedSkillActions, BattleActionKind.Defend), Is.False);
     }
 
     [Test]
-    public void MoveCandidates_ExcludeOccupiedDestinations()
+    public void MoveActions_ExcludeOccupiedDestinations()
     {
         BattleSnapshot snapshot = CreateSnapshot(
             ActorUnit(0, 0),
             EnemyUnit("team-1-slot-0", 1, 0, 3, 0),
             AllyUnit("team-0-slot-1", 0, 1, 1, 0));
 
-        List<TacticalAIActionIntent> candidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> actions = BattleActionRules.GenerateLegalActions(
             snapshot,
-            CreateOptions(),
+            CreateProfile(),
             new TestSkillMetadataProvider());
 
         Assert.That(
-            ContainsMoveDestination(candidates, 1, 0),
+            ContainsMoveDestination(actions, 1, 0),
             Is.False,
             "Occupied allied hex should not be emitted as a move destination.");
     }
 
     [Test]
-    public void MoveAndAttackCandidates_IncludeCurrentHexWhenAlreadyAdjacent()
+    public void MoveAndAttackActions_IncludeCurrentHexWhenAlreadyAdjacent()
     {
         BattleSnapshot snapshot = CreateSnapshot(
             ActorUnit(0, 0),
             EnemyUnit("team-1-slot-0", 1, 0, 1, 0));
 
-        List<TacticalAIActionIntent> candidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> actions = BattleActionRules.GenerateLegalActions(
             snapshot,
-            CreateOptions(),
+            CreateProfile(),
             new TestSkillMetadataProvider());
 
-        TacticalAIActionIntent intent = FindAction(candidates, TacticalAIActionType.MoveAndAttack, "team-1-slot-0");
-        Assert.That(intent, Is.Not.Null);
-        Assert.That(intent.DestinationHex, Is.Not.Null);
-        Assert.That(intent.DestinationHex.C, Is.EqualTo(0));
-        Assert.That(intent.DestinationHex.R, Is.EqualTo(0));
+        BattleAction action = FindAction(actions, BattleActionKind.MoveAndAttack, "team-1-slot-0");
+        Assert.That(action, Is.Not.Null);
+        Assert.That(action.DestinationHex, Is.Not.Null);
+        Assert.That(action.DestinationHex.C, Is.EqualTo(0));
+        Assert.That(action.DestinationHex.R, Is.EqualTo(0));
     }
 
     [Test]
-    public void BasicRangedAttackCandidates_TargetEnemyUnitsOnly()
+    public void BasicRangedAttackActions_TargetEnemyUnitsOnly()
     {
         BattleSnapshot snapshot = CreateSnapshot(
             ActorUnit(0, 0, isRange: true),
             EnemyUnit("team-1-slot-0", 1, 0, 2, 0),
             AllyUnit("team-0-slot-1", 0, 1, 0, 1));
 
-        List<TacticalAIActionIntent> candidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> actions = BattleActionRules.GenerateLegalActions(
             snapshot,
-            CreateOptions(),
+            CreateProfile(),
             new TestSkillMetadataProvider());
 
-        List<TacticalAIActionIntent> rangedCandidates = FindActions(candidates, TacticalAIActionType.BasicRangedAttack);
-        Assert.That(rangedCandidates.Count, Is.EqualTo(1));
-        Assert.That(rangedCandidates[0].TargetUnitId, Is.EqualTo("team-1-slot-0"));
+        List<BattleAction> rangedActions = FindActions(actions, BattleActionKind.BasicRangedAttack);
+        Assert.That(rangedActions.Count, Is.EqualTo(1));
+        Assert.That(rangedActions[0].PrimaryTargetUnitId, Is.EqualTo("team-1-slot-0"));
     }
 
     [Test]
-    public void PassiveAndCooldownBlockedSkills_AreNotCandidates()
+    public void PassiveAndCooldownBlockedSkills_AreNotLegalActions()
     {
         BattleUnitSnapshot actor = ActorUnit(0, 0);
         actor.SkillIdsBySlot = new List<string> { "BattleCry", "StoneSkinPassive", "Dash" };
         actor.CooldownsBySlot = new List<int> { 0, 0, 2 };
 
         TestSkillMetadataProvider metadataProvider = new TestSkillMetadataProvider();
-        metadataProvider.Add("BattleCry", isPassive: false, canUseAfterMove: false, canMoveAfterSkill: false);
-        metadataProvider.Add("StoneSkinPassive", isPassive: true, canUseAfterMove: false, canMoveAfterSkill: false);
-        metadataProvider.Add("Dash", isPassive: false, canUseAfterMove: true, canMoveAfterSkill: true);
+        metadataProvider.AddUnitTargetDamage("BattleCry");
+        metadataProvider.AddPassive("StoneSkinPassive");
+        metadataProvider.AddSelfSkill("Dash", canUseAfterMove: true, canMoveAfterSkill: true);
 
-        List<TacticalAIActionIntent> candidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> actions = BattleActionRules.GenerateLegalActions(
             CreateSnapshot(actor, EnemyUnit("team-1-slot-0", 1, 0, 2, 0)),
-            CreateOptions(),
+            CreateProfile(),
             metadataProvider);
 
-        List<TacticalAIActionIntent> skillCandidates = FindActions(candidates, TacticalAIActionType.Skill);
-        Assert.That(skillCandidates.Count, Is.EqualTo(1));
-        Assert.That(skillCandidates[0].SkillSlot, Is.EqualTo(0));
-        Assert.That(skillCandidates[0].SkillId, Is.EqualTo("BattleCry"));
+        List<BattleAction> skillActions = FindActions(actions, BattleActionKind.Skill);
+        Assert.That(skillActions.Count, Is.EqualTo(1));
+        Assert.That(skillActions[0].SkillSlot, Is.EqualTo(0));
+        Assert.That(skillActions[0].SkillId, Is.EqualTo("BattleCry"));
+        Assert.That(skillActions.Select(action => action.StableOrderKey).Distinct().Count(), Is.EqualTo(skillActions.Count));
     }
 
     [Test]
-    public void StanceCandidates_ExcludeNoOpCurrentStance()
+    public void StanceSkills_GenerateStanceBattleActionsAndUseSharedToggleUtility()
     {
         BattleUnitSnapshot meleeActor = ActorUnit(0, 0, isRange: false);
         meleeActor.SkillIdsBySlot = new List<string> { "Range_Stance_Barb", "Melee_Stance_Barb" };
         meleeActor.CooldownsBySlot = new List<int> { 0, 0 };
 
-        List<TacticalAIActionIntent> meleeCandidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> meleeActions = BattleActionRules.GenerateLegalActions(
             CreateSnapshot(meleeActor, EnemyUnit("team-1-slot-0", 1, 0, 2, 0)),
-            CreateOptions(),
+            CreateProfile(),
             new TestSkillMetadataProvider());
 
-        Assert.That(ContainsSkill(meleeCandidates, "Range_Stance_Barb"), Is.True);
-        Assert.That(ContainsSkill(meleeCandidates, "Melee_Stance_Barb"), Is.False);
+        Assert.That(ContainsSkill(meleeActions, "Range_Stance_Barb"), Is.True);
+        Assert.That(ContainsSkill(meleeActions, "Melee_Stance_Barb"), Is.True);
+        Assert.That(HasAction(meleeActions, BattleActionKind.Stance), Is.True);
 
         BattleUnitSnapshot rangeActor = ActorUnit(0, 0, isRange: true);
         rangeActor.SkillIdsBySlot = new List<string> { "Range_Stance_Barb", "Melee_Stance_Barb" };
         rangeActor.CooldownsBySlot = new List<int> { 0, 0 };
 
-        List<TacticalAIActionIntent> rangeCandidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> rangeActions = BattleActionRules.GenerateLegalActions(
             CreateSnapshot(rangeActor, EnemyUnit("team-1-slot-0", 1, 0, 2, 0)),
-            CreateOptions(),
+            CreateProfile(),
             new TestSkillMetadataProvider());
 
-        Assert.That(ContainsSkill(rangeCandidates, "Range_Stance_Barb"), Is.False);
-        Assert.That(ContainsSkill(rangeCandidates, "Melee_Stance_Barb"), Is.True);
+        Assert.That(ContainsSkill(rangeActions, "Range_Stance_Barb"), Is.True);
+        Assert.That(ContainsSkill(rangeActions, "Melee_Stance_Barb"), Is.True);
+        Assert.That(BattleActionSkillUtility.IsRepeatableToggleSkillId("Range_Stance_Barb"), Is.True);
+        Assert.That(BattleActionSkillUtility.IsRepeatableToggleSkillId("BattleCry"), Is.False);
     }
 
-
     [Test]
-    public void CandidateOrdering_IsStableAcrossEquivalentSnapshots()
+    public void LegalActionOrdering_IsStableAcrossEquivalentSnapshots()
     {
         BattleSnapshot first = CreateSnapshot(
             ActorUnit(0, 0, isRange: true),
@@ -165,28 +171,28 @@ public class TacticalAICandidateGeneratorTests
             EnemyUnit("team-1-slot-0", 1, 0, 2, 0),
             EnemyUnit("team-1-slot-1", 1, 1, 3, 1));
 
-        List<TacticalAIActionIntent> firstCandidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> firstActions = BattleActionRules.GenerateLegalActions(
             first,
-            CreateOptions(),
+            CreateProfile(),
             new TestSkillMetadataProvider());
 
-        List<TacticalAIActionIntent> secondCandidates = TacticalAICandidateGenerator.GenerateCandidates(
+        List<BattleAction> secondActions = BattleActionRules.GenerateLegalActions(
             second,
-            CreateOptions(),
+            CreateProfile(),
             new TestSkillMetadataProvider());
 
-        Assert.That(GetStableKeys(firstCandidates), Is.EqualTo(GetStableKeys(secondCandidates)));
+        Assert.That(GetStableKeys(firstActions), Is.EqualTo(GetStableKeys(secondActions)));
     }
 
-    static TacticalAICandidateGenerationOptions CreateOptions()
+    static TacticalAIResolvedProfile CreateProfile()
     {
-        return new TacticalAICandidateGenerationOptions
-        {
-            MaxCandidatesPerActionType = 16,
-            MaxMoveCandidates = 16,
-            MaxAttackCandidates = 16,
-            MaxSkillCandidates = 16
-        };
+        TacticalAIResolvedProfile profile = TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(null);
+        profile.MaxCandidatesPerActionType = 16;
+        profile.MaxMoveCandidates = 16;
+        profile.MaxAttackCandidates = 16;
+        profile.MaxSkillCandidates = 16;
+        profile.ProfileHash = TacticalAIProfileHasher.ComputeHash(profile);
+        return profile;
     }
 
     static BattleSnapshot CreateSnapshot(BattleUnitSnapshot actor, params BattleUnitSnapshot[] others)
@@ -298,14 +304,14 @@ public class TacticalAICandidateGeneratorTests
         };
     }
 
-    static bool HasAction(List<TacticalAIActionIntent> actions, TacticalAIActionType actionType)
+    static bool HasAction(List<BattleAction> actions, BattleActionKind actionKind)
     {
-        return FindAction(actions, actionType, null) != null;
+        return FindAction(actions, actionKind, null) != null;
     }
 
-    static TacticalAIActionIntent FindAction(
-        List<TacticalAIActionIntent> actions,
-        TacticalAIActionType actionType,
+    static BattleAction FindAction(
+        List<BattleAction> actions,
+        BattleActionKind actionKind,
         string targetUnitId)
     {
         if (actions == null)
@@ -315,13 +321,13 @@ public class TacticalAICandidateGeneratorTests
 
         for (int i = 0; i < actions.Count; i++)
         {
-            TacticalAIActionIntent action = actions[i];
-            if (action.ActionType != actionType)
+            BattleAction action = actions[i];
+            if (action.ActionKind != actionKind)
             {
                 continue;
             }
 
-            if (targetUnitId == null || action.TargetUnitId == targetUnitId)
+            if (targetUnitId == null || action.PrimaryTargetUnitId == targetUnitId)
             {
                 return action;
             }
@@ -330,9 +336,9 @@ public class TacticalAICandidateGeneratorTests
         return null;
     }
 
-    static List<TacticalAIActionIntent> FindActions(List<TacticalAIActionIntent> actions, TacticalAIActionType actionType)
+    static List<BattleAction> FindActions(List<BattleAction> actions, BattleActionKind actionKind)
     {
-        List<TacticalAIActionIntent> matches = new List<TacticalAIActionIntent>();
+        List<BattleAction> matches = new List<BattleAction>();
         if (actions == null)
         {
             return matches;
@@ -340,7 +346,7 @@ public class TacticalAICandidateGeneratorTests
 
         for (int i = 0; i < actions.Count; i++)
         {
-            if (actions[i].ActionType == actionType)
+            if (actions[i].ActionKind == actionKind)
             {
                 matches.Add(actions[i]);
             }
@@ -349,12 +355,12 @@ public class TacticalAICandidateGeneratorTests
         return matches;
     }
 
-    static bool ContainsMoveDestination(List<TacticalAIActionIntent> actions, int c, int r)
+    static bool ContainsMoveDestination(List<BattleAction> actions, int c, int r)
     {
         for (int i = 0; i < actions.Count; i++)
         {
-            TacticalAIActionIntent action = actions[i];
-            if (action.ActionType == TacticalAIActionType.Move &&
+            BattleAction action = actions[i];
+            if (action.ActionKind == BattleActionKind.Move &&
                 action.DestinationHex != null &&
                 action.DestinationHex.C == c &&
                 action.DestinationHex.R == r)
@@ -366,13 +372,13 @@ public class TacticalAICandidateGeneratorTests
         return false;
     }
 
-    static bool ContainsSkill(List<TacticalAIActionIntent> actions, string skillId)
+    static bool ContainsSkill(List<BattleAction> actions, string skillId)
     {
         for (int i = 0; i < actions.Count; i++)
         {
-            TacticalAIActionIntent action = actions[i];
-            if (action.ActionType == TacticalAIActionType.Skill &&
-                string.Equals(action.SkillId, skillId, System.StringComparison.Ordinal))
+            BattleAction action = actions[i];
+            if ((action.ActionKind == BattleActionKind.Skill || action.ActionKind == BattleActionKind.Stance) &&
+                string.Equals(action.SkillId, skillId, StringComparison.Ordinal))
             {
                 return true;
             }
@@ -381,7 +387,7 @@ public class TacticalAICandidateGeneratorTests
         return false;
     }
 
-    static List<string> GetStableKeys(List<TacticalAIActionIntent> actions)
+    static List<string> GetStableKeys(List<BattleAction> actions)
     {
         List<string> keys = new List<string>();
         for (int i = 0; i < actions.Count; i++)
@@ -392,39 +398,143 @@ public class TacticalAICandidateGeneratorTests
         return keys;
     }
 
-    sealed class TestSkillMetadataProvider : ITacticalAISkillMetadataProvider
+    sealed class TestSkillMetadataProvider : ITacticalAISkillMetadataProvider, ITacticalAISkillSpecProvider
     {
-        readonly Dictionary<string, TacticalAISkillMetadata> metadataBySkillId =
-            new Dictionary<string, TacticalAISkillMetadata>();
+        readonly Dictionary<string, SkillDefinitionAsset> definitions =
+            new Dictionary<string, SkillDefinitionAsset>();
 
-        public void Add(string skillId, bool isPassive, bool canUseAfterMove, bool canMoveAfterSkill)
+        public TestSkillMetadataProvider()
         {
-            metadataBySkillId[skillId] = new TacticalAISkillMetadata
-            {
-                SkillId = skillId,
-                IsPassive = isPassive,
-                CanUseAfterMove = canUseAfterMove,
-                CanMoveAfterSkill = canMoveAfterSkill,
-                IsRepeatableToggle = TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId)
-            };
+            AddUnitTargetDamage("BattleCry");
+            AddStance("Range_Stance_Barb");
+            AddStance("Melee_Stance_Barb");
+        }
+
+        public void AddUnitTargetDamage(string skillId)
+        {
+            definitions[skillId] = Skill(
+                skillId,
+                new ActivationRuleData
+                {
+                    activationKind = SkillActivationKind.Active,
+                    consumesTurn = true
+                },
+                new TargetingRuleData
+                {
+                    targetFamily = SkillTargetFamily.UnitTarget,
+                    targetRoles = new[] { SkillTargetRole.EnemyUnitHex },
+                    targetCount = 1,
+                    requiresWalkable = true
+                },
+                new ResolutionRuleData { resolutionFamily = SkillResolutionFamily.DirectUnit },
+                new[]
+                {
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.Damage,
+                        targetSource = SkillEffectTargetSource.PrimaryUnit,
+                        damageMode = SkillDamageMode.BasicAttackDamage,
+                        damageScale = 1f
+                    }
+                });
+        }
+
+        public void AddSelfSkill(string skillId, bool canUseAfterMove, bool canMoveAfterSkill)
+        {
+            definitions[skillId] = Skill(
+                skillId,
+                new ActivationRuleData
+                {
+                    activationKind = SkillActivationKind.Active,
+                    consumesTurn = true,
+                    canUseAfterMove = canUseAfterMove,
+                    canMoveAfterUse = canMoveAfterSkill
+                },
+                SelfTargeting(),
+                new ResolutionRuleData { resolutionFamily = SkillResolutionFamily.None },
+                new[] { new SkillEffect { effectType = SkillEffectType.None } });
+        }
+
+        public void AddPassive(string skillId)
+        {
+            definitions[skillId] = Skill(
+                skillId,
+                new ActivationRuleData
+                {
+                    activationKind = SkillActivationKind.Passive,
+                    consumesTurn = false
+                },
+                SelfTargeting(),
+                new ResolutionRuleData { resolutionFamily = SkillResolutionFamily.None },
+                new[] { new SkillEffect { effectType = SkillEffectType.None } });
+        }
+
+        void AddStance(string skillId)
+        {
+            definitions[skillId] = Skill(
+                skillId,
+                new ActivationRuleData
+                {
+                    activationKind = SkillActivationKind.Stance,
+                    consumesTurn = false,
+                    repeatableInTurn = true
+                },
+                SelfTargeting(),
+                new ResolutionRuleData { resolutionFamily = SkillResolutionFamily.None },
+                new[] { new SkillEffect { effectType = SkillEffectType.ToggleStance } });
         }
 
         public bool TryGetSkillMetadata(string skillId, out TacticalAISkillMetadata metadata)
         {
-            if (metadataBySkillId.TryGetValue(skillId, out metadata))
-            {
-                return true;
-            }
-
+            SkillDefinitionAsset definition;
+            definitions.TryGetValue(skillId ?? string.Empty, out definition);
+            ActivationRuleData activation = definition != null ? definition.ActivationRule : new ActivationRuleData();
             metadata = new TacticalAISkillMetadata
             {
-                SkillId = skillId,
-                IsPassive = false,
-                CanUseAfterMove = false,
-                CanMoveAfterSkill = false,
-                IsRepeatableToggle = TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId)
+                SkillId = skillId ?? string.Empty,
+                IsPassive = activation.activationKind == SkillActivationKind.Passive,
+                CanUseAfterMove = activation.canUseAfterMove,
+                CanMoveAfterSkill = activation.canMoveAfterUse,
+                IsRepeatableToggle = activation.repeatableInTurn || BattleActionSkillUtility.IsRepeatableToggleSkillId(skillId)
             };
             return true;
+        }
+
+        public bool TryGetSkillSpec(string skillId, out SkillDefinitionSpec spec)
+        {
+            SkillDefinitionAsset definition;
+            if (definitions.TryGetValue(skillId ?? string.Empty, out definition) == false || definition == null)
+            {
+                spec = null;
+                return false;
+            }
+
+            spec = SkillDefinitionSpec.FromAsset(definition);
+            return spec != null;
+        }
+
+        static TargetingRuleData SelfTargeting()
+        {
+            return new TargetingRuleData
+            {
+                targetFamily = SkillTargetFamily.Self,
+                targetRoles = new[] { SkillTargetRole.ActorSelf },
+                targetCount = 0,
+                requiresWalkable = true
+            };
+        }
+
+        static SkillDefinitionAsset Skill(
+            string skillId,
+            ActivationRuleData activation,
+            TargetingRuleData targeting,
+            ResolutionRuleData resolution,
+            SkillEffect[] effects)
+        {
+            SkillDefinitionAsset skill = ScriptableObject.CreateInstance<SkillDefinitionAsset>();
+            skill.Configure(skillId, "Active", string.Empty, string.Empty);
+            skill.ConfigureRules(activation, targeting, resolution, effects);
+            return skill;
         }
     }
 }

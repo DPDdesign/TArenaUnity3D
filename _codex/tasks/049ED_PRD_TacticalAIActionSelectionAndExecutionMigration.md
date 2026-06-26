@@ -1,11 +1,11 @@
 # 049ED PRD Tactical AI Action Selection And Execution Migration
 
-- Status: in production planning
+- Status: closed; code-structure pass with residual manual Unity validation risk; remaining broad action cleanup superseded by PRD050
 - Type: PRD
 - Area: Tactical AI, battle actions, SO-driven execution
 - Owner: TBD
-- Supersedes: `_codex/tasks/049D_PRD_TacticalAILegalActionAPIIntegration.md`,
-  `_codex/tasks/049E_PRD_SODrivenTacticalActionExecutionMigration.md`
+- Supersedes: `_codex/tasks/archive/049D_PRD_TacticalAILegalActionAPIIntegration.md`,
+  `_codex/tasks/archive/049E_PRD_SODrivenTacticalActionExecutionMigration.md`
 
 ## Current 049ABC Handoff
 
@@ -618,3 +618,21 @@ Done when:
 - Run Unity compile.
 - Run `TacticalAISearchScoringTests`, `TacticalAIAsyncDecisionPipelineTests`, `TacticalAILiveTurnIntegrationTests`, and `TacticalAIExecutionBridgeTests` in EditMode.
 - Run Play Mode validation for enemy AI skill use, with special attention to `Stone_Throw`.
+
+## Closure Audit - 2026-06-26
+
+### Verdict
+
+- 049ED is closed for the Tactical AI action-selection/execution migration slice.
+- Remaining full action-model purge work is tracked by PRD050, not by reopening 049ED.
+
+### Code Verification
+
+- Runtime search no longer finds `TacticalAIPlannedAction.LegacyIntent`, `TacticalAISearchPlan.BestIntent`, `TacticalAIExecutionResult.ExecutedIntent`, `TryExecuteOrderedIntents(...)`, `FromLegacyIntent(...)`, or `FromCandidateIntent(...)` in `Assets/Scripts`.
+- `TacticalAISnapshotProbe` now executes `TacticalAIPlannedAction` lists through `TacticalAIExecutionBridge.TryExecuteOrderedActions(...)`.
+- `TacticalAIExecutionBridge` no longer has direct non-skill `MouseControler.TryStart*` fallback code.
+
+### Residual Risk
+
+- Manual Unity validation is still required for the enemy AI skill path and `Stone_Throw` stack-split parity.
+- Broader legacy candidate/search internals remain PRD050 scope.

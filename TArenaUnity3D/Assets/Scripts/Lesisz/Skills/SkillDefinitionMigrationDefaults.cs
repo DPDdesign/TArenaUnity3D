@@ -30,6 +30,11 @@ public static class SkillDefinitionMigrationDefaults
 
         result.activationKind = SkillActivationKind.Active;
         result.cooldownTurns = result.cooldownTurns > 0 ? result.cooldownTurns : GetLegacyCooldown(skillId);
+        if (skillId == "Slash")
+        {
+            result.cooldownTurns = 2;
+        }
+
         result.canUseAfterMove = HasFlag(skill, "AM");
         result.canMoveAfterUse = HasFlag(skill, "NI");
         result.consumesTurn = HasFlag(skill, "NI") == false;
@@ -172,12 +177,31 @@ public static class SkillDefinitionMigrationDefaults
 
     public static SkillEffect[] ResolveEffects(SkillDefinitionAsset skill, SkillEffect[] authored)
     {
+        string skillId = GetSkillId(skill);
+        if (skillId == "Slash")
+        {
+            return new[]
+            {
+                Move(SkillMovementMode.NormalPathMove, SkillEffectTargetSource.Actor, false),
+                Damage(SkillDamageMode.BasicAttackDamage, SkillEffectTargetSource.AffectedUnits, 0.4f, false)
+            };
+        }
+
+        if (skillId == "Toxic_Fume")
+        {
+            return new[]
+            {
+                Move(SkillMovementMode.NormalPathMove, SkillEffectTargetSource.Actor, false),
+                Status("Toxic_Fume", SkillEffectTargetSource.Actor, 2, movement: -1, counterAttacks: 2),
+                Status("Taunt", SkillEffectTargetSource.AffectedUnits, 2)
+            };
+        }
+
         if (authored != null && authored.Length > 0)
         {
             return SkillEffect.CloneArray(authored);
         }
 
-        string skillId = GetSkillId(skill);
         if (IsStance(skillId))
         {
             return new[]
@@ -221,7 +245,6 @@ public static class SkillDefinitionMigrationDefaults
             case "Chope":
             case "Axe_Rain":
             case "Fire_Ball":
-            case "Slash":
                 effects.Add(Damage(SkillDamageMode.BasicAttackDamage, SkillEffectTargetSource.AffectedUnits, 1f, false));
                 break;
             case "Hate":
@@ -242,11 +265,6 @@ public static class SkillDefinitionMigrationDefaults
                 break;
             case "Stone_Stance":
                 effects.Add(Status("Stone_Stance", SkillEffectTargetSource.Actor, 2, counterAttacks: -1, specialResistance: 100));
-                break;
-            case "Toxic_Fume":
-                effects.Add(Move(SkillMovementMode.NormalPathMove, SkillEffectTargetSource.Actor, false));
-                effects.Add(Status("Toxic_Fume", SkillEffectTargetSource.Actor, 2, movement: -1, counterAttacks: 2));
-                effects.Add(Status("Taunt", SkillEffectTargetSource.AffectedUnits, 2));
                 break;
             case "Shapeshift":
                 effects.Add(Status("Shapeshift", SkillEffectTargetSource.Actor, 0));

@@ -144,20 +144,24 @@ public class TacticalAIAsyncDecisionPipelineTests
 
     static TacticalAISearchPlan CreatePlan()
     {
-        TacticalAIActionIntent intent = new TacticalAIActionIntent
+        BattleAction action = new BattleAction
         {
-            ActionType = TacticalAIActionType.Wait,
             ActorUnitId = "team-0-slot-0",
-            SourceHex = new TacticalAIHexCoordinate(0, 0),
+            ActionKind = BattleActionKind.Wait,
             StableOrderKey = "wait"
         };
+        BattleActionResult result = new BattleActionResult
+        {
+            ActorUnitId = "team-0-slot-0",
+            ActionKind = BattleActionKind.Wait
+        };
+        result.Add(new BattleActionResultEvent { EventType = BattleActionResultEventType.WaitApplied, ActorUnitId = "team-0-slot-0" });
+        TacticalAIPlannedAction plannedAction = TacticalAIPlannedAction.FromBattleAction(action, result);
 
         return new TacticalAISearchPlan
         {
-            BestAction = TacticalAIPlannedAction.FromLegacyIntent(intent),
-            BestIntent = intent,
-            OrderedActions = new List<TacticalAIPlannedAction> { TacticalAIPlannedAction.FromLegacyIntent(intent) },
-            OrderedActionIntents = new List<TacticalAIActionIntent> { intent },
+            BestAction = plannedAction,
+            OrderedActions = new List<TacticalAIPlannedAction> { plannedAction },
             BestScore = 12f,
             CompletedDepth = 2,
             PlannedSnapshotHash = string.Empty

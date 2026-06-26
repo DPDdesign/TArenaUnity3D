@@ -292,6 +292,178 @@ public class SkillRulesTests
         Assert.That(result.Cast.DestinationHex.R, Is.EqualTo(1));
     }
 
+    [Test]
+    public void Slash_InitialMovementTargets_UseGeneratedOffsetRowNeighbours()
+    {
+        SkillDefinitionAsset skill = Skill("Slash", "Active");
+        BattleUnitSnapshot actor = Unit("team-0-slot-0", 0, 0, 1, 2);
+        actor.MovementSpeed = 1;
+        actor.SkillIdsBySlot = new List<string> { "Slash" };
+        actor.CooldownsBySlot = new List<int> { 0 };
+        BattleSnapshot snapshot = Snapshot(actor);
+
+        List<SkillTarget> targets = SkillRules.GetTargets(
+            SkillContext.Create(snapshot, "team-0-slot-0", skill, 0),
+            new List<HexCoord>());
+
+        Assert.That(HasTarget(targets, 1, 2), Is.True);
+        Assert.That(HasTarget(targets, 2, 2), Is.True);
+        Assert.That(HasTarget(targets, 0, 2), Is.True);
+        Assert.That(HasTarget(targets, 1, 1), Is.True);
+        Assert.That(HasTarget(targets, 0, 1), Is.True);
+        Assert.That(HasTarget(targets, 1, 3), Is.True);
+        Assert.That(HasTarget(targets, 0, 3), Is.True);
+        Assert.That(HasTarget(targets, 2, 1), Is.False);
+    }
+
+    [Test]
+    public void Slash_InitialMovementTargets_UseLegacyNeighboursWhenSnapshotIsLegacy()
+    {
+        SkillDefinitionAsset skill = Skill("Slash", "Active");
+        BattleUnitSnapshot actor = Unit("team-0-slot-0", 0, 0, 1, 2);
+        actor.MovementSpeed = 1;
+        actor.SkillIdsBySlot = new List<string> { "Slash" };
+        actor.CooldownsBySlot = new List<int> { 0 };
+        BattleSnapshot snapshot = Snapshot(actor, true);
+
+        List<SkillTarget> targets = SkillRules.GetTargets(
+            SkillContext.Create(snapshot, "team-0-slot-0", skill, 0),
+            new List<HexCoord>());
+
+        Assert.That(HasTarget(targets, 1, 2), Is.True);
+        Assert.That(HasTarget(targets, 2, 2), Is.True);
+        Assert.That(HasTarget(targets, 0, 2), Is.True);
+        Assert.That(HasTarget(targets, 1, 1), Is.True);
+        Assert.That(HasTarget(targets, 1, 3), Is.True);
+        Assert.That(HasTarget(targets, 2, 1), Is.True);
+        Assert.That(HasTarget(targets, 0, 3), Is.True);
+        Assert.That(HasTarget(targets, 0, 1), Is.False);
+    }
+
+    [Test]
+    public void Slash_InitialMovementTargets_MirrorLegacyPositiveMapWrap()
+    {
+        SkillDefinitionAsset skill = Skill("Slash", "Active");
+        BattleUnitSnapshot actor = Unit("team-0-slot-0", 0, 0, 4, 4);
+        actor.MovementSpeed = 1;
+        actor.SkillIdsBySlot = new List<string> { "Slash" };
+        actor.CooldownsBySlot = new List<int> { 0 };
+        BattleSnapshot snapshot = Snapshot(actor, true);
+
+        List<SkillTarget> targets = SkillRules.GetTargets(
+            SkillContext.Create(snapshot, "team-0-slot-0", skill, 0),
+            new List<HexCoord>());
+
+        Assert.That(HasTarget(targets, 4, 4), Is.True);
+        Assert.That(HasTarget(targets, 0, 4), Is.True);
+        Assert.That(HasTarget(targets, 4, 0), Is.True);
+        Assert.That(HasTarget(targets, 0, 3), Is.True);
+        Assert.That(HasTarget(targets, 3, 0), Is.True);
+    }
+
+    [Test]
+    public void Slash_InitialMovementTargets_MatchSharedMoveReachability()
+    {
+        SkillDefinitionAsset skill = Skill("Slash", "Active");
+        BattleUnitSnapshot actor = Unit("team-0-slot-0", 0, 0, 1, 1);
+        actor.MovementSpeed = 3;
+        actor.SkillIdsBySlot = new List<string> { "Slash" };
+        actor.CooldownsBySlot = new List<int> { 0 };
+        BattleSnapshot snapshot = Snapshot(actor, Enemy("team-1-slot-0", 3, 1));
+
+        List<SkillTarget> targets = SkillRules.GetTargets(
+            SkillContext.Create(snapshot, "team-0-slot-0", skill, 0),
+            new List<HexCoord>());
+        Dictionary<string, int> reachable = BattleHexGridUtility.FindReachableHexCosts(snapshot, actor);
+
+        Assert.That(TargetCount(targets), Is.EqualTo(reachable.Count));
+        foreach (KeyValuePair<string, int> pair in reachable)
+        {
+            BattleHexSnapshot hex = FindHexByKey(snapshot, pair.Key);
+            Assert.That(HasTarget(targets, hex.C, hex.R), Is.True, "Missing reachable Slash movement target " + pair.Key);
+        }
+    }
+
+    [Test]
+    public void Slash_DirectionalImpactTargets_AreShownAfterMovementDestination()
+    {
+        SkillDefinitionAsset skill = Skill("Slash", "Active");
+        BattleUnitSnapshot actor = Unit("team-0-slot-0", 0, 0, 1, 1);
+        actor.MovementSpeed = 3;
+        actor.SkillIdsBySlot = new List<string> { "Slash" };
+        actor.CooldownsBySlot = new List<int> { 0 };
+        BattleSnapshot snapshot = Snapshot(actor, Enemy("team-1-slot-0", 3, 1));
+
+        List<SkillTarget> targets = SkillRules.GetTargets(
+            SkillContext.Create(snapshot, "team-0-slot-0", skill, 0),
+            new List<HexCoord> { new HexCoord(2, 1) });
+
+        Assert.That(TargetCount(targets), Is.EqualTo(6));
+        Assert.That(HasTarget(targets, 3, 1), Is.True);
+        Assert.That(HasTarget(targets, 1, 1), Is.True);
+        Assert.That(HasTarget(targets, 2, 0), Is.True);
+        Assert.That(HasTarget(targets, 2, 2), Is.True);
+    }
+
+    [Test]
+    public void Slash_AuthoredDamageOnlyEffect_IsResolvedAsMoveThenDamage()
+    {
+        SkillDefinitionAsset skill = Skill("Slash", "Active");
+        skill.ConfigureRules(
+            new ActivationRuleData { cooldownTurns = 1, consumesTurn = true },
+            new TargetingRuleData(),
+            new ResolutionRuleData(),
+            new[]
+            {
+                new SkillEffect
+                {
+                    effectType = SkillEffectType.Damage,
+                    targetSource = SkillEffectTargetSource.AffectedUnits,
+                    damageMode = SkillDamageMode.BasicAttackDamage,
+                    damageScale = 1f
+                }
+            });
+
+        SkillEffect[] effects = skill.Effects;
+
+        Assert.That(skill.ActivationRule.cooldownTurns, Is.EqualTo(2));
+        Assert.That(effects.Length, Is.EqualTo(2));
+        Assert.That(effects[0].effectType, Is.EqualTo(SkillEffectType.MoveUnit));
+        Assert.That(effects[0].movementMode, Is.EqualTo(SkillMovementMode.NormalPathMove));
+        Assert.That(effects[1].effectType, Is.EqualTo(SkillEffectType.Damage));
+        Assert.That(effects[1].damageScale, Is.EqualTo(0.4f));
+    }
+
+    [Test]
+    public void ToxicFume_AuthoredIncompleteEffects_AreResolvedAsMoveSelfStatusAndTaunt()
+    {
+        SkillDefinitionAsset skill = Skill("Toxic_Fume", "Active");
+        skill.ConfigureRules(
+            new ActivationRuleData { cooldownTurns = 2, consumesTurn = true },
+            new TargetingRuleData(),
+            new ResolutionRuleData(),
+            new[]
+            {
+                new SkillEffect
+                {
+                    effectType = SkillEffectType.ApplyStatus,
+                    targetSource = SkillEffectTargetSource.Actor,
+                    statusId = "Toxic_Fume",
+                    durationTurns = 2
+                }
+            });
+
+        SkillEffect[] effects = skill.Effects;
+
+        Assert.That(effects.Length, Is.EqualTo(3));
+        Assert.That(effects[0].effectType, Is.EqualTo(SkillEffectType.MoveUnit));
+        Assert.That(effects[1].statusId, Is.EqualTo("Toxic_Fume"));
+        Assert.That(effects[1].movementModifier, Is.EqualTo(-1));
+        Assert.That(effects[1].counterAttacksModifier, Is.EqualTo(2));
+        Assert.That(effects[2].statusId, Is.EqualTo("Taunt"));
+        Assert.That(effects[2].targetSource, Is.EqualTo(SkillEffectTargetSource.AffectedUnits));
+    }
+
     static SkillDefinitionAsset Skill(string skillId, string type)
     {
         SkillDefinitionAsset skill = ScriptableObject.CreateInstance<SkillDefinitionAsset>();
@@ -300,6 +472,11 @@ public class SkillRulesTests
     }
 
     static BattleSnapshot Snapshot(BattleUnitSnapshot actor, params BattleUnitSnapshot[] others)
+    {
+        return Snapshot(actor, false, others);
+    }
+
+    static BattleSnapshot Snapshot(BattleUnitSnapshot actor, bool usesLegacyHexLayout, params BattleUnitSnapshot[] others)
     {
         List<BattleUnitSnapshot> units = new List<BattleUnitSnapshot> { actor };
         if (others != null)
@@ -322,7 +499,7 @@ public class SkillRulesTests
             }
         }
 
-        return BattleSnapshotBuilder.Build(5, 5, hexes, units, actor.RuntimeUnitId, new BattleTurnStateSnapshot(), 123, "test-battle", 7);
+        return BattleSnapshotBuilder.Build(5, 5, hexes, units, actor.RuntimeUnitId, new BattleTurnStateSnapshot(), 123, "test-battle", 7, usesLegacyHexLayout);
     }
 
     static string Occupant(List<BattleUnitSnapshot> units, int c, int r)
@@ -350,6 +527,28 @@ public class SkillRulesTests
         }
 
         return false;
+    }
+
+    static int TargetCount(List<SkillTarget> targets)
+    {
+        return targets == null ? 0 : targets.Count;
+    }
+
+    static BattleHexSnapshot FindHexByKey(BattleSnapshot snapshot, string key)
+    {
+        Assert.That(snapshot, Is.Not.Null);
+        Assert.That(snapshot.Hexes, Is.Not.Null);
+        for (int i = 0; i < snapshot.Hexes.Count; i++)
+        {
+            BattleHexSnapshot hex = snapshot.Hexes[i];
+            if (hex != null && BattleHexGridUtility.GetHexKey(hex.C, hex.R) == key)
+            {
+                return hex;
+            }
+        }
+
+        Assert.Fail("Missing hex for key " + key);
+        return null;
     }
 
     static BattleUnitSnapshot Actor(List<string> skillIds, List<int> cooldowns)

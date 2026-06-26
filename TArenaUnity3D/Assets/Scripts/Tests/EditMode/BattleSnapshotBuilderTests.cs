@@ -117,6 +117,15 @@ public class BattleSnapshotBuilderTests
     }
 
     [Test]
+    public void Hash_ChangesWhenHexLayoutChanges()
+    {
+        string offsetHash = BuildSingleUnitSnapshot(0, 0, 12, 1, "team-0-slot-0", null, false).SnapshotHash;
+        string legacyHash = BuildSingleUnitSnapshot(0, 0, 12, 1, "team-0-slot-0", null, true).SnapshotHash;
+
+        Assert.That(legacyHash, Is.Not.EqualTo(offsetHash));
+    }
+
+    [Test]
     public void Hash_ChangesWhenStatusChanges()
     {
         string baselineHash = BuildSingleUnitSnapshot(0, 0, 12, 1, "team-0-slot-0", null).SnapshotHash;
@@ -162,7 +171,8 @@ public class BattleSnapshotBuilderTests
         int amount,
         int firstCooldown,
         string activeUnitId,
-        List<BattleStatusSnapshot> statuses)
+        List<BattleStatusSnapshot> statuses,
+        bool usesLegacyHexLayout = false)
     {
         return BattleSnapshotBuilder.Build(
             2,
@@ -187,7 +197,8 @@ public class BattleSnapshotBuilderTests
                     statuses)
             },
             activeUnitId,
-            TurnState(1, false, false, string.Empty));
+            TurnState(1, false, false, string.Empty),
+            usesLegacyHexLayout: usesLegacyHexLayout);
     }
 
     static BattleHexSnapshot Hex(int c, int r, bool isWalkable, string occupyingUnitId)

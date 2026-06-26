@@ -71,11 +71,6 @@ copied into `_codex/Gen_Im/` before final reporting.
 ## Hard Project Rules
 
 - Work in small, safe, testable steps.
-- For gameplay design, UI design, and programming tasks, always use the local
-  PRD019/PRD030 maps before proposing or changing work that can touch run
-  metagame, screens, persistence, or data flow:
-  `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md` and
-  `_codex/Documentation/PRD030_OfflineDatabase_Map.md`.
 - When Python tooling is needed on Windows, use `py -3` instead of `python`.
   Do not rely on the Microsoft Store `python.exe` alias.
 - Use TextMesh Pro only for project text UI and code references. When touching
@@ -94,6 +89,11 @@ copied into `_codex/Gen_Im/` before final reporting.
 - Do not edit Unity assets, prefabs, scenes, materials, controllers,
   `.inputactions`, generated Unity files, `.asmdef`, or `.asmref` unless the
   user explicitly permits it.
+- PRD019 UI prefab folders under
+  `TArenaUnity3D/Assets/Resources/UI/PRD_19/` are read-only by default. Do not
+  create, edit, move, delete, or regenerate PRD019 prefabs, prefab `.meta`
+  files, screenshots, or other Unity asset files unless the user gives
+  path-specific permission in the current task.
 - Work only on `.cs`, `.md`, or other plain text files when needed.
 - Do not run or suggest Git, `dotnet`, Unity builds, external build scripts,
   package restore commands, or SDK installation commands.
@@ -108,12 +108,17 @@ Load only the runbooks relevant to the current task:
 - testing or final response after code changes: `_codex/agents/runbooks/testing.md`
 - local task tracker, QA protocol, `/implement`, `/fix`, `/close`: `_codex/agents/runbooks/task-tracker.md`
 - Git-related request: `_codex/agents/runbooks/git-policy.md`
+- agent/documentation/RAG/source routing hygiene:
+  `_codex/agents/runbooks/instruction-hygiene.md`
 - code navigation: `_codex/agents/docs/codebase-map.md`
 - design/production/gameplay context routing: `_codex/Context/CONTEXT-MAP.md`
-- PRD019/PRD030 run metagame, UI, gameplay, programming, persistence, or screen
-  data-flow work:
-  `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md` and
-  `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
+- domain context routing lives under `_codex/Context/maps/`; load only the
+  domain map explicitly needed by the current prompt/task/brief.
+- documentation source classification: `_codex/Documentation/sources-index.md`
+- task/PRD/QA classification: `_codex/tasks/README.md`
+- PRD files and PRD-specific maps are not global startup context. Load a PRD or
+  PRD map only when the current prompt/task/brief explicitly requires that PRD
+  scope.
 
 ## Skills
 
@@ -140,7 +145,8 @@ When sources conflict:
 4. This `AGENTS.md`.
 5. Relevant runbook.
 6. `_codex/Context/CONTEXT-MAP.md` routing.
-7. Specific context document.
-8. Existing C# code for implementation details.
+7. Relevant domain map under `_codex/Context/maps/`.
+8. Specific context document.
+9. Existing C# code for implementation details.
 
 

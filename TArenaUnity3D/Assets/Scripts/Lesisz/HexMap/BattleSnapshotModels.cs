@@ -68,6 +68,9 @@ public class BattleUnitSnapshot
     public bool Moved;
     public bool MovedThisTurn;
     public bool UsedSkillThisTurn;
+    public bool CounterAttackAvailable;
+    public int CounterAttacks;
+    public int TempCounterAttacks;
     public List<string> UsedSkillIdsThisTurn = new List<string>();
     public bool CanMoveAfterSkillThisTurn;
     public List<int> CooldownsBySlot = new List<int>();
@@ -80,6 +83,7 @@ public class BattleSnapshot
 {
     public int MapWidth;
     public int MapHeight;
+    public bool UsesLegacyHexLayout;
     public int GameSeed;
     public string BattleId = string.Empty;
     public int NextActionIndex;

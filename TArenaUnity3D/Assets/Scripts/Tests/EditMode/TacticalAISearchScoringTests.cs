@@ -16,7 +16,8 @@ public class TacticalAISearchScoringTests
 
         TacticalAISearchPlan plan = TacticalAISearchEngine.Search(snapshot, profile, new TestSkillMetadataProvider());
 
-        Assert.That(plan.BestIntent, Is.Not.Null);
+        Assert.That(plan.BestAction, Is.Not.Null);
+        Assert.That(plan.BestAction.Action, Is.Not.Null);
         Assert.That(plan.CompletedDepth, Is.EqualTo(3));
         Assert.That(plan.OpponentResponseReachable, Is.True);
         Assert.That(plan.CoveredOpponentResponse, Is.True);
@@ -36,16 +37,16 @@ public class TacticalAISearchScoringTests
             Unit("team-1-slot-2", 1, 2, 4, 0),
             Unit("team-1-slot-3", 1, 3, 4, 1));
 
-        List<TacticalAIActionIntent> candidates = TacticalAISearchCandidateExpander.BuildSearchCandidates(
+        List<BattleAction> candidates = BattleActionRules.GenerateLegalActions(
             snapshot,
             profile,
             new TestSkillMetadataProvider());
 
-        Assert.That(CountActions(candidates, TacticalAIActionType.Skill), Is.LessThanOrEqualTo(2));
+        Assert.That(CountActions(candidates, BattleActionKind.Skill), Is.LessThanOrEqualTo(2));
     }
 
     [Test]
-    public void SearchCandidateExpansion_EmitsValidatedSkillCastAndPreview()
+    public void SearchCandidateExpansion_EmitsBattleActionSkillPayloadAndPreview()
     {
         TacticalAIResolvedProfile profile = TestProfile();
         profile.MaxCandidatesPerActionType = 8;
@@ -55,18 +56,20 @@ public class TacticalAISearchScoringTests
             ActorUnit("team-0-slot-0", 0, 0, 0, 0, skillIds: new List<string> { "Bolt" }),
             Unit("team-1-slot-0", 1, 0, 2, 0));
 
-        List<TacticalAIActionIntent> candidates = TacticalAISearchCandidateExpander.BuildSearchCandidates(
+        List<BattleAction> candidates = BattleActionRules.GenerateLegalActions(
             snapshot,
             profile,
             new TestSkillMetadataProvider());
 
-        TacticalAIActionIntent skillCandidate = FindAction(candidates, TacticalAIActionType.Skill);
+        BattleAction skillCandidate = FindAction(candidates, BattleActionKind.Skill);
         Assert.That(skillCandidate, Is.Not.Null);
-        Assert.That(skillCandidate.ValidatedSkillCast, Is.Not.Null);
-        Assert.That(skillCandidate.ValidatedSkillCast.SkillId, Is.EqualTo("Bolt"));
-        Assert.That(skillCandidate.ValidatedSkillCast.PrimaryTargetUnitId, Is.EqualTo("team-1-slot-0"));
-        Assert.That(skillCandidate.PreviewResult, Is.Not.Null);
-        Assert.That(skillCandidate.PreviewResult.Events.Exists(e => e.EventType == SkillResultEventType.DamageApplied), Is.True);
+        Assert.That(skillCandidate.SkillCast, Is.Not.Null);
+        Assert.That(skillCandidate.SkillCast.SkillId, Is.EqualTo("Bolt"));
+        Assert.That(skillCandidate.SkillCast.PrimaryTargetUnitId, Is.EqualTo("team-1-slot-0"));
+
+        BattleActionResult preview = BattleActionRules.Apply(snapshot, skillCandidate);
+        Assert.That(preview, Is.Not.Null);
+        Assert.That(preview.Events.Exists(e => e.EventType == BattleActionResultEventType.DamageApplied), Is.True);
     }
 
     [Test]
@@ -80,12 +83,12 @@ public class TacticalAISearchScoringTests
             ActorUnit("team-0-slot-0", 0, 0, 0, 0, skillIds: new List<string> { "Chope" }),
             Unit("team-1-slot-0", 1, 0, 4, 4));
 
-        List<TacticalAIActionIntent> candidates = TacticalAISearchCandidateExpander.BuildSearchCandidates(
+        List<BattleAction> candidates = BattleActionRules.GenerateLegalActions(
             snapshot,
             profile,
             new TestSkillMetadataProvider());
 
-        Assert.That(CountActions(candidates, TacticalAIActionType.Skill), Is.EqualTo(0));
+        Assert.That(CountActions(candidates, BattleActionKind.Skill), Is.EqualTo(0));
     }
 
     [Test]
@@ -99,16 +102,16 @@ public class TacticalAISearchScoringTests
             ActorUnit("team-0-slot-0", 0, 0, 0, 0, skillIds: new List<string> { "Chope" }),
             Unit("team-1-slot-0", 1, 0, 0, 1));
 
-        List<TacticalAIActionIntent> candidates = TacticalAISearchCandidateExpander.BuildSearchCandidates(
+        List<BattleAction> candidates = BattleActionRules.GenerateLegalActions(
             snapshot,
             profile,
             new TestSkillMetadataProvider());
 
-        Assert.That(CountActions(candidates, TacticalAIActionType.Skill), Is.EqualTo(1));
+        Assert.That(CountActions(candidates, BattleActionKind.Skill), Is.EqualTo(1));
     }
 
     [Test]
-    public void SearchPlan_SkillActionDoesNotCarryLegacyIntent()
+    public void SearchPlan_SkillActionCarriesBattleActionUsePayload()
     {
         TacticalAIResolvedProfile profile = TestProfile();
         profile.ActionTypeBiases.Skill = 1000f;
@@ -121,8 +124,10 @@ public class TacticalAISearchScoringTests
 
         Assert.That(plan.BestAction, Is.Not.Null);
         Assert.That(plan.BestAction.ActionType, Is.EqualTo(TacticalAIActionType.Skill));
-        Assert.That(plan.BestAction.ValidatedSkillCast, Is.Not.Null);
-        Assert.That(plan.BestAction.LegacyIntent, Is.Null);
+        Assert.That(plan.BestAction.Action, Is.Not.Null);
+        Assert.That(plan.BestAction.Action.SkillCast, Is.Not.Null);
+        Assert.That(plan.BestAction.Use, Is.Not.Null);
+        Assert.That(plan.BestAction.Use.ActionKind, Is.EqualTo(BattleActionKind.Skill));
     }
 
     [Test]
@@ -143,7 +148,8 @@ public class TacticalAISearchScoringTests
         Assert.That(plan.WatchdogExpired, Is.True);
         Assert.That(plan.BestAction, Is.Not.Null);
         Assert.That(plan.BestAction.ActionType, Is.EqualTo(TacticalAIActionType.Skill));
-        Assert.That(plan.BestAction.ValidatedSkillCast, Is.Not.Null);
+        Assert.That(plan.BestAction.Action, Is.Not.Null);
+        Assert.That(plan.BestAction.Action.SkillCast, Is.Not.Null);
     }
 
     [Test]
@@ -204,8 +210,9 @@ public class TacticalAISearchScoringTests
 
         TacticalAISearchPlan plan = TacticalAISearchEngine.Search(snapshot, profile, new TestSkillMetadataProvider());
 
-        Assert.That(plan.BestIntent, Is.Not.Null);
-        Assert.That(plan.BestIntent.TargetUnitId, Is.EqualTo("team-1-slot-0"));
+        Assert.That(plan.BestAction, Is.Not.Null);
+        Assert.That(plan.BestAction.Action, Is.Not.Null);
+        Assert.That(plan.BestAction.Action.PrimaryTargetUnitId, Is.EqualTo("team-1-slot-0"));
     }
 
     [Test]
@@ -231,9 +238,9 @@ public class TacticalAISearchScoringTests
 
         TacticalAISearchPlan waitBiasedPlan = TacticalAISearchEngine.Search(snapshot, waitBiased, new TestSkillMetadataProvider());
 
-        Assert.That(normalPlan.BestIntent, Is.Not.Null);
-        Assert.That(waitBiasedPlan.BestIntent, Is.Not.Null);
-        Assert.That(waitBiasedPlan.BestIntent.ActionType, Is.EqualTo(TacticalAIActionType.Wait));
+        Assert.That(normalPlan.BestAction, Is.Not.Null);
+        Assert.That(waitBiasedPlan.BestAction, Is.Not.Null);
+        Assert.That(waitBiasedPlan.BestAction.ActionKind, Is.EqualTo(BattleActionKind.Wait));
     }
 
     static TacticalAIResolvedProfile TestProfile()
@@ -378,12 +385,12 @@ public class TacticalAISearchScoringTests
         };
     }
 
-    static int CountActions(List<TacticalAIActionIntent> actions, TacticalAIActionType actionType)
+    static int CountActions(List<BattleAction> actions, BattleActionKind actionKind)
     {
         int count = 0;
         for (int i = 0; i < actions.Count; i++)
         {
-            if (actions[i].ActionType == actionType)
+            if (actions[i].ActionKind == actionKind)
             {
                 count++;
             }
@@ -392,11 +399,11 @@ public class TacticalAISearchScoringTests
         return count;
     }
 
-    static TacticalAIActionIntent FindAction(List<TacticalAIActionIntent> actions, TacticalAIActionType actionType)
+    static BattleAction FindAction(List<BattleAction> actions, BattleActionKind actionKind)
     {
         for (int i = 0; i < actions.Count; i++)
         {
-            if (actions[i].ActionType == actionType)
+            if (actions[i].ActionKind == actionKind)
             {
                 return actions[i];
             }
@@ -493,7 +500,7 @@ public class TacticalAISearchScoringTests
                 IsPassive = false,
                 CanUseAfterMove = false,
                 CanMoveAfterSkill = false,
-                IsRepeatableToggle = TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId)
+                IsRepeatableToggle = BattleActionSkillUtility.IsRepeatableToggleSkillId(skillId)
             };
             return true;
         }

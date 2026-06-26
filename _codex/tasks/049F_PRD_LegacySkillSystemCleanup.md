@@ -1,6 +1,6 @@
 # 049F PRD Legacy Skill System Cleanup
 
-- Status: future draft after 049ED replacement paths are proven
+- Status: closed for focused AI CastManager bridge cleanup; remaining broad cleanup superseded by PRD050
 - Type: PRD
 - Area: skill cleanup, legacy removal, validation/execution migration
 - Owner: TBD
@@ -235,3 +235,22 @@ Done when:
 - Run Unity compile/import.
 - Run `TacticalAIExecutionBridgeTests` in EditMode.
 - Run the Play Mode enemy AI skill scenario above, with special attention to `Stone_Throw`.
+
+## Closure Audit - 2026-06-26
+
+### Verdict
+
+- 049F is closed for the focused cleanup slice that removed the AI CastManager skill bridge.
+- Remaining broad legacy cleanup is not complete here and remains under PRD050.
+
+### Code Verification
+
+- Runtime search no longer finds `TacticalAICastManagerSkillIntentExecutor` or `ITacticalAISkillIntentExecutor` in `Assets/Scripts`.
+- AI execution now uses `ITacticalAISkillActionExecutor` / `TacticalAISkillRulesExecutor`.
+- `TacticalAIExecutionBridge` no longer exposes legacy execution attempt/result intent fields.
+
+### Residual Risk
+
+- `CastManager` remains in player/live skill paths.
+- `MouseControler` still contains CastManager compatibility code.
+- Those are full PRD050 migration items, not blockers for this focused 049F closure.

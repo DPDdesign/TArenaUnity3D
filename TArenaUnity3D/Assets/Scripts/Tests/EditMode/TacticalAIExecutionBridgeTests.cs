@@ -6,13 +6,14 @@ using UnityEngine;
 public class TacticalAIExecutionBridgeTests
 {
     [Test]
-    public void SkillRulesExecutor_UsesActionExecutorContract()
+    public void BattleActionLiveApplier_IsTheSkillExecutionSurface()
     {
-        Assert.That(TacticalAISkillRulesExecutor.Instance, Is.InstanceOf<ITacticalAISkillActionExecutor>());
+        TacticalAIExecutionRuntimeContext context = new TacticalAIExecutionRuntimeContext(null, null, null, null);
+        Assert.That(new BattleActionLiveApplier(context), Is.Not.Null);
     }
 
     [Test]
-    public void PlannedSkillAction_DoesNotCarryLegacyIntent()
+    public void PlannedSkillAction_CarriesBattleActionUsePayload()
     {
         SkillCast cast = new SkillCast
         {
@@ -21,60 +22,57 @@ public class TacticalAIExecutionBridgeTests
         };
         cast.SelectedHexes.Add(new HexCoord(0, 0));
 
-        TacticalAIActionIntent candidate = new TacticalAIActionIntent
+        BattleAction battleAction = new BattleAction
         {
-            ActionType = TacticalAIActionType.Skill,
             ActorUnitId = "team-0-slot-0",
+            ActionKind = BattleActionKind.Skill,
+            SkillSlot = 0,
             SkillId = "BattleCry",
             StableOrderKey = "skill|BattleCry",
-            ValidatedSkillCast = cast,
-            PreviewResult = new SkillResult()
+            SkillCast = cast
         };
+        battleAction.SelectedHexes.Add(new HexCoord(0, 0));
 
-        TacticalAIPlannedAction action = TacticalAIPlannedAction.FromCandidateIntent(candidate);
+        TacticalAIPlannedAction action = TacticalAIPlannedAction.FromBattleAction(
+            battleAction,
+            new BattleActionResult { ActorUnitId = "team-0-slot-0", ActionKind = BattleActionKind.Skill });
 
         Assert.That(action, Is.Not.Null);
         Assert.That(action.ActionType, Is.EqualTo(TacticalAIActionType.Skill));
-        Assert.That(action.LegacyIntent, Is.Null);
-        Assert.That(action.SubmittedSkillUse, Is.Not.Null);
-        Assert.That(action.ValidatedSkillCast, Is.Not.Null);
-        Assert.That(action.ValidatedSkillCast.SkillId, Is.EqualTo("BattleCry"));
+        Assert.That(action.Action, Is.Not.Null);
+        Assert.That(action.Action.SkillCast, Is.Not.Null);
+        Assert.That(action.Action.SkillCast.SkillId, Is.EqualTo("BattleCry"));
+        Assert.That(action.Use, Is.Not.Null);
+        Assert.That(action.Use.ActionKind, Is.EqualTo(BattleActionKind.Skill));
     }
 
     [Test]
-    public void Revalidator_AcceptsLegalMoveIntentAgainstLiveSnapshot()
+    public void BattleActionRules_AcceptsLegalMoveUseAgainstLiveSnapshot()
     {
         BattleSnapshot liveSnapshot = CreateSnapshot(
             ActorUnit(0, 0),
             EnemyUnit("team-1-slot-0", 1, 0, 3, 0));
 
-        TacticalAIActionIntent moveIntent = new TacticalAIActionIntent
+        BattleActionUse moveUse = new BattleActionUse
         {
-            ActionType = TacticalAIActionType.Move,
             ActorUnitId = "team-0-slot-0",
-            SourceHex = new TacticalAIHexCoordinate(0, 0),
-            DestinationHex = new TacticalAIHexCoordinate(1, 0),
-            StableOrderKey = "move"
+            ActionKind = BattleActionKind.Move,
+            SelectedHexes = new List<HexCoord> { new HexCoord(1, 0) }
         };
 
-        TacticalAIRevalidatedIntent revalidated;
-        string failureReason;
-        bool valid = TacticalAIIntentRevalidator.TryRevalidate(
-            moveIntent,
+        BattleActionValidationResult validation = BattleActionRules.Validate(
+            moveUse,
             liveSnapshot,
-            liveSnapshot,
-            out revalidated,
-            out failureReason,
             new TestSkillMetadataProvider());
 
-        Assert.That(valid, Is.True, failureReason);
-        Assert.That(revalidated, Is.Not.Null);
-        Assert.That(revalidated.DestinationHex.C, Is.EqualTo(1));
-        Assert.That(revalidated.DestinationHex.R, Is.EqualTo(0));
+        Assert.That(validation.IsValid, Is.True, validation.RejectReason);
+        Assert.That(validation.Action, Is.Not.Null);
+        Assert.That(validation.Action.DestinationHex.C, Is.EqualTo(1));
+        Assert.That(validation.Action.DestinationHex.R, Is.EqualTo(0));
     }
 
     [Test]
-    public void Revalidator_RejectsLegacyMoveOutsideSharedMovementBudget()
+    public void BattleActionRules_RejectsMoveOutsideSharedMovementBudget()
     {
         BattleUnitSnapshot actor = ActorUnit(0, 0);
         actor.MovementSpeed = 1;
@@ -82,62 +80,48 @@ public class TacticalAIExecutionBridgeTests
             actor,
             EnemyUnit("team-1-slot-0", 1, 0, 3, 0));
 
-        TacticalAIActionIntent moveIntent = new TacticalAIActionIntent
+        BattleActionUse moveUse = new BattleActionUse
         {
-            ActionType = TacticalAIActionType.Move,
             ActorUnitId = "team-0-slot-0",
-            SourceHex = new TacticalAIHexCoordinate(0, 0),
-            DestinationHex = new TacticalAIHexCoordinate(2, 0),
-            StableOrderKey = "move-outside-budget"
+            ActionKind = BattleActionKind.Move,
+            SelectedHexes = new List<HexCoord> { new HexCoord(2, 0) }
         };
 
-        TacticalAIRevalidatedIntent revalidated;
-        string failureReason;
-        bool valid = TacticalAIIntentRevalidator.TryRevalidate(
-            moveIntent,
+        BattleActionValidationResult validation = BattleActionRules.Validate(
+            moveUse,
             liveSnapshot,
-            liveSnapshot,
-            out revalidated,
-            out failureReason,
             new TestSkillMetadataProvider());
 
-        Assert.That(valid, Is.False);
-        Assert.That(failureReason, Does.Contain("BattleActionRules rejected"));
-        Assert.That(revalidated, Is.Null);
+        Assert.That(validation.IsValid, Is.False);
+        Assert.That(validation.RejectReason, Does.Contain("outside actor movement budget"));
+        Assert.That(validation.Action, Is.Null);
     }
 
     [Test]
-    public void Revalidator_RejectsWhenIntentActorIsNotLiveActiveUnit()
+    public void BattleActionRules_RejectsWhenUseActorIsNotLiveActiveUnit()
     {
         BattleSnapshot liveSnapshot = CreateSnapshot(
             ActorUnit(0, 0),
             EnemyUnit("team-1-slot-0", 1, 0, 3, 0));
 
-        TacticalAIActionIntent staleIntent = new TacticalAIActionIntent
+        BattleActionUse staleUse = new BattleActionUse
         {
-            ActionType = TacticalAIActionType.Wait,
             ActorUnitId = "team-1-slot-0",
-            SourceHex = new TacticalAIHexCoordinate(3, 0),
-            StableOrderKey = "stale-wait"
+            ActionKind = BattleActionKind.Wait
         };
 
-        TacticalAIRevalidatedIntent revalidated;
-        string failureReason;
-        bool valid = TacticalAIIntentRevalidator.TryRevalidate(
-            staleIntent,
+        BattleActionValidationResult validation = BattleActionRules.Validate(
+            staleUse,
             liveSnapshot,
-            liveSnapshot,
-            out revalidated,
-            out failureReason,
             new TestSkillMetadataProvider());
 
-        Assert.That(valid, Is.False);
-        Assert.That(failureReason, Does.Contain("live active unit"));
-        Assert.That(revalidated, Is.Null);
+        Assert.That(validation.IsValid, Is.False);
+        Assert.That(validation.RejectReason, Does.Contain("active unit"));
+        Assert.That(validation.Action, Is.Null);
     }
 
     [Test]
-    public void Revalidator_RejectsSkillWhenLiveCooldownChanged()
+    public void BattleActionRules_RejectsSkillWhenLiveCooldownChanged()
     {
         BattleUnitSnapshot actor = ActorUnit(0, 0);
         actor.SkillIdsBySlot = new List<string> { "BattleCry" };
@@ -147,33 +131,27 @@ public class TacticalAIExecutionBridgeTests
             actor,
             EnemyUnit("team-1-slot-0", 1, 0, 3, 0));
 
-        TacticalAIActionIntent skillIntent = new TacticalAIActionIntent
+        BattleActionUse skillUse = new BattleActionUse
         {
-            ActionType = TacticalAIActionType.Skill,
             ActorUnitId = actor.RuntimeUnitId,
-            SourceHex = new TacticalAIHexCoordinate(0, 0),
+            ActionKind = BattleActionKind.Skill,
             SkillSlot = 0,
             SkillId = "BattleCry",
-            StableOrderKey = "skill"
+            SelectedHexes = new List<HexCoord> { new HexCoord(3, 0) }
         };
 
-        TacticalAIRevalidatedIntent revalidated;
-        string failureReason;
-        bool valid = TacticalAIIntentRevalidator.TryRevalidate(
-            skillIntent,
+        BattleActionValidationResult validation = BattleActionRules.Validate(
+            skillUse,
             liveSnapshot,
-            liveSnapshot,
-            out revalidated,
-            out failureReason,
             new TestSkillMetadataProvider());
 
-        Assert.That(valid, Is.False);
-        Assert.That(failureReason, Does.Contain("cooldown"));
-        Assert.That(revalidated, Is.Null);
+        Assert.That(validation.IsValid, Is.False);
+        Assert.That(validation.RejectReason, Does.Contain("SkillOnCooldown"));
+        Assert.That(validation.Action, Is.Null);
     }
 
     [Test]
-    public void Revalidator_AcceptsSkillAndPreservesSlotIdPair()
+    public void BattleActionRules_AcceptsSkillAndPreservesSlotIdPair()
     {
         BattleUnitSnapshot actor = ActorUnit(0, 0);
         actor.SkillIdsBySlot = new List<string> { "FirstSkill", "BattleCry" };
@@ -183,37 +161,30 @@ public class TacticalAIExecutionBridgeTests
             actor,
             EnemyUnit("team-1-slot-0", 1, 0, 3, 0));
 
-        TacticalAIActionIntent skillIntent = new TacticalAIActionIntent
+        BattleActionUse skillUse = new BattleActionUse
         {
-            ActionType = TacticalAIActionType.Skill,
             ActorUnitId = actor.RuntimeUnitId,
-            SourceHex = new TacticalAIHexCoordinate(0, 0),
+            ActionKind = BattleActionKind.Skill,
             TargetUnitId = "team-1-slot-0",
-            TargetHex = new TacticalAIHexCoordinate(3, 0),
             SkillSlot = 1,
             SkillId = "BattleCry",
-            StableOrderKey = "skill-slot-pair"
+            SelectedHexes = new List<HexCoord> { new HexCoord(3, 0) }
         };
 
-        TacticalAIRevalidatedIntent revalidated;
-        string failureReason;
-        bool valid = TacticalAIIntentRevalidator.TryRevalidate(
-            skillIntent,
+        BattleActionValidationResult validation = BattleActionRules.Validate(
+            skillUse,
             liveSnapshot,
-            liveSnapshot,
-            out revalidated,
-            out failureReason,
             new TestSkillMetadataProvider());
 
-        Assert.That(valid, Is.True, failureReason);
-        Assert.That(revalidated.SkillSlot, Is.EqualTo(1));
-        Assert.That(revalidated.SkillId, Is.EqualTo("BattleCry"));
-        Assert.That(revalidated.TargetHex.C, Is.EqualTo(3));
-        Assert.That(revalidated.TargetHex.R, Is.EqualTo(0));
+        Assert.That(validation.IsValid, Is.True, validation.RejectReason);
+        Assert.That(validation.Action.SkillSlot, Is.EqualTo(1));
+        Assert.That(validation.Action.SkillId, Is.EqualTo("BattleCry"));
+        Assert.That(validation.Action.ImpactHex.C, Is.EqualTo(3));
+        Assert.That(validation.Action.ImpactHex.R, Is.EqualTo(0));
     }
 
     [Test]
-    public void Revalidator_RejectsUsedNonToggleSkill()
+    public void BattleActionRules_RejectsUsedNonToggleSkill()
     {
         BattleUnitSnapshot actor = ActorUnit(0, 0);
         actor.SkillIdsBySlot = new List<string> { "BattleCry" };
@@ -224,33 +195,27 @@ public class TacticalAIExecutionBridgeTests
             actor,
             EnemyUnit("team-1-slot-0", 1, 0, 3, 0));
 
-        TacticalAIActionIntent skillIntent = new TacticalAIActionIntent
+        BattleActionUse skillUse = new BattleActionUse
         {
-            ActionType = TacticalAIActionType.Skill,
             ActorUnitId = actor.RuntimeUnitId,
-            SourceHex = new TacticalAIHexCoordinate(0, 0),
+            ActionKind = BattleActionKind.Skill,
             SkillSlot = 0,
             SkillId = "BattleCry",
-            StableOrderKey = "used-skill"
+            SelectedHexes = new List<HexCoord> { new HexCoord(3, 0) }
         };
 
-        TacticalAIRevalidatedIntent revalidated;
-        string failureReason;
-        bool valid = TacticalAIIntentRevalidator.TryRevalidate(
-            skillIntent,
+        BattleActionValidationResult validation = BattleActionRules.Validate(
+            skillUse,
             liveSnapshot,
-            liveSnapshot,
-            out revalidated,
-            out failureReason,
             new TestSkillMetadataProvider());
 
-        Assert.That(valid, Is.False);
-        Assert.That(failureReason, Does.Contain("already used"));
-        Assert.That(revalidated, Is.Null);
+        Assert.That(validation.IsValid, Is.False);
+        Assert.That(validation.RejectReason, Does.Contain("SkillAlreadyUsedThisTurn"));
+        Assert.That(validation.Action, Is.Null);
     }
 
     [Test]
-    public void Revalidator_AcceptsRepeatableToggleEvenWhenAlreadyUsed()
+    public void BattleActionRules_AcceptsRepeatableToggleEvenWhenAlreadyUsed()
     {
         BattleUnitSnapshot actor = ActorUnit(0, 0);
         actor.SkillIdsBySlot = new List<string> { "Range_Stance_Barb" };
@@ -261,29 +226,22 @@ public class TacticalAIExecutionBridgeTests
             actor,
             EnemyUnit("team-1-slot-0", 1, 0, 3, 0));
 
-        TacticalAIActionIntent skillIntent = new TacticalAIActionIntent
+        BattleActionUse skillUse = new BattleActionUse
         {
-            ActionType = TacticalAIActionType.Skill,
             ActorUnitId = actor.RuntimeUnitId,
-            SourceHex = new TacticalAIHexCoordinate(0, 0),
+            ActionKind = BattleActionKind.Skill,
             SkillSlot = 0,
-            SkillId = "Range_Stance_Barb",
-            StableOrderKey = "toggle-skill"
+            SkillId = "Range_Stance_Barb"
         };
 
-        TacticalAIRevalidatedIntent revalidated;
-        string failureReason;
-        bool valid = TacticalAIIntentRevalidator.TryRevalidate(
-            skillIntent,
+        BattleActionValidationResult validation = BattleActionRules.Validate(
+            skillUse,
             liveSnapshot,
-            liveSnapshot,
-            out revalidated,
-            out failureReason,
             new TestSkillMetadataProvider());
 
-        Assert.That(valid, Is.True, failureReason);
-        Assert.That(revalidated.SkillSlot, Is.EqualTo(0));
-        Assert.That(revalidated.SkillId, Is.EqualTo("Range_Stance_Barb"));
+        Assert.That(validation.IsValid, Is.True, validation.RejectReason);
+        Assert.That(validation.Action.SkillSlot, Is.EqualTo(0));
+        Assert.That(validation.Action.SkillId, Is.EqualTo("Range_Stance_Barb"));
     }
 
     [Test]
@@ -293,25 +251,22 @@ public class TacticalAIExecutionBridgeTests
             ActorUnit(0, 0, isRange: true),
             EnemyUnit("team-1-slot-0", 1, 0, 2, 0));
 
-        TacticalAIActionIntent plannedMove = new TacticalAIActionIntent
+        BattleAction plannedMove = new BattleAction
         {
-            ActionType = TacticalAIActionType.Move,
             ActorUnitId = "team-0-slot-0",
-            SourceHex = new TacticalAIHexCoordinate(0, 0),
-            DestinationHex = new TacticalAIHexCoordinate(1, 0),
+            ActionKind = BattleActionKind.Move,
+            DestinationHex = new HexCoord(1, 0),
             StableOrderKey = "planned-move"
         };
+        plannedMove.SelectedHexes.Add(new HexCoord(1, 0));
+        TacticalAIPlannedAction plannedAction = TacticalAIPlannedAction.FromBattleAction(
+            plannedMove,
+            new BattleActionResult { ActorUnitId = "team-0-slot-0", ActionKind = BattleActionKind.Move });
 
-        List<TacticalAIActionIntent> queue = TacticalAIExecutionFallbackPlanner.BuildAttemptQueue(
-            new[] { plannedMove },
+        List<TacticalAIPlannedAction> queue = TacticalAIExecutionFallbackPlanner.BuildActionAttemptQueue(
+            new[] { plannedAction },
             liveSnapshot,
-            new TacticalAICandidateGenerationOptions
-            {
-                MaxCandidatesPerActionType = 16,
-                MaxSkillCandidates = 0,
-                MaxMoveCandidates = 16,
-                MaxAttackCandidates = 16
-            },
+            TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(null),
             new TestSkillMetadataProvider(),
             maxFallbackCandidates: 4);
 
@@ -326,33 +281,30 @@ public class TacticalAIExecutionBridgeTests
             ActorUnit(0, 0),
             EnemyUnit("team-1-slot-0", 1, 0, 3, 0));
 
-        TacticalAIActionIntent freshMove = new TacticalAIActionIntent
+        BattleAction plannedMove = new BattleAction
         {
-            ActionType = TacticalAIActionType.Move,
             ActorUnitId = "team-0-slot-0",
-            SourceHex = new TacticalAIHexCoordinate(0, 0),
-            DestinationHex = new TacticalAIHexCoordinate(1, 0),
+            ActionKind = BattleActionKind.Move,
+            DestinationHex = new HexCoord(1, 0),
             StableOrderKey = "Move|team-0-slot-0|0|0|-1||1|0||"
         };
+        plannedMove.SelectedHexes.Add(new HexCoord(1, 0));
+        TacticalAIPlannedAction plannedAction = TacticalAIPlannedAction.FromBattleAction(
+            plannedMove,
+            new BattleActionResult { ActorUnitId = "team-0-slot-0", ActionKind = BattleActionKind.Move });
 
-        List<TacticalAIActionIntent> queue = TacticalAIExecutionFallbackPlanner.BuildAttemptQueue(
-            new[] { freshMove },
+        List<TacticalAIPlannedAction> queue = TacticalAIExecutionFallbackPlanner.BuildActionAttemptQueue(
+            new[] { plannedAction },
             liveSnapshot,
-            new TacticalAICandidateGenerationOptions
-            {
-                MaxCandidatesPerActionType = 16,
-                MaxSkillCandidates = 0,
-                MaxMoveCandidates = 16,
-                MaxAttackCandidates = 16
-            },
+            TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(null),
             new TestSkillMetadataProvider(),
             maxFallbackCandidates: 4);
 
-        int occurrences = CountStableKey(queue, freshMove.StableOrderKey);
+        int occurrences = CountStableKey(queue, plannedMove.StableOrderKey);
         Assert.That(occurrences, Is.EqualTo(1));
     }
 
-    static int CountStableKey(List<TacticalAIActionIntent> actions, string stableKey)
+    static int CountStableKey(List<TacticalAIPlannedAction> actions, string stableKey)
     {
         int count = 0;
         for (int i = 0; i < actions.Count; i++)
@@ -493,7 +445,7 @@ public class TacticalAIExecutionBridgeTests
                 IsPassive = activation.activationKind == SkillActivationKind.Passive,
                 CanUseAfterMove = activation.canUseAfterMove,
                 CanMoveAfterSkill = activation.canMoveAfterUse,
-                IsRepeatableToggle = activation.repeatableInTurn || TacticalAICandidateGenerator.IsRepeatableToggleSkillId(skillId)
+                IsRepeatableToggle = activation.repeatableInTurn || BattleActionSkillUtility.IsRepeatableToggleSkillId(skillId)
             };
             return true;
         }

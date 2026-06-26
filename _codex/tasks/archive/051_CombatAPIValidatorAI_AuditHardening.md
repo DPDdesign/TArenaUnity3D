@@ -1,11 +1,11 @@
 # [TARENA] 051 Combat API / Validator / AI Audit And Hardening
 
-- Status: draft
+- Status: completed-qa-pass-unity-validation-pending
 - Type: implementation task
 - Area: tactical battle, Battle Action API, validation, Tactical AI, skill execution boundary
 - Owner: Coding Agent
 - Source prompt: `C:\Users\piotr\.codex\attachments\6d0c72ab-e6f4-4467-9f6a-79a85bd63f9d\pasted-text.txt`
-- Must run before: `_codex/tasks/052_CombatActionsSkills_AuditHardening.md`
+- Must run before: `_codex/tasks/archive/052_CombatActionsSkills_AuditHardening.md`
 
 ## Goal
 

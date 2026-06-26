@@ -3,159 +3,25 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class TacticalAISkillRulesExecutor : ITacticalAISkillActionExecutor
-{
-    static TacticalAISkillRulesExecutor instance;
-
-    public static TacticalAISkillRulesExecutor Instance
-    {
-        get
-        {
-            if (instance == null)
-            {
-                instance = new TacticalAISkillRulesExecutor();
-            }
-
-            return instance;
-        }
-    }
-
-    public bool TryExecuteSkillAction(
-        TacticalAIExecutionRuntimeContext runtimeContext,
-        TacticalAIRevalidatedIntent revalidatedIntent,
-        out string failureReason)
-    {
-        failureReason = string.Empty;
-        if (runtimeContext == null || runtimeContext.HasRequiredReferences == false)
-        {
-            failureReason = "Tactical AI skill rules executor is missing live battle references.";
-            return false;
-        }
-
-        if (revalidatedIntent == null || revalidatedIntent.ValidatedSkillCast == null)
-        {
-            failureReason = "Tactical AI skill had no live validated SkillCast.";
-            return false;
-        }
-
-        TosterHexUnit actor = ResolveLiveUnit(runtimeContext, revalidatedIntent.Actor);
-        if (actor == null)
-        {
-            failureReason = "Could not resolve live actor for shared skill execution.";
-            return false;
-        }
-
-        SkillDefinitionAsset definition = DataMapper.Instance != null
-            ? DataMapper.Instance.FindSkillAsset(revalidatedIntent.ValidatedSkillCast.SkillId)
-            : null;
-        if (definition == null)
-        {
-            failureReason = "Could not resolve SkillDefinitionAsset for shared skill execution.";
-            return false;
-        }
-
-        BattleSnapshot liveSnapshot = BattleSnapshotLiveAdapter.BuildSnapshot(
-            runtimeContext.HexMap,
-            runtimeContext.MouseControler,
-            runtimeContext.TurnManager,
-            runtimeContext.BattleActionLifecycle);
-        SkillContext context = SkillContext.Create(
-            liveSnapshot,
-            revalidatedIntent.ValidatedSkillCast.ActorUnitId,
-            definition,
-            revalidatedIntent.SkillSlot);
-        TacticalAISkillRuntime runtime = new TacticalAISkillRuntime(runtimeContext, revalidatedIntent.SkillSlot);
-        SkillCast cast = revalidatedIntent.ValidatedSkillCast.Clone();
-
-        runtimeContext.BattleActionLifecycle = runtimeContext.BattleActionLifecycle ?? BattleActionLifecycle.EnsureInstance();
-        bool started = runtimeContext.BattleActionLifecycle.TryRunAction(
-            actor,
-            BattleActionLifecycleKind.Skill,
-            cast.SkillId,
-            null,
-            () => runtime.ApplySequence(cast, context),
-            null);
-
-        if (started == false)
-        {
-            failureReason = "BattleActionLifecycle rejected shared skill execution.";
-        }
-
-        return started;
-    }
-
-    static TosterHexUnit ResolveLiveUnit(TacticalAIExecutionRuntimeContext runtimeContext, BattleUnitSnapshot snapshotUnit)
-    {
-        if (runtimeContext == null ||
-            runtimeContext.HexMap == null ||
-            runtimeContext.HexMap.Teams == null ||
-            snapshotUnit == null ||
-            snapshotUnit.TeamIndex < 0 ||
-            snapshotUnit.TeamIndex >= runtimeContext.HexMap.Teams.Count)
-        {
-            return null;
-        }
-
-        TeamClass team = runtimeContext.HexMap.Teams[snapshotUnit.TeamIndex];
-        if (team == null ||
-            team.Tosters == null ||
-            snapshotUnit.RosterIndexWithinTeam < 0 ||
-            snapshotUnit.RosterIndexWithinTeam >= team.Tosters.Count)
-        {
-            return null;
-        }
-
-        return team.Tosters[snapshotUnit.RosterIndexWithinTeam];
-    }
-}
-
-public sealed class TacticalAISkillRuntime : ISkillRuntime
+internal sealed class BattleActionSkillResultRuntime
 {
     readonly TacticalAIExecutionRuntimeContext runtimeContext;
     readonly int skillSlot;
 
-    public TacticalAISkillRuntime(TacticalAIExecutionRuntimeContext runtimeContext, int skillSlot)
+    public BattleActionSkillResultRuntime(TacticalAIExecutionRuntimeContext runtimeContext, int skillSlot)
     {
         this.runtimeContext = runtimeContext;
         this.skillSlot = skillSlot;
     }
 
-    public SkillResult Apply(SkillCast cast, SkillContext context)
+    public IEnumerator ApplySequence(SkillCast cast, BattleActionResult result)
     {
-        SkillResult result = SkillRules.Preview(cast, context);
-        if (cast == null)
-        {
-            return result;
-        }
-
-        TosterHexUnit actor = ResolveLiveUnit(cast.ActorUnitId, context != null ? context.Snapshot : null);
-        if (actor == null)
-        {
-            return result;
-        }
-
-        SendSkillChat(cast, actor);
-        List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
-        ApplyResultEvents(result, cast, actor, reveals);
-        PlaySkillPresentation(cast, actor, reveals);
-        ApplyTurnAndCooldown(cast, actor);
-        if (runtimeContext != null && runtimeContext.HexMap != null)
-        {
-            runtimeContext.HexMap.UpdateHexVisuals();
-        }
-
-        return result;
-    }
-
-    public IEnumerator ApplySequence(SkillCast cast, SkillContext context)
-    {
-        SkillResult result = SkillRules.Preview(cast, context);
         if (cast == null)
         {
             yield break;
         }
 
-        TosterHexUnit actor = ResolveLiveUnit(cast.ActorUnitId, context != null ? context.Snapshot : null);
+        TosterHexUnit actor = ResolveLiveUnit(cast.ActorUnitId, null);
         if (actor == null)
         {
             yield break;
@@ -172,52 +38,7 @@ public sealed class TacticalAISkillRuntime : ISkillRuntime
         }
     }
 
-    void ApplyResultEvents(SkillResult result, SkillCast cast, TosterHexUnit actor, List<FrontendResultReveal> reveals)
-    {
-        if (result == null || result.Events == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < result.Events.Count; i++)
-        {
-            SkillResultEvent resultEvent = result.Events[i];
-            if (resultEvent == null)
-            {
-                continue;
-            }
-
-            switch (resultEvent.EventType)
-            {
-                case SkillResultEventType.DamageApplied:
-                    AddReveal(reveals, ApplyDamage(cast, actor, resultEvent));
-                    break;
-                case SkillResultEventType.HpCostApplied:
-                    actor.DealMePURE(Math.Max(0, resultEvent.Amount));
-                    break;
-                case SkillResultEventType.UnitMoved:
-                    ApplyMove(actor, resultEvent);
-                    break;
-                case SkillResultEventType.TrapPlaced:
-                    ApplyTrap(actor, resultEvent);
-                    break;
-                case SkillResultEventType.StackAmountChanged:
-                    actor.SetAmount(Math.Max(0, actor.Amount + resultEvent.Amount));
-                    break;
-                case SkillResultEventType.StatusApplied:
-                    AddReveal(reveals, ApplyStatus(cast, actor, resultEvent));
-                    break;
-                case SkillResultEventType.UnitSpawned:
-                    ApplySpawn(cast, actor, resultEvent);
-                    break;
-                case SkillResultEventType.StanceChanged:
-                    ApplyStance(cast, actor);
-                    break;
-            }
-        }
-    }
-
-    IEnumerator ApplyResultEventsSequence(SkillResult result, SkillCast cast, TosterHexUnit actor, List<FrontendResultReveal> reveals)
+    IEnumerator ApplyResultEventsSequence(BattleActionResult result, SkillCast cast, TosterHexUnit actor, List<FrontendResultReveal> reveals)
     {
         if (result == null || result.Events == null)
         {
@@ -226,7 +47,7 @@ public sealed class TacticalAISkillRuntime : ISkillRuntime
 
         for (int i = 0; i < result.Events.Count; i++)
         {
-            SkillResultEvent resultEvent = result.Events[i];
+            BattleActionResultEvent resultEvent = result.Events[i];
             if (resultEvent == null)
             {
                 continue;
@@ -234,35 +55,40 @@ public sealed class TacticalAISkillRuntime : ISkillRuntime
 
             switch (resultEvent.EventType)
             {
-                case SkillResultEventType.DamageApplied:
+                case BattleActionResultEventType.DamageApplied:
                     AddReveal(reveals, ApplyDamage(cast, actor, resultEvent));
                     break;
-                case SkillResultEventType.HpCostApplied:
+                case BattleActionResultEventType.HpCostApplied:
                     actor.DealMePURE(Math.Max(0, resultEvent.Amount));
                     break;
-                case SkillResultEventType.UnitMoved:
+                case BattleActionResultEventType.UnitMoved:
+                    if (resultEvent.TargetUnitId == cast.ActorUnitId || string.IsNullOrEmpty(resultEvent.TargetUnitId))
+                    {
+                        actor.MovedThisTurn = true;
+                    }
+
                     yield return ApplyMoveSequence(cast, actor, resultEvent);
                     break;
-                case SkillResultEventType.TrapPlaced:
-                    ApplyTrap(actor, resultEvent);
+                case BattleActionResultEventType.TrapPlaced:
+                    ApplyTrap(cast, actor, resultEvent);
                     break;
-                case SkillResultEventType.StackAmountChanged:
+                case BattleActionResultEventType.StackAmountChanged:
                     actor.SetAmount(Math.Max(0, actor.Amount + resultEvent.Amount));
                     break;
-                case SkillResultEventType.StatusApplied:
+                case BattleActionResultEventType.StatusApplied:
                     AddReveal(reveals, ApplyStatus(cast, actor, resultEvent));
                     break;
-                case SkillResultEventType.UnitSpawned:
+                case BattleActionResultEventType.UnitSpawned:
                     ApplySpawn(cast, actor, resultEvent);
                     break;
-                case SkillResultEventType.StanceChanged:
+                case BattleActionResultEventType.StanceChanged:
                     ApplyStance(cast, actor);
                     break;
             }
         }
     }
 
-    FrontendResultReveal ApplyDamage(SkillCast cast, TosterHexUnit actor, SkillResultEvent resultEvent)
+    FrontendResultReveal ApplyDamage(SkillCast cast, TosterHexUnit actor, BattleActionResultEvent resultEvent)
     {
         TosterHexUnit target = ResolveLiveUnit(resultEvent.TargetUnitId, null);
         if (target == null)
@@ -305,7 +131,7 @@ public sealed class TacticalAISkillRuntime : ISkillRuntime
             damageWasReduced);
     }
 
-    void ApplyMove(TosterHexUnit actor, SkillResultEvent resultEvent)
+    void ApplyMove(TosterHexUnit actor, BattleActionResultEvent resultEvent)
     {
         TosterHexUnit target = ResolveLiveUnit(resultEvent.TargetUnitId, null) ?? actor;
         HexClass destination = ResolveLiveHex(resultEvent.Hex);
@@ -315,7 +141,7 @@ public sealed class TacticalAISkillRuntime : ISkillRuntime
         }
     }
 
-    IEnumerator ApplyMoveSequence(SkillCast cast, TosterHexUnit actor, SkillResultEvent resultEvent)
+    IEnumerator ApplyMoveSequence(SkillCast cast, TosterHexUnit actor, BattleActionResultEvent resultEvent)
     {
         TosterHexUnit target = ResolveLiveUnit(resultEvent.TargetUnitId, null) ?? actor;
         HexClass destination = ResolveLiveHex(resultEvent.Hex);
@@ -399,7 +225,7 @@ public sealed class TacticalAISkillRuntime : ISkillRuntime
         }
     }
 
-    void ApplyTrap(TosterHexUnit actor, SkillResultEvent resultEvent)
+    void ApplyTrap(SkillCast cast, TosterHexUnit actor, BattleActionResultEvent resultEvent)
     {
         HexClass hex = ResolveLiveHex(resultEvent.Hex);
         if (hex == null)
@@ -407,11 +233,11 @@ public sealed class TacticalAISkillRuntime : ISkillRuntime
             return;
         }
 
-        string trapId = string.IsNullOrEmpty(resultEvent.TrapId) ? resultEvent.SkillId : resultEvent.TrapId;
-        hex.AddTrap(trapId, 999, actor, true, resultEvent.SkillId);
+        string trapId = string.IsNullOrEmpty(resultEvent.TrapId) ? cast.SkillId : resultEvent.TrapId;
+        hex.AddTrap(trapId, 999, actor, true, cast.SkillId);
     }
 
-    FrontendResultReveal ApplyStatus(SkillCast cast, TosterHexUnit actor, SkillResultEvent resultEvent)
+    FrontendResultReveal ApplyStatus(SkillCast cast, TosterHexUnit actor, BattleActionResultEvent resultEvent)
     {
         TosterHexUnit target = ResolveLiveUnit(resultEvent.TargetUnitId, null) ?? actor;
         SkillEffect effect = FirstStatusEffect(cast, resultEvent.StatusId);
@@ -440,7 +266,7 @@ public sealed class TacticalAISkillRuntime : ISkillRuntime
         return target.BuildStatusFrontendReveal(actor, FrontendResultRevealSource.Skill);
     }
 
-    void ApplySpawn(SkillCast cast, TosterHexUnit actor, SkillResultEvent resultEvent)
+    void ApplySpawn(SkillCast cast, TosterHexUnit actor, BattleActionResultEvent resultEvent)
     {
         if (cast == null || actor == null || actor.Team == null || runtimeContext == null || runtimeContext.HexMap == null)
         {

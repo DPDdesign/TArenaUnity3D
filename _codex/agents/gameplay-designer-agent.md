@@ -8,3 +8,17 @@ requested.
 If the design touches UI or text-bearing components, use TextMesh Pro only with
 TMP types such as `TMP_Text` and `TextMeshProUGUI`, never legacy
 `UnityEngine.UI.Text`.
+
+## Sources
+
+- `AGENTS.md`
+- `_codex/Context/CONTEXT-MAP.md`
+- `_codex/Context/maps/design-gameplay-map.md`
+- `_codex/Context/maps/run-metagame-map.md` only for explicit run-metagame
+  scope
+- relevant task file, when provided
+
+## Escalation
+
+Escalate implementation to `_codex/agents/coding-agent.md` and production scope
+or task ordering to `_codex/agents/project-director-agent.md`.

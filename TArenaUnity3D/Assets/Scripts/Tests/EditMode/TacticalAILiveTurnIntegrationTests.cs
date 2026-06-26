@@ -61,7 +61,6 @@ public class TacticalAILiveTurnIntegrationTests
                 new TacticalAIExecutionAttempt
                 {
                     Action = plan.BestAction,
-                    Intent = plan.BestIntent,
                     Started = false,
                     FailureReason = "Skill rejected."
                 }
@@ -111,21 +110,27 @@ public class TacticalAILiveTurnIntegrationTests
         string skillId = "",
         string targetUnitId = "")
     {
-        TacticalAIActionIntent intent = new TacticalAIActionIntent
+        BattleAction action = new BattleAction
         {
-            ActionType = actionType,
             ActorUnitId = "team-0-slot-0",
-            SourceHex = new TacticalAIHexCoordinate(0, 0),
-            DestinationHex = new TacticalAIHexCoordinate(1, 0),
-            TargetUnitId = targetUnitId,
-            TargetHex = new TacticalAIHexCoordinate(2, 0),
+            ActionKind = TacticalAIPlannedAction.ToBattleActionKind(actionType),
+            DestinationHex = new HexCoord(1, 0),
+            ImpactHex = new HexCoord(2, 0),
+            PrimaryTargetUnitId = targetUnitId,
             SkillSlot = skillId.Length > 0 ? 0 : -1,
             SkillId = skillId,
             StableOrderKey = actionType + "-test"
         };
+        action.SelectedHexes.Add(new HexCoord(1, 0));
+        if (targetUnitId.Length > 0)
+        {
+            action.TargetUnitIds.Add(targetUnitId);
+            action.AffectedUnitIds.Add(targetUnitId);
+        }
+
         if (actionType == TacticalAIActionType.Skill)
         {
-            intent.ValidatedSkillCast = new SkillCast
+            action.SkillCast = new SkillCast
             {
                 ActorUnitId = "team-0-slot-0",
                 SkillId = skillId,
@@ -134,14 +139,17 @@ public class TacticalAILiveTurnIntegrationTests
             };
         }
 
-        TacticalAIPlannedAction action = TacticalAIPlannedAction.FromCandidateIntent(intent);
+        BattleActionResult result = new BattleActionResult
+        {
+            ActorUnitId = "team-0-slot-0",
+            ActionKind = action.ActionKind
+        };
+        TacticalAIPlannedAction plannedAction = TacticalAIPlannedAction.FromBattleAction(action, result);
 
         return new TacticalAISearchPlan
         {
-            BestAction = action,
-            BestIntent = intent,
-            OrderedActions = new List<TacticalAIPlannedAction> { action },
-            OrderedActionIntents = new List<TacticalAIActionIntent> { intent },
+            BestAction = plannedAction,
+            OrderedActions = new List<TacticalAIPlannedAction> { plannedAction },
             BestScore = 42.5f,
             CompletedDepth = 3,
             CoveredOpponentResponse = true

@@ -12,13 +12,12 @@ public class TosterHexUnit : IQPathUnit
 {
     private const float CombatAnimationMaxWaitSeconds = 1.25f;
     private const float CombatHitAtAttackProgress = 0.5f;
-    private const float FireMovementTrapRevealDelaySeconds = 0.3f;
+    public const float FireMovementTrapRevealDelaySeconds = 0.3f;
     public const float PassiveResolveMaxWaitSeconds = 15f;
     public static readonly string[] AutocastTurnOrder = new string[] { "Massochism", "Cold_Blood", "Stone_Skin", "Unstoppable_Light", "Fire_Movement", "Fire_Skin", "Terrifying_Presence", "Rotting" };
     public readonly int C; public readonly int R; public readonly int S; // column.row
     public Vector3 vec;
     public string TosterSpriteName;
-    CastManager cm;
     public List<SpellOverTime> SpellsGoingOn;
     public int FlatDMGReduce = 0;
     public int SpecialHP = 0;
@@ -328,6 +327,19 @@ public class TosterHexUnit : IQPathUnit
     {
         this.hexPath = new List<HexClass>();
     }
+
+    internal void TrimHexPathTail(int maxSteps)
+    {
+        if (hexPath == null || maxSteps <= 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < maxSteps && hexPath.Count > 0; i++)
+        {
+            hexPath.RemoveAt(hexPath.Count - 1);
+        }
+    }
    
     /*
     public void Pathing_func(HexClass celhex)
@@ -414,52 +426,18 @@ public class TosterHexUnit : IQPathUnit
         
         if (hex.isTraped)
         {
-            if (hex.trap.NameOfTraps == "Rope_Trap")
+            BattleActionResult trapResult = BattleActionAutomaticResultApplier.CreateTrapTriggeredResult(this, hex);
+            if (hex.trap != null && hex.trap.NameOfTraps == "Rope_Trap")
             {
-                SendTrapTriggeredMsg("Rope_Trap", hex.trap.TosterWhoSetupThisTrap);
                 Pathing_func(hex,true);
-                this.AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, "Rope_Trap", false);
-
-                hex.RemoveTrap();
             }
-            if (hex.trap.NameOfTraps == "Fire_Trap")
-            {
 
-                if (this != hex.trap.TosterWhoSetupThisTrap)
-                {
-                    this.AddNewTimeSpell(5, hex.trap.TosterWhoSetupThisTrap, 0, 0, 0, 0, 0, 0, 0, Convert.ToInt32(CalculateDamageBetweenTosters(hex.trap.TosterWhoSetupThisTrap, this, 1)) / 5, 0, 0, 0, 0, "Fire_Trap", false);
-                    SendTrapTriggeredMsg("Fire_Trap", hex.trap.TosterWhoSetupThisTrap);
-                }
-                //   this.DealMePURE(this.Amount);
-                //  hex.RemoveTrap();
-            }
-            if (hex.trap.NameOfTraps == "Spike_Trap")
-            {
-
-                SendTrapTriggeredMsg("Spike_Trap", hex.trap.TosterWhoSetupThisTrap);
-                this.AddNewTimeSpell(2, hex.trap.TosterWhoSetupThisTrap, 0, 0, 0, -2, 0, 0, 0,Convert.ToInt32( CalculateDamageBetweenTosters(hex.trap.TosterWhoSetupThisTrap,this,1)), 0, 0, 0, 0, "Spike_Trap", false);
-                if (hexPath.Count>1)
-                {
-                    hexPath.RemoveAt(hexPath.Count - 1);
-                    hexPath.RemoveAt(hexPath.Count - 1);
-                }
-                if (hexPath.Count == 1)
-                {
-                    hexPath.RemoveAt(hexPath.Count - 1);
-
-                }
-
-                hex.RemoveTrap();
-            }
+            BattleActionAutomaticResultApplier.ApplyTrapResult(this, hex, trapResult);
         }
         if(Fire_movement==true && oldHex!=null)
         {
-            oldHex.AddTrap("Fire_Trap",2, this, false, "Fire_Movement");
-            SkillPresentationManager.PlaySequencedHexEffect("Fire_Movement", this, oldHex, null);
-            if (oldHex.hexMap != null)
-            {
-                oldHex.hexMap.StartCoroutine(RevealFireTrapAfterDelay(oldHex, FireMovementTrapRevealDelaySeconds));
-            }
+            BattleActionResult fireMovementResult = BattleActionAutomaticResultApplier.CreateFireMovementTrapResult(this, oldHex);
+            BattleActionAutomaticResultApplier.ApplyFireMovementTrapResult(this, oldHex, fireMovementResult);
         }
         Hex = hex;
         Hex.AddToster(this);
@@ -673,7 +651,8 @@ public class TosterHexUnit : IQPathUnit
             cooldowns.Add(0);
             if (ListOfAutocasts.Contains(s))
             {
-                AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, s, false);
+                BattleActionResult result = BattleActionAutomaticResultApplier.CreateAutocastStatusResult(this, s);
+                BattleActionAutomaticResultApplier.ApplyAutocastStatusResult(this, result);
             }
         }
     }
@@ -694,7 +673,7 @@ public class TosterHexUnit : IQPathUnit
         return "skill" + (skillIndex + 1);
     }
 
-    static IEnumerator RevealFireTrapAfterDelay(HexClass hex, float delaySeconds)
+    public static IEnumerator RevealFireTrapAfterDelay(HexClass hex, float delaySeconds)
     {
         if (delaySeconds > 0f)
         {
@@ -1050,6 +1029,22 @@ public class TosterHexUnit : IQPathUnit
         }
     }
 
+    public IEnumerator PlayBasicAttackRevealSequence(TosterHexUnit attacker, int damage, FrontendResultRevealSource sourceType)
+    {
+        if (attacker != null)
+        {
+            yield return attacker.PlayCombatAnimationUntilHitMoment("attack", this);
+        }
+
+        FrontendResultReveal reveal = DealMePUREForFrontendReveal(damage, attacker, sourceType);
+        yield return RevealFrontendResult(reveal);
+
+        if (attacker != null && !attacker.isDead && attacker.tosterView != null)
+        {
+            attacker.tosterView.ResetAnimatorToDefault();
+        }
+    }
+
     public void AttackMe(TosterHexUnit t)
     {
         //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
@@ -1364,22 +1359,18 @@ public class TosterHexUnit : IQPathUnit
 
     public void CheckSpells()
     {
-        List<SpellOverTime> SpellsToRemove = new List<SpellOverTime>();
-        foreach (SpellOverTime s in SpellsGoingOn)
+        List<SpellOverTime> spellSnapshot = new List<SpellOverTime>(SpellsGoingOn);
+        foreach (SpellOverTime s in spellSnapshot)
         {
+            if (s == null || SpellsGoingOn.Contains(s) == false)
+            {
+                continue;
+            }
+
             Debug.LogError(s.Time);
             Debug.LogError(s.me.Name);
-            s.DoTurn();
-            if (s.IsOver())
-            {
-                SpellsToRemove.Add(s);
-               
-            }
-        }
-
-        foreach (SpellOverTime s in SpellsToRemove)
-        {
-            SpellsGoingOn.Remove(s);
+            BattleActionResult result = BattleActionAutomaticResultApplier.CreateStatusTickResult(this, s);
+            BattleActionAutomaticResultApplier.ApplyStatusTickResult(this, s, result);
         }
 
         TickCooldowns();
@@ -1428,11 +1419,8 @@ public class TosterHexUnit : IQPathUnit
 
         Debug.LogError(s.Time);
         Debug.LogError(s.me.Name);
-        s.DoTurn();
-        if (s.IsOver())
-        {
-            SpellsGoingOn.Remove(s);
-        }
+        BattleActionResult result = BattleActionAutomaticResultApplier.CreateStatusTickResult(this, s);
+        BattleActionAutomaticResultApplier.ApplyStatusTickResult(this, s, result);
 
         return true;
     }
@@ -1472,7 +1460,8 @@ public class TosterHexUnit : IQPathUnit
         {
             if (ListOfAutocasts.Contains(s))
             {
-                AddNewTimeSpell(1, this, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, s, false);
+                BattleActionResult result = BattleActionAutomaticResultApplier.CreateAutocastStatusResult(this, s);
+                BattleActionAutomaticResultApplier.ApplyAutocastStatusResult(this, result);
             }
         }
     }
@@ -1577,7 +1566,7 @@ public class TosterHexUnit : IQPathUnit
         Chat.chat.SendUnitLossMessage(this, amountLost);
     }
 
-    void SendTrapTriggeredMsg(string trapName, TosterHexUnit trapOwner)
+    internal void SendTrapTriggeredMsg(string trapName, TosterHexUnit trapOwner)
     {
         TextToSend = this.Name + " wszedł w " + trapName;
         Chat.chat.SendTrapTriggeredMessage(this, trapName, trapOwner);

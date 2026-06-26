@@ -56,7 +56,7 @@ public static class BattleActionRules
             case BattleActionKind.Defend:
                 return ValidateDefend(use, snapshot, actor);
             case BattleActionKind.Move:
-                return ValidateMove(use, snapshot, actor);
+                return ValidateMove(use, snapshot, actor, skillMetadataProvider);
             case BattleActionKind.MoveAndAttack:
             case BattleActionKind.BasicMeleeAttack:
                 return ValidateMoveAndAttack(use, snapshot, actor);
@@ -99,7 +99,7 @@ public static class BattleActionRules
         buckets[BattleActionKind.Skill] = BuildSkillActions(snapshot, actor, resolvedProfile, skillMetadataProvider);
         buckets[BattleActionKind.BasicRangedAttack] = BuildBasicRangedAttackActions(snapshot, actor, resolvedProfile);
         buckets[BattleActionKind.MoveAndAttack] = BuildMoveAndAttackActions(snapshot, actor, resolvedProfile);
-        buckets[BattleActionKind.Move] = BuildMoveActions(snapshot, actor, resolvedProfile);
+        buckets[BattleActionKind.Move] = BuildMoveActions(snapshot, actor, resolvedProfile, skillMetadataProvider);
         buckets[BattleActionKind.Wait] = BuildSingleAction(snapshot, actor, BattleActionKind.Wait, skillMetadataProvider);
         buckets[BattleActionKind.Defend] = BuildSingleAction(snapshot, actor, BattleActionKind.Defend, skillMetadataProvider);
 
@@ -156,23 +156,12 @@ public static class BattleActionRules
                         Hex = BattleActionModelUtility.CopyHex(action.DestinationHex)
                     });
                 }
-                result.Add(new BattleActionResultEvent
-                {
-                    EventType = BattleActionResultEventType.DamageApplied,
-                    ActorUnitId = action.ActorUnitId,
-                    TargetUnitId = action.PrimaryTargetUnitId,
-                    Amount = ResolveBasicAttackDamage(snapshot, action)
-                });
+                AddBasicAttackDamageEvent(result, snapshot, action);
+                AddCounterattackDamageEvent(result, snapshot, action);
                 result.Add(new BattleActionResultEvent { EventType = BattleActionResultEventType.TurnCostApplied, ActorUnitId = action.ActorUnitId });
                 break;
             case BattleActionKind.BasicRangedAttack:
-                result.Add(new BattleActionResultEvent
-                {
-                    EventType = BattleActionResultEventType.DamageApplied,
-                    ActorUnitId = action.ActorUnitId,
-                    TargetUnitId = action.PrimaryTargetUnitId,
-                    Amount = ResolveBasicAttackDamage(snapshot, action)
-                });
+                AddBasicAttackDamageEvent(result, snapshot, action);
                 result.Add(new BattleActionResultEvent { EventType = BattleActionResultEventType.TurnCostApplied, ActorUnitId = action.ActorUnitId });
                 break;
             case BattleActionKind.Wait:
@@ -217,7 +206,11 @@ public static class BattleActionRules
         return BattleActionValidationResult.Valid(CreateAction(use, actor, BattleActionKind.Defend, null, null, null));
     }
 
-    static BattleActionValidationResult ValidateMove(BattleActionUse use, BattleSnapshot snapshot, BattleUnitSnapshot actor)
+    static BattleActionValidationResult ValidateMove(
+        BattleActionUse use,
+        BattleSnapshot snapshot,
+        BattleUnitSnapshot actor,
+        ITacticalAISkillMetadataProvider skillMetadataProvider)
     {
         if (CanStartMovement(actor) == false)
         {
@@ -232,14 +225,14 @@ public static class BattleActionRules
             return BattleActionValidationResult.Invalid(reason);
         }
 
-        Dictionary<string, int> reachable = FindReachableHexCosts(snapshot, actor);
-        if (reachable.ContainsKey(GetHexKey(destinationHex.C, destinationHex.R)) == false)
+        Dictionary<string, int> reachable = BattleHexGridUtility.FindReachableHexCosts(snapshot, actor);
+        if (reachable.ContainsKey(BattleHexGridUtility.GetHexKey(destinationHex.C, destinationHex.R)) == false)
         {
             return BattleActionValidationResult.Invalid("Move destination is outside actor movement budget.");
         }
 
         BattleAction action = CreateAction(use, actor, BattleActionKind.Move, destinationHex, null, null);
-        action.EndsTurn = actor.Waited || HasAvailableSkillAfterMove(actor, snapshot) == false;
+        action.EndsTurn = actor.Waited || HasAvailableSkillAfterMove(actor, snapshot, skillMetadataProvider) == false;
         action.AllowsPostMoveFollowUp = action.EndsTurn == false;
         return BattleActionValidationResult.Valid(action);
     }
@@ -270,13 +263,13 @@ public static class BattleActionRules
             return BattleActionValidationResult.Invalid(reason);
         }
 
-        Dictionary<string, int> reachable = FindReachableHexCosts(snapshot, actor);
-        if (reachable.ContainsKey(GetHexKey(destinationHex.C, destinationHex.R)) == false)
+        Dictionary<string, int> reachable = BattleHexGridUtility.FindReachableHexCosts(snapshot, actor);
+        if (reachable.ContainsKey(BattleHexGridUtility.GetHexKey(destinationHex.C, destinationHex.R)) == false)
         {
             return BattleActionValidationResult.Invalid("Move-and-attack destination is outside actor movement budget.");
         }
 
-        if (AreAdjacent(destinationHex.C, destinationHex.R, target.C, target.R) == false)
+        if (BattleHexGridUtility.AreAdjacent(snapshot, destinationHex.C, destinationHex.R, target.C, target.R) == false)
         {
             return BattleActionValidationResult.Invalid("Move-and-attack destination is not adjacent to target.");
         }
@@ -322,6 +315,16 @@ public static class BattleActionRules
         if (skillSlot < 0)
         {
             return BattleActionValidationResult.Invalid("Skill action slot/id pair is invalid.");
+        }
+
+        if (actor.CooldownsBySlot == null || skillSlot >= actor.CooldownsBySlot.Count || actor.CooldownsBySlot[skillSlot] > 0)
+        {
+            return BattleActionValidationResult.Invalid("Skill action is on cooldown.");
+        }
+
+        if (spec.ActivationRule.activationKind == SkillActivationKind.Passive)
+        {
+            return BattleActionValidationResult.Invalid("Passive skills are not legal tactical actions.");
         }
 
         SkillContext context = SkillContext.Create(snapshot, actor.RuntimeUnitId, spec, skillSlot, use.ActionSeed);
@@ -384,7 +387,11 @@ public static class BattleActionRules
             : new List<BattleAction>();
     }
 
-    static List<BattleAction> BuildMoveActions(BattleSnapshot snapshot, BattleUnitSnapshot actor, TacticalAIResolvedProfile profile)
+    static List<BattleAction> BuildMoveActions(
+        BattleSnapshot snapshot,
+        BattleUnitSnapshot actor,
+        TacticalAIResolvedProfile profile,
+        ITacticalAISkillMetadataProvider skillMetadataProvider)
     {
         List<BattleAction> actions = new List<BattleAction>();
         if (CanStartMovement(actor) == false)
@@ -392,7 +399,7 @@ public static class BattleActionRules
             return actions;
         }
 
-        Dictionary<string, int> reachable = FindReachableHexCosts(snapshot, actor);
+        Dictionary<string, int> reachable = BattleHexGridUtility.FindReachableHexCosts(snapshot, actor);
         List<MoveScore> scored = new List<MoveScore>();
         foreach (KeyValuePair<string, int> pair in reachable)
         {
@@ -421,7 +428,8 @@ public static class BattleActionRules
                     ActionKind = BattleActionKind.Move,
                     SelectedHexes = new List<HexCoord> { new HexCoord(scored[i].Hex.C, scored[i].Hex.R) }
                 },
-                snapshot);
+                snapshot,
+                skillMetadataProvider);
             if (validation.IsValid && validation.Action != null)
             {
                 actions.Add(validation.Action);
@@ -439,7 +447,7 @@ public static class BattleActionRules
             return actions;
         }
 
-        Dictionary<string, int> reachable = FindReachableHexCosts(snapshot, actor);
+        Dictionary<string, int> reachable = BattleHexGridUtility.FindReachableHexCosts(snapshot, actor);
         HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
         for (int i = 0; i < snapshot.Units.Count; i++)
         {
@@ -544,13 +552,18 @@ public static class BattleActionRules
                 continue;
             }
 
+            if (spec.ActivationRule.activationKind == SkillActivationKind.Passive)
+            {
+                continue;
+            }
+
             SkillContext context = SkillContext.Create(snapshot, actor.RuntimeUnitId, spec, slot);
             if (SkillRules.CanUse(context).IsValid == false)
             {
                 continue;
             }
 
-            AddValidatedSkillActions(actions, snapshot, actor, context, skillId, slot, new List<HexCoord>(), targetLimit);
+            AddValidatedSkillActions(actions, snapshot, actor, context, skillId, slot, new List<HexCoord>(), targetLimit, skillMetadataProvider);
             if (actions.Count >= targetLimit)
             {
                 break;
@@ -570,7 +583,8 @@ public static class BattleActionRules
         string skillId,
         int skillSlot,
         List<HexCoord> selected,
-        int limit)
+        int limit,
+        ITacticalAISkillMetadataProvider skillMetadataProvider)
     {
         if (actions.Count >= limit)
         {
@@ -580,6 +594,11 @@ public static class BattleActionRules
         SkillValidationResult validation = SkillRules.Validate(new SkillUse(actor.RuntimeUnitId, skillId, selected), context);
         if (validation.IsValid && validation.Cast != null)
         {
+            if (ShouldGenerateSkillAction(validation.Cast) == false)
+            {
+                return;
+            }
+
             BattleActionValidationResult actionValidation = Validate(
                 new BattleActionUse
                 {
@@ -589,10 +608,11 @@ public static class BattleActionRules
                     SkillId = skillId,
                     SelectedHexes = selected
                 },
-                snapshot);
+                snapshot,
+                skillMetadataProvider);
             if (actionValidation.IsValid && actionValidation.Action != null)
             {
-                actions.Add(actionValidation.Action);
+                AddUniqueAction(actions, actionValidation.Action);
             }
 
             return;
@@ -614,8 +634,78 @@ public static class BattleActionRules
 
             List<HexCoord> next = BattleActionModelUtility.CopyHexes(selected);
             next.Add(new HexCoord(target.Hex.C, target.Hex.R));
-            AddValidatedSkillActions(actions, snapshot, actor, context, skillId, skillSlot, next, limit);
+            AddValidatedSkillActions(actions, snapshot, actor, context, skillId, skillSlot, next, limit, skillMetadataProvider);
         }
+    }
+
+    static bool ShouldGenerateSkillAction(SkillCast cast)
+    {
+        if (cast == null)
+        {
+            return false;
+        }
+
+        if (HasDamageEffect(cast) == false)
+        {
+            return true;
+        }
+
+        SkillResult preview = SkillRules.Preview(cast, null);
+        if (preview == null || preview.Events == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < preview.Events.Count; i++)
+        {
+            SkillResultEvent resultEvent = preview.Events[i];
+            if (resultEvent != null &&
+                resultEvent.EventType == SkillResultEventType.DamageApplied &&
+                string.IsNullOrEmpty(resultEvent.TargetUnitId) == false)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static void AddUniqueAction(List<BattleAction> actions, BattleAction action)
+    {
+        if (actions == null || action == null)
+        {
+            return;
+        }
+
+        string key = action.StableOrderKey ?? string.Empty;
+        for (int i = 0; i < actions.Count; i++)
+        {
+            if (actions[i] != null && string.Equals(actions[i].StableOrderKey ?? string.Empty, key, StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
+
+        actions.Add(action);
+    }
+
+    static bool HasDamageEffect(SkillCast cast)
+    {
+        if (cast == null || cast.Effects == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < cast.Effects.Length; i++)
+        {
+            SkillEffect effect = cast.Effects[i];
+            if (effect != null && effect.effectType == SkillEffectType.Damage)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     static BattleAction CreateAction(
@@ -764,7 +854,10 @@ public static class BattleActionRules
             (actor.UsedSkillThisTurn == false || actor.CanMoveAfterSkillThisTurn);
     }
 
-    static bool HasAvailableSkillAfterMove(BattleUnitSnapshot actor, BattleSnapshot snapshot)
+    static bool HasAvailableSkillAfterMove(
+        BattleUnitSnapshot actor,
+        BattleSnapshot snapshot,
+        ITacticalAISkillMetadataProvider skillMetadataProvider)
     {
         if (actor == null || actor.SkillIdsBySlot == null || actor.CooldownsBySlot == null)
         {
@@ -779,8 +872,26 @@ public static class BattleActionRules
                 continue;
             }
 
-            SkillDefinitionSpec spec = ResolveSkillSpec(actor.SkillIdsBySlot[i], TacticalAIDataMapperSkillMetadataProvider.Instance);
-            if (spec != null && spec.ActivationRule.canUseAfterMove)
+            string skillId = actor.SkillIdsBySlot[i];
+            TacticalAISkillMetadata metadata;
+            if (skillMetadataProvider != null &&
+                skillMetadataProvider.TryGetSkillMetadata(skillId, out metadata) &&
+                metadata != null &&
+                (metadata.IsPassive || metadata.IsRepeatableToggle))
+            {
+                continue;
+            }
+
+            SkillDefinitionSpec spec = ResolveSkillSpec(skillId, skillMetadataProvider);
+            if (spec == null)
+            {
+                spec = ResolveSkillSpec(skillId, TacticalAIDataMapperSkillMetadataProvider.Instance);
+            }
+
+            if (spec != null &&
+                spec.ActivationRule.activationKind != SkillActivationKind.Passive &&
+                spec.ActivationRule.repeatableInTurn == false &&
+                spec.ActivationRule.canUseAfterMove)
             {
                 return true;
             }
@@ -828,58 +939,6 @@ public static class BattleActionRules
         return target;
     }
 
-    static Dictionary<string, int> FindReachableHexCosts(BattleSnapshot snapshot, BattleUnitSnapshot actor)
-    {
-        Dictionary<string, int> reachable = new Dictionary<string, int>(StringComparer.Ordinal);
-        if (snapshot == null || actor == null)
-        {
-            return reachable;
-        }
-
-        Queue<ReachableNode> frontier = new Queue<ReachableNode>();
-        frontier.Enqueue(new ReachableNode(actor.C, actor.R, 0));
-        reachable[GetHexKey(actor.C, actor.R)] = 0;
-
-        while (frontier.Count > 0)
-        {
-            ReachableNode current = frontier.Dequeue();
-            if (current.Cost >= actor.MovementSpeed)
-            {
-                continue;
-            }
-
-            List<HexCoord> neighbours = GetNeighbours(current.C, current.R);
-            for (int i = 0; i < neighbours.Count; i++)
-            {
-                HexCoord neighbour = neighbours[i];
-                BattleHexSnapshot hex = FindHex(snapshot, neighbour.C, neighbour.R);
-                if (hex == null || hex.IsWalkable == false)
-                {
-                    continue;
-                }
-
-                bool isActorSource = neighbour.C == actor.C && neighbour.R == actor.R;
-                if (isActorSource == false && string.IsNullOrEmpty(hex.OccupyingUnitId) == false)
-                {
-                    continue;
-                }
-
-                int nextCost = current.Cost + 1;
-                string key = GetHexKey(neighbour.C, neighbour.R);
-                int knownCost;
-                if (reachable.TryGetValue(key, out knownCost) && knownCost <= nextCost)
-                {
-                    continue;
-                }
-
-                reachable[key] = nextCost;
-                frontier.Enqueue(new ReachableNode(neighbour.C, neighbour.R, nextCost));
-            }
-        }
-
-        return reachable;
-    }
-
     static List<HexCoord> GetAttackPositions(
         BattleSnapshot snapshot,
         BattleUnitSnapshot actor,
@@ -887,12 +946,12 @@ public static class BattleActionRules
         Dictionary<string, int> reachable)
     {
         List<HexCoord> positions = new List<HexCoord>();
-        if (AreAdjacent(actor.C, actor.R, enemy.C, enemy.R))
+        if (BattleHexGridUtility.AreAdjacent(snapshot, actor.C, actor.R, enemy.C, enemy.R))
         {
             positions.Add(new HexCoord(actor.C, actor.R));
         }
 
-        List<HexCoord> neighbours = GetNeighbours(enemy.C, enemy.R);
+        List<HexCoord> neighbours = BattleHexGridUtility.GetNeighbourCoordinates(snapshot, enemy.C, enemy.R);
         for (int i = 0; i < neighbours.Count; i++)
         {
             HexCoord candidate = neighbours[i];
@@ -908,7 +967,7 @@ public static class BattleActionRules
                 continue;
             }
 
-            if (reachable.ContainsKey(GetHexKey(candidate.C, candidate.R)))
+            if (reachable.ContainsKey(BattleHexGridUtility.GetHexKey(candidate.C, candidate.R)))
             {
                 positions.Add(candidate);
             }
@@ -918,9 +977,41 @@ public static class BattleActionRules
         return positions;
     }
 
-    static int ResolveBasicAttackDamage(BattleSnapshot snapshot, BattleAction action)
+    static void AddBasicAttackDamageEvent(BattleActionResult result, BattleSnapshot snapshot, BattleAction action)
     {
-        BattleUnitSnapshot actor = FindUnit(snapshot, action.ActorUnitId);
+        result.Add(new BattleActionResultEvent
+        {
+            EventType = BattleActionResultEventType.DamageApplied,
+            ActorUnitId = action.ActorUnitId,
+            TargetUnitId = action.PrimaryTargetUnitId,
+            Amount = ResolveBasicAttackDamage(snapshot, action.ActorUnitId, action.PrimaryTargetUnitId, action.ActionIndex)
+        });
+    }
+
+    static void AddCounterattackDamageEvent(BattleActionResult result, BattleSnapshot snapshot, BattleAction action)
+    {
+        BattleUnitSnapshot defender = FindUnit(snapshot, action.PrimaryTargetUnitId);
+        BattleUnitSnapshot attacker = FindUnit(snapshot, action.ActorUnitId);
+        if (defender == null ||
+            attacker == null ||
+            defender.CounterAttackAvailable == false ||
+            defender.TempCounterAttacks < 1)
+        {
+            return;
+        }
+
+        result.Add(new BattleActionResultEvent
+        {
+            EventType = BattleActionResultEventType.DamageApplied,
+            ActorUnitId = defender.RuntimeUnitId,
+            TargetUnitId = attacker.RuntimeUnitId,
+            Amount = ResolveBasicAttackDamage(snapshot, defender.RuntimeUnitId, attacker.RuntimeUnitId, action.ActionIndex)
+        });
+    }
+
+    static int ResolveBasicAttackDamage(BattleSnapshot snapshot, string actorUnitId, string targetUnitId, int actionIndex)
+    {
+        BattleUnitSnapshot actor = FindUnit(snapshot, actorUnitId);
         if (actor == null)
         {
             return 0;
@@ -937,9 +1028,9 @@ public static class BattleActionRules
         int seed = snapshot != null ? snapshot.GameSeed : 0;
         unchecked
         {
-            seed = seed * 397 ^ action.ActionIndex;
-            seed = seed * 397 ^ StableStringHash(action.ActorUnitId);
-            seed = seed * 397 ^ StableStringHash(action.PrimaryTargetUnitId);
+            seed = seed * 397 ^ actionIndex;
+            seed = seed * 397 ^ StableStringHash(actorUnitId);
+            seed = seed * 397 ^ StableStringHash(targetUnitId);
         }
 
         return Math.Max(0, min + Math.Abs(seed) % (spread + 1));
@@ -1035,7 +1126,7 @@ public static class BattleActionRules
                 continue;
             }
 
-            int distance = HexDistance(c, r, unit.C, unit.R);
+            int distance = BattleHexGridUtility.HexDistance(snapshot, c, r, unit.C, unit.R);
             if (distance < nearest)
             {
                 nearest = distance;
@@ -1112,7 +1203,7 @@ public static class BattleActionRules
         for (int i = 0; i < snapshot.Hexes.Count; i++)
         {
             BattleHexSnapshot hex = snapshot.Hexes[i];
-            if (hex != null && string.Equals(GetHexKey(hex.C, hex.R), key, StringComparison.Ordinal))
+            if (hex != null && string.Equals(BattleHexGridUtility.GetHexKey(hex.C, hex.R), key, StringComparison.Ordinal))
             {
                 return hex;
             }
@@ -1144,50 +1235,6 @@ public static class BattleActionRules
             (destination != null ? destination.R.ToString() : string.Empty) + "|" +
             (impact != null ? impact.C.ToString() : string.Empty) + "|" +
             (impact != null ? impact.R.ToString() : string.Empty);
-    }
-
-    static string GetHexKey(int c, int r)
-    {
-        return c + "|" + r;
-    }
-
-    static bool AreAdjacent(int c1, int r1, int c2, int r2)
-    {
-        return HexDistance(c1, r1, c2, r2) == 1;
-    }
-
-    static int HexDistance(int c1, int r1, int c2, int r2)
-    {
-        int s1 = -(c1 + r1);
-        int s2 = -(c2 + r2);
-        return Math.Max(Math.Abs(c1 - c2), Math.Max(Math.Abs(r1 - r2), Math.Abs(s1 - s2)));
-    }
-
-    static List<HexCoord> GetNeighbours(int c, int r)
-    {
-        return new List<HexCoord>
-        {
-            new HexCoord(c, r - 1),
-            new HexCoord(c, r + 1),
-            new HexCoord(c + 1, r - 1),
-            new HexCoord(c - 1, r + 1),
-            new HexCoord(c - 1, r),
-            new HexCoord(c + 1, r)
-        };
-    }
-
-    struct ReachableNode
-    {
-        public readonly int C;
-        public readonly int R;
-        public readonly int Cost;
-
-        public ReachableNode(int c, int r, int cost)
-        {
-            C = c;
-            R = r;
-            Cost = cost;
-        }
     }
 
     struct MoveScore

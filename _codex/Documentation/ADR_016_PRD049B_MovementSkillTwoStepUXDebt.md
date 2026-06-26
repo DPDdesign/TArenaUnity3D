@@ -76,6 +76,6 @@ validator and must not make `CastManager` or live scene objects the authority.
 ## Related PRDs
 
 - `_codex/tasks/049_PRD_TacticalActionSkillMigrationProgram.md`
-- `_codex/tasks/049A_PRD_TacticalActionValidationSO_UI_VerticalSlice.md`
-- `_codex/tasks/049AC_PRD_SkillTargetAndEffectDataModel.md`
-- `_codex/tasks/049E_PRD_SODrivenTacticalActionExecutionMigration.md`
+- `_codex/tasks/archive/049A_PRD_TacticalActionValidationSO_UI_VerticalSlice.md`
+- `_codex/tasks/archive/049AC_PRD_SkillTargetAndEffectDataModel.md`
+- `_codex/tasks/archive/049E_PRD_SODrivenTacticalActionExecutionMigration.md`

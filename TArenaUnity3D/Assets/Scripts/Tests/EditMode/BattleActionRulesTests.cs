@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnityEngine;
 
 public class BattleActionRulesTests
 {
@@ -46,6 +47,122 @@ public class BattleActionRulesTests
     }
 
     [Test]
+    public void ValidateMove_UsesGeneratedOffsetRowNeighbours()
+    {
+        BattleUnitSnapshot actor = ActorUnit(1, 2);
+        actor.MovementSpeed = 1;
+        BattleSnapshot snapshot = CreateSnapshot(actor);
+
+        BattleActionValidationResult generatedNeighbour = BattleActionRules.Validate(
+            new BattleActionUse
+            {
+                ActorUnitId = "team-0-slot-0",
+                ActionKind = BattleActionKind.Move,
+                SelectedHexes = new List<HexCoord> { new HexCoord(0, 1) }
+            },
+            snapshot);
+
+        BattleActionValidationResult legacyOnlyNeighbour = BattleActionRules.Validate(
+            new BattleActionUse
+            {
+                ActorUnitId = "team-0-slot-0",
+                ActionKind = BattleActionKind.Move,
+                SelectedHexes = new List<HexCoord> { new HexCoord(2, 1) }
+            },
+            snapshot);
+
+        Assert.That(generatedNeighbour.IsValid, Is.True, generatedNeighbour.RejectReason);
+        Assert.That(legacyOnlyNeighbour.IsValid, Is.False);
+        Assert.That(legacyOnlyNeighbour.RejectReason, Does.Contain("outside actor movement budget"));
+    }
+
+    [Test]
+    public void ValidateMove_UsesLegacyNeighboursWhenSnapshotIsLegacy()
+    {
+        BattleUnitSnapshot actor = ActorUnit(1, 2);
+        actor.MovementSpeed = 1;
+        BattleSnapshot snapshot = CreateSnapshotWithLayout(true, actor);
+
+        BattleActionValidationResult legacyNeighbour = BattleActionRules.Validate(
+            new BattleActionUse
+            {
+                ActorUnitId = "team-0-slot-0",
+                ActionKind = BattleActionKind.Move,
+                SelectedHexes = new List<HexCoord> { new HexCoord(2, 1) }
+            },
+            snapshot);
+
+        BattleActionValidationResult offsetOnlyNeighbour = BattleActionRules.Validate(
+            new BattleActionUse
+            {
+                ActorUnitId = "team-0-slot-0",
+                ActionKind = BattleActionKind.Move,
+                SelectedHexes = new List<HexCoord> { new HexCoord(0, 1) }
+            },
+            snapshot);
+
+        Assert.That(legacyNeighbour.IsValid, Is.True, legacyNeighbour.RejectReason);
+        Assert.That(offsetOnlyNeighbour.IsValid, Is.False);
+        Assert.That(offsetOnlyNeighbour.RejectReason, Does.Contain("outside actor movement budget"));
+    }
+
+    [Test]
+    public void ValidateMove_WithOnlyRepeatableStanceSkill_EndsTurn()
+    {
+        BattleUnitSnapshot actor = ActorUnit(0, 0);
+        actor.SkillIdsBySlot = new List<string> { "Range_Stance_Barb" };
+        actor.CooldownsBySlot = new List<int> { 0 };
+        BattleSnapshot snapshot = CreateSnapshot(actor);
+
+        BattleActionValidationResult validation = BattleActionRules.Validate(
+            new BattleActionUse
+            {
+                ActorUnitId = "team-0-slot-0",
+                ActionKind = BattleActionKind.Move,
+                SelectedHexes = new List<HexCoord> { new HexCoord(1, 0) }
+            },
+            snapshot,
+            new TestSkillProvider());
+
+        Assert.That(validation.IsValid, Is.True, validation.RejectReason);
+        Assert.That(validation.Action.EndsTurn, Is.True);
+        Assert.That(validation.Action.AllowsPostMoveFollowUp, Is.False);
+    }
+
+    [Test]
+    public void ValidateSkill_SlashUsesMoveDestinationButRemainsSkillTurnCost()
+    {
+        BattleUnitSnapshot actor = ActorUnit(0, 0);
+        actor.SkillIdsBySlot = new List<string> { "Slash" };
+        actor.CooldownsBySlot = new List<int> { 0 };
+        BattleSnapshot snapshot = CreateSnapshot(actor, EnemyUnit("team-1-slot-0", 2, 1));
+
+        BattleActionValidationResult validation = BattleActionRules.Validate(
+            new BattleActionUse
+            {
+                ActorUnitId = "team-0-slot-0",
+                ActionKind = BattleActionKind.Skill,
+                SkillSlot = 0,
+                SkillId = "Slash",
+                SelectedHexes = new List<HexCoord>
+                {
+                    new HexCoord(1, 0),
+                    new HexCoord(2, 0)
+                }
+            },
+            snapshot,
+            new TestSkillProvider());
+
+        Assert.That(validation.IsValid, Is.True, validation.RejectReason);
+        Assert.That(validation.Action.ActionKind, Is.EqualTo(BattleActionKind.Skill));
+        Assert.That(validation.Action.DestinationHex.C, Is.EqualTo(1));
+        Assert.That(validation.Action.DestinationHex.R, Is.EqualTo(0));
+        Assert.That(validation.Action.EndsTurn, Is.True);
+        Assert.That(validation.Action.TurnCost, Is.EqualTo(1));
+        Assert.That(validation.Action.AllowsPostMoveFollowUp, Is.False);
+    }
+
+    [Test]
     public void WaitAndDefend_AreRejectedAfterMovement()
     {
         BattleSnapshot snapshot = CreateSnapshot(ActorUnit(0, 0, movedThisTurn: true));
@@ -63,7 +180,7 @@ public class BattleActionRulesTests
     }
 
     [Test]
-    public void ActionsAndAICandidates_AreRejectedDuringNewTurnSequence()
+    public void ActionsAndGeneratedBattleActions_AreRejectedDuringNewTurnSequence()
     {
         BattleSnapshot snapshot = CreateSnapshotWithTurnState(
             new BattleTurnStateSnapshot { IsResolvingNewTurnSequence = true },
@@ -79,12 +196,10 @@ public class BattleActionRulesTests
             snapshot);
 
         List<BattleAction> generatedActions = BattleActionRules.GenerateLegalActions(snapshot);
-        List<TacticalAIActionIntent> legacyCandidates = TacticalAICandidateGenerator.GenerateCandidates(snapshot);
 
         Assert.That(validation.IsValid, Is.False);
         Assert.That(validation.RejectReason, Does.Contain("blocking"));
         Assert.That(generatedActions, Is.Empty);
-        Assert.That(legacyCandidates, Is.Empty);
     }
 
     [Test]
@@ -117,6 +232,38 @@ public class BattleActionRulesTests
     }
 
     [Test]
+    public void MoveAndAttack_ApplyIncludesCounterattackDamageWhenTargetCanCounter()
+    {
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit(0, 0, minDamage: 2, maxDamage: 2),
+            EnemyUnit("team-1-slot-0", 1, 0, minDamage: 4, maxDamage: 4));
+
+        BattleActionValidationResult validation = BattleActionRules.Validate(
+            new BattleActionUse
+            {
+                ActorUnitId = "team-0-slot-0",
+                ActionKind = BattleActionKind.MoveAndAttack,
+                TargetUnitId = "team-1-slot-0",
+                ActionIndex = 7
+            },
+            snapshot);
+
+        Assert.That(validation.IsValid, Is.True, validation.RejectReason);
+
+        BattleActionResult result = BattleActionRules.Apply(snapshot, validation.Action);
+        List<BattleActionResultEvent> damageEvents =
+            result.Events.FindAll(e => e.EventType == BattleActionResultEventType.DamageApplied);
+
+        Assert.That(damageEvents.Count, Is.EqualTo(2));
+        Assert.That(damageEvents[0].ActorUnitId, Is.EqualTo("team-0-slot-0"));
+        Assert.That(damageEvents[0].TargetUnitId, Is.EqualTo("team-1-slot-0"));
+        Assert.That(damageEvents[0].Amount, Is.EqualTo(2));
+        Assert.That(damageEvents[1].ActorUnitId, Is.EqualTo("team-1-slot-0"));
+        Assert.That(damageEvents[1].TargetUnitId, Is.EqualTo("team-0-slot-0"));
+        Assert.That(damageEvents[1].Amount, Is.EqualTo(4));
+    }
+
+    [Test]
     public void PlannedAction_FromBattleAction_CarriesUseActionAndResult()
     {
         BattleSnapshot snapshot = CreateSnapshot(ActorUnit(0, 0));
@@ -136,7 +283,7 @@ public class BattleActionRulesTests
         Assert.That(planned.Action, Is.Not.Null);
         Assert.That(planned.Result, Is.Not.Null);
         Assert.That(planned.ActionKind, Is.EqualTo(BattleActionKind.Move));
-        Assert.That(planned.LegacyIntent, Is.Null);
+        Assert.That(planned.Use.ActionKind, Is.EqualTo(BattleActionKind.Move));
     }
 
     static int FirstAmount(BattleActionResult result, BattleActionResultEventType eventType)
@@ -160,7 +307,17 @@ public class BattleActionRulesTests
         return CreateSnapshotWithTurnState(new BattleTurnStateSnapshot(), units);
     }
 
+    static BattleSnapshot CreateSnapshotWithLayout(bool usesLegacyHexLayout, params BattleUnitSnapshot[] units)
+    {
+        return CreateSnapshotWithTurnState(new BattleTurnStateSnapshot(), usesLegacyHexLayout, units);
+    }
+
     static BattleSnapshot CreateSnapshotWithTurnState(BattleTurnStateSnapshot turnState, params BattleUnitSnapshot[] units)
+    {
+        return CreateSnapshotWithTurnState(turnState, false, units);
+    }
+
+    static BattleSnapshot CreateSnapshotWithTurnState(BattleTurnStateSnapshot turnState, bool usesLegacyHexLayout, params BattleUnitSnapshot[] units)
     {
         List<BattleHexSnapshot> hexes = new List<BattleHexSnapshot>();
         for (int c = 0; c < 4; c++)
@@ -186,7 +343,8 @@ public class BattleActionRulesTests
             turnState,
             gameSeed: 12345,
             battleId: "battle-action-rules-test",
-            nextActionIndex: 3);
+            nextActionIndex: 3,
+            usesLegacyHexLayout: usesLegacyHexLayout);
     }
 
     static string FindOccupant(BattleUnitSnapshot[] units, int c, int r)
@@ -224,6 +382,16 @@ public class BattleActionRulesTests
         return Unit(unitId, 1, 0, c, r);
     }
 
+    static BattleUnitSnapshot EnemyUnit(
+        string unitId,
+        int c,
+        int r,
+        int minDamage,
+        int maxDamage)
+    {
+        return Unit(unitId, 1, 0, c, r, minDamage: minDamage, maxDamage: maxDamage);
+    }
+
     static BattleUnitSnapshot Unit(
         string unitId,
         int teamIndex,
@@ -256,10 +424,96 @@ public class BattleActionRulesTests
             IsAlive = true,
             IsRange = isRange,
             MovedThisTurn = movedThisTurn,
+            CounterAttackAvailable = true,
+            CounterAttacks = 1,
+            TempCounterAttacks = 1,
             SkillIdsBySlot = new List<string>(),
             CooldownsBySlot = new List<int>(),
             UsedSkillIdsThisTurn = new List<string>()
         };
+    }
+
+    sealed class TestSkillProvider : ITacticalAISkillMetadataProvider, ITacticalAISkillSpecProvider
+    {
+        public bool TryGetSkillMetadata(string skillId, out TacticalAISkillMetadata metadata)
+        {
+            metadata = new TacticalAISkillMetadata
+            {
+                SkillId = skillId ?? string.Empty,
+                IsRepeatableToggle = BattleActionSkillUtility.IsRepeatableToggleSkillId(skillId)
+            };
+            return true;
+        }
+
+        public bool TryGetSkillSpec(string skillId, out SkillDefinitionSpec spec)
+        {
+            SkillDefinitionAsset skill = ScriptableObject.CreateInstance<SkillDefinitionAsset>();
+            skill.Configure(skillId, "Active", string.Empty, string.Empty);
+            if (string.Equals(skillId, "Slash", System.StringComparison.Ordinal))
+            {
+                skill.ConfigureRules(
+                    new ActivationRuleData
+                    {
+                        activationKind = SkillActivationKind.Active,
+                        cooldownTurns = 2,
+                        consumesTurn = true,
+                        canUseAfterMove = false,
+                        canMoveAfterUse = false,
+                        repeatableInTurn = false
+                    },
+                    new TargetingRuleData
+                    {
+                        targetFamily = SkillTargetFamily.Movement,
+                        targetRoles = new[] { SkillTargetRole.MovementDestinationHex, SkillTargetRole.DirectionalImpactHex },
+                        targetCount = 2,
+                        requiresWalkable = true,
+                        radius = 1
+                    },
+                    new ResolutionRuleData
+                    {
+                        resolutionFamily = SkillResolutionFamily.MoveThenDirectionalAreaAttack,
+                        radius = 1
+                    },
+                    new[]
+                    {
+                        new SkillEffect
+                        {
+                            effectType = SkillEffectType.MoveUnit,
+                            targetSource = SkillEffectTargetSource.Actor,
+                            movementMode = SkillMovementMode.NormalPathMove
+                        },
+                        new SkillEffect
+                        {
+                            effectType = SkillEffectType.Damage,
+                            targetSource = SkillEffectTargetSource.AffectedUnits,
+                            damageMode = SkillDamageMode.BasicAttackDamage,
+                            damageScale = 0.4f
+                        }
+                    });
+                spec = SkillDefinitionSpec.FromAsset(skill);
+                return spec != null;
+            }
+
+            skill.ConfigureRules(
+                new ActivationRuleData
+                {
+                    activationKind = SkillActivationKind.Stance,
+                    consumesTurn = false,
+                    canUseAfterMove = true,
+                    canMoveAfterUse = true,
+                    repeatableInTurn = true
+                },
+                new TargetingRuleData
+                {
+                    targetFamily = SkillTargetFamily.Self,
+                    targetRoles = new[] { SkillTargetRole.ActorSelf },
+                    targetCount = 0
+                },
+                new ResolutionRuleData { resolutionFamily = SkillResolutionFamily.None },
+                new[] { new SkillEffect { effectType = SkillEffectType.ToggleStance } });
+            spec = SkillDefinitionSpec.FromAsset(skill);
+            return spec != null;
+        }
     }
 }
 #endif

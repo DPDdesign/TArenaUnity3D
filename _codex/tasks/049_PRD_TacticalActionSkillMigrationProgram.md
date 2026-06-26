@@ -162,7 +162,7 @@ execution must not depend on it as an authority or fallback.
 
 ### 049A - Tactical Action Validation Execution UI Vertical Slice
 
-File: `_codex/tasks/049A_PRD_TacticalActionValidationSO_UI_VerticalSlice.md`
+File: `_codex/tasks/archive/049A_PRD_TacticalActionValidationSO_UI_VerticalSlice.md`
 
 Purpose:
 
@@ -194,7 +194,7 @@ Implementation boundaries:
 
 ### 049AC - Skill Target And Effect Data Model
 
-File: `_codex/tasks/049AC_PRD_SkillTargetAndEffectDataModel.md`
+File: `_codex/tasks/archive/049AC_PRD_SkillTargetAndEffectDataModel.md`
 
 Purpose:
 

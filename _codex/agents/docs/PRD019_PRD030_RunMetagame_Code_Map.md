@@ -748,6 +748,13 @@ Relevant PRD019 Unity prefabs/screens live under:
 - `TArenaUnity3D/Assets/Resources/UI/PRD_19/026_SavedArmies/`
 - `TArenaUnity3D/Assets/Resources/UI/PRD_19/027_BattleResult/`
 
+These folders are protected manual QA surface. For normal coding-agent work,
+inspect them only if needed and do not write to them. Do not create, edit,
+move, delete, or regenerate PRD019 prefabs, prefab `.meta` files, screenshots,
+or other Unity asset files unless the user explicitly grants path-specific
+permission in the current task. Prefer C# controller/adapter/service changes
+plus manual Unity setup instructions.
+
 Backend-only Run Battle intentionally has no active PRD019 UI prefab.
 
 Manual integration task files:

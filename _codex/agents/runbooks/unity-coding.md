@@ -40,6 +40,13 @@ Do not edit:
 - `.asmdef`,
 - `.asmref`.
 
+PRD019 UI prefab folders under `TArenaUnity3D/Assets/Resources/UI/PRD_19/` are
+read-only by default. Do not create, edit, move, delete, or regenerate prefabs,
+prefab `.meta` files, screenshots, or other Unity asset files there unless the
+user explicitly grants path-specific permission in the current task. If a
+coding task seems to require those prefab edits, stop and ask; otherwise keep
+the change in C# and provide manual Unity setup steps.
+
 Allowed by default:
 
 - `.cs`,

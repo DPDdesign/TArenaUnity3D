@@ -14,7 +14,6 @@ public enum TacticalAIExecutionStatus
 public sealed class TacticalAIExecutionAttempt
 {
     public TacticalAIPlannedAction Action;
-    public TacticalAIActionIntent Intent;
     public bool Started;
     public string FailureReason = string.Empty;
 }
@@ -24,18 +23,9 @@ public sealed class TacticalAIExecutionResult
 {
     public TacticalAIExecutionStatus Status;
     public TacticalAIPlannedAction ExecutedAction;
-    public TacticalAIActionIntent ExecutedIntent;
     public BattleSnapshot LiveSnapshot;
     public string Message = string.Empty;
     public List<TacticalAIExecutionAttempt> Attempts = new List<TacticalAIExecutionAttempt>();
-}
-
-public interface ITacticalAISkillActionExecutor
-{
-    bool TryExecuteSkillAction(
-        TacticalAIExecutionRuntimeContext runtimeContext,
-        TacticalAIRevalidatedIntent revalidatedIntent,
-        out string failureReason);
 }
 
 public sealed class TacticalAIExecutionRuntimeContext
@@ -65,79 +55,6 @@ public sealed class TacticalAIExecutionRuntimeContext
 
 public static class TacticalAIExecutionFallbackPlanner
 {
-    public static List<TacticalAIActionIntent> BuildAttemptQueue(
-        IEnumerable<TacticalAIActionIntent> plannedIntents,
-        BattleSnapshot liveSnapshot,
-        TacticalAICandidateGenerationOptions options = null,
-        ITacticalAISkillMetadataProvider skillMetadataProvider = null,
-        int maxFallbackCandidates = -1,
-        TacticalAIResolvedProfile profile = null)
-    {
-        List<TacticalAIActionIntent> queue = new List<TacticalAIActionIntent>();
-        HashSet<string> seenKeys = new HashSet<string>(StringComparer.Ordinal);
-
-        AddPlannedIntents(queue, seenKeys, plannedIntents, maxFallbackCandidates);
-        if (queue.Count > 0)
-        {
-            return queue;
-        }
-
-        if (liveSnapshot == null)
-        {
-            return queue;
-        }
-
-        TacticalAIResolvedProfile resolvedProfile = profile ?? TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(null);
-        if (options != null)
-        {
-            resolvedProfile = resolvedProfile.Clone();
-            resolvedProfile.MaxCandidatesPerActionType = options.MaxCandidatesPerActionType;
-            resolvedProfile.MaxSkillCandidates = options.MaxSkillCandidates;
-            resolvedProfile.MaxMoveCandidates = options.MaxMoveCandidates;
-            resolvedProfile.MaxAttackCandidates = options.MaxAttackCandidates;
-        }
-
-        List<TacticalAIActionIntent> freshCandidates = TacticalAISearchCandidateExpander.BuildSearchCandidates(
-            liveSnapshot,
-            resolvedProfile,
-            skillMetadataProvider);
-
-        TacticalAIActionIntent defendFallback = null;
-        TacticalAIActionIntent waitFallback = null;
-        for (int i = 0; i < freshCandidates.Count; i++)
-        {
-            TacticalAIActionIntent candidate = freshCandidates[i];
-            if (candidate == null)
-            {
-                continue;
-            }
-
-            if (candidate.ActionType == TacticalAIActionType.Defend)
-            {
-                if (defendFallback == null)
-                {
-                    defendFallback = candidate;
-                }
-                continue;
-            }
-
-            if (candidate.ActionType == TacticalAIActionType.Wait)
-            {
-                if (waitFallback == null)
-                {
-                    waitFallback = candidate;
-                }
-                continue;
-            }
-
-            AddUnique(queue, seenKeys, candidate);
-        }
-
-        AddUnique(queue, seenKeys, defendFallback);
-        AddUnique(queue, seenKeys, waitFallback);
-        return queue;
-    }
-
     public static List<TacticalAIPlannedAction> BuildActionAttemptQueue(
         IEnumerable<TacticalAIPlannedAction> plannedActions,
         BattleSnapshot liveSnapshot,
@@ -158,13 +75,16 @@ public static class TacticalAIExecutionFallbackPlanner
             return queue;
         }
 
-        List<TacticalAIActionIntent> freshCandidates = TacticalAISearchCandidateExpander.BuildSearchCandidates(
+        List<BattleAction> freshActions = BattleActionRules.GenerateLegalActions(
             liveSnapshot,
             profile,
             skillMetadataProvider);
-        for (int i = 0; i < freshCandidates.Count; i++)
+        for (int i = 0; i < freshActions.Count; i++)
         {
-            AddUniqueAction(queue, seenKeys, TacticalAIPlannedAction.FromCandidateIntent(freshCandidates[i]));
+            BattleAction action = freshActions[i];
+            AddUniqueAction(queue, seenKeys, TacticalAIPlannedAction.FromBattleAction(
+                action,
+                BattleActionRules.Apply(liveSnapshot, action)));
         }
 
         return queue;
@@ -219,111 +139,26 @@ public static class TacticalAIExecutionFallbackPlanner
         return true;
     }
 
-    static void AddPlannedIntents(
-        List<TacticalAIActionIntent> queue,
-        HashSet<string> seenKeys,
-        IEnumerable<TacticalAIActionIntent> plannedIntents,
-        int maxFallbackCandidates)
-    {
-        if (plannedIntents == null)
-        {
-            return;
-        }
-
-        int maxAttempts = maxFallbackCandidates >= 0
-            ? Math.Max(1, maxFallbackCandidates + 1)
-            : int.MaxValue;
-
-        int addedCount = 0;
-        foreach (TacticalAIActionIntent intent in plannedIntents)
-        {
-            if (intent == null)
-            {
-                continue;
-            }
-
-            if (addedCount >= maxAttempts)
-            {
-                break;
-            }
-
-            if (AddUnique(queue, seenKeys, intent))
-            {
-                addedCount++;
-            }
-        }
-    }
-
-    static bool AddUnique(
-        List<TacticalAIActionIntent> queue,
-        HashSet<string> seenKeys,
-        TacticalAIActionIntent intent)
-    {
-        if (queue == null || seenKeys == null || intent == null)
-        {
-            return false;
-        }
-
-        string key = BuildIntentKey(intent);
-        if (seenKeys.Add(key) == false)
-        {
-            return false;
-        }
-
-        queue.Add(intent);
-        return true;
-    }
-
-    static string BuildIntentKey(TacticalAIActionIntent intent)
-    {
-        if (intent == null)
-        {
-            return string.Empty;
-        }
-
-        if (string.IsNullOrEmpty(intent.StableOrderKey) == false)
-        {
-            return intent.StableOrderKey;
-        }
-
-        return intent.ActionType + "|" +
-            (intent.ActorUnitId ?? string.Empty) + "|" +
-            GetCoordinateKey(intent.SourceHex) + "|" +
-            GetCoordinateKey(intent.DestinationHex) + "|" +
-            (intent.TargetUnitId ?? string.Empty) + "|" +
-            GetCoordinateKey(intent.TargetHex) + "|" +
-            intent.SkillSlot + "|" +
-            (intent.SkillId ?? string.Empty);
-    }
-
-    static string GetCoordinateKey(TacticalAIHexCoordinate coordinate)
-    {
-        return coordinate == null ? string.Empty : coordinate.C + "," + coordinate.R;
-    }
 }
 
 public sealed class TacticalAIExecutionBridge
 {
     readonly TacticalAIExecutionRuntimeContext runtimeContext;
     readonly TacticalAIProfile assignedProfile;
-    readonly ITacticalAISkillActionExecutor skillActionExecutor;
     readonly ITacticalAISkillMetadataProvider skillMetadataProvider;
 
     public TacticalAIExecutionBridge(
         TacticalAIExecutionRuntimeContext runtimeContext,
         TacticalAIProfile assignedProfile = null,
-        ITacticalAISkillActionExecutor skillActionExecutor = null,
         ITacticalAISkillMetadataProvider skillMetadataProvider = null)
     {
         this.runtimeContext = runtimeContext ?? new TacticalAIExecutionRuntimeContext(null, null, null, null);
         this.assignedProfile = assignedProfile;
-        this.skillActionExecutor = skillActionExecutor ?? TacticalAISkillRulesExecutor.Instance;
         this.skillMetadataProvider = skillMetadataProvider ?? TacticalAIDataMapperSkillMetadataProvider.Instance;
     }
 
     public static TacticalAIExecutionBridge CreateFromScene(
         TacticalAIProfile assignedProfile = null,
-        ITacticalAISkillActionExecutor skillActionExecutor = null,
         ITacticalAISkillMetadataProvider skillMetadataProvider = null)
     {
         return new TacticalAIExecutionBridge(
@@ -333,28 +168,7 @@ public sealed class TacticalAIExecutionBridge
                 UnityEngine.Object.FindObjectOfType<TurnManager>(),
                 BattleActionLifecycle.Instance),
             assignedProfile,
-            skillActionExecutor,
             skillMetadataProvider);
-    }
-
-    public TacticalAIExecutionResult TryExecuteOrderedIntents(
-        IEnumerable<TacticalAIActionIntent> orderedIntents,
-        BattleSnapshot plannedSnapshot = null)
-    {
-        List<TacticalAIPlannedAction> actions = new List<TacticalAIPlannedAction>();
-        if (orderedIntents != null)
-        {
-            foreach (TacticalAIActionIntent intent in orderedIntents)
-            {
-                TacticalAIPlannedAction action = TacticalAIPlannedAction.FromCandidateIntent(intent);
-                if (action != null)
-                {
-                    actions.Add(action);
-                }
-            }
-        }
-
-        return TryExecuteOrderedActions(actions, plannedSnapshot);
     }
 
     public TacticalAIExecutionResult TryExecuteOrderedActions(
@@ -404,8 +218,7 @@ public sealed class TacticalAIExecutionBridge
             TacticalAIPlannedAction action = attempts[i];
             TacticalAIExecutionAttempt attempt = new TacticalAIExecutionAttempt
             {
-                Action = action,
-                Intent = action != null ? action.LegacyIntent : null
+                Action = action
             };
 
             if (runtimeContext.BattleActionLifecycle != null && runtimeContext.BattleActionLifecycle.IsBusy)
@@ -428,12 +241,11 @@ public sealed class TacticalAIExecutionBridge
                 continue;
             }
 
-            if (TryExecuteLiveIntent(action, revalidatedIntent, out attempt.FailureReason))
+            if (TryExecuteLiveIntent(revalidatedIntent, out attempt.FailureReason))
             {
                 attempt.Started = true;
                 result.Attempts.Add(attempt);
                 result.ExecutedAction = action;
-                result.ExecutedIntent = action != null ? action.LegacyIntent : null;
                 result.Status = TacticalAIExecutionStatus.Started;
                 result.Message = "Started " + action.ActionType + " through the live battle lifecycle.";
                 return result;
@@ -460,19 +272,8 @@ public sealed class TacticalAIExecutionBridge
             "[TacticalAIExecutionBridge] Rejected action phase=" + phase +
             " type=" + action.ActionType +
             " actor=" + (action.ActorUnitId ?? string.Empty) +
-            " skill=" + (action.ValidatedSkillCast != null ? action.ValidatedSkillCast.SkillId : string.Empty) +
+            " skill=" + (action.Action != null ? action.Action.SkillId : string.Empty) +
             " reason=" + (failureReason ?? string.Empty));
-    }
-
-    static void SendAIActionChat(TosterHexUnit actor, string actionText)
-    {
-        if (actor == null || Chat.chat == null)
-        {
-            return;
-        }
-
-        actor.TextToSend = actor.Name + " " + actionText;
-        Chat.chat.SendUnitActionMessage(actor, actionText);
     }
 
     bool TryRevalidateAction(
@@ -490,104 +291,29 @@ public sealed class TacticalAIExecutionBridge
             return false;
         }
 
-        if (action.ActionType != TacticalAIActionType.Skill)
+        if (action.Use != null)
         {
-            if (action.Use != null)
+            BattleActionValidationResult actionValidation = BattleActionRules.Validate(action.Use, liveSnapshot, skillMetadataProvider);
+            if (actionValidation.IsValid == false || actionValidation.Action == null)
             {
-                BattleActionValidationResult actionValidation = BattleActionRules.Validate(action.Use, liveSnapshot, skillMetadataProvider);
-                if (actionValidation.IsValid == false || actionValidation.Action == null)
-                {
-                    failureReason = "BattleActionRules rejected planned action: " + actionValidation.RejectReason;
-                    return false;
-                }
-
-                revalidatedIntent = ToRevalidatedIntent(actionValidation.Action, liveSnapshot);
-                if (revalidatedIntent == null)
-                {
-                    failureReason = "BattleActionRules validated action but live revalidation could not resolve actor/target.";
-                    return false;
-                }
-
-                revalidatedIntent.Use = action.Use.Clone();
-                revalidatedIntent.Result = BattleActionRules.Apply(liveSnapshot, actionValidation.Action);
-                return true;
+                failureReason = "BattleActionRules rejected planned action: " + actionValidation.RejectReason;
+                return false;
             }
 
-            return TacticalAIIntentRevalidator.TryRevalidate(
-                action.LegacyIntent,
-                liveSnapshot,
-                plannedSnapshot,
-                out revalidatedIntent,
-                out failureReason,
-                skillMetadataProvider);
+            revalidatedIntent = ToRevalidatedIntent(actionValidation.Action, liveSnapshot);
+            if (revalidatedIntent == null)
+            {
+                failureReason = "BattleActionRules validated action but live revalidation could not resolve actor/target.";
+                return false;
+            }
+
+            revalidatedIntent.Use = actionValidation.Action.ToUse();
+            revalidatedIntent.Result = BattleActionRules.Apply(liveSnapshot, actionValidation.Action);
+            return true;
         }
 
-        if (liveSnapshot == null)
-        {
-            failureReason = "Live snapshot was unavailable.";
-            return false;
-        }
-
-        SkillCast plannedCast = action.ValidatedSkillCast;
-        SkillUse submittedUse = action.SubmittedSkillUse;
-        if (plannedCast == null || submittedUse == null)
-        {
-            failureReason = "Skill planned action did not carry SkillUse and SkillCast.";
-            return false;
-        }
-
-        BattleUnitSnapshot liveActor = TacticalAISnapshotQuery.FindUnit(liveSnapshot, plannedCast.ActorUnitId);
-        if (liveActor == null || liveActor.IsAlive == false || liveActor.Amount <= 0)
-        {
-            failureReason = "Skill actor is no longer alive/actionable.";
-            return false;
-        }
-
-        if (string.Equals(liveSnapshot.ActiveUnitId, plannedCast.ActorUnitId, StringComparison.Ordinal) == false)
-        {
-            failureReason = "Skill actor is no longer the live active unit.";
-            return false;
-        }
-
-        SkillDefinitionSpec spec = ResolveSkillSpec(plannedCast.SkillId);
-        if (spec == null)
-        {
-            failureReason = "Skill planned action has no copied or live skill spec.";
-            return false;
-        }
-
-        SkillContext context = SkillContext.Create(liveSnapshot, plannedCast.ActorUnitId, spec, ResolveSkillSlot(liveActor, plannedCast.SkillId));
-        SkillValidationResult validation = SkillRules.Validate(submittedUse, context);
-        if (validation.IsValid == false || validation.Cast == null)
-        {
-            failureReason = "SkillRules rejected planned action: " + validation.RejectReason;
-            return false;
-        }
-
-        revalidatedIntent = new TacticalAIRevalidatedIntent
-        {
-            ActionType = TacticalAIActionType.Skill,
-            Use = submittedUse != null
-                ? new BattleActionUse
-                {
-                    ActorUnitId = submittedUse.ActorUnitId,
-                    ActionKind = BattleActionKind.Skill,
-                    SkillSlot = context.SkillSlot,
-                    SkillId = submittedUse.SkillId,
-                    SelectedHexes = BattleActionModelUtility.CopyHexes(submittedUse.SelectedHexes)
-                }
-                : null,
-            Action = action.Action,
-            Result = action.Result,
-            Actor = liveActor,
-            SkillSlot = context.SkillSlot,
-            SkillId = plannedCast.SkillId,
-            ValidatedSkillCast = validation.Cast.Clone(),
-            Target = TacticalAISnapshotQuery.FindUnit(liveSnapshot, validation.Cast.PrimaryTargetUnitId),
-            TargetHex = ToAIHex(FirstHex(validation.Cast.SelectedHexes)),
-            DestinationHex = ToAIHex(validation.Cast.DestinationHex)
-        };
-        return true;
+        failureReason = "Planned action did not carry a BattleActionUse payload.";
+        return false;
     }
 
     static TacticalAIRevalidatedIntent ToRevalidatedIntent(BattleAction action, BattleSnapshot liveSnapshot)
@@ -616,21 +342,24 @@ public sealed class TacticalAIExecutionBridge
             DestinationHex = ToAIHex(action.DestinationHex),
             TargetHex = ToAIHex(action.ImpactHex),
             SkillSlot = action.SkillSlot,
-            SkillId = action.SkillId ?? string.Empty,
-            ValidatedSkillCast = action.SkillCast != null ? action.SkillCast.Clone() : null
+            SkillId = action.SkillId ?? string.Empty
         };
     }
 
     bool TryExecuteLiveIntent(
-        TacticalAIPlannedAction action,
         TacticalAIRevalidatedIntent revalidatedIntent,
         out string failureReason)
     {
         failureReason = string.Empty;
-
-        if (revalidatedIntent != null && revalidatedIntent.Action != null)
+        if (revalidatedIntent == null)
         {
-            BattleActionLiveApplier applier = new BattleActionLiveApplier(runtimeContext, skillActionExecutor);
+            failureReason = "No revalidated action was supplied for live execution.";
+            return false;
+        }
+
+        if (revalidatedIntent.Action != null)
+        {
+            BattleActionLiveApplier applier = new BattleActionLiveApplier(runtimeContext);
             if (applier.TryApply(revalidatedIntent, out failureReason))
             {
                 return true;
@@ -644,150 +373,8 @@ public sealed class TacticalAIExecutionBridge
             return false;
         }
 
-        TosterHexUnit actor = ResolveLiveUnit(revalidatedIntent.Actor);
-        if (actor == null)
-        {
-            failureReason = "Could not resolve the live actor object for " + revalidatedIntent.Actor.RuntimeUnitId + ".";
-            return false;
-        }
-
-        switch (revalidatedIntent.ActionType)
-        {
-            case TacticalAIActionType.Move:
-            {
-                HexClass destinationHex = ResolveLiveHex(revalidatedIntent.DestinationHex);
-                if (destinationHex == null)
-                {
-                    failureReason = "Could not resolve the live destination hex.";
-                    return false;
-                }
-
-                if (runtimeContext.MouseControler.TryStartMoveAction(destinationHex, actor))
-                {
-                    SendAIActionChat(actor, "rusza sie.");
-                    // Player movement can keep a unit open for a follow-up skill. AI V1 commits
-                    // one ranked action per turn, so plain AI movement must finish that unit.
-                    actor.Moved = true;
-                    return true;
-                }
-
-                failureReason = "MouseControler rejected the move action during live validation.";
-                return false;
-            }
-            case TacticalAIActionType.MoveAndAttack:
-            {
-                HexClass destinationHex = ResolveLiveHex(revalidatedIntent.DestinationHex);
-                TosterHexUnit target = ResolveLiveUnit(revalidatedIntent.Target);
-                if (destinationHex == null || target == null)
-                {
-                    failureReason = "Could not resolve the live move-and-attack destination or target.";
-                    return false;
-                }
-
-                if (runtimeContext.MouseControler.TryStartMoveAndAttackAction(destinationHex, target, actor))
-                {
-                    return true;
-                }
-
-                failureReason = "MouseControler rejected the move-and-attack action during live validation.";
-                return false;
-            }
-            case TacticalAIActionType.BasicRangedAttack:
-            {
-                HexClass targetHex = ResolveLiveHex(revalidatedIntent.TargetHex);
-                if (targetHex == null)
-                {
-                    failureReason = "Could not resolve the live ranged target hex.";
-                    return false;
-                }
-
-                if (runtimeContext.MouseControler.TryStartBasicRangedAttackAction(targetHex, actor))
-                {
-                    return true;
-                }
-
-                failureReason = "MouseControler rejected the basic ranged attack during live validation.";
-                return false;
-            }
-            case TacticalAIActionType.Wait:
-                if (runtimeContext.MouseControler.TryStartWaitAction(actor))
-                {
-                    return true;
-                }
-
-                failureReason = "MouseControler rejected the wait action during live validation.";
-                return false;
-            case TacticalAIActionType.Defend:
-                if (runtimeContext.MouseControler.TryStartDefenseAction(actor))
-                {
-                    return true;
-                }
-
-                failureReason = "MouseControler rejected the defend action during live validation.";
-                return false;
-            case TacticalAIActionType.Skill:
-                if (skillActionExecutor == null)
-                {
-                    failureReason = "Skill intents require a shared SkillRules executor and no skill executor is registered.";
-                    return false;
-                }
-
-                if (skillActionExecutor.TryExecuteSkillAction(runtimeContext, revalidatedIntent, out failureReason))
-                {
-                    return true;
-                }
-
-                if (string.IsNullOrEmpty(failureReason))
-                {
-                    failureReason = "Skill intent executor rejected the skill action.";
-                }
-
-                Debug.LogWarning(
-                    "[TacticalAIExecutionBridge] Rejected skill intent actor=" + revalidatedIntent.Actor.RuntimeUnitId +
-                    " skillSlot=" + revalidatedIntent.SkillSlot +
-                    " skillId=" + revalidatedIntent.SkillId +
-                    " reason=" + failureReason);
-                return false;
-            default:
-                failureReason = "Unsupported tactical AI action type: " + revalidatedIntent.ActionType;
-                return false;
-        }
-    }
-
-    SkillDefinitionSpec ResolveSkillSpec(string skillId)
-    {
-        ITacticalAISkillSpecProvider specProvider = skillMetadataProvider as ITacticalAISkillSpecProvider;
-        SkillDefinitionSpec spec;
-        if (specProvider != null && specProvider.TryGetSkillSpec(skillId, out spec))
-        {
-            return spec;
-        }
-
-        SkillDefinitionAsset asset = DataMapper.Instance != null ? DataMapper.Instance.FindSkillAsset(skillId) : null;
-        return SkillDefinitionSpec.FromAsset(asset);
-    }
-
-    static int ResolveSkillSlot(BattleUnitSnapshot actor, string skillId)
-    {
-        if (actor == null || actor.SkillIdsBySlot == null)
-        {
-            return -1;
-        }
-
-        for (int i = 0; i < actor.SkillIdsBySlot.Count; i++)
-        {
-            if (string.Equals(actor.SkillIdsBySlot[i], skillId, StringComparison.Ordinal))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    static HexCoord FirstHex(List<HexCoord> hexes)
-    {
-        return hexes != null && hexes.Count > 0 ? hexes[0] : null;
+        failureReason = "Planned action did not carry a validated BattleAction for live application.";
+        return false;
     }
 
     static TacticalAIHexCoordinate ToAIHex(HexCoord hex)
@@ -795,75 +382,4 @@ public sealed class TacticalAIExecutionBridge
         return hex == null ? null : new TacticalAIHexCoordinate(hex.C, hex.R);
     }
 
-    TosterHexUnit ResolveLiveUnit(BattleUnitSnapshot snapshotUnit)
-    {
-        if (snapshotUnit == null ||
-            runtimeContext.HexMap == null ||
-            runtimeContext.HexMap.Teams == null ||
-            snapshotUnit.TeamIndex < 0 ||
-            snapshotUnit.TeamIndex >= runtimeContext.HexMap.Teams.Count)
-        {
-            return null;
-        }
-
-        TeamClass team = runtimeContext.HexMap.Teams[snapshotUnit.TeamIndex];
-        if (team == null || team.Tosters == null ||
-            snapshotUnit.RosterIndexWithinTeam < 0 ||
-            snapshotUnit.RosterIndexWithinTeam >= team.Tosters.Count)
-        {
-            return null;
-        }
-
-        TosterHexUnit actor = team.Tosters[snapshotUnit.RosterIndexWithinTeam];
-        if (actor == null)
-        {
-            return null;
-        }
-
-        if (string.Equals(actor.Name, snapshotUnit.UnitName, StringComparison.Ordinal) == false)
-        {
-            return null;
-        }
-
-        HexClass actorHex = actor.Hex;
-        int liveC = actorHex != null ? actorHex.C : actor.C;
-        int liveR = actorHex != null ? actorHex.R : actor.R;
-        if (liveC != snapshotUnit.C || liveR != snapshotUnit.R)
-        {
-            return null;
-        }
-
-        if (actor.isDead || actor.Amount <= 0)
-        {
-            return null;
-        }
-
-        return actor;
-    }
-
-    HexClass ResolveLiveHex(TacticalAIHexCoordinate coordinate)
-    {
-        if (coordinate == null || runtimeContext.HexMap == null)
-        {
-            return null;
-        }
-
-        return runtimeContext.HexMap.GetHexAt(coordinate.C, coordinate.R);
-    }
-
-    static TacticalAICandidateGenerationOptions BuildCandidateOptions(TacticalAIResolvedProfile resolvedProfile)
-    {
-        if (resolvedProfile == null)
-        {
-            return TacticalAICandidateGenerationOptions.Default;
-        }
-
-        return new TacticalAICandidateGenerationOptions
-        {
-            MaxCandidatesPerActionType = resolvedProfile.MaxCandidatesPerActionType,
-            MaxSkillCandidates = resolvedProfile.MaxSkillCandidates,
-            MaxMoveCandidates = resolvedProfile.MaxMoveCandidates,
-            MaxAttackCandidates = resolvedProfile.MaxAttackCandidates
-        };
-    }
 }

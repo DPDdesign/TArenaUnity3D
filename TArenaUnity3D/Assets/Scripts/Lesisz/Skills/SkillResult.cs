@@ -57,8 +57,3 @@ public class SkillResult
         }
     }
 }
-
-public interface ISkillRuntime
-{
-    SkillResult Apply(SkillCast cast, SkillContext context);
-}

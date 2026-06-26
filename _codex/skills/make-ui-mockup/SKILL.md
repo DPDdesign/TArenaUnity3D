@@ -11,9 +11,9 @@ coherent enough for review, structured enough to become production UI, and
 wired enough that the owning scripts can be inspected in the prefab.
 
 This skill produces Unity UGUI prefabs only. Do not create or update HTML,
-JavaScript, browser pages, or `_codex/Gen_Im/RETSOT ONLINE/` as a substitute for
-the mockup. If Unity prefab authoring is blocked, report the blocker instead of
-falling back to web output.
+JavaScript, browser pages, or legacy `_codex/Gen_Im/RETSOT ONLINE/` output as a
+substitute for the mockup. If Unity prefab authoring is blocked, report the
+blocker instead of falling back to web output.
 
 Do not create empty RectTransform-only skeleton prefabs. A valid UI mockup must
 be visible, component-based, and wired.

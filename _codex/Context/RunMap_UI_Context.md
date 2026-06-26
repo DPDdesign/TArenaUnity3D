@@ -275,5 +275,5 @@ Run Map UI polish must respect these boundaries:
 
 - `_codex/Context/11_UI_Context.md`
 - `_codex/Context/12_UI_Visual_Context.md`
-- `_codex/agents/docs/PRD019_PRD030_RunMetagame_Code_Map.md`
-- `_codex/Documentation/PRD030_OfflineDatabase_Map.md`
+- `_codex/Context/maps/run-metagame-map.md` for explicit run-metagame,
+  persistence, or screen data-flow work

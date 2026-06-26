@@ -9,10 +9,10 @@ drift.
 For UI mockup tasks in TArena, also verify the deliverable format. A valid task
 mockup must be a Unity UGUI prefab workflow following
 `_codex/skills/make-ui-mockup/SKILL.md`. HTML, JavaScript, browser prototypes,
-or `_codex/Gen_Im/RETSOT ONLINE/` changes are not acceptable substitutes. If a
-protocol claims a UI mockup but names no Unity prefab output, no generated UI
-prefabs, and no prefab validation/manual Unity setup path, mark QA as
-follow-up required.
+or legacy `_codex/Gen_Im/RETSOT ONLINE/` changes are not acceptable
+substitutes. If a protocol claims a UI mockup but names no Unity prefab output,
+no generated UI prefabs, and no prefab validation/manual Unity setup path, mark
+QA as follow-up required.
 
 ## Workspace Boundary
 

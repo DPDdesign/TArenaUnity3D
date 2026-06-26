@@ -212,7 +212,7 @@ public class SkillPresentationManager : MonoBehaviour
             target,
             target != null ? target.Hex : null,
             SingleReveal(reveal),
-            null));
+            "attack"));
     }
 
     public static void PlaySequencedProjectileHits(

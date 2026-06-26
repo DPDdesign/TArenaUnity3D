@@ -26,7 +26,8 @@ public class TacticalAISnapshotProbe : MonoBehaviour
     [SerializeField] [TextArea(5, 20)] private string lastExecutionSummary = string.Empty;
 
     [System.NonSerialized] private BattleSnapshot lastSnapshot;
-    [System.NonSerialized] private List<TacticalAIActionIntent> lastCandidates = new List<TacticalAIActionIntent>();
+    [System.NonSerialized] private TacticalAISearchPlan lastSearchPlan;
+    [System.NonSerialized] private List<TacticalAIPlannedAction> lastPlannedActions = new List<TacticalAIPlannedAction>();
     [System.NonSerialized] private float nextAutoProbeTime;
     [System.NonSerialized] private bool autoProbeCompletedForCurrentScene;
     [System.NonSerialized] private string lastAutoProbeSceneName = string.Empty;
@@ -110,7 +111,7 @@ public class TacticalAISnapshotProbe : MonoBehaviour
         Debug.Log("[TacticalAISnapshotProbe] Captured snapshot:\n" + lastSnapshotSummary);
     }
 
-    [ContextMenu("Generate Tactical AI Candidates")]
+    [ContextMenu("Generate Tactical AI Planned Actions")]
     public void GenerateCandidates()
     {
         if (recaptureSnapshotBeforeGenerating || lastSnapshot == null)
@@ -121,32 +122,38 @@ public class TacticalAISnapshotProbe : MonoBehaviour
         if (lastSnapshot == null)
         {
             lastCandidateCount = 0;
-            lastCandidateSummary = "Candidate generation skipped because no snapshot is available.";
+            lastCandidateSummary = "Planned action generation skipped because no snapshot is available.";
             return;
         }
 
-        lastCandidates = TacticalAICandidateGenerator.GenerateCandidates(
+        TacticalAISearchPlanner planner = new TacticalAISearchPlanner();
+        lastSearchPlan = planner.BuildPlan(
             lastSnapshot,
-            ResolveCandidateOptions());
+            ResolveProfile(),
+            TacticalAIDataMapperSkillMetadataProvider.Instance);
 
-        lastCandidateCount = lastCandidates != null ? lastCandidates.Count : 0;
-        lastCandidateSummary = BuildCandidateSummary(lastCandidates);
-        Debug.Log("[TacticalAISnapshotProbe] Generated candidates:\n" + lastCandidateSummary);
+        lastPlannedActions = lastSearchPlan != null && lastSearchPlan.OrderedActions != null
+            ? new List<TacticalAIPlannedAction>(lastSearchPlan.OrderedActions)
+            : new List<TacticalAIPlannedAction>();
+
+        lastCandidateCount = lastPlannedActions.Count;
+        lastCandidateSummary = BuildPlannedActionSummary(lastSearchPlan, lastPlannedActions);
+        Debug.Log("[TacticalAISnapshotProbe] Generated planned actions:\n" + lastCandidateSummary);
     }
 
-    [ContextMenu("Capture Snapshot And Generate Candidates")]
+    [ContextMenu("Capture Snapshot And Generate Planned Actions")]
     public void CaptureAndGenerateCandidates()
     {
         CaptureSnapshot();
         GenerateCandidates();
     }
 
-    [ContextMenu("Execute Tactical AI Candidates Through Bridge")]
+    [ContextMenu("Execute Tactical AI Planned Actions Through Bridge")]
     public void ExecuteCandidatesThroughBridge()
     {
         ResolveReferencesIfNeeded();
 
-        if (lastSnapshot == null || lastCandidates == null || lastCandidates.Count == 0)
+        if (lastSnapshot == null || lastPlannedActions == null || lastPlannedActions.Count == 0)
         {
             CaptureAndGenerateCandidates();
         }
@@ -159,7 +166,7 @@ public class TacticalAISnapshotProbe : MonoBehaviour
                 battleActionLifecycle != null ? battleActionLifecycle : BattleActionLifecycle.Instance),
             tacticalAIProfile);
 
-        TacticalAIExecutionResult result = bridge.TryExecuteOrderedIntents(lastCandidates, lastSnapshot);
+        TacticalAIExecutionResult result = bridge.TryExecuteOrderedActions(lastPlannedActions, lastSnapshot);
         lastExecutionSummary = BuildExecutionSummary(result);
         Debug.Log("[TacticalAISnapshotProbe] Execution result:\n" + lastExecutionSummary);
     }
@@ -169,11 +176,16 @@ public class TacticalAISnapshotProbe : MonoBehaviour
         return lastSnapshot;
     }
 
-    public List<TacticalAIActionIntent> GetLastCandidates()
+    public TacticalAISearchPlan GetLastSearchPlan()
     {
-        return lastCandidates == null
-            ? new List<TacticalAIActionIntent>()
-            : new List<TacticalAIActionIntent>(lastCandidates);
+        return lastSearchPlan;
+    }
+
+    public List<TacticalAIPlannedAction> GetLastPlannedActions()
+    {
+        return lastPlannedActions == null
+            ? new List<TacticalAIPlannedAction>()
+            : new List<TacticalAIPlannedAction>(lastPlannedActions);
     }
 
     void ResolveReferencesIfNeeded()
@@ -223,25 +235,13 @@ public class TacticalAISnapshotProbe : MonoBehaviour
             "Current scene: " + sceneName + "\n" +
             "Required live objects: HexMap, MouseControler, TurnManager.";
         lastCandidateSummary =
-            "No candidates yet.\n" +
+            "No planned actions yet.\n" +
             "This probe starts working only after the actual tactical battle scene is loaded and battle runtime objects exist.";
     }
 
-    TacticalAICandidateGenerationOptions ResolveCandidateOptions()
+    TacticalAIResolvedProfile ResolveProfile()
     {
-        if (tacticalAIProfile == null)
-        {
-            return TacticalAICandidateGenerationOptions.Default;
-        }
-
-        TacticalAIResolvedProfile resolvedProfile = TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(tacticalAIProfile);
-        return new TacticalAICandidateGenerationOptions
-        {
-            MaxCandidatesPerActionType = resolvedProfile.MaxCandidatesPerActionType,
-            MaxSkillCandidates = resolvedProfile.MaxSkillCandidates,
-            MaxMoveCandidates = resolvedProfile.MaxMoveCandidates,
-            MaxAttackCandidates = resolvedProfile.MaxAttackCandidates
-        };
+        return TacticalAIProfileCatalog.ResolveAssignedOrRuntimeDefault(tacticalAIProfile);
     }
 
     static string BuildSnapshotSummary(BattleSnapshot snapshot)
@@ -287,55 +287,112 @@ public class TacticalAISnapshotProbe : MonoBehaviour
         return builder.ToString().TrimEnd();
     }
 
-    static string BuildCandidateSummary(List<TacticalAIActionIntent> candidates)
+    static string BuildPlannedActionSummary(TacticalAISearchPlan plan, List<TacticalAIPlannedAction> plannedActions)
     {
-        if (candidates == null || candidates.Count == 0)
+        if (plannedActions == null || plannedActions.Count == 0)
         {
-            return "No candidates generated.";
+            return "No planned actions generated.";
         }
 
         StringBuilder builder = new StringBuilder();
-        builder.AppendLine("Candidates: " + candidates.Count);
-        for (int i = 0; i < candidates.Count; i++)
+        builder.AppendLine("Planned Actions: " + plannedActions.Count);
+        if (plan != null)
         {
-            TacticalAIActionIntent candidate = candidates[i];
+            builder.AppendLine("Best Score: " + plan.BestScore.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
+            builder.AppendLine("Depth: " + plan.CompletedDepth);
+            builder.AppendLine("Snapshot: " + (plan.PlannedSnapshotHash ?? string.Empty));
+        }
+
+        for (int i = 0; i < plannedActions.Count; i++)
+        {
+            TacticalAIPlannedAction plannedAction = plannedActions[i];
             builder.Append(i)
                 .Append(". ")
-                .Append(candidate.ActionType)
-                .Append(" actor=")
-                .Append(candidate.ActorUnitId);
-
-            if (candidate.DestinationHex != null)
-            {
-                builder.Append(" dest=")
-                    .Append(candidate.DestinationHex.C)
-                    .Append(",")
-                    .Append(candidate.DestinationHex.R);
-            }
-
-            if (string.IsNullOrEmpty(candidate.TargetUnitId) == false)
-            {
-                builder.Append(" target=").Append(candidate.TargetUnitId);
-            }
-
-            if (candidate.TargetHex != null)
-            {
-                builder.Append(" targetHex=")
-                    .Append(candidate.TargetHex.C)
-                    .Append(",")
-                    .Append(candidate.TargetHex.R);
-            }
-
-            if (candidate.SkillSlot >= 0)
-            {
-                builder.Append(" skillSlot=").Append(candidate.SkillSlot)
-                    .Append(" skillId=").Append(candidate.SkillId);
-            }
-
-            builder.AppendLine();
+                .Append(BuildActionSummary(plannedAction))
+                .AppendLine();
         }
 
         return builder.ToString().TrimEnd();
+    }
+
+    static string BuildActionSummary(TacticalAIPlannedAction plannedAction)
+    {
+        if (plannedAction == null)
+        {
+            return "null planned action";
+        }
+
+        BattleAction action = plannedAction.Action;
+        BattleActionUse use = plannedAction.Use;
+        BattleActionKind kind = action != null ? action.ActionKind : plannedAction.ActionKind;
+        string actorUnitId = action != null
+            ? action.ActorUnitId
+            : use != null
+                ? use.ActorUnitId
+                : plannedAction.ActorUnitId;
+
+        StringBuilder builder = new StringBuilder();
+        builder.Append(kind)
+            .Append(" actor=")
+            .Append(actorUnitId ?? string.Empty);
+
+        HexCoord destinationHex = action != null ? action.DestinationHex : FirstSelectedHex(use);
+        if (destinationHex != null)
+        {
+            builder.Append(" dest=")
+                .Append(destinationHex.C)
+                .Append(",")
+                .Append(destinationHex.R);
+        }
+
+        string targetUnitId = action != null
+            ? action.PrimaryTargetUnitId
+            : use != null
+                ? use.TargetUnitId
+                : string.Empty;
+        if (string.IsNullOrEmpty(targetUnitId) == false)
+        {
+            builder.Append(" target=").Append(targetUnitId);
+        }
+
+        HexCoord impactHex = action != null ? action.ImpactHex : LastSelectedHex(use);
+        if (impactHex != null)
+        {
+            builder.Append(" impact=")
+                .Append(impactHex.C)
+                .Append(",")
+                .Append(impactHex.R);
+        }
+
+        int skillSlot = action != null ? action.SkillSlot : use != null ? use.SkillSlot : -1;
+        string skillId = action != null ? action.SkillId : use != null ? use.SkillId : string.Empty;
+        if (skillSlot >= 0 || string.IsNullOrEmpty(skillId) == false)
+        {
+            builder.Append(" skillSlot=").Append(skillSlot)
+                .Append(" skillId=").Append(skillId ?? string.Empty);
+        }
+
+        if (action != null)
+        {
+            builder.Append(" endsTurn=").Append(action.EndsTurn)
+                .Append(" key=").Append(action.StableOrderKey ?? string.Empty);
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
+    static HexCoord FirstSelectedHex(BattleActionUse use)
+    {
+        return use != null && use.SelectedHexes != null && use.SelectedHexes.Count > 0
+            ? use.SelectedHexes[0]
+            : null;
+    }
+
+    static HexCoord LastSelectedHex(BattleActionUse use)
+    {
+        return use != null && use.SelectedHexes != null && use.SelectedHexes.Count > 0
+            ? use.SelectedHexes[use.SelectedHexes.Count - 1]
+            : null;
     }
 
     static string BuildExecutionSummary(TacticalAIExecutionResult result)
@@ -348,9 +405,9 @@ public class TacticalAISnapshotProbe : MonoBehaviour
         StringBuilder builder = new StringBuilder();
         builder.AppendLine("Status: " + result.Status);
         builder.AppendLine("Message: " + result.Message);
-        if (result.ExecutedIntent != null)
+        if (result.ExecutedAction != null)
         {
-            builder.AppendLine("Executed: " + result.ExecutedIntent.ActionType + " actor=" + result.ExecutedIntent.ActorUnitId);
+            builder.AppendLine("Executed: " + BuildActionSummary(result.ExecutedAction));
         }
 
         builder.AppendLine("Attempts: " + (result.Attempts == null ? 0 : result.Attempts.Count));
@@ -359,14 +416,14 @@ public class TacticalAISnapshotProbe : MonoBehaviour
             for (int i = 0; i < result.Attempts.Count; i++)
             {
                 TacticalAIExecutionAttempt attempt = result.Attempts[i];
-                if (attempt == null || attempt.Intent == null)
+                if (attempt == null || attempt.Action == null)
                 {
                     continue;
                 }
 
                 builder.Append(i)
                     .Append(". ")
-                    .Append(attempt.Intent.ActionType)
+                    .Append(BuildActionSummary(attempt.Action))
                     .Append(" started=")
                     .Append(attempt.Started)
                     .Append(" reason=")

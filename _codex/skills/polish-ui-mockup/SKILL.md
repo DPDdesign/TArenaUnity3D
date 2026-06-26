@@ -72,11 +72,9 @@ the visual direction conflicts with TArena identity.
      in-place polish,
    - keep the polished copy in the same feature folder unless the task says
      otherwise.
-3. Load reference screenshots from:
-   `TArenaUnity3D/Assets/Resources/UI/References`.
-   If the folder is missing or empty, report that reference screenshots are
-   unavailable and continue with `UI_Visual_Identity.md` and
-   `12_UI_Visual_Context.md`.
+3. Load reference screenshots only when the task provides or permits a
+   reference folder. If reference screenshots are unavailable, report that and
+   continue with `UI_Visual_Identity.md` and `12_UI_Visual_Context.md`.
 4. Load canonical font, color, contrast, component scale, asset priority, and
    responsiveness rules from `_codex/Context/UI_Visual_Identity.md`.
 5. Load UI sizing/style rules from `_codex/Context/12_UI_Visual_Context.md`.
@@ -110,7 +108,7 @@ the visual direction conflicts with TArena identity.
      surfaces, set the `Image` type to `Sliced`.
 10. Run available prefab validation from `make-ui-mockup`.
 11. Capture a Unity screenshot with:
-   `py _codex/skills/polish-ui-mockup/scripts/capture_prefab_screenshot.py --prefab <Assets/...prefab>`.
+   `py -3 _codex/skills/polish-ui-mockup/scripts/capture_prefab_screenshot.py --prefab <Assets/...prefab>`.
    The helper loads the prefab in Unity, places it on a screenshot Canvas, and
    saves a PNG under `TArenaUnity3D/Assets/Resources/UI/PRD_<number>/Screenshots`.
    If Unity is unavailable or project compilation blocks `executeMethod`, report
