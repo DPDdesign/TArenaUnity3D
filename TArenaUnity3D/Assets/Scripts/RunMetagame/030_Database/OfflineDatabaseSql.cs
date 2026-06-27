@@ -123,6 +123,16 @@ public static class OfflineDatabaseSql
         return Convert.ToInt64(value, CultureInfo.InvariantCulture);
     }
 
+    public static float ReadFloat(object value, float fallback = 0f)
+    {
+        if (value == null || value == DBNull.Value)
+        {
+            return fallback;
+        }
+
+        return Convert.ToSingle(value, CultureInfo.InvariantCulture);
+    }
+
     public static string ReadText(object value, string fallback = "")
     {
         return value == null || value == DBNull.Value ? fallback : Convert.ToString(value, CultureInfo.InvariantCulture);

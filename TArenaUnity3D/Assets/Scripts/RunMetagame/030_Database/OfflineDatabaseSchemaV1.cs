@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS player_preferences (
     account_id INTEGER NOT NULL,
     preference_key TEXT NOT NULL,
     bool_value INTEGER NOT NULL DEFAULT 0,
+    float_value REAL NOT NULL DEFAULT 0,
     updated_at_utc TEXT NOT NULL,
     PRIMARY KEY (account_id, preference_key),
     FOREIGN KEY (account_id) REFERENCES offline_accounts(account_id)

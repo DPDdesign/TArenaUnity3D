@@ -270,6 +270,12 @@ public sealed class BattleActionLiveApplier
         TosterHexUnit target = ResolveDamageTarget(actor, action, resultEvent);
         if (damageActor == null || target == null)
         {
+            Debug.Log("[DEBUG-HITFLOW] ApplyDamageSequence skipped null actorOrTarget action=" +
+                (action != null && action.Action != null ? action.Action.ActionKind.ToString() : "<null>") +
+                " eventActor=" + (resultEvent != null ? resultEvent.ActorUnitId : "<null>") +
+                " eventTarget=" + (resultEvent != null ? resultEvent.TargetUnitId : "<null>") +
+                " damageActor=" + (damageActor != null ? damageActor.Name : "<null>") +
+                " target=" + (target != null ? target.Name : "<null>"));
             yield break;
         }
 
@@ -279,6 +285,16 @@ public sealed class BattleActionLiveApplier
         {
             damageActor.CounterAttackBools();
         }
+
+        Debug.Log("[DEBUG-HITFLOW] ApplyDamageSequence action=" +
+            (action != null && action.Action != null ? action.Action.ActionKind.ToString() : "<null>") +
+            " isCounter=" + isCounterattack +
+            " damage=" + damage +
+            " damageActor=" + damageActor.Name +
+            " target=" + target.Name +
+            " targetView=" + (target.tosterView != null ? target.tosterView.name : "<null>") +
+            " targetDead=" + target.isDead +
+            " targetAmount=" + target.Amount);
 
         SendDamageChat(damageActor, damage, target);
 

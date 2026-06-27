@@ -448,13 +448,7 @@ public class TosterHexUnit : IQPathUnit
         this.SetTextAmount();
         if (this.tosterView != null)
         {
-            Animator d = this.tosterView.GetComponentInChildren<Animator>();
-            if (d != null)
-            {
-                Debug.Log(d);
-                d.Play(GetMovementAnimationState());
-
-            }
+            this.tosterView.PlayAnimatorStateImmediate(GetMovementAnimationState());
         }
         if (this.tosterView != null)
         {
@@ -1177,6 +1171,14 @@ public class TosterHexUnit : IQPathUnit
         TosterView targetView = tosterView;
         bool damageWasReduced = i > 0 && FlatDMGReduce > 0;
         bool survived = DealMePURE(i, false);
+        Debug.Log("[DEBUG-HITFLOW] DealMePUREForFrontendReveal source=" +
+            (source != null ? source.Name : "<null>") +
+            " target=" + Name +
+            " sourceType=" + sourceType +
+            " damage=" + i +
+            " survived=" + survived +
+            " cachedView=" + (targetView != null ? targetView.name : "<null>") +
+            " liveView=" + (tosterView != null ? tosterView.name : "<null>"));
         return new FrontendResultReveal(sourceType, source, this, targetView, i, survived, damageWasReduced);
     }
 
@@ -1190,14 +1192,20 @@ public class TosterHexUnit : IQPathUnit
         SkillPresentationManager.PlayImpact("Stone_Skin", this, this, Hex);
     }
 
-    public FrontendResultReveal BuildHealFrontendReveal(TosterHexUnit source, FrontendResultRevealSource sourceType, FrontendTargetReaction targetReaction = FrontendTargetReaction.Hit)
+    public FrontendResultReveal BuildHealFrontendReveal(TosterHexUnit source, FrontendResultRevealSource sourceType, FrontendTargetReaction targetReaction = FrontendTargetReaction.Buff)
     {
-        return new FrontendResultReveal(sourceType, FrontendResultRevealKind.Heal, source, this, tosterView, 0, true, false, targetReaction);
+        return new FrontendResultReveal(sourceType, FrontendResultRevealKind.Heal, source, this, tosterView, 0, true, false, targetReaction, true);
     }
 
-    public FrontendResultReveal BuildStatusFrontendReveal(TosterHexUnit source, FrontendResultRevealSource sourceType, FrontendTargetReaction targetReaction = FrontendTargetReaction.Hit)
+    public FrontendResultReveal BuildStatusFrontendReveal(TosterHexUnit source, FrontendResultRevealSource sourceType, FrontendTargetReaction targetReaction = FrontendTargetReaction.None)
     {
-        return new FrontendResultReveal(sourceType, FrontendResultRevealKind.Status, source, this, tosterView, 0, true, false, targetReaction);
+        FrontendTargetReaction resolvedReaction = targetReaction;
+        if (resolvedReaction == FrontendTargetReaction.None)
+        {
+            resolvedReaction = source == this ? FrontendTargetReaction.Buff : FrontendTargetReaction.Debuff;
+        }
+
+        return new FrontendResultReveal(sourceType, FrontendResultRevealKind.Status, source, this, tosterView, 0, true, false, resolvedReaction, true);
     }
 
     string GetAnimatorStateForTargetReaction(FrontendTargetReaction targetReaction)
@@ -1219,8 +1227,21 @@ public class TosterHexUnit : IQPathUnit
     {
         if (reveal == null || reveal.TargetUnit != this || !reveal.ShouldReveal)
         {
+            Debug.Log("[DEBUG-HITFLOW] RevealFrontendResult skipped unit=" + Name +
+                " reveal=" + (reveal == null ? "<null>" : reveal.ResultKind.ToString()) +
+                " sameTarget=" + (reveal != null && reveal.TargetUnit == this) +
+                " should=" + (reveal != null && reveal.ShouldReveal) +
+                " reaction=" + (reveal != null ? reveal.TargetReaction.ToString() : "<null>") +
+                " liveView=" + (tosterView != null ? tosterView.name : "<null>"));
             yield break;
         }
+
+        Debug.Log("[DEBUG-HITFLOW] RevealFrontendResult start unit=" + Name +
+            " kind=" + reveal.ResultKind +
+            " reaction=" + reveal.TargetReaction +
+            " damage=" + reveal.Damage +
+            " survived=" + reveal.TargetSurvived +
+            " liveView=" + (tosterView != null ? tosterView.name : "<null>"));
 
         if (reveal.DamageWasReduced)
         {
@@ -1236,6 +1257,7 @@ public class TosterHexUnit : IQPathUnit
             string stateName = GetAnimatorStateForTargetReaction(reveal.TargetReaction);
             if (!string.IsNullOrEmpty(stateName))
             {
+                Debug.Log("[DEBUG-HITFLOW] RevealFrontendResult play state unit=" + Name + " state=" + stateName);
                 yield return PlayAnimatorStateAndWait(stateName);
             }
         }

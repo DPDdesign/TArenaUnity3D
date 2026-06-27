@@ -62,6 +62,17 @@ public class MouseControler : LocalNetworkBehaviour
     {
         return SelectedSpellid;
     }
+
+    public bool IsSmartCastEnabled()
+    {
+        return smartCastEnabled;
+    }
+
+    public void SetSmartCastEnabled(bool enabled)
+    {
+        smartCastEnabled = enabled;
+    }
+
     public HexClass getHexUnderMouse()
     {
         return hexUnderMouse;
@@ -651,6 +662,14 @@ public class MouseControler : LocalNetworkBehaviour
     {
         activeButtons = false;
         shiftmode = false;
+        ClearTransientHexState();
+        if (outlineM != null)
+        {
+            outlineM.unSetHexEnemyToster();
+            outlineM.unSetHexWhiteToster();
+        }
+
+        TempOutlinedToster = null;
         CancelUpdateFunc();
     }
 
@@ -2140,12 +2159,32 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     void ClearPreparedSkillHighlights()
     {
+        ClearTransientHexState();
+    }
+
+    void ClearTransientHexState()
+    {
         if (hexMap == null)
         {
             return;
         }
 
-        hexMap.ClearHighlights();
+        for (int c = 0; c < hexMap.CurrentLength; c++)
+        {
+            for (int r = 0; r < hexMap.CurrentWidth; r++)
+            {
+                HexClass hex = hexMap.GetHexAt(c, r);
+                if (hex == null)
+                {
+                    continue;
+                }
+
+                hex.Highlight = false;
+                hex.Check = false;
+            }
+        }
+
+        hexMap.UpdateHexVisuals();
     }
 
     bool IsMapHex(HexClass hex)
@@ -2356,7 +2395,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
             if (validation.IsValid && validation.Cast != null)
             {
                 selectedSkillValidatedCast = validation.Cast;
-                if (smartCastEnabled)
+                if (smartCastEnabled || IsRepeatableToggleSkill(skillId))
                 {
                     TryStartSharedSelectedSkillAction(SelectedToster, skillId);
                 }

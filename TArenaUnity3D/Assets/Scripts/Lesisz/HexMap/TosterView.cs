@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class TosterView : MonoBehaviour
 {
+    const float MinimumAnimationSpeedMultiplier = 0.01f;
     Vector3 oldPos;
     Vector3 newPos;
     Vector3 beforeJumpPos;
@@ -87,8 +88,22 @@ public class TosterView : MonoBehaviour
 
         Debug.Log(animator);
         PlaySfxForAnimatorState(stateName);
+        ApplyAnimationSpeed(animator);
         animator.Play(stateName);
         returnToDefaultCoroutine = StartCoroutine(ReturnAnimatorToDefaultAfterState(animator, stateName));
+    }
+
+    public void PlayAnimatorStateImmediate(string stateName)
+    {
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            return;
+        }
+
+        PlaySfxForAnimatorState(stateName);
+        ApplyAnimationSpeed(animator);
+        animator.Play(stateName);
     }
 
     public IEnumerator PlayAnimatorStateAndWaitForDefault(string stateName, float maxWaitSeconds)
@@ -101,6 +116,7 @@ public class TosterView : MonoBehaviour
         Animator animator = GetComponentInChildren<Animator>();
         if (animator == null)
         {
+            Debug.Log("[DEBUG-HITFLOW] PlayAnimatorStateAndWait missing animator state=" + stateName + " view=" + name);
             yield break;
         }
 
@@ -112,6 +128,14 @@ public class TosterView : MonoBehaviour
 
         Debug.Log(animator);
         PlaySfxForAnimatorState(stateName);
+        ApplyAnimationSpeed(animator);
+        if (stateName == "hit" || stateName == "death")
+        {
+            Debug.Log("[DEBUG-HITFLOW] PlayAnimatorStateAndWait begin state=" + stateName +
+                " view=" + name +
+                " animator=" + animator.name +
+                " speed=" + animator.speed);
+        }
         animator.Play(stateName);
         yield return WaitForAnimatorState(animator, stateName, maxWaitSeconds);
         if (resetToDefault)
@@ -137,6 +161,7 @@ public class TosterView : MonoBehaviour
         Debug.Log(animator);
         PlaySfxForAnimatorState(triggerName);
         int initialStateHash = animator.GetCurrentAnimatorStateInfo(0).fullPathHash;
+        ApplyAnimationSpeed(animator);
         animator.ResetTrigger(triggerName);
         animator.SetTrigger(triggerName);
         yield return WaitForTriggeredAnimation(animator, initialStateHash, maxWaitSeconds);
@@ -159,6 +184,7 @@ public class TosterView : MonoBehaviour
         Debug.Log(animator);
         PlaySfxForAnimatorState(triggerName);
         int initialStateHash = animator.GetCurrentAnimatorStateInfo(0).fullPathHash;
+        ApplyAnimationSpeed(animator);
         animator.ResetTrigger(triggerName);
         animator.SetTrigger(triggerName);
 
@@ -192,6 +218,7 @@ public class TosterView : MonoBehaviour
         Vector3 anchoredLocalPosition = animator.transform.localPosition;
         Quaternion anchoredLocalRotation = animator.transform.localRotation;
         PlaySfxForAnimatorState(stateName);
+        ApplyAnimationSpeed(animator);
         animator.Play(stateName);
         yield return WaitForAnimatorState(animator, stateName, maxWaitSeconds);
 
@@ -220,6 +247,7 @@ public class TosterView : MonoBehaviour
 
         Debug.Log(animator);
         PlaySfxForAnimatorState(stateName);
+        ApplyAnimationSpeed(animator);
         animator.Play(stateName);
         yield return WaitForAnimatorStateProgress(animator, stateName, normalizedProgress, maxWaitSeconds);
     }
@@ -240,6 +268,7 @@ public class TosterView : MonoBehaviour
 
         Debug.Log(animator);
         PlaySfxForAnimatorState(stateName);
+        ApplyAnimationSpeed(animator);
         animator.Play(stateName);
 
         if (normalizedProgress > 0f)
@@ -337,7 +366,7 @@ public class TosterView : MonoBehaviour
 
         if (durationSeconds > 0f)
         {
-            yield return new WaitForSeconds(durationSeconds);
+            yield return new WaitForSeconds(ScaleDurationByAnimationSpeed(durationSeconds));
         }
         else
         {
@@ -408,7 +437,7 @@ public class TosterView : MonoBehaviour
 
     IEnumerator ReturnAnimatorToDefaultAfterState(Animator animator, string stateName)
     {
-        yield return WaitForAnimatorState(animator, stateName, 1.25f);
+        yield return WaitForAnimatorState(animator, stateName, ScaleMaxWaitByAnimationSpeed(1.25f));
 
         if (animator != null)
         {
@@ -559,9 +588,37 @@ public class TosterView : MonoBehaviour
         animator.transform.localRotation = localRotation;
     }
 
+    void ApplyAnimationSpeed(Animator animator)
+    {
+        if (animator == null)
+        {
+            return;
+        }
+
+        animator.speed = GetAnimationSpeedMultiplier();
+    }
+
+    float GetAnimationSpeedMultiplier()
+    {
+        return Mathf.Max(
+            MinimumAnimationSpeedMultiplier,
+            OfflinePlayerPreferences.GetAnimationSpeedMultiplier());
+    }
+
+    float ScaleMaxWaitByAnimationSpeed(float seconds)
+    {
+        return seconds / GetAnimationSpeedMultiplier();
+    }
+
+    float ScaleDurationByAnimationSpeed(float seconds)
+    {
+        return seconds / GetAnimationSpeedMultiplier();
+    }
+
     void ResetAnimatorToDefault(Animator animator)
     {
         animator.Rebind();
+        animator.speed = 1f;
         animator.Update(0f);
     }
     

@@ -17,49 +17,97 @@ public class OutlineM : MonoBehaviour
 
     public void SetHexSelectedToster(HexClass hex)
     {
+        if (SHex != null && SHex != hex)
+        {
+            DisableOutline(SHex);
+        }
+
         SHex = hex;
-        hex.MyHex.GetComponentInChildren<Outline>().eraseRenderer = false;
-        hex.MyHex.GetComponentInChildren<Outline>().color = 1;
+        EnableOutline(hex, 1);
     }
 
     public void unSetHexSelectedToster()
     {
         if (SHex != null)
         {
-            SHex.MyHex.GetComponentInChildren<Outline>().eraseRenderer = true;
-            SHex.MyHex.GetComponentInChildren<Outline>().color = 0;
+            DisableOutline(SHex);
+            SHex = null;
         }
     }
 
     public void SetHexEnemyToster(HexClass hex)
     {
+        if (EHex != null && EHex != hex && EHex != SHex)
+        {
+            DisableOutline(EHex);
+        }
+
         EHex = hex;
-        hex.MyHex.GetComponentInChildren<Outline>().eraseRenderer = false;
-        hex.MyHex.GetComponentInChildren<Outline>().color = 2;
+        EnableOutline(hex, 2);
     }
 
     public void unSetHexEnemyToster()
     {
         if (EHex != null && SHex != EHex)
         {
-            EHex.MyHex.GetComponentInChildren<Outline>().eraseRenderer = true;
-            EHex.MyHex.GetComponentInChildren<Outline>().color = 0;
+            DisableOutline(EHex);
         }
+
+        EHex = null;
     }
 
     public void SetHexWhiteToster(HexClass hex)
     {
+        if (WHex != null && WHex != hex && WHex != SHex)
+        {
+            DisableOutline(WHex);
+        }
+
         WHex = hex;
-        hex.MyHex.GetComponentInChildren<Outline>().eraseRenderer = false;
-        hex.MyHex.GetComponentInChildren<Outline>().color = 0;
+        EnableOutline(hex, 0);
     }
 
     public void unSetHexWhiteToster()
     {
         if (WHex != null && SHex != WHex)
         {
-            WHex.MyHex.GetComponentInChildren<Outline>().eraseRenderer = true;
-            WHex.MyHex.GetComponentInChildren<Outline>().color = 0;
+            DisableOutline(WHex);
         }
+
+        WHex = null;
+    }
+
+    static void EnableOutline(HexClass hex, int color)
+    {
+        if (hex == null || hex.MyHex == null)
+        {
+            return;
+        }
+
+        Outline outline = hex.MyHex.GetComponentInChildren<Outline>();
+        if (outline == null)
+        {
+            return;
+        }
+
+        outline.eraseRenderer = false;
+        outline.color = color;
+    }
+
+    static void DisableOutline(HexClass hex)
+    {
+        if (hex == null || hex.MyHex == null)
+        {
+            return;
+        }
+
+        Outline outline = hex.MyHex.GetComponentInChildren<Outline>();
+        if (outline == null)
+        {
+            return;
+        }
+
+        outline.eraseRenderer = true;
+        outline.color = 0;
     }
 }

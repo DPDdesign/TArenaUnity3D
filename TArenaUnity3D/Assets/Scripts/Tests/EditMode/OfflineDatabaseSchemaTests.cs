@@ -16,6 +16,7 @@ public class OfflineDatabaseSchemaTests
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS player_preferences"), Is.True);
         Assert.That(ContainsSql(statements, "preference_key TEXT NOT NULL"), Is.True);
         Assert.That(ContainsSql(statements, "bool_value INTEGER NOT NULL DEFAULT 0"), Is.True);
+        Assert.That(ContainsSql(statements, "float_value REAL NOT NULL DEFAULT 0"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS army_snapshots"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS map_nodes"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS route_nodes"), Is.False);
@@ -92,6 +93,7 @@ public class OfflineDatabaseSchemaTests
                 Assert.That(ColumnExists(connection, "map_node_rewards", "card_reward_id"), Is.True);
                 Assert.That(ColumnExists(connection, "map_node_rewards", "is_fallback"), Is.True);
                 Assert.That(TableExists(connection, "player_preferences"), Is.True);
+                Assert.That(ColumnExists(connection, "player_preferences", "float_value"), Is.True);
                 Assert.That(TableExists(connection, "route_nodes"), Is.False);
             }
         }
@@ -111,7 +113,7 @@ public class OfflineDatabaseSchemaTests
     }
 
     [Test]
-    public void EnsureDefaultAccount_CreatesSmartCastPreferenceDisabledByDefault()
+    public void EnsureDefaultAccount_CreatesDefaultPlayerPreferences()
     {
         string databasePath = Path.Combine(Path.GetTempPath(), "TArenaOffline_PlayerPrefs_" + System.Guid.NewGuid().ToString("N") + ".db");
         try
@@ -130,8 +132,22 @@ LIMIT 1;",
                     null,
                     new OfflineDatabaseSqlParameter("@accountId", accountId),
                     new OfflineDatabaseSqlParameter("@preferenceKey", OfflineDatabaseAccountBootstrap.SmartCastPreferenceKey));
+                object animationSpeed = OfflineDatabaseSql.ExecuteScalar(
+                    connection,
+                    @"
+SELECT float_value
+FROM player_preferences
+WHERE account_id = @accountId
+  AND preference_key = @preferenceKey
+LIMIT 1;",
+                    null,
+                    new OfflineDatabaseSqlParameter("@accountId", accountId),
+                    new OfflineDatabaseSqlParameter("@preferenceKey", OfflineDatabaseAccountBootstrap.AnimationSpeedPreferenceKey));
 
                 Assert.That(OfflineDatabaseSql.ReadBool(smartCast, true), Is.False);
+                Assert.That(
+                    OfflineDatabaseSql.ReadFloat(animationSpeed, 0f),
+                    Is.EqualTo(OfflineDatabaseAccountBootstrap.DefaultAnimationSpeedPreferenceValue));
             }
         }
         finally

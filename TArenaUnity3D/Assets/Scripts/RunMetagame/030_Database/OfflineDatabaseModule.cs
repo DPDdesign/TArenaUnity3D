@@ -157,6 +157,12 @@ CREATE TABLE IF NOT EXISTS schema_version (
                 "offline_runs",
                 "run_seed_version",
                 "ALTER TABLE offline_runs ADD COLUMN run_seed_version INTEGER NOT NULL DEFAULT 1;");
+            AddColumnIfMissing(
+                connection,
+                transaction,
+                "player_preferences",
+                "float_value",
+                "ALTER TABLE player_preferences ADD COLUMN float_value REAL NOT NULL DEFAULT 0;");
 
             List<string> statements = OfflineDatabaseSchemaV1.BuildStatements();
             for (int i = 0; i < statements.Count; i++)

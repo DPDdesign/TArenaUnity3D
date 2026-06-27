@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public enum FrontendResultRevealSource
 {
     Skill,
@@ -25,6 +27,7 @@ public sealed class FrontendResultReveal
     public readonly FrontendResultRevealSource SourceType;
     public readonly FrontendResultRevealKind ResultKind;
     public readonly FrontendTargetReaction TargetReaction;
+    public readonly bool PreserveTargetReaction;
     public readonly TosterHexUnit SourceUnit;
     public readonly TosterHexUnit TargetUnit;
     public readonly TosterView TargetView;
@@ -41,7 +44,7 @@ public sealed class FrontendResultReveal
         bool targetSurvived,
         bool damageWasReduced = false,
         FrontendTargetReaction targetReaction = FrontendTargetReaction.Hit)
-        : this(sourceType, FrontendResultRevealKind.Damage, sourceUnit, targetUnit, targetView, damage, targetSurvived, damageWasReduced, targetReaction)
+        : this(sourceType, FrontendResultRevealKind.Damage, sourceUnit, targetUnit, targetView, damage, targetSurvived, damageWasReduced, targetReaction, false)
     {
     }
 
@@ -54,11 +57,13 @@ public sealed class FrontendResultReveal
         int damage,
         bool targetSurvived,
         bool damageWasReduced = false,
-        FrontendTargetReaction targetReaction = FrontendTargetReaction.Hit)
+        FrontendTargetReaction targetReaction = FrontendTargetReaction.Hit,
+        bool preserveTargetReaction = false)
     {
         SourceType = sourceType;
         ResultKind = resultKind;
         TargetReaction = targetReaction;
+        PreserveTargetReaction = preserveTargetReaction;
         SourceUnit = sourceUnit;
         TargetUnit = targetUnit;
         TargetView = targetView;
@@ -67,14 +72,19 @@ public sealed class FrontendResultReveal
         DamageWasReduced = damageWasReduced;
     }
 
+    public TosterView ResolvedTargetView
+    {
+        get { return TargetView != null ? TargetView : TargetUnit != null ? TargetUnit.tosterView : null; }
+    }
+
     public bool ShouldReveal
     {
-        get { return TargetUnit != null && TargetView != null && TargetReaction != FrontendTargetReaction.None && (ResultKind != FrontendResultRevealKind.Damage || Damage > 0); }
+        get { return TargetUnit != null && ResolvedTargetView != null && TargetReaction != FrontendTargetReaction.None; }
     }
 
     public FrontendResultReveal WithTargetReaction(FrontendTargetReaction targetReaction)
     {
-        return new FrontendResultReveal(SourceType, ResultKind, SourceUnit, TargetUnit, TargetView, Damage, TargetSurvived, DamageWasReduced, targetReaction);
+        return new FrontendResultReveal(SourceType, ResultKind, SourceUnit, TargetUnit, TargetView, Damage, TargetSurvived, DamageWasReduced, targetReaction, PreserveTargetReaction);
     }
 }
 
@@ -84,9 +94,21 @@ public static class FrontendResultRevealPlayer
     {
         if (reveal == null || !reveal.ShouldReveal)
         {
+            Debug.Log("[DEBUG-HITFLOW] FrontendResultRevealPlayer.Play skipped reveal=" +
+                (reveal == null ? "<null>" : "kind=" + reveal.ResultKind +
+                " reaction=" + reveal.TargetReaction +
+                " damage=" + reveal.Damage +
+                " target=" + (reveal.TargetUnit != null ? reveal.TargetUnit.Name : "<null>") +
+                " targetView=" + (reveal.ResolvedTargetView != null ? reveal.ResolvedTargetView.name : "<null>") +
+                " should=" + reveal.ShouldReveal));
             return;
         }
 
-        reveal.TargetView.StartCoroutine(reveal.TargetUnit.RevealFrontendResult(reveal));
+        Debug.Log("[DEBUG-HITFLOW] FrontendResultRevealPlayer.Play reveal kind=" + reveal.ResultKind +
+            " reaction=" + reveal.TargetReaction +
+            " damage=" + reveal.Damage +
+            " target=" + (reveal.TargetUnit != null ? reveal.TargetUnit.Name : "<null>") +
+            " targetView=" + (reveal.ResolvedTargetView != null ? reveal.ResolvedTargetView.name : "<null>"));
+        reveal.ResolvedTargetView.StartCoroutine(reveal.TargetUnit.RevealFrontendResult(reveal));
     }
 }

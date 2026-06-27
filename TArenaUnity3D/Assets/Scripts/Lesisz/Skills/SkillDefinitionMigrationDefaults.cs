@@ -33,7 +33,7 @@ public static class SkillDefinitionMigrationDefaults
             result.activationKind = SkillActivationKind.Active;
             result.cooldownTurns = 0;
             result.consumesTurn = false;
-            result.canUseAfterMove = true;
+            result.canUseAfterMove = false;
             result.canMoveAfterUse = true;
             result.repeatableInTurn = false;
             return result;

@@ -338,6 +338,7 @@ public class SkillRulesTests
 
         Assert.That(result.IsValid, Is.True);
         Assert.That(result.Cast.ConsumesTurn, Is.False);
+        Assert.That(skill.ActivationRule.canUseAfterMove, Is.False);
         Assert.That(result.Cast.CanMoveAfterUse, Is.True);
         Assert.That(result.Cast.Effects.Length, Is.EqualTo(1));
         Assert.That(result.Cast.Effects[0].effectType, Is.EqualTo(SkillEffectType.ToggleStance));

@@ -5,6 +5,8 @@ public static class OfflineDatabaseAccountBootstrap
 {
     public const int DefaultAccountId = 1;
     public const string SmartCastPreferenceKey = "combat.smart_cast_enabled";
+    public const string AnimationSpeedPreferenceKey = "combat.animation_speed_multiplier";
+    public const float DefaultAnimationSpeedPreferenceValue = 1f;
     private const string DefaultDisplayName = "Offline Account";
     private static readonly string[] StartRunUnitUnlocks =
     {
@@ -179,6 +181,17 @@ INSERT INTO account_unlocks (
 
     private static void EnsureDefaultPreferences(IDbConnection connection, IDbTransaction transaction, int accountId)
     {
+        EnsureBoolPreference(connection, transaction, accountId, SmartCastPreferenceKey, false);
+        EnsureFloatPreference(connection, transaction, accountId, AnimationSpeedPreferenceKey, DefaultAnimationSpeedPreferenceValue);
+    }
+
+    private static void EnsureBoolPreference(
+        IDbConnection connection,
+        IDbTransaction transaction,
+        int accountId,
+        string preferenceKey,
+        bool defaultValue)
+    {
         object existing = OfflineDatabaseSql.ExecuteScalar(
             connection,
             @"
@@ -189,7 +202,7 @@ WHERE account_id = @accountId
 LIMIT 1;",
             transaction,
             new OfflineDatabaseSqlParameter("@accountId", accountId),
-            new OfflineDatabaseSqlParameter("@preferenceKey", SmartCastPreferenceKey));
+            new OfflineDatabaseSqlParameter("@preferenceKey", preferenceKey));
 
         if (existing != null && existing != DBNull.Value)
         {
@@ -203,16 +216,66 @@ INSERT INTO player_preferences (
     account_id,
     preference_key,
     bool_value,
+    float_value,
     updated_at_utc
 ) VALUES (
     @accountId,
     @preferenceKey,
+    @boolValue,
     0,
     @updatedAtUtc
 );",
             transaction,
             new OfflineDatabaseSqlParameter("@accountId", accountId),
-            new OfflineDatabaseSqlParameter("@preferenceKey", SmartCastPreferenceKey),
+            new OfflineDatabaseSqlParameter("@preferenceKey", preferenceKey),
+            new OfflineDatabaseSqlParameter("@boolValue", defaultValue ? 1 : 0),
+            new OfflineDatabaseSqlParameter("@updatedAtUtc", OfflineDatabaseSql.UtcNowText()));
+    }
+
+    private static void EnsureFloatPreference(
+        IDbConnection connection,
+        IDbTransaction transaction,
+        int accountId,
+        string preferenceKey,
+        float defaultValue)
+    {
+        object existing = OfflineDatabaseSql.ExecuteScalar(
+            connection,
+            @"
+SELECT preference_key
+FROM player_preferences
+WHERE account_id = @accountId
+  AND preference_key = @preferenceKey
+LIMIT 1;",
+            transaction,
+            new OfflineDatabaseSqlParameter("@accountId", accountId),
+            new OfflineDatabaseSqlParameter("@preferenceKey", preferenceKey));
+
+        if (existing != null && existing != DBNull.Value)
+        {
+            return;
+        }
+
+        OfflineDatabaseSql.ExecuteNonQuery(
+            connection,
+            @"
+INSERT INTO player_preferences (
+    account_id,
+    preference_key,
+    bool_value,
+    float_value,
+    updated_at_utc
+) VALUES (
+    @accountId,
+    @preferenceKey,
+    0,
+    @floatValue,
+    @updatedAtUtc
+);",
+            transaction,
+            new OfflineDatabaseSqlParameter("@accountId", accountId),
+            new OfflineDatabaseSqlParameter("@preferenceKey", preferenceKey),
+            new OfflineDatabaseSqlParameter("@floatValue", defaultValue),
             new OfflineDatabaseSqlParameter("@updatedAtUtc", OfflineDatabaseSql.UtcNowText()));
     }
 }

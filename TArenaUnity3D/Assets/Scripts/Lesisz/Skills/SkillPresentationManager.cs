@@ -568,6 +568,11 @@ public class SkillPresentationManager : MonoBehaviour
             return reveal;
         }
 
+        if (reveal.PreserveTargetReaction)
+        {
+            return reveal;
+        }
+
         return reveal.WithTargetReaction(entry.targetReaction);
     }
 
