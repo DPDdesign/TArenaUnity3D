@@ -736,7 +736,7 @@ void SetQueuePlayerBars(Transform parent, bool isFirstPlayer)
         TeamClass team2 = CreateQueuePreviewTeam(1);
         while (true)
         {
-            TosterHexUnit nextUnit = AskWhosTurnSimulator(team1, team2);
+            TosterHexUnit nextUnit = AskWhosTurnFutureRoundSimulator(team1, team2);
             if (nextUnit == null)
             {
                 break;

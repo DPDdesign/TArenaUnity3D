@@ -111,6 +111,87 @@ public class TacticalAISearchScoringTests
     }
 
     [Test]
+    public void SnapshotSimulator_RageStatus_UsesCurrentDefenseForAttackAndDefenseModifiers()
+    {
+        BattleUnitSnapshot actor = ActorUnit("team-0-slot-0", 0, 0, 0, 0, skillIds: new List<string> { "Rage" });
+        actor.Defense = 10;
+        BattleSnapshot snapshot = CreateSnapshot(actor);
+        BattleAction action = new BattleAction
+        {
+            ActorUnitId = actor.RuntimeUnitId,
+            ActionKind = BattleActionKind.Skill,
+            SkillId = "Rage",
+            SkillSlot = 0,
+            TurnCost = 1,
+            EndsTurn = true,
+            SkillCast = new SkillCast
+            {
+                ActorUnitId = actor.RuntimeUnitId,
+                SkillId = "Rage",
+                CooldownTurns = 0,
+                ConsumesTurn = true,
+                Effects = new[]
+                {
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.ApplyStatus,
+                        targetSource = SkillEffectTargetSource.Actor,
+                        statusId = "Rage",
+                        durationTurns = 2
+                    }
+                }
+            }
+        };
+
+        BattleSnapshot simulated = TacticalAISnapshotSimulator.ApplyAction(snapshot, action);
+        BattleUnitSnapshot simulatedActor = FindUnit(simulated, actor.RuntimeUnitId);
+
+        Assert.That(simulatedActor.Statuses.Count, Is.EqualTo(1));
+        Assert.That(simulatedActor.Statuses[0].AttackModifier, Is.EqualTo(5));
+        Assert.That(simulatedActor.Statuses[0].DefenseModifier, Is.EqualTo(-10));
+    }
+
+    [Test]
+    public void SnapshotSimulator_Shapeshift_SwapsMovementSpeedAndInitiative()
+    {
+        BattleUnitSnapshot actor = ActorUnit("team-0-slot-0", 0, 0, 0, 0, skillIds: new List<string> { "Shapeshift" });
+        actor.MovementSpeed = 4;
+        actor.Initiative = 9;
+        BattleSnapshot snapshot = CreateSnapshot(actor);
+        BattleAction action = new BattleAction
+        {
+            ActorUnitId = actor.RuntimeUnitId,
+            ActionKind = BattleActionKind.Skill,
+            SkillId = "Shapeshift",
+            SkillSlot = 0,
+            TurnCost = 0,
+            EndsTurn = false,
+            SkillCast = new SkillCast
+            {
+                ActorUnitId = actor.RuntimeUnitId,
+                SkillId = "Shapeshift",
+                CooldownTurns = 0,
+                ConsumesTurn = false,
+                CanMoveAfterUse = true,
+                Effects = new[]
+                {
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.ToggleStance,
+                        targetSource = SkillEffectTargetSource.Actor
+                    }
+                }
+            }
+        };
+
+        BattleSnapshot simulated = TacticalAISnapshotSimulator.ApplyAction(snapshot, action);
+        BattleUnitSnapshot simulatedActor = FindUnit(simulated, actor.RuntimeUnitId);
+
+        Assert.That(simulatedActor.MovementSpeed, Is.EqualTo(9));
+        Assert.That(simulatedActor.Initiative, Is.EqualTo(4));
+    }
+
+    [Test]
     public void SearchPlan_SkillActionCarriesBattleActionUsePayload()
     {
         TacticalAIResolvedProfile profile = TestProfile();
@@ -409,6 +490,23 @@ public class TacticalAISearchScoringTests
             }
         }
 
+        return null;
+    }
+
+    static BattleUnitSnapshot FindUnit(BattleSnapshot snapshot, string runtimeUnitId)
+    {
+        Assert.That(snapshot, Is.Not.Null);
+        Assert.That(snapshot.Units, Is.Not.Null);
+        for (int i = 0; i < snapshot.Units.Count; i++)
+        {
+            BattleUnitSnapshot unit = snapshot.Units[i];
+            if (unit != null && unit.RuntimeUnitId == runtimeUnitId)
+            {
+                return unit;
+            }
+        }
+
+        Assert.Fail("Missing unit " + runtimeUnitId);
         return null;
     }
 

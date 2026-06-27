@@ -969,6 +969,12 @@ public static class TacticalAISnapshotSimulator
             actor.IsRange = false;
             ReplaceStanceSkillId(actor, cast.SkillId, "Range_Stance");
         }
+        else if (string.Equals(cast.SkillId, "Shapeshift", StringComparison.Ordinal))
+        {
+            int previousMovementSpeed = actor.MovementSpeed;
+            actor.MovementSpeed = actor.Initiative;
+            actor.Initiative = previousMovementSpeed;
+        }
     }
 
     static void ReplaceStanceSkillId(BattleUnitSnapshot actor, string currentSkillId, string replacementPrefix)
@@ -1023,15 +1029,25 @@ public static class TacticalAISnapshotSimulator
             target.Statuses = new List<BattleStatusSnapshot>();
         }
 
+        int hpModifier = effect.hpModifier;
+        int attackModifier = effect.attackModifier;
+        int defenseModifier = effect.defenseModifier;
+        if (string.Equals(cast.SkillId, "Rage", StringComparison.Ordinal))
+        {
+            int currentDefense = Math.Max(0, target.Defense + SumDefenseModifiers(target));
+            attackModifier = currentDefense / 2;
+            defenseModifier = -currentDefense;
+        }
+
         target.Statuses.Add(new BattleStatusSnapshot
         {
             StatusId = string.IsNullOrEmpty(effect.statusId) ? cast.SkillId : effect.statusId,
             SourceSkillId = cast.SkillId,
             SourceUnitId = actor.RuntimeUnitId,
             RemainingDurationOrTurns = Math.Max(0, effect.durationTurns),
-            HpModifier = effect.hpModifier,
-            AttackModifier = effect.attackModifier,
-            DefenseModifier = effect.defenseModifier,
+            HpModifier = hpModifier,
+            AttackModifier = attackModifier,
+            DefenseModifier = defenseModifier,
             MovementModifier = effect.movementModifier,
             InitiativeModifier = effect.initiativeModifier,
             MaxDamageModifier = effect.maxDamageModifier,
@@ -1256,6 +1272,26 @@ public static class TacticalAISnapshotSimulator
         }
 
         return null;
+    }
+
+    static int SumDefenseModifiers(BattleUnitSnapshot unit)
+    {
+        int total = 0;
+        if (unit == null || unit.Statuses == null)
+        {
+            return total;
+        }
+
+        for (int i = 0; i < unit.Statuses.Count; i++)
+        {
+            BattleStatusSnapshot status = unit.Statuses[i];
+            if (status != null)
+            {
+                total += status.DefenseModifier;
+            }
+        }
+
+        return total;
     }
 
     static BattleHexSnapshot FindMutableHex(List<BattleHexSnapshot> hexes, int c, int r)

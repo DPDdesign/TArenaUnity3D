@@ -28,6 +28,17 @@ public static class SkillDefinitionMigrationDefaults
             return result;
         }
 
+        if (skillId == "Shapeshift")
+        {
+            result.activationKind = SkillActivationKind.Active;
+            result.cooldownTurns = 0;
+            result.consumesTurn = false;
+            result.canUseAfterMove = true;
+            result.canMoveAfterUse = true;
+            result.repeatableInTurn = false;
+            return result;
+        }
+
         result.activationKind = SkillActivationKind.Active;
         result.cooldownTurns = result.cooldownTurns > 0 ? result.cooldownTurns : GetLegacyCooldown(skillId);
         if (skillId == "Slash")
@@ -45,12 +56,20 @@ public static class SkillDefinitionMigrationDefaults
     public static TargetingRuleData ResolveTargeting(SkillDefinitionAsset skill, TargetingRuleData authored)
     {
         TargetingRuleData result = authored == null ? new TargetingRuleData() : authored.Clone();
+        string skillId = GetSkillId(skill);
+        if (skillId == "Toxic_Fume")
+        {
+            result = Targeting(SkillTargetFamily.Movement, 2, SkillTargetRole.MovementDestinationHex, SkillTargetRole.AreaCenterHex);
+            result.allowDuplicateTargets = true;
+            result.radius = 1;
+            return result;
+        }
+
         if (result.targetRoles != null && result.targetRoles.Length > 0)
         {
             return result;
         }
 
-        string skillId = GetSkillId(skill);
         if (IsPassive(skill) || IsStance(skillId))
         {
             return Targeting(SkillTargetFamily.Self, 0);
@@ -97,10 +116,6 @@ public static class SkillDefinitionMigrationDefaults
             case "Force_Pull":
                 result = Targeting(SkillTargetFamily.Movement, 2, SkillTargetRole.AllyUnitHex, SkillTargetRole.EmptyDestinationHex);
                 result.radius = 2;
-                return result;
-            case "Toxic_Fume":
-                result = Targeting(SkillTargetFamily.Movement, 1, SkillTargetRole.MovementDestinationHex);
-                result.radius = 1;
                 return result;
             case "Long_Lick":
                 result = Targeting(SkillTargetFamily.Movement, 2, SkillTargetRole.EnemyUnitHex, SkillTargetRole.AdjacentEmptyDestinationHex);
@@ -197,6 +212,18 @@ public static class SkillDefinitionMigrationDefaults
             };
         }
 
+        if (skillId == "Shapeshift")
+        {
+            return new[]
+            {
+                new SkillEffect
+                {
+                    effectType = SkillEffectType.ToggleStance,
+                    targetSource = SkillEffectTargetSource.Actor
+                }
+            };
+        }
+
         if (authored != null && authored.Length > 0)
         {
             return SkillEffect.CloneArray(authored);
@@ -265,9 +292,6 @@ public static class SkillDefinitionMigrationDefaults
                 break;
             case "Stone_Stance":
                 effects.Add(Status("Stone_Stance", SkillEffectTargetSource.Actor, 2, counterAttacks: -1, specialResistance: 100));
-                break;
-            case "Shapeshift":
-                effects.Add(Status("Shapeshift", SkillEffectTargetSource.Actor, 0));
                 break;
             case "Blind_by_light":
                 effects.Add(Status("Blind", SkillEffectTargetSource.PrimaryUnit, 2));

@@ -169,7 +169,14 @@ public static class SkillRules
                 AddUnitTargets(targets, index, actor, role, true, true, GetUnitTargetRange(targeting, role));
                 break;
             case SkillTargetRole.AreaCenterHex:
-                AddWalkableHexTargets(targets, index, role);
+                if (IsPostMoveAreaConfirmation(context, selectedTargets))
+                {
+                    AddSelectedAreaCenterTarget(targets, index, selectedTargets, role);
+                }
+                else
+                {
+                    AddWalkableHexTargets(targets, index, role);
+                }
                 break;
             case SkillTargetRole.EmptyPlacementHex:
                 AddEmptyHexTargets(targets, index, role, true, true);
@@ -526,6 +533,30 @@ public static class SkillRules
         }
     }
 
+    static bool IsPostMoveAreaConfirmation(SkillContext context, IReadOnlyList<HexCoord> selectedTargets)
+    {
+        ResolutionRuleData resolution = GetResolution(context);
+        return resolution != null &&
+            resolution.resolutionFamily == SkillResolutionFamily.AroundPostMoveCaster &&
+            selectedTargets != null &&
+            selectedTargets.Count > 0 &&
+            selectedTargets[0] != null;
+    }
+
+    static void AddSelectedAreaCenterTarget(
+        List<SkillTarget> targets,
+        SkillSnapshotIndex index,
+        IReadOnlyList<HexCoord> selectedTargets,
+        SkillTargetRole role)
+    {
+        HexCoord selected = selectedTargets != null && selectedTargets.Count > 0 ? selectedTargets[0] : null;
+        BattleHexSnapshot hex = selected == null ? null : index.GetHex(selected.C, selected.R);
+        if (hex != null && hex.IsWalkable)
+        {
+            targets.Add(new SkillTarget(hex.C, hex.R, role, hex.OccupyingUnitId));
+        }
+    }
+
     static void AddEmptyHexTargets(
         List<SkillTarget> targets,
         SkillSnapshotIndex index,
@@ -617,7 +648,10 @@ public static class SkillRules
                 continue;
             }
 
-            targets.Add(new SkillTarget(hex.C, hex.R, role, hex.OccupyingUnitId));
+            if (pair.Value < actor.MovementSpeed)
+            {
+                targets.Add(new SkillTarget(hex.C, hex.R, role, hex.OccupyingUnitId));
+            }
         }
     }
 

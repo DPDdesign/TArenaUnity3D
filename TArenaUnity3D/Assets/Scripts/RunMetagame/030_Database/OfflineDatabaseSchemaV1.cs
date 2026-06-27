@@ -10,6 +10,7 @@ public static class OfflineDatabaseSchemaV1
         {
             TableSchemaVersion(),
             TableOfflineAccounts(),
+            TablePlayerPreferences(),
             TableAccountUnlocks(),
             TableOfflineRuns(),
             TableArmySnapshots(),
@@ -76,6 +77,19 @@ CREATE TABLE IF NOT EXISTS account_unlocks (
     target_id TEXT NOT NULL,
     unlocked_at_utc TEXT NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (account_id) REFERENCES offline_accounts(account_id)
+);";
+    }
+
+    private static string TablePlayerPreferences()
+    {
+        return @"
+CREATE TABLE IF NOT EXISTS player_preferences (
+    account_id INTEGER NOT NULL,
+    preference_key TEXT NOT NULL,
+    bool_value INTEGER NOT NULL DEFAULT 0,
+    updated_at_utc TEXT NOT NULL,
+    PRIMARY KEY (account_id, preference_key),
     FOREIGN KEY (account_id) REFERENCES offline_accounts(account_id)
 );";
     }

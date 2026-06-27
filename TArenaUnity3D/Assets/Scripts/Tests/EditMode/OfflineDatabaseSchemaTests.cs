@@ -13,6 +13,9 @@ public class OfflineDatabaseSchemaTests
 
         Assert.That(statements.Count, Is.GreaterThanOrEqualTo(20));
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS offline_runs"), Is.True);
+        Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS player_preferences"), Is.True);
+        Assert.That(ContainsSql(statements, "preference_key TEXT NOT NULL"), Is.True);
+        Assert.That(ContainsSql(statements, "bool_value INTEGER NOT NULL DEFAULT 0"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS army_snapshots"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS map_nodes"), Is.True);
         Assert.That(ContainsSql(statements, "CREATE TABLE IF NOT EXISTS route_nodes"), Is.False);
@@ -88,7 +91,47 @@ public class OfflineDatabaseSchemaTests
                 Assert.That(ColumnExists(connection, "map_node_rewards", "reward_choice_id"), Is.True);
                 Assert.That(ColumnExists(connection, "map_node_rewards", "card_reward_id"), Is.True);
                 Assert.That(ColumnExists(connection, "map_node_rewards", "is_fallback"), Is.True);
+                Assert.That(TableExists(connection, "player_preferences"), Is.True);
                 Assert.That(TableExists(connection, "route_nodes"), Is.False);
+            }
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(databasePath))
+                {
+                    File.Delete(databasePath);
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [Test]
+    public void EnsureDefaultAccount_CreatesSmartCastPreferenceDisabledByDefault()
+    {
+        string databasePath = Path.Combine(Path.GetTempPath(), "TArenaOffline_PlayerPrefs_" + System.Guid.NewGuid().ToString("N") + ".db");
+        try
+        {
+            using (IDbConnection connection = OfflineDatabaseSql.OpenConnection(databasePath))
+            {
+                int accountId = OfflineDatabaseAccountBootstrap.EnsureDefaultAccount(connection, null, "offline-player");
+                object smartCast = OfflineDatabaseSql.ExecuteScalar(
+                    connection,
+                    @"
+SELECT bool_value
+FROM player_preferences
+WHERE account_id = @accountId
+  AND preference_key = @preferenceKey
+LIMIT 1;",
+                    null,
+                    new OfflineDatabaseSqlParameter("@accountId", accountId),
+                    new OfflineDatabaseSqlParameter("@preferenceKey", OfflineDatabaseAccountBootstrap.SmartCastPreferenceKey));
+
+                Assert.That(OfflineDatabaseSql.ReadBool(smartCast, true), Is.False);
             }
         }
         finally

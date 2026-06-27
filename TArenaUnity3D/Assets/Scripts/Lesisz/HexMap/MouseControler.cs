@@ -55,6 +55,7 @@ public class MouseControler : LocalNetworkBehaviour
     public Camera c;
     public bool SYNC = false;
     bool runBattleResultReported = false;
+    bool smartCastEnabled = false;
 
     public int STC, STR;
     public int GetSelectedSpellID()
@@ -83,6 +84,7 @@ public class MouseControler : LocalNetworkBehaviour
         SYNC = true;
         TM = FindObjectOfType<TurnManager>();
         BattleActionLifecycle.EnsureInstance();
+        smartCastEnabled = OfflinePlayerPreferences.IsSmartCastEnabled();
 
         Update_CurrentFunc = Update_DetectModeStart;
         hexMap = GameObject.FindObjectOfType<HexMap>();
@@ -796,14 +798,20 @@ public class MouseControler : LocalNetworkBehaviour
             BattleActionLifecycle.Instance);
         BattleActionLiveApplier applier = new BattleActionLiveApplier(runtimeContext);
         string failureReason;
+        bool endsTurn = validation.Action.EndsTurn;
+        if (endsTurn)
+        {
+            Update_CurrentFunc = BeforeNextTurn;
+        }
+
         if (applier.TryApply(revalidatedAction, out failureReason))
         {
-            if (validation.Action.EndsTurn)
-            {
-                Update_CurrentFunc = BeforeNextTurn;
-            }
-
             return true;
+        }
+
+        if (endsTurn)
+        {
+            CancelUpdateFunc();
         }
 
         if (string.IsNullOrEmpty(failureReason) == false)
@@ -1561,7 +1569,10 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
             selectedSkillTargets.Clear();
             selectedSkillTargets.AddRange(proposedTargets);
             selectedSkillValidatedCast = null;
-            RefreshSkillRuleTargetHighlights(actor, SelectedSpellid, skillId);
+            if (TryRefreshAreaCenterConfirmationPreview(actor, SelectedSpellid, skillId) == false)
+            {
+                RefreshSkillRuleTargetHighlights(actor, SelectedSpellid, skillId);
+            }
             return true;
         }
 
@@ -1582,6 +1593,40 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     {
         ClearSkillHighlights();
         ApplySkillRuleTargetHighlights(actor, skillSlot, skillId);
+    }
+
+    bool TryRefreshAreaCenterConfirmationPreview(TosterHexUnit actor, int skillSlot, string skillId)
+    {
+        if (selectedSkillTargets == null || selectedSkillTargets.Count == 0)
+        {
+            return false;
+        }
+
+        SkillContext context;
+        if (TryCreateSkillContext(actor, skillSlot, skillId, out context) == false)
+        {
+            return false;
+        }
+
+        TargetingRuleData targeting = GetTargetingRule(context);
+        if (IsNextAreaCenterTarget(targeting) == false)
+        {
+            return false;
+        }
+
+        List<HexCoord> proposedTargets = new List<HexCoord>(selectedSkillTargets);
+        HexCoord confirmationHex = selectedSkillTargets[selectedSkillTargets.Count - 1];
+        proposedTargets.Add(new HexCoord(confirmationHex.C, confirmationHex.R));
+        SkillValidationResult validation = SkillRules.Validate(
+            new SkillUse(context.ActorUnitId, skillId, proposedTargets),
+            context);
+        if (validation.IsValid == false || validation.Cast == null)
+        {
+            return false;
+        }
+
+        ApplySkillCastAffectedHexHighlights(validation.Cast, null);
+        return true;
     }
 
     bool ContainsSkillTarget(List<SkillTarget> legalTargets, HexCoord hex)
@@ -1643,6 +1688,122 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         {
             hexMap.UpdateHexVisuals();
         }
+    }
+
+    void RefreshAreaCenterHoverPreview(HexClass targetHex)
+    {
+        if (targetHex == null || SelectedToster == null || hexMap == null)
+        {
+            return;
+        }
+
+        string skillId = string.IsNullOrEmpty(selectedSkillId) == false
+            ? selectedSkillId
+            : GetSkillIdAtSlot(SelectedToster, SelectedSpellid);
+
+        SkillContext context;
+        if (TryCreateSkillContext(SelectedToster, SelectedSpellid, skillId, out context) == false)
+        {
+            return;
+        }
+
+        TargetingRuleData targeting = GetTargetingRule(context);
+        if (IsNextAreaCenterTarget(targeting) == false)
+        {
+            return;
+        }
+
+        HexCoord previewTarget = ResolveAreaCenterPreviewTarget(context, targetHex);
+        List<HexCoord> proposedTargets = new List<HexCoord>(selectedSkillTargets);
+        proposedTargets.Add(previewTarget);
+        SkillValidationResult validation = SkillRules.Validate(new SkillUse(context.ActorUnitId, skillId, proposedTargets), context);
+        ClearSkillHighlights();
+        if (validation.IsValid == false || validation.Cast == null)
+        {
+            hexMap.UpdateHexVisuals();
+            return;
+        }
+
+        ApplySkillCastAffectedHexHighlights(validation.Cast, targetHex);
+    }
+
+    HexCoord ResolveAreaCenterPreviewTarget(SkillContext context, HexClass targetHex)
+    {
+        List<SkillTarget> legalTargets = SkillRules.GetTargets(context, selectedSkillTargets);
+        if (legalTargets != null && legalTargets.Count == 1 && legalTargets[0] != null && legalTargets[0].Hex != null)
+        {
+            return new HexCoord(legalTargets[0].Hex.C, legalTargets[0].Hex.R);
+        }
+
+        return new HexCoord(targetHex.C, targetHex.R);
+    }
+
+    void ClearAreaCenterHoverPreviewIfNeeded()
+    {
+        if (SelectedToster == null)
+        {
+            return;
+        }
+
+        string skillId = string.IsNullOrEmpty(selectedSkillId) == false
+            ? selectedSkillId
+            : GetSkillIdAtSlot(SelectedToster, SelectedSpellid);
+
+        SkillContext context;
+        if (TryCreateSkillContext(SelectedToster, SelectedSpellid, skillId, out context) == false)
+        {
+            return;
+        }
+
+        if (IsNextAreaCenterTarget(GetTargetingRule(context)))
+        {
+            ClearSkillHighlights();
+            if (hexMap != null)
+            {
+                hexMap.UpdateHexVisuals();
+            }
+        }
+    }
+
+    bool IsNextAreaCenterTarget(TargetingRuleData targeting)
+    {
+        if (targeting == null ||
+            targeting.targetRoles == null ||
+            selectedSkillTargets.Count >= targeting.targetCount ||
+            selectedSkillTargets.Count >= targeting.targetRoles.Length)
+        {
+            return false;
+        }
+
+        return targeting.targetRoles[selectedSkillTargets.Count] == SkillTargetRole.AreaCenterHex;
+    }
+
+    void ApplySkillCastAffectedHexHighlights(SkillCast cast, HexClass fallbackCenter)
+    {
+        if (cast == null || hexMap == null)
+        {
+            return;
+        }
+
+        ClearSkillHighlights();
+        if (cast.AffectedHexes != null && cast.AffectedHexes.Count > 0)
+        {
+            for (int i = 0; i < cast.AffectedHexes.Count; i++)
+            {
+                HexCoord coord = cast.AffectedHexes[i];
+                HexClass hex = coord == null ? null : hexMap.GetHexAt(coord.C, coord.R);
+                if (hex != null)
+                {
+                    hex.Highlight = true;
+                }
+            }
+        }
+        else if (fallbackCenter != null)
+        {
+            fallbackCenter.Highlight = true;
+        }
+
+        hexMap.UpdateHexVisuals();
     }
 
     bool ShouldSkipInitialGlobalSkillHighlights(SkillContext context, List<HexCoord> selectedTargets)
@@ -1842,6 +2003,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
         if (hasValidMouseHex == false)
         {
+            ClearAreaCenterHoverPreviewIfNeeded();
             if (Input.GetMouseButtonDown(1))
             {
                 CancelSpellCasting();
@@ -1851,6 +2013,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         }
 
         FilterSkillRuleHighlights();
+        RefreshAreaCenterHoverPreview(hexUnderMouse);
         if (SkillState == false)
         {
 
@@ -2193,7 +2356,14 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
             if (validation.IsValid && validation.Cast != null)
             {
                 selectedSkillValidatedCast = validation.Cast;
-                TryStartSharedSelectedSkillAction(SelectedToster, skillId);
+                if (smartCastEnabled)
+                {
+                    TryStartSharedSelectedSkillAction(SelectedToster, skillId);
+                }
+                else
+                {
+                    ApplySkillCastAffectedHexHighlights(validation.Cast, SelectedToster.Hex);
+                }
             }
 
             return;

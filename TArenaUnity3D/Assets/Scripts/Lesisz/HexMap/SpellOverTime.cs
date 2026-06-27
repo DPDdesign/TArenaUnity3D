@@ -151,6 +151,10 @@ namespace TimeSpells
             me.SpecialDMGModificator += SpecialDMGModificator;
             me.CounterAttacks += counterattacks;
             me.TempCounterAttacks += counterattacks;
+            if (counterattacks > 0 && me.TempCounterAttacks > 0)
+            {
+                me.CounterAttackAvaible = true;
+            }
         }
         public void DoTurn()
         {

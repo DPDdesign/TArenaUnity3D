@@ -29,8 +29,9 @@ internal sealed class BattleActionSkillResultRuntime
 
         SendSkillChat(cast, actor);
         List<FrontendResultReveal> reveals = new List<FrontendResultReveal>();
-        yield return ApplyResultEventsSequence(result, cast, actor, reveals);
-        PlaySkillPresentation(cast, actor, reveals);
+        List<BattleActionResultEvent> deferredSpawnEvents = new List<BattleActionResultEvent>();
+        yield return ApplyResultEventsSequence(result, cast, actor, reveals, deferredSpawnEvents);
+        PlaySkillPresentation(cast, actor, reveals, deferredSpawnEvents);
         ApplyTurnAndCooldown(cast, actor);
         if (runtimeContext != null && runtimeContext.HexMap != null)
         {
@@ -38,7 +39,12 @@ internal sealed class BattleActionSkillResultRuntime
         }
     }
 
-    IEnumerator ApplyResultEventsSequence(BattleActionResult result, SkillCast cast, TosterHexUnit actor, List<FrontendResultReveal> reveals)
+    IEnumerator ApplyResultEventsSequence(
+        BattleActionResult result,
+        SkillCast cast,
+        TosterHexUnit actor,
+        List<FrontendResultReveal> reveals,
+        List<BattleActionResultEvent> deferredSpawnEvents)
     {
         if (result == null || result.Events == null)
         {
@@ -79,7 +85,14 @@ internal sealed class BattleActionSkillResultRuntime
                     AddReveal(reveals, ApplyStatus(cast, actor, resultEvent));
                     break;
                 case BattleActionResultEventType.UnitSpawned:
-                    ApplySpawn(cast, actor, resultEvent);
+                    if (ShouldDeferSpawnPresentation(cast))
+                    {
+                        deferredSpawnEvents.Add(resultEvent);
+                    }
+                    else
+                    {
+                        ApplySpawn(cast, actor, resultEvent);
+                    }
                     break;
                 case BattleActionResultEventType.StanceChanged:
                     ApplyStance(cast, actor);
@@ -235,6 +248,7 @@ internal sealed class BattleActionSkillResultRuntime
 
         string trapId = string.IsNullOrEmpty(resultEvent.TrapId) ? cast.SkillId : resultEvent.TrapId;
         hex.AddTrap(trapId, 999, actor, true, cast.SkillId);
+        SkillPresentationManager.PlaySequencedHexEffect(trapId, actor, hex, ResolveCasterAnimationState());
     }
 
     FrontendResultReveal ApplyStatus(SkillCast cast, TosterHexUnit actor, BattleActionResultEvent resultEvent)
@@ -246,12 +260,22 @@ internal sealed class BattleActionSkillResultRuntime
             return null;
         }
 
+        int hpModifier = effect.hpModifier;
+        int attackModifier = effect.attackModifier;
+        int defenseModifier = effect.defenseModifier;
+        if (string.Equals(cast.SkillId, "Rage", StringComparison.Ordinal))
+        {
+            int currentDefense = Math.Max(0, target.GetDef());
+            attackModifier = currentDefense / 2;
+            defenseModifier = -currentDefense;
+        }
+
         target.AddNewTimeSpell(
             Math.Max(0, effect.durationTurns),
             actor,
-            effect.hpModifier,
-            effect.attackModifier,
-            effect.defenseModifier,
+            hpModifier,
+            attackModifier,
+            defenseModifier,
             effect.movementModifier,
             effect.initiativeModifier,
             effect.maxDamageModifier,
@@ -300,6 +324,29 @@ internal sealed class BattleActionSkillResultRuntime
         newUnit.Moved = true;
     }
 
+    void ApplyDeferredSpawnEvents(SkillCast cast, TosterHexUnit actor, List<BattleActionResultEvent> deferredSpawnEvents)
+    {
+        if (deferredSpawnEvents == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < deferredSpawnEvents.Count; i++)
+        {
+            ApplySpawn(cast, actor, deferredSpawnEvents[i]);
+        }
+
+        if (runtimeContext != null && runtimeContext.HexMap != null)
+        {
+            runtimeContext.HexMap.UpdateHexVisuals();
+        }
+    }
+
+    static bool ShouldDeferSpawnPresentation(SkillCast cast)
+    {
+        return cast != null && string.Equals(cast.SkillId, "Stone_Throw", StringComparison.Ordinal);
+    }
+
     void ApplyStance(SkillCast cast, TosterHexUnit actor)
     {
         if (cast == null || actor == null)
@@ -320,6 +367,12 @@ internal sealed class BattleActionSkillResultRuntime
             actor.SpecialDMGModificator = 0;
             actor.SpecialResistance = 0;
             ReplaceStanceSkillId(actor, cast.SkillId, "Range_Stance");
+        }
+        else if (string.Equals(cast.SkillId, "Shapeshift", StringComparison.Ordinal))
+        {
+            int previousMovementSpeed = actor.MovmentSpeed;
+            actor.MovmentSpeed = actor.Initiative;
+            actor.Initiative = previousMovementSpeed;
         }
     }
 
@@ -349,7 +402,11 @@ internal sealed class BattleActionSkillResultRuntime
         actor.skillstrings[skillSlot] = replacementPrefix + currentSkillId.Substring(separator);
     }
 
-    void PlaySkillPresentation(SkillCast cast, TosterHexUnit actor, List<FrontendResultReveal> reveals)
+    void PlaySkillPresentation(
+        SkillCast cast,
+        TosterHexUnit actor,
+        List<FrontendResultReveal> reveals,
+        List<BattleActionResultEvent> deferredSpawnEvents)
     {
         if (cast == null || actor == null)
         {
@@ -375,6 +432,17 @@ internal sealed class BattleActionSkillResultRuntime
             return;
         }
 
+        if (string.Equals(cast.SkillId, "Fire_Ball", StringComparison.Ordinal))
+        {
+            SkillPresentationManager.PlaySequencedProjectileHits(
+                cast.SkillId,
+                actor,
+                ResolvePresentationHex(cast, actor),
+                reveals,
+                animationState);
+            return;
+        }
+
         if (string.Equals(cast.SkillId, "Stone_Throw", StringComparison.Ordinal))
         {
             SkillPresentationManager.PlaySequencedProjectileHexImpactThenReveals(
@@ -383,7 +451,7 @@ internal sealed class BattleActionSkillResultRuntime
                 ResolvePresentationHex(cast, actor),
                 reveals,
                 animationState,
-                null);
+                () => ApplyDeferredSpawnEvents(cast, actor, deferredSpawnEvents));
             return;
         }
 
@@ -427,7 +495,8 @@ internal sealed class BattleActionSkillResultRuntime
         return string.Equals(skillId, "Range_Stance_Barb", StringComparison.Ordinal) ||
             string.Equals(skillId, "Melee_Stance_Barb", StringComparison.Ordinal) ||
             string.Equals(skillId, "Range_Stance_Lizard", StringComparison.Ordinal) ||
-            string.Equals(skillId, "Melee_Stance_Lizard", StringComparison.Ordinal);
+            string.Equals(skillId, "Melee_Stance_Lizard", StringComparison.Ordinal) ||
+            string.Equals(skillId, "Shapeshift", StringComparison.Ordinal);
     }
 
     static HexCoord FirstHex(List<HexCoord> hexes)

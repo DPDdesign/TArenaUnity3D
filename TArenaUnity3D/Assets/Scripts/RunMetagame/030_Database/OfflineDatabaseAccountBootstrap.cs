@@ -4,6 +4,7 @@ using System.Data;
 public static class OfflineDatabaseAccountBootstrap
 {
     public const int DefaultAccountId = 1;
+    public const string SmartCastPreferenceKey = "combat.smart_cast_enabled";
     private const string DefaultDisplayName = "Offline Account";
     private static readonly string[] StartRunUnitUnlocks =
     {
@@ -68,6 +69,7 @@ public static class OfflineDatabaseAccountBootstrap
         if (existing != null && existing != DBNull.Value)
         {
             EnsureStartRunUnlocks(connection, transaction, DefaultAccountId);
+            EnsureDefaultPreferences(connection, transaction, DefaultAccountId);
             return DefaultAccountId;
         }
 
@@ -101,6 +103,7 @@ INSERT INTO offline_accounts (
             new OfflineDatabaseSqlParameter("@unlockedSavedArmySlots", 2));
 
         EnsureStartRunUnlocks(connection, transaction, DefaultAccountId);
+        EnsureDefaultPreferences(connection, transaction, DefaultAccountId);
         return DefaultAccountId;
     }
 
@@ -172,5 +175,44 @@ INSERT INTO account_unlocks (
             new OfflineDatabaseSqlParameter("@unlockTypeId", (int)unlockTypeId),
             new OfflineDatabaseSqlParameter("@targetId", targetId),
             new OfflineDatabaseSqlParameter("@unlockedAtUtc", OfflineDatabaseSql.UtcNowText()));
+    }
+
+    private static void EnsureDefaultPreferences(IDbConnection connection, IDbTransaction transaction, int accountId)
+    {
+        object existing = OfflineDatabaseSql.ExecuteScalar(
+            connection,
+            @"
+SELECT preference_key
+FROM player_preferences
+WHERE account_id = @accountId
+  AND preference_key = @preferenceKey
+LIMIT 1;",
+            transaction,
+            new OfflineDatabaseSqlParameter("@accountId", accountId),
+            new OfflineDatabaseSqlParameter("@preferenceKey", SmartCastPreferenceKey));
+
+        if (existing != null && existing != DBNull.Value)
+        {
+            return;
+        }
+
+        OfflineDatabaseSql.ExecuteNonQuery(
+            connection,
+            @"
+INSERT INTO player_preferences (
+    account_id,
+    preference_key,
+    bool_value,
+    updated_at_utc
+) VALUES (
+    @accountId,
+    @preferenceKey,
+    0,
+    @updatedAtUtc
+);",
+            transaction,
+            new OfflineDatabaseSqlParameter("@accountId", accountId),
+            new OfflineDatabaseSqlParameter("@preferenceKey", SmartCastPreferenceKey),
+            new OfflineDatabaseSqlParameter("@updatedAtUtc", OfflineDatabaseSql.UtcNowText()));
     }
 }

@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using NUnit.Framework;
+using TimeSpells;
 using UnityEngine;
 
 public class SkillRulesTests
@@ -275,7 +276,7 @@ public class SkillRulesTests
     }
 
     [Test]
-    public void ToxicFume_OffForwardReachableDestination_IsAccepted()
+    public void ToxicFume_RequiresMovementThenAreaConfirmation()
     {
         SkillDefinitionAsset skill = Skill("Toxic_Fume", "Active");
         BattleUnitSnapshot actor = Unit("team-0-slot-0", 0, 0, 1, 2);
@@ -283,13 +284,63 @@ public class SkillRulesTests
         actor.CooldownsBySlot = new List<int> { 0 };
         BattleSnapshot snapshot = Snapshot(actor, Enemy("team-1-slot-0", 4, 4));
 
-        SkillValidationResult result = SkillRules.Validate(
+        SkillContext context = SkillContext.Create(snapshot, "team-0-slot-0", skill, 0);
+        List<SkillTarget> initialTargets = SkillRules.GetTargets(context, new List<HexCoord>());
+        List<SkillTarget> confirmationTargets = SkillRules.GetTargets(
+            context,
+            new List<HexCoord> { new HexCoord(2, 1) });
+        SkillValidationResult partialResult = SkillRules.Validate(
             new SkillUse("team-0-slot-0", "Toxic_Fume", new[] { new HexCoord(2, 1) }),
-            SkillContext.Create(snapshot, "team-0-slot-0", skill, 0));
+            context);
+        SkillValidationResult result = SkillRules.Validate(
+            new SkillUse("team-0-slot-0", "Toxic_Fume", new[] { new HexCoord(2, 1), new HexCoord(2, 1) }),
+            context);
 
+        Assert.That(HasTarget(initialTargets, 2, 1), Is.True);
+        Assert.That(TargetCount(confirmationTargets), Is.EqualTo(1));
+        Assert.That(HasTarget(confirmationTargets, 2, 1), Is.True);
+        Assert.That(partialResult.IsValid, Is.False);
+        Assert.That(partialResult.RejectReason, Is.EqualTo(SkillRejectReason.TargetCountMismatch));
         Assert.That(result.IsValid, Is.True);
         Assert.That(result.Cast.DestinationHex.C, Is.EqualTo(2));
         Assert.That(result.Cast.DestinationHex.R, Is.EqualTo(1));
+        Assert.That(result.Cast.AffectedHexes.Count, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void Shapeshift_IsInstantSelfToggleAndDoesNotConsumeTurn()
+    {
+        SkillDefinitionAsset skill = Skill("Shapeshift", "Active");
+        skill.ConfigureRules(
+            new ActivationRuleData { cooldownTurns = 1, consumesTurn = true },
+            new TargetingRuleData
+            {
+                targetFamily = SkillTargetFamily.Self,
+                targetRoles = new[] { SkillTargetRole.ActorSelf },
+                targetCount = 0
+            },
+            new ResolutionRuleData { resolutionFamily = SkillResolutionFamily.DirectUnit },
+            new[]
+            {
+                new SkillEffect
+                {
+                    effectType = SkillEffectType.ApplyStatus,
+                    targetSource = SkillEffectTargetSource.Actor,
+                    statusId = "Shapeshift"
+                }
+            });
+        BattleUnitSnapshot actor = Actor(new List<string> { "Shapeshift" }, new List<int> { 0 });
+        BattleSnapshot snapshot = Snapshot(actor);
+
+        SkillValidationResult result = SkillRules.Validate(
+            new SkillUse("team-0-slot-0", "Shapeshift", new List<HexCoord>()),
+            SkillContext.Create(snapshot, "team-0-slot-0", skill, 0));
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.Cast.ConsumesTurn, Is.False);
+        Assert.That(result.Cast.CanMoveAfterUse, Is.True);
+        Assert.That(result.Cast.Effects.Length, Is.EqualTo(1));
+        Assert.That(result.Cast.Effects[0].effectType, Is.EqualTo(SkillEffectType.ToggleStance));
     }
 
     [Test]
@@ -297,7 +348,7 @@ public class SkillRulesTests
     {
         SkillDefinitionAsset skill = Skill("Slash", "Active");
         BattleUnitSnapshot actor = Unit("team-0-slot-0", 0, 0, 1, 2);
-        actor.MovementSpeed = 1;
+        actor.MovementSpeed = 2;
         actor.SkillIdsBySlot = new List<string> { "Slash" };
         actor.CooldownsBySlot = new List<int> { 0 };
         BattleSnapshot snapshot = Snapshot(actor);
@@ -321,7 +372,7 @@ public class SkillRulesTests
     {
         SkillDefinitionAsset skill = Skill("Slash", "Active");
         BattleUnitSnapshot actor = Unit("team-0-slot-0", 0, 0, 1, 2);
-        actor.MovementSpeed = 1;
+        actor.MovementSpeed = 2;
         actor.SkillIdsBySlot = new List<string> { "Slash" };
         actor.CooldownsBySlot = new List<int> { 0 };
         BattleSnapshot snapshot = Snapshot(actor, true);
@@ -345,7 +396,7 @@ public class SkillRulesTests
     {
         SkillDefinitionAsset skill = Skill("Slash", "Active");
         BattleUnitSnapshot actor = Unit("team-0-slot-0", 0, 0, 4, 4);
-        actor.MovementSpeed = 1;
+        actor.MovementSpeed = 2;
         actor.SkillIdsBySlot = new List<string> { "Slash" };
         actor.CooldownsBySlot = new List<int> { 0 };
         BattleSnapshot snapshot = Snapshot(actor, true);
@@ -376,12 +427,24 @@ public class SkillRulesTests
             new List<HexCoord>());
         Dictionary<string, int> reachable = BattleHexGridUtility.FindReachableHexCosts(snapshot, actor);
 
-        Assert.That(TargetCount(targets), Is.EqualTo(reachable.Count));
+        int expectedCount = 0;
         foreach (KeyValuePair<string, int> pair in reachable)
         {
             BattleHexSnapshot hex = FindHexByKey(snapshot, pair.Key);
-            Assert.That(HasTarget(targets, hex.C, hex.R), Is.True, "Missing reachable Slash movement target " + pair.Key);
+            bool isActorHex = hex.C == actor.C && hex.R == actor.R;
+            bool isOccupiedByOtherUnit = isActorHex == false && string.IsNullOrEmpty(hex.OccupyingUnitId) == false;
+            if (pair.Value < actor.MovementSpeed && isOccupiedByOtherUnit == false)
+            {
+                expectedCount++;
+                Assert.That(HasTarget(targets, hex.C, hex.R), Is.True, "Missing reachable Slash movement target " + pair.Key);
+            }
+            else
+            {
+                Assert.That(HasTarget(targets, hex.C, hex.R), Is.False, "Slash target should stop before movement boundary " + pair.Key);
+            }
         }
+
+        Assert.That(TargetCount(targets), Is.EqualTo(expectedCount));
     }
 
     [Test]
@@ -440,7 +503,13 @@ public class SkillRulesTests
         SkillDefinitionAsset skill = Skill("Toxic_Fume", "Active");
         skill.ConfigureRules(
             new ActivationRuleData { cooldownTurns = 2, consumesTurn = true },
-            new TargetingRuleData(),
+            new TargetingRuleData
+            {
+                targetFamily = SkillTargetFamily.Movement,
+                targetRoles = new[] { SkillTargetRole.MovementDestinationHex },
+                targetCount = 1,
+                radius = 1
+            },
             new ResolutionRuleData(),
             new[]
             {
@@ -454,7 +523,11 @@ public class SkillRulesTests
             });
 
         SkillEffect[] effects = skill.Effects;
+        TargetingRuleData targeting = skill.TargetingRule;
 
+        Assert.That(targeting.targetCount, Is.EqualTo(2));
+        Assert.That(targeting.targetRoles, Is.EqualTo(new[] { SkillTargetRole.MovementDestinationHex, SkillTargetRole.AreaCenterHex }));
+        Assert.That(targeting.allowDuplicateTargets, Is.True);
         Assert.That(effects.Length, Is.EqualTo(3));
         Assert.That(effects[0].effectType, Is.EqualTo(SkillEffectType.MoveUnit));
         Assert.That(effects[1].statusId, Is.EqualTo("Toxic_Fume"));
@@ -462,6 +535,38 @@ public class SkillRulesTests
         Assert.That(effects[1].counterAttacksModifier, Is.EqualTo(2));
         Assert.That(effects[2].statusId, Is.EqualTo("Taunt"));
         Assert.That(effects[2].targetSource, Is.EqualTo(SkillEffectTargetSource.AffectedUnits));
+    }
+
+    [Test]
+    public void SpellOverTime_PositiveCounterAttackModifier_RestoresCounterAttackAvailability()
+    {
+        TosterHexUnit unit = new TosterHexUnit();
+        unit.CounterAttacks = 1;
+        unit.TempCounterAttacks = 0;
+        unit.CounterAttackAvaible = false;
+
+        new SpellOverTime(
+            2,
+            unit,
+            unit,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            "Toxic_Fume",
+            false);
+
+        Assert.That(unit.CounterAttacks, Is.EqualTo(3));
+        Assert.That(unit.TempCounterAttacks, Is.EqualTo(2));
+        Assert.That(unit.CounterAttackAvaible, Is.True);
     }
 
     static SkillDefinitionAsset Skill(string skillId, string type)

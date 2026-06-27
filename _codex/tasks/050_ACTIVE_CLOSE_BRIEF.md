@@ -1,6 +1,6 @@
 # [TARENA] 050 Active Close Brief - Battle Action API Full Migration Purge
 
-- Status: active close brief for Coding Agent
+- Status: closed - superseded by final closure report and follow-up validation PRD
 - Parent PRD stub: `_codex/tasks/050_PRD_BattleActionAPI_FullMigrationPurge.md`
 - Historical full PRD: `_codex/tasks/archive/050_PRD_BattleActionAPI_FullMigrationPurge_HISTORICAL.md`
 - Completed-state summary: `_codex/tasks/050_COMPLETED_STATE.md`
@@ -32,7 +32,7 @@ flow, or PRD019 UI.
 
 ## Goal
 
-Fully close PRD050 by removing the remaining runtime split between Battle
+PRD050 close scope was to remove the remaining runtime split between Battle
 Action and the legacy skill / automatic-action paths.
 
 Done means every tactical runtime action path is submitted, validated, scored,
@@ -41,6 +41,14 @@ simulated, and executed through:
 - `BattleActionUse`
 - `BattleAction`
 - `BattleActionResult`
+
+Final code closure report:
+
+- `_codex/tasks/QA/2026-06-26_050_FinalClose_CodingAgentCompletion.md`
+
+Remaining Unity validation follow-up:
+
+- `_codex/tasks/051_PRD_PRD050_UnityValidationAndLegacySceneCleanup.md`
 
 ## Already Done
 
