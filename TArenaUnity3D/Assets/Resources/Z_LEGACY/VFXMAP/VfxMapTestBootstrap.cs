@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,15 +11,19 @@ using UnityEngine.UI;
 public class VfxMapTestBootstrap : MonoBehaviour
 {
     const string SceneName = "VFX Map Test";
+    const string BattleSceneName = "TestArea2";
+    const string VfxSessionPrefKey = "VFXMapTestSession";
     const string UnitChangeResourcePath = "Z_LEGACY/VFXMAP/TESTING_UNITCHANGE";
-    const string LocalEnemyUnitResourcePath = "Z_LEGACY/VFXMAP/VFXMapEnemyDummy";
     const string PlayerUnitId = "Rusher";
+    const string EnemyUnitId = "VFXMapEnemyDummy";
     const string FallbackVisualUnitId = "Rusher";
+    const int PlayerBuildSlot = 9101;
+    const int EnemyBuildSlot = 9102;
+    const int HiddenVfxTestFactionId = 99;
 
     static bool sceneHooked;
 
     readonly List<DataMapper.UnitDefinition> units = new List<DataMapper.UnitDefinition>();
-    UnitDefinitionAsset localEnemyUnitAsset;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void RuntimeInitialize()
@@ -29,16 +35,20 @@ public class VfxMapTestBootstrap : MonoBehaviour
         }
 
         TryCreate(SceneManager.GetActiveScene());
+        EnsureTestArea2DirectionalLight(SceneManager.GetActiveScene());
     }
 
     static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         TryCreate(scene);
+        EnsureTestArea2DirectionalLight(scene);
     }
 
     static void TryCreate(Scene scene)
     {
-        if (scene.name != SceneName || FindObjectOfType<VfxMapTestBootstrap>() != null)
+        bool isVfxEntryScene = scene.name == SceneName;
+        bool isVfxBattleScene = scene.name == BattleSceneName && PlayerPrefs.GetInt(VfxSessionPrefKey, 0) == 1;
+        if ((isVfxEntryScene == false && isVfxBattleScene == false) || FindObjectOfType<VfxMapTestBootstrap>() != null)
         {
             return;
         }
@@ -47,13 +57,44 @@ public class VfxMapTestBootstrap : MonoBehaviour
         bootstrap.AddComponent<VfxMapTestBootstrap>();
     }
 
+    static void EnsureTestArea2DirectionalLight(Scene scene)
+    {
+        if (scene.name != BattleSceneName)
+        {
+            return;
+        }
+
+        Light[] lights = Resources.FindObjectsOfTypeAll<Light>();
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light light = lights[i];
+            if (light == null || light.type != LightType.Directional || light.gameObject.scene != scene)
+            {
+                continue;
+            }
+
+            light.gameObject.SetActive(true);
+            light.enabled = true;
+        }
+    }
+
     IEnumerator Start()
     {
-        yield return StartCoroutine(SetupForkedBattle());
+        if (SceneManager.GetActiveScene().name == SceneName)
+        {
+            PrepareVfxTestBattleInputs();
+            SceneManager.LoadScene(BattleSceneName);
+            yield break;
+        }
+
+        PlayerPrefs.DeleteKey(VfxSessionPrefKey);
+        PlayerPrefs.Save();
+
+        yield return StartCoroutine(WaitForStandardBattle());
         BuildUnitPanel();
     }
 
-    IEnumerator SetupForkedBattle()
+    IEnumerator WaitForStandardBattle()
     {
         HexMap hexMap = FindObjectOfType<HexMap>();
         if (hexMap == null)
@@ -65,31 +106,49 @@ public class VfxMapTestBootstrap : MonoBehaviour
         {
             yield return null;
         }
-
-        OverrideBattleTeams(hexMap);
     }
 
-    void OverrideBattleTeams(HexMap hexMap)
+    void PrepareVfxTestBattleInputs()
     {
-        if (hexMap == null)
+        WriteLegacyBuild(PlayerBuildSlot, "VFX Test Player", PlayerUnitId, 100, 1);
+        WriteLegacyBuild(EnemyBuildSlot, "VFX Test Enemy", EnemyUnitId, 1, 3);
+        PlayerPrefs.SetInt("YourArmy", PlayerBuildSlot);
+        PlayerPrefs.SetInt("EnemyArmy", EnemyBuildSlot);
+        PlayerPrefs.SetInt("AI", 1);
+        PlayerPrefs.SetInt(VfxSessionPrefKey, 1);
+        LocalGameSession.ForceLocalMode();
+        PlayerPrefs.Save();
+    }
+
+    void WriteLegacyBuild(int buildSlot, string displayName, string unitId, int amount, int stackCount)
+    {
+        PanelArmii.BuildG build = new PanelArmii.BuildG();
+        build.hero = 0;
+        build.NazwaBohatera = displayName;
+
+        for (int i = 0; i < stackCount; i++)
         {
-            return;
+            build.Units.Add(unitId);
+            build.NoUnits.Add(amount);
+            build.Costs.Add(0);
         }
 
-        EnsureTeams(hexMap);
-        ClearGeneratedTeams(hexMap);
-
-        TosterHexUnit player = CreateUnit(PlayerUnitId, 100, hexMap.Teams[0], true);
-        TosterHexUnit enemy = CreateLocalEnemyUnit(hexMap.Teams[1]);
-
-        hexMap.GenerateToster(0, 10, player);
-        hexMap.GenerateToster(12, 10, enemy);
-
-        TurnManager turnManager = FindObjectOfType<TurnManager>();
-        if (turnManager != null)
+        string path = DataMapper.Instance.GetBuildFilePath(buildSlot);
+        string directory = Path.GetDirectoryName(path);
+        if (string.IsNullOrEmpty(directory) == false)
         {
-            turnManager.SetNewTurn();
-            turnManager.GetTostersQueue();
+            Directory.CreateDirectory(directory);
+        }
+
+        BinaryFormatter formatter = new BinaryFormatter();
+        FileStream file = File.Create(path);
+        try
+        {
+            formatter.Serialize(file, build);
+        }
+        finally
+        {
+            file.Close();
         }
     }
 
@@ -159,14 +218,14 @@ public class VfxMapTestBootstrap : MonoBehaviour
         rect.anchorMax = new Vector2(1f, 0f);
         rect.pivot = new Vector2(1f, 0f);
         rect.anchoredPosition = Vector2.zero;
-        rect.sizeDelta = new Vector2(500f, 800f);
+        rect.sizeDelta = new Vector2(500f, 450f);
 
         Image image = panel.GetComponent<Image>();
         image.color = new Color(0.04f, 0.045f, 0.05f, 0.88f);
         image.raycastTarget = true;
 
         HorizontalLayoutGroup layout = panel.GetComponent<HorizontalLayoutGroup>();
-        layout.padding = new RectOffset(8, 8, 120, 8);
+        layout.padding = new RectOffset(8, 8, 0, 25);
         layout.spacing = 14f;
         layout.childAlignment = TextAnchor.UpperLeft;
         layout.childControlWidth = true;
@@ -184,7 +243,7 @@ public class VfxMapTestBootstrap : MonoBehaviour
         unitRows.layer = parent.gameObject.layer;
 
         HorizontalLayoutGroup layout = unitRows.GetComponent<HorizontalLayoutGroup>();
-        layout.spacing = 150f;
+        layout.spacing = 0f;
         layout.childControlWidth = true;
         layout.childControlHeight = true;
         layout.childForceExpandWidth = true;
@@ -203,9 +262,16 @@ public class VfxMapTestBootstrap : MonoBehaviour
         column.transform.SetParent(parent, false);
         column.layer = parent.gameObject.layer;
 
+        RectTransform rect = column.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.localScale = new Vector3(0.8f, 0.8f, 1f);
+
         VerticalLayoutGroup layout = column.GetComponent<VerticalLayoutGroup>();
-        layout.spacing = 14f;
-        layout.childAlignment = TextAnchor.UpperCenter;
+        layout.padding = new RectOffset(0, 0, 0, 0);
+        layout.spacing = 100f;
+        layout.childAlignment = TextAnchor.LowerCenter;
         layout.childControlWidth = true;
         layout.childControlHeight = false;
         layout.childForceExpandWidth = true;
@@ -483,92 +549,16 @@ public class VfxMapTestBootstrap : MonoBehaviour
         units.Clear();
         List<DataMapper.UnitDefinition> loadedUnits = DataMapper.Instance.GetAllUnits();
         loadedUnits.Sort(CompareUnits);
-        units.AddRange(loadedUnits);
-    }
-
-    void EnsureTeams(HexMap hexMap)
-    {
-        if (hexMap.Teams == null)
+        for (int i = 0; i < loadedUnits.Count; i++)
         {
-            hexMap.Teams = new List<TeamClass>();
-        }
-
-        while (hexMap.Teams.Count < 2)
-        {
-            hexMap.Teams.Add(new TeamClass());
-        }
-    }
-
-    void ClearGeneratedTeams(HexMap hexMap)
-    {
-        if (hexMap.Teams == null)
-        {
-            return;
-        }
-
-        for (int teamIndex = 0; teamIndex < hexMap.Teams.Count; teamIndex++)
-        {
-            TeamClass team = hexMap.Teams[teamIndex];
-            if (team == null)
+            DataMapper.UnitDefinition unit = loadedUnits[i];
+            if (unit == null || unit.FactionId == HiddenVfxTestFactionId)
             {
                 continue;
             }
 
-            List<TosterHexUnit> snapshot = new List<TosterHexUnit>(team.Tosters);
-            for (int unitIndex = 0; unitIndex < snapshot.Count; unitIndex++)
-            {
-                RemoveUnitFromMap(snapshot[unitIndex]);
-            }
-
-            team.Tosters.Clear();
-            team.HexesUnderTeam.Clear();
+            units.Add(unit);
         }
-    }
-
-    void RemoveUnitFromMap(TosterHexUnit unit)
-    {
-        if (unit == null)
-        {
-            return;
-        }
-
-        if (unit.tosterView != null)
-        {
-            unit.OnTosterMoved -= unit.tosterView.OnTosterMoved;
-            Destroy(unit.tosterView.gameObject);
-            unit.tosterView = null;
-        }
-
-        if (unit.Hex != null)
-        {
-            unit.Hex.RemoveToster(unit);
-        }
-    }
-
-    TosterHexUnit CreateUnit(string unitId, int amount, TeamClass team, bool isPlayerSide)
-    {
-        TosterHexUnit unit = new TosterHexUnit();
-        unit.InitateType(unitId);
-        unit.SetMyTeam(team);
-        unit.teamN = isPlayerSide;
-        unit.SetAmount(amount);
-        unit.StartAutocast();
-        SetUnitVisualPrefab(unit);
-        team.AddNewUnit(unit);
-        return unit;
-    }
-
-    TosterHexUnit CreateLocalEnemyUnit(TeamClass team)
-    {
-        TosterHexUnit unit = new TosterHexUnit();
-        ApplyUnitDefinition(unit, GetLocalEnemyDefinition());
-        unit.SetMyTeam(team);
-        unit.teamN = false;
-        unit.SetAmount(1);
-        unit.StartAutocast();
-        SetUnitVisualPrefab(unit);
-        team.AddNewUnit(unit);
-        return unit;
     }
 
     void ApplyUnitDefinition(TosterHexUnit unit, DataMapper.UnitDefinition definition)
@@ -603,22 +593,6 @@ public class VfxMapTestBootstrap : MonoBehaviour
         {
             unit.TosterPrefab = DataMapper.Instance.LoadUnitPrefab(FallbackVisualUnitId);
         }
-    }
-
-    DataMapper.UnitDefinition GetLocalEnemyDefinition()
-    {
-        UnitDefinitionAsset asset = GetLocalEnemyUnitAsset();
-        return asset == null ? null : asset.ToUnitDefinition();
-    }
-
-    UnitDefinitionAsset GetLocalEnemyUnitAsset()
-    {
-        if (localEnemyUnitAsset == null)
-        {
-            localEnemyUnitAsset = Resources.Load<UnitDefinitionAsset>(LocalEnemyUnitResourcePath);
-        }
-
-        return localEnemyUnitAsset;
     }
 
     int CompareUnits(DataMapper.UnitDefinition left, DataMapper.UnitDefinition right)

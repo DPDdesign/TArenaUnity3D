@@ -7,7 +7,10 @@ public class DataMapper : ScriptableObject
 {
     private const string MapperResourcePath = "0_Data/DataMapper";
     private const string UnitDefinitionsResourcePath = "0_Data/Units";
+    private const string VfxMapUnitDefinitionsResourcePath = "Z_LEGACY/VFXMAP";
     private const string SkillCatalogResourcePath = "0_Data/SkillCatalog";
+    private const string VfxMapEnemyDummyUnitName = "VFXMapEnemyDummy";
+    private const string VfxMapEnemyDummyPrefabFallbackUnitName = "Rusher";
 
     private static DataMapper instance;
 
@@ -167,13 +170,26 @@ public class DataMapper : ScriptableObject
 
     public GameObject LoadUnitPrefab(string unitName)
     {
-        string resourcePath = CombineResourcePath(unitPrefabsFolderPath, ExtractLeafName(unitName));
+        string unitLeafName = ExtractLeafName(unitName);
+        string resourcePath = CombineResourcePath(unitPrefabsFolderPath, unitLeafName);
         if (string.IsNullOrEmpty(resourcePath))
         {
             return null;
         }
 
-        return Resources.Load<GameObject>(resourcePath);
+        GameObject prefab = Resources.Load<GameObject>(resourcePath);
+        if (prefab != null)
+        {
+            return prefab;
+        }
+
+        if (unitLeafName == VfxMapEnemyDummyUnitName)
+        {
+            string fallbackResourcePath = CombineResourcePath(unitPrefabsFolderPath, VfxMapEnemyDummyPrefabFallbackUnitName);
+            return string.IsNullOrEmpty(fallbackResourcePath) ? null : Resources.Load<GameObject>(fallbackResourcePath);
+        }
+
+        return null;
     }
 
     public string GetBuildFilePath(int buildNumber)
@@ -236,11 +252,13 @@ public class DataMapper : ScriptableObject
         List<UnitDefinitionAsset> units = unitCatalog == null ? new List<UnitDefinitionAsset>() : unitCatalog.GetUnits();
         if (units.Count > 0)
         {
+            AppendUniqueUnitDefinitionAssets(units, Resources.LoadAll<UnitDefinitionAsset>(VfxMapUnitDefinitionsResourcePath));
             return units;
         }
 
         UnitDefinitionAsset[] fallbackUnits = Resources.LoadAll<UnitDefinitionAsset>(UnitDefinitionsResourcePath);
         List<UnitDefinitionAsset> result = new List<UnitDefinitionAsset>(fallbackUnits);
+        AppendUniqueUnitDefinitionAssets(result, Resources.LoadAll<UnitDefinitionAsset>(VfxMapUnitDefinitionsResourcePath));
         result.Sort(delegate(UnitDefinitionAsset a, UnitDefinitionAsset b)
         {
             string left = a == null ? string.Empty : a.UnitName;
@@ -249,6 +267,36 @@ public class DataMapper : ScriptableObject
         });
 
         return result;
+    }
+
+    private static void AppendUniqueUnitDefinitionAssets(List<UnitDefinitionAsset> target, UnitDefinitionAsset[] additions)
+    {
+        if (target == null || additions == null)
+        {
+            return;
+        }
+
+        HashSet<string> existingNames = new HashSet<string>();
+        for (int i = 0; i < target.Count; i++)
+        {
+            UnitDefinitionAsset unit = target[i];
+            if (unit != null && string.IsNullOrEmpty(unit.UnitName) == false)
+            {
+                existingNames.Add(unit.UnitName);
+            }
+        }
+
+        for (int i = 0; i < additions.Length; i++)
+        {
+            UnitDefinitionAsset unit = additions[i];
+            if (unit == null || string.IsNullOrEmpty(unit.UnitName) || existingNames.Contains(unit.UnitName))
+            {
+                continue;
+            }
+
+            target.Add(unit);
+            existingNames.Add(unit.UnitName);
+        }
     }
 
     private void EnsureSkillCache()

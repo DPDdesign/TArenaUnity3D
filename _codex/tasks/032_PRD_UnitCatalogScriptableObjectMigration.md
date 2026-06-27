@@ -116,6 +116,21 @@ This migration established the current built-in unit data model for TArenaUnity3
 Unity-authored `ScriptableObject` unit definitions collected by one catalog,
 with `DataMapper` as the runtime access seam.
 
+Post-close follow-up to fix:
+
+- Current `DataMapper.LoadUnitDefinitionAssets()` behavior still falls back to
+  `Resources/0_Data/Units` when `UnitCatalog.asset` exists but is empty.
+- This is unsafe for current recovery work because putting only a dummy entry in
+  `UnitCatalog.asset` would hide all normal units instead of preserving the
+  intended built-in list.
+- The required fix is to change `DataMapper` so the fallback list from
+  `Resources/0_Data/Units` also appends additional `UnitDefinitionAsset`
+  entries from `Z_LEGACY/VFXMAP`, instead of depending on a dummy catalog entry
+  to surface those legacy/VFX map units.
+- This should be treated as a follow-up repair against the migration boundary,
+  because PRD032's intended direction was to avoid silent catalog/fallback
+  masking and keep unit discovery explicit.
+
 Future mod unit data import and validation is tracked separately in:
 
 - `_codex/tasks/031_PRD_ModUnitDataImportValidation.md`

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TimeSpells;
 using TMPro;
@@ -24,6 +25,8 @@ public class UnitStatsTextRefs
 
 public class UICanvas : MonoBehaviour
 {
+    const string SkillInfoDebugPrefix = "[DEBUG-SKILLINFO]";
+
     [Header("Stats Panel TMP")]
     public UnitStatsTextRefs InfoStatsTexts;
 
@@ -239,6 +242,11 @@ public class UICanvas : MonoBehaviour
     public GameObject menu;
     void Update()
     {
+        if (Input.GetMouseButtonDown(1))
+        {
+            DebugLogRightClickRaycast();
+        }
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (menu != null)
@@ -334,6 +342,51 @@ public class UICanvas : MonoBehaviour
             ClearSkillButtonsFrom(0);
 
         }
+    }
+
+    void DebugLogRightClickRaycast()
+    {
+        if (EventSystem.current == null)
+        {
+            Debug.Log(SkillInfoDebugPrefix + " RaycastProbe no EventSystem.current");
+            return;
+        }
+
+        PointerEventData pointerData = new PointerEventData(EventSystem.current);
+        pointerData.position = Input.mousePosition;
+
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointerData, results);
+
+        string message = SkillInfoDebugPrefix + " RaycastProbe mouse=" + Input.mousePosition +
+            " hits=" + results.Count;
+
+        int maxResults = Mathf.Min(results.Count, 8);
+        for (int i = 0; i < maxResults; i++)
+        {
+            GameObject hitObject = results[i].gameObject;
+            message += " [" + i + "]=" + GetHierarchyPath(hitObject == null ? null : hitObject.transform);
+        }
+
+        Debug.Log(message);
+    }
+
+    string GetHierarchyPath(Transform target)
+    {
+        if (target == null)
+        {
+            return "<null>";
+        }
+
+        string path = target.name;
+        Transform current = target.parent;
+        while (current != null)
+        {
+            path = current.name + "/" + path;
+            current = current.parent;
+        }
+
+        return path;
     }
 
     void SetSkillNameText(int index, string skillName)
