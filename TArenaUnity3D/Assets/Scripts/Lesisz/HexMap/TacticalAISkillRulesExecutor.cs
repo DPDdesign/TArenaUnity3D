@@ -360,6 +360,7 @@ internal sealed class BattleActionSkillResultRuntime
             actor.SpecialDMGModificator = 20;
             actor.SpecialResistance = 20;
             ReplaceStanceSkillId(actor, cast.SkillId, "Melee_Stance");
+            ApplyThrowerStanceVisuals(actor);
         }
         else if (cast.SkillId.StartsWith("Melee_Stance", StringComparison.Ordinal))
         {
@@ -367,6 +368,7 @@ internal sealed class BattleActionSkillResultRuntime
             actor.SpecialDMGModificator = 0;
             actor.SpecialResistance = 0;
             ReplaceStanceSkillId(actor, cast.SkillId, "Range_Stance");
+            ApplyThrowerStanceVisuals(actor);
         }
         else if (string.Equals(cast.SkillId, "Shapeshift", StringComparison.Ordinal))
         {
@@ -374,6 +376,33 @@ internal sealed class BattleActionSkillResultRuntime
             actor.MovmentSpeed = actor.Initiative;
             actor.Initiative = previousMovementSpeed;
         }
+    }
+
+    static void ApplyThrowerStanceVisuals(TosterHexUnit actor)
+    {
+        if (actor == null || actor.tosterView == null)
+        {
+            return;
+        }
+
+        ThrowerStanceVisuals visuals = actor.tosterView.GetComponentInParent<ThrowerStanceVisuals>();
+        if (visuals == null)
+        {
+            visuals = actor.tosterView.GetComponentInChildren<ThrowerStanceVisuals>(true);
+        }
+
+        if (visuals == null && actor.tosterView.transform.root != null)
+        {
+            visuals = actor.tosterView.transform.root.GetComponentInChildren<ThrowerStanceVisuals>(true);
+        }
+
+        if (visuals == null)
+        {
+            Debug.LogWarning("Thrower stance visuals component not found for " + actor.Name);
+            return;
+        }
+
+        visuals.SetRangedStance(actor.isRange);
     }
 
     void ReplaceStanceSkillId(TosterHexUnit actor, string currentSkillId, string replacementPrefix)

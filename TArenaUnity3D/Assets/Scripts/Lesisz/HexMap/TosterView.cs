@@ -16,6 +16,7 @@ public class TosterView : MonoBehaviour
     public bool AnimationIsPlaying = false;
     Coroutine returnToDefaultCoroutine;
     TosterSfxSet sfxSet;
+    string defaultAnimatorStateOverride;
     readonly Dictionary<TrailRenderer, Coroutine> weaponTrailCoroutines = new Dictionary<TrailRenderer, Coroutine>();
     readonly Dictionary<TrailRenderer, bool> weaponTrailInitialActiveStates = new Dictionary<TrailRenderer, bool>();
     readonly Dictionary<TrailRenderer, bool> weaponTrailInitialEnabledStates = new Dictionary<TrailRenderer, bool>();
@@ -93,17 +94,69 @@ public class TosterView : MonoBehaviour
         returnToDefaultCoroutine = StartCoroutine(ReturnAnimatorToDefaultAfterState(animator, stateName));
     }
 
-    public void PlayAnimatorStateImmediate(string stateName)
+    public bool PlayAnimatorStateImmediate(string stateName, bool playSfx = true)
     {
         Animator animator = GetComponentInChildren<Animator>();
         if (animator == null)
         {
+            return false;
+        }
+
+        if (HasAnimatorState(animator, stateName) == false)
+        {
+            return false;
+        }
+
+        if (playSfx)
+        {
+            PlaySfxForAnimatorState(stateName);
+        }
+        ApplyAnimationSpeed(animator);
+        animator.Play(stateName);
+        animator.Update(0f);
+        return true;
+    }
+
+    public void SetDefaultAnimatorStateOverride(string stateName)
+    {
+        defaultAnimatorStateOverride = stateName;
+    }
+
+    public void ClearDefaultAnimatorStateOverride()
+    {
+        defaultAnimatorStateOverride = null;
+    }
+
+    public bool HasAnimatorState(string stateName)
+    {
+        return HasAnimatorState(GetComponentInChildren<Animator>(), stateName);
+    }
+
+    public void EnsureDefaultAnimatorStateOverrideApplied()
+    {
+        if (string.IsNullOrEmpty(defaultAnimatorStateOverride))
+        {
             return;
         }
 
-        PlaySfxForAnimatorState(stateName);
-        ApplyAnimationSpeed(animator);
-        animator.Play(stateName);
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator == null || HasAnimatorState(animator, defaultAnimatorStateOverride) == false)
+        {
+            return;
+        }
+
+        if (animator.IsInTransition(0))
+        {
+            return;
+        }
+
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        if (stateInfo.IsName(defaultAnimatorStateOverride))
+        {
+            return;
+        }
+
+        PlayAnimatorStateImmediate(defaultAnimatorStateOverride, false);
     }
 
     public IEnumerator PlayAnimatorStateAndWaitForDefault(string stateName, float maxWaitSeconds)
@@ -620,6 +673,22 @@ public class TosterView : MonoBehaviour
         animator.Rebind();
         animator.speed = 1f;
         animator.Update(0f);
+        if (string.IsNullOrEmpty(defaultAnimatorStateOverride) == false)
+        {
+            animator.Play(defaultAnimatorStateOverride, 0, 0f);
+            animator.Update(0f);
+        }
+    }
+
+    static bool HasAnimatorState(Animator animator, string stateName)
+    {
+        if (animator == null || string.IsNullOrEmpty(stateName))
+        {
+            return false;
+        }
+
+        return animator.HasState(0, Animator.StringToHash(stateName)) ||
+            animator.HasState(0, Animator.StringToHash("Base Layer." + stateName));
     }
     
 

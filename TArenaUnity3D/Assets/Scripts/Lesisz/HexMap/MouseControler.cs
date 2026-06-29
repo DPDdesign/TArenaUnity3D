@@ -46,6 +46,7 @@ public class MouseControler : LocalNetworkBehaviour
     readonly List<HexCoord> selectedSkillTargets = new List<HexCoord>();
     SkillCast selectedSkillValidatedCast;
     public TosterHexUnit SelectedToster = null;
+    TosterHexUnit lastPresentedSelectedToster = null;
     TosterHexUnit TempSelectedToster = null;
     TosterHexUnit TempOutlinedToster = null;
     TosterHexUnit TargetToster = null;
@@ -129,6 +130,7 @@ public class MouseControler : LocalNetworkBehaviour
         
         if (!isCamera() || !hexMap.isCreated) return;
         Update_CurrentFunc();
+        RefreshSelectedThrowerStancePresentation();
 
         LastMousePosition = Input.mousePosition;
 
@@ -136,6 +138,23 @@ public class MouseControler : LocalNetworkBehaviour
         // MouseToPart();
         hexLastUnderMouse = hexUnderMouse;
         GOLastUnderMouse = GOUnderMouse;
+    }
+
+    void RefreshSelectedThrowerStancePresentation()
+    {
+        if (SelectedToster == null || hexMap == null || BattleActionLifecycle.IsActionBlocking)
+        {
+            return;
+        }
+
+        if (SelectedToster != lastPresentedSelectedToster)
+        {
+            lastPresentedSelectedToster = SelectedToster;
+            hexMap.ApplyInitialThrowerRangeStance(SelectedToster);
+            return;
+        }
+
+        hexMap.RefreshThrowerStancePresentation(SelectedToster);
     }
 
     internal IEnumerator DoMovesPath(List<HexClass> hexmaxpath)
@@ -205,6 +224,7 @@ public class MouseControler : LocalNetworkBehaviour
             return;
         }
 
+        hexMap.ApplyInitialThrowerRangeStance(SelectedToster);
         TM.GetTostersQueue();
         SelectedToster.isSelected = true;
         if (isAiOn==true)
@@ -400,6 +420,7 @@ public class MouseControler : LocalNetworkBehaviour
             return;
         }
 
+        hexMap.ApplyInitialThrowerRangeStance(SelectedToster);
         SelectedToster.isSelected = true;
         outlineM.SetHexSelectedToster(SelectedToster.Hex);
         if (isAiOn == true)

@@ -32,6 +32,7 @@ public class TosterHexUnit : IQPathUnit
     public int SpecialResistance = 0; // +20 oznacza że otrzymany dmg zostanie zmniejszony o 20%
     public int SpecialDMGModificator = 0;// +20 oznacza że zadawany dmg zostanie zmniejszony o 20%
     public bool isRange = false;
+    [XmlIgnore] public bool InitialThrowerRangeStanceApplied = false;
     public double DefensePenetration = 0;
     public GameObject Projectile;
     public string TextToSend;

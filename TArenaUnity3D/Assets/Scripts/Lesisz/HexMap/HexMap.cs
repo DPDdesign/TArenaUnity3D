@@ -614,6 +614,7 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
         tosters.Add(Toster);
         tostertoGameObjectMap[Toster] = TosterGo;
         Toster.InitateType("TosterDPS");
+        ApplyInitialThrowerRangeStance(Toster);
     }
 
 
@@ -656,12 +657,152 @@ public class HexMap : LocalNetworkBehaviour, IQPathWorld
         toster.OnTosterMoved += TosterGo.GetComponent<TosterView>().OnTosterMoved;
         toster.tosterView = TosterGo.GetComponent<TosterView>();
         toster.ApplyTeamVisualFacing();
+        ApplyInitialThrowerRangeStance(toster);
         HexGo.GetComponentInChildren<TextMesh>().text = string.Format("", i, j, TosterSpawn.Tosters.Count);//{0}, {1}\n {2}
         tostersList.Add(toster);
 
         tosters.Add(toster);
         tostertoGameObjectMap[toster] = TosterGo;
         //toster.InitateType("TosterDPS");
+    }
+
+    public void ApplyInitialThrowerRangeStance(TosterHexUnit toster)
+    {
+        if (toster == null || IsThrowerStanceUnit(toster) == false)
+        {
+            return;
+        }
+
+        if (toster.InitialThrowerRangeStanceApplied == false)
+        {
+            toster.isRange = true;
+            toster.SpecialDMGModificator = 20;
+            toster.SpecialResistance = 20;
+            if (HasSkillId(toster, "Range_Stance_Barb"))
+            {
+                ReplaceSkillId(toster, "Range_Stance_Barb", "Melee_Stance_Barb");
+            }
+            toster.InitialThrowerRangeStanceApplied = true;
+        }
+
+        if (toster.tosterView == null)
+        {
+            return;
+        }
+
+        ApplyThrowerStancePresentation(toster, true);
+    }
+
+    public void RefreshThrowerStancePresentation(TosterHexUnit toster)
+    {
+        if (toster == null || IsThrowerStanceUnit(toster) == false || toster.tosterView == null)
+        {
+            return;
+        }
+
+        if (toster.InitialThrowerRangeStanceApplied == false && HasAnyThrowerStanceSkill(toster))
+        {
+            ApplyInitialThrowerRangeStance(toster);
+            return;
+        }
+
+        ApplyThrowerStancePresentation(toster, false);
+    }
+
+    static void ApplyThrowerStancePresentation(TosterHexUnit toster, bool forceAnimatorState)
+    {
+        ThrowerStanceVisuals visuals = FindThrowerStanceVisuals(toster);
+        if (visuals != null)
+        {
+            visuals.SetRangedStance(toster.isRange);
+        }
+
+        string defaultState = ResolveThrowerStanceAnimatorState(toster.tosterView, toster.isRange);
+        toster.tosterView.SetDefaultAnimatorStateOverride(defaultState);
+        if (forceAnimatorState)
+        {
+            toster.tosterView.PlayAnimatorStateImmediate(defaultState, false);
+        }
+        else
+        {
+            toster.tosterView.EnsureDefaultAnimatorStateOverrideApplied();
+        }
+    }
+
+    static string ResolveThrowerStanceAnimatorState(TosterView tosterView, bool isRange)
+    {
+        string preferredState = isRange ? "Combat_1H_Ready" : "Combat_2HL_Ready";
+        if (tosterView != null && tosterView.HasAnimatorState(preferredState))
+        {
+            return preferredState;
+        }
+
+        return "Ready";
+    }
+
+    static bool HasAnyThrowerStanceSkill(TosterHexUnit toster)
+    {
+        return HasSkillId(toster, "Range_Stance_Barb") || HasSkillId(toster, "Melee_Stance_Barb");
+    }
+
+    static bool IsThrowerStanceUnit(TosterHexUnit toster)
+    {
+        if (HasAnyThrowerStanceSkill(toster))
+        {
+            return true;
+        }
+
+        return FindThrowerStanceVisuals(toster) != null;
+    }
+
+    static ThrowerStanceVisuals FindThrowerStanceVisuals(TosterHexUnit toster)
+    {
+        if (toster == null || toster.tosterView == null)
+        {
+            return null;
+        }
+
+        ThrowerStanceVisuals visuals = toster.tosterView.GetComponentInParent<ThrowerStanceVisuals>();
+        if (visuals == null)
+        {
+            visuals = toster.tosterView.GetComponentInChildren<ThrowerStanceVisuals>(true);
+        }
+
+        return visuals;
+    }
+
+    static bool HasSkillId(TosterHexUnit toster, string skillId)
+    {
+        if (toster == null || toster.skillstrings == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < toster.skillstrings.Count; i++)
+        {
+            if (toster.skillstrings[i] == skillId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static void ReplaceSkillId(TosterHexUnit toster, string currentSkillId, string replacementSkillId)
+    {
+        if (toster == null || toster.skillstrings == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < toster.skillstrings.Count; i++)
+        {
+            if (toster.skillstrings[i] == currentSkillId)
+            {
+                toster.skillstrings[i] = replacementSkillId;
+            }
+        }
     }
 
 

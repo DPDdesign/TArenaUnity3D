@@ -509,21 +509,23 @@ public class CastManager : LocalNetworkBehaviour
     }
     public void Range_Stance_BarbM()
     {
+        TosterHexUnit selectedToster = SelectedT();
         PlaySequencedCasterEffect("Range_Stance_Barb");
-        if (SelectedT().isRange = !SelectedT().isRange)
+        if (selectedToster.isRange = !selectedToster.isRange)
         {
-            Debug.Log(SelectedT().isRange);
-            SelectedT().SpecialDMGModificator = 20;
-            SelectedT().SpecialResistance = 20;
+            Debug.Log(selectedToster.isRange);
+            selectedToster.SpecialDMGModificator = 20;
+            selectedToster.SpecialResistance = 20;
      //       SelectedT().skillstrings[1] = "";
-            SelectedT().skillstrings[mouseControler.SelectedSpellid] = "Melee_Stance_Barb";
+            selectedToster.skillstrings[mouseControler.SelectedSpellid] = "Melee_Stance_Barb";
         }
         else
         {
-            Debug.Log(SelectedT().isRange);
-            SelectedT().SpecialDMGModificator = 0;
-            SelectedT().SpecialResistance = 0;
+            Debug.Log(selectedToster.isRange);
+            selectedToster.SpecialDMGModificator = 0;
+            selectedToster.SpecialResistance = 0;
         }
+        ApplyThrowerStanceVisuals(selectedToster);
         isTurn = false;
         SetFalse();
 
@@ -535,23 +537,47 @@ public class CastManager : LocalNetworkBehaviour
     }
     public void Melee_Stance_BarbM()
     {
+        TosterHexUnit selectedToster = SelectedT();
         PlaySequencedCasterEffect("Melee_Stance_Barb");
-        if (SelectedT().isRange = !SelectedT().isRange)
+        if (selectedToster.isRange = !selectedToster.isRange)
         {
-            Debug.Log(SelectedT().isRange);
-            SelectedT().SpecialDMGModificator = 20;
-            SelectedT().SpecialResistance = 20;
+            Debug.Log(selectedToster.isRange);
+            selectedToster.SpecialDMGModificator = 20;
+            selectedToster.SpecialResistance = 20;
         }
         else
         {
-            Debug.Log(SelectedT().isRange);
-            SelectedT().SpecialDMGModificator = 0;
-            SelectedT().SpecialResistance = 0;
-            SelectedT().skillstrings[mouseControler.SelectedSpellid] = "Range_Stance_Barb";
+            Debug.Log(selectedToster.isRange);
+            selectedToster.SpecialDMGModificator = 0;
+            selectedToster.SpecialResistance = 0;
+            selectedToster.skillstrings[mouseControler.SelectedSpellid] = "Range_Stance_Barb";
         }
+        ApplyThrowerStanceVisuals(selectedToster);
         isTurn = false;
         SetFalse();
        
+    }
+
+    void ApplyThrowerStanceVisuals(TosterHexUnit toster)
+    {
+        if (toster == null || toster.tosterView == null)
+        {
+            return;
+        }
+
+        ThrowerStanceVisuals visuals = toster.tosterView.GetComponentInParent<ThrowerStanceVisuals>();
+        if (visuals == null)
+        {
+            visuals = toster.tosterView.GetComponentInChildren<ThrowerStanceVisuals>(true);
+        }
+
+        if (visuals == null)
+        {
+            Debug.LogWarning("Thrower stance visuals component not found for " + toster.Name);
+            return;
+        }
+
+        visuals.SetRangedStance(toster.isRange);
     }
     #endregion
     #region Double_Throw 

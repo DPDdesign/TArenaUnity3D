@@ -1019,14 +1019,16 @@ public class SkillPresentationManager : MonoBehaviour
 
     IEnumerator PlayCasterAnimationAndCast(SkillPresentationEntry entry, TosterHexUnit caster, string casterAnimationState, bool playCastSfx)
     {
-        PlayWeaponTrail(entry, caster, GetAnimatedWeaponTrailDurationSeconds(entry, casterAnimationState));
+        string resolvedAnimationState = ResolveCasterAnimationState(entry, casterAnimationState);
+        PlayWeaponTrail(entry, caster, GetAnimatedWeaponTrailDurationSeconds(entry, resolvedAnimationState));
         PlayCastSfx(entry, playCastSfx);
-        yield return PlayCasterAnimation(entry, caster, casterAnimationState);
+        yield return PlayCasterAnimation(entry, caster, resolvedAnimationState);
         PlayCastVfx(entry, caster);
     }
 
     IEnumerator PlayCasterAnimation(SkillPresentationEntry entry, TosterHexUnit caster, string casterAnimationState)
     {
+        casterAnimationState = ResolveCasterAnimationState(entry, casterAnimationState);
         if (!string.IsNullOrEmpty(casterAnimationState) && caster != null && caster.tosterView != null)
         {
             float presentationDelay = Mathf.Clamp01(entry.castVfxDelay);
@@ -1046,19 +1048,60 @@ public class SkillPresentationManager : MonoBehaviour
             }
             else
             {
+                bool holdAnimationState = ShouldHoldAnimationState(entry);
+                if (holdAnimationState)
+                {
+                    caster.tosterView.SetDefaultAnimatorStateOverride(casterAnimationState);
+                }
+
                 if (presentationDelay >= 1f)
                 {
-                    yield return caster.tosterView.PlayAnimatorStateAndWaitForDefault(casterAnimationState, SkillAnimationMaxWaitSeconds);
+                    yield return caster.tosterView.PlayAnimatorStateAndWait(
+                        casterAnimationState,
+                        SkillAnimationMaxWaitSeconds,
+                        holdAnimationState == false);
                 }
                 else
                 {
-                    yield return caster.tosterView.PlayAnimatorStateAndWaitForPresentationProgress(
-                        casterAnimationState,
-                        presentationDelay,
-                        SkillAnimationMaxWaitSeconds);
+                    if (holdAnimationState)
+                    {
+                        yield return caster.tosterView.PlayAnimatorStateAndWaitForProgress(
+                            casterAnimationState,
+                            presentationDelay,
+                            SkillAnimationMaxWaitSeconds);
+                    }
+                    else
+                    {
+                        yield return caster.tosterView.PlayAnimatorStateAndWaitForPresentationProgress(
+                            casterAnimationState,
+                            presentationDelay,
+                            SkillAnimationMaxWaitSeconds);
+                    }
                 }
             }
         }
+    }
+
+    static bool ShouldHoldAnimationState(SkillPresentationEntry entry)
+    {
+        if (entry == null)
+        {
+            return false;
+        }
+
+        return entry.holdAnimationState ||
+            string.Equals(entry.skillId, "Range_Stance_Barb", StringComparison.Ordinal) ||
+            string.Equals(entry.skillId, "Melee_Stance_Barb", StringComparison.Ordinal);
+    }
+
+    static string ResolveCasterAnimationState(SkillPresentationEntry entry, string fallbackAnimationState)
+    {
+        if (entry != null && string.IsNullOrWhiteSpace(entry.animationStateOverride) == false)
+        {
+            return entry.animationStateOverride;
+        }
+
+        return fallbackAnimationState;
     }
 
     IEnumerator PlayImpactRevealsAfterDelay(

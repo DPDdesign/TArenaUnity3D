@@ -21,6 +21,10 @@ public enum SkillPresentationAnimationPlayPath
 public class SkillPresentationEntry
 {
     public string skillId;
+    [Tooltip("Optional animator state/trigger name. If empty, the skill uses the default state resolved from its slot, e.g. skill1.")]
+    public string animationStateOverride;
+    [Tooltip("If enabled, the caster stays in the played animator state instead of returning to the default idle state.")]
+    public bool holdAnimationState;
     public SkillPresentationAnimationPlayPath AnimationPlayPath = SkillPresentationAnimationPlayPath.PlayAnimation;
     [Range(0f, 1f)]
     [InspectorName("Cast VFX Delay")]
