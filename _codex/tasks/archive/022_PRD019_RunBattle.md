@@ -266,6 +266,7 @@ Done when:
   Photon paths were changed.
 - The obsolete UI mockup created for this backend task has been removed from
   `Assets` and archived under
+  Historical PRD019 mockup-builder artifacts were removed from
   `_codex/tasks/archive/PRD19_ObsoleteMockups/022_RunBattle/`.
 
 ### Next Steps
@@ -278,6 +279,7 @@ Done when:
 
 - `PRD_19_22_RunBattleMockup.prefab`, its generated repeated prefabs, the
   RunBattle mockup view scripts, and the mockup builder were archived under
+  Historical PRD019 mockup-builder artifacts were removed from
   `_codex/tasks/archive/PRD19_ObsoleteMockups/022_RunBattle/`.
 - Active Run Battle scripts now live under
   `Assets/Scripts/RunMetagame/022_RunBattle/`.

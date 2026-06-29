@@ -32,6 +32,7 @@ All project agents may use these local files:
 - `AGENTS.md`
 - `_codex/Context/CONTEXT-MAP.md`
 - `_codex/agents/runbooks/`
+- `_codex/agents/runbooks/context-economy-spark.md`
 - `_codex/agents/docs/codebase-map.md`
 - `_codex/tasks/`
 - `_codex/skills/`

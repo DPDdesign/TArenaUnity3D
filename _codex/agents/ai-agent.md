@@ -10,6 +10,7 @@ as `TMP_Text` and `TextMeshProUGUI`, never legacy `UnityEngine.UI.Text`.
 ## Sources
 
 - `AGENTS.md`
+- `_codex/agents/runbooks/context-economy-spark.md`
 - `_codex/Context/CONTEXT-MAP.md`
 - `_codex/Context/maps/tactical-ai-map.md`
 - `_codex/Context/maps/battle-action-api-map.md` when AI action validation is

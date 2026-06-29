@@ -160,12 +160,13 @@ Done when:
   no-steal/no-destroy preservation record. No Inspector fields changed.
 - `BattleResultScreenController`,
   `BattleResultArmySummaryCardView`, `BattleResultRankDeltaPanelView`,
-  `BattleResultXpProgressPanelView`, `BattleResultCommandButtonView`, and
-  `PRD19_027_BattleResultPrefabBuilder`: added a task-specific Unity UGUI
-  prototype for Battle Result. The controller builds a sample async result
-  through `OfflineBattleResultAdapter -> BattleResultService`, renders the
-  returned `BattleResultViewData`, and wires army focus, Continue, and View
-  Armies interactions.
+  `BattleResultXpProgressPanelView`, and `BattleResultCommandButtonView`:
+  added Battle Result UI runtime/view code. Historical PRD019 prefab builders
+  for this screen have been removed and must not be regenerated without current
+  path-specific permission. The controller builds a sample async result through
+  `OfflineBattleResultAdapter -> BattleResultService`, renders the returned
+  `BattleResultViewData`, and wires army focus, Continue, and View Armies
+  interactions.
 - Removed fields: none. Existing public/serialized Unity fields were not
   renamed.
 
@@ -186,10 +187,9 @@ Done when:
 #### Unity Setup
 
 - Let Unity import scripts under `Assets/Scripts/RunMetagame/027_BattleResult/`.
-- Unity should run the 027 prefab builder automatically once after compile, or
-  use `TArena > Mockups > Rebuild PRD 19 027 Battle Result Prefabs`.
-- Open
-  `Assets/Resources/UI/PRD_19/027_BattleResult/PRD_19_027_BattleResult.prefab`.
+- Do not run or recreate historical PRD019 prefab builders. Existing
+  `Assets/Resources/UI/PRD_19/027_BattleResult/` prefabs are read-only unless
+  the current task gives path-specific permission.
 
 #### Play Mode Test
 
@@ -219,5 +219,5 @@ Done when:
 ### Next Steps
 
 - Run `BattleResultServiceTests` in Unity Test Runner EditMode.
-- Let Unity generate/open the Battle Result prototype prefab and inspect its
-  hierarchy.
+- Inspect the existing Battle Result prefab manually if needed; do not
+  regenerate PRD019 prefab assets.

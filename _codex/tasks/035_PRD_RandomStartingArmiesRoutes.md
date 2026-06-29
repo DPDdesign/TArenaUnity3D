@@ -427,8 +427,7 @@ mission model:
 - `StartRunModels` / `StartRunService`: Start Run options now carry selected starting assets: 150 run gold, 1 reroll token, 0 battle skip tokens. Lower/higher values affect visible run-start resources only; tune through generator config, not UI.
 - `RunMapModels` / `RunMapService` / DB route stores: route nodes now support explicit branch links plus `RandomEvent` and `Empty` node types. These affect which mission nodes unlock in Play Mode; tune topology in the generator.
 - `OfflineModeDatabaseComposition`: production Start Run and Run Map now use the generated catalog through existing service/store seams.
-- `PRD19_035_RandomStartRoutesMockupController`: new mockup-only serialized references for offer cards, route nodes, command buttons, and TMP labels. They must be wired by the builder; they are not gameplay tuning fields.
-- `PRD19_035_RandomStartRoutesMockupBuilder`: added separate base and polished Unity UGUI mockup builders targeting `Assets/UI/PRD_19/PRD_19_35`, not the existing `021_RunMap` or `020_StartRun` folders.
+- `PRD19_035_RandomStartRoutesMockupController`: mockup-only serialized references for offer cards, route nodes, command buttons, and TMP labels. Historical PRD019 mockup builders have been removed; do not recreate or run prefab-generation tooling for this UI without current path-specific user permission.
 
 ### Automatic Test
 
@@ -441,8 +440,7 @@ mission model:
 #### Unity Setup
 
 - Open Unity and let scripts compile.
-- Confirm generated mockup prefabs appear under `Assets/UI/PRD_19/PRD_19_35/` and `Assets/UI/PRD_19/PRD_19_35/Polished_1/`.
-- If they do not appear automatically, run menu item `TArena/Mockups/Rebuild PRD 19 035 Random Start Routes Prefabs`.
+- Do not regenerate PRD019 mockup prefabs. Inspect existing assets only, unless the current task grants path-specific permission to edit or rebuild them.
 - Open `PRD_19_35_RandomStartRoutes_Polished.prefab` and inspect `Script_PRD19_035_RandomStartRoutesMockupController`; offer, route node, button, and TMP references should be assigned.
 - For runtime flow, open the existing Start Run/Campaign Selection and Run Map setup that uses `OfflineModeDatabaseComposition`.
 
@@ -466,10 +464,10 @@ mission model:
 - Unity compilation, EditMode tests, and Play Mode were not run automatically.
 - No existing `PRD_19_021_RunMap` or `PRD_19_020/CampaingSelection` prefabs were edited.
 - No scenes, materials, controllers, `.asmdef`, `.asmref`, or generated Unity files were edited.
-- The mockup folder is intentionally `Assets/UI/PRD_19/PRD_19_35`; existing PRD019 runtime mockups remain under `Assets/Resources/UI/PRD_19`.
+- Historical PRD019 mockup prefab output is deprecated. Existing PRD019 runtime mockups under `Assets/Resources/UI/PRD_19` are read-only by default.
 
 ### Next Steps
 
-- Run Unity compile/import and the menu rebuild if prefabs are not generated automatically.
+- Run Unity compile/import only. Do not run or recreate PRD019 prefab rebuild menus.
 - Run Unity Test Runner -> EditMode -> `PRD35RunGenerationTests`.
 - Perform the Start Run -> Run Map Play Mode smoke test above.

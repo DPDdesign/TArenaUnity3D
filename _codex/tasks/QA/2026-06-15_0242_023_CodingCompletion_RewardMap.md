@@ -18,7 +18,7 @@
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/023_RewardMap/RewardMapResultGainedPanelView.cs`
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/023_RewardMap/RewardMapCommandButtonView.cs`
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/023_RewardMap/RewardMapUiSpriteResolver.cs`
-- `TArenaUnity3D/Assets/Scripts/RunMetagame/023_RewardMap/Editor/PRD19_023_RewardMapPrefabBuilder.cs`
+- Historical PRD019 Reward Map prefab builder removed; do not recreate without current path-specific user permission.
 - `TArenaUnity3D/Assets/Scripts/Tests/EditMode/RewardMapServiceTests.cs`
 
 ## Notes

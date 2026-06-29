@@ -205,10 +205,10 @@ Done when:
   three first-scope route paths, node states, possible reward hints, uncertain
   expected-risk hints, stage progress, RUN GOLD display data, travel
   validation, and final/boss gating. No Inspector fields changed.
-- `PRD19_021_RunMapMockupController` and
-  `PRD19_021_RunMapMockupBuilder`: added 021-specific Unity Editor-side
-  prototype generation for the Run Map prefab under
-  `Assets/Resources/UI/PRD_19/021_RunMap/` after Unity imports scripts.
+- `PRD19_021_RunMapMockupController`: added 021-specific prototype behavior
+  for the Run Map prefab. Historical Unity Editor-side prefab generation for
+  `Assets/Resources/UI/PRD_19/021_RunMap/` has been removed and must not be
+  recreated without current path-specific user permission.
 - Removed fields: none. Existing public/serialized Unity fields were not
   renamed.
 
@@ -227,8 +227,8 @@ Done when:
 #### Unity Setup
 
 - Let Unity import scripts under `Assets/Scripts/RunMetagame/021_RunMap/`.
-- Unity should run the 021 mockup builder automatically once after compile, or
-  use `TArena > Mockups > Rebuild PRD 19 021 Run Map Prefab`.
+- Do not run or recreate PRD019 mockup builders. Inspect existing prefabs only
+  unless the current task grants path-specific permission.
 - Open `Assets/Resources/UI/PRD_19/021_RunMap/PRD_19_021_RunMap.prefab`.
 
 #### Play Mode Test
@@ -263,8 +263,8 @@ Done when:
 
 ## Prototype UI Fix - 2026-06-15
 
-- Replaced the shared-looking PRD19 mockup builder with a 021-specific
-  `PRD19_021_RunMapMockupBuilder`.
+- Historical PRD019 mockup builders were removed and must not be recreated
+  without current path-specific user permission.
 - Added `PRD19_021_RunMapMockupController` as the task-specific UI owner.
   It creates sample run data through `OfflineRunMapAdapter`, renders
   `RunMapScreenViewData`, focuses route nodes, and sends Travel through
@@ -272,9 +272,8 @@ Done when:
 - Back now opens a route-choice summary state, View Army opens an army summary
   state, route nodes focus real node view data, and Travel is enabled only for
   currently travelable nodes.
-- Removed stale generated prefab output from the old shared builder. Unity must
-  import scripts and run `TArena > Mockups > Rebuild PRD 19 021 Run Map Prefab`
-  to regenerate `Assets/Resources/UI/PRD_19/021_RunMap/PRD_19_021_RunMap.prefab`
-  and nested route node, route edge, army row, and command button prefabs.
+- Removed stale generated prefab output from the old shared builder. Do not
+  regenerate `Assets/Resources/UI/PRD_19/021_RunMap/PRD_19_021_RunMap.prefab`
+  or nested prefabs unless the current task grants path-specific permission.
 - Remaining unresolved production gap: durable database/backend persistence for
   route state; current prototype uses `InMemoryRunMapStore`.

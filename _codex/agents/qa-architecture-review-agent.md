@@ -30,6 +30,7 @@ being done, mark it for follow-up and prefer TMP types such as `TMP_Text` and
 
 - `AGENTS.md`
 - `_codex/agents/qa-architecture-review-agent.md`
+- `_codex/agents/runbooks/context-economy-spark.md`
 - selected protocol in `_codex/tasks/QA/`
 - files named in the protocol
 - nearby related systems only when needed to check ownership or duplication

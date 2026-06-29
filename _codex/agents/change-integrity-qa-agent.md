@@ -14,6 +14,7 @@ When a reviewed change touches UI text, enforce TextMesh Pro only. Flag legacy
 
 - `AGENTS.md`
 - `_codex/agents/change-integrity-qa-agent.md`
+- `_codex/agents/runbooks/context-economy-spark.md`
 - selected task/protocol/change summary, when provided
 - files named by the change
 - nearby context/codebase maps only when needed to check ownership or drift

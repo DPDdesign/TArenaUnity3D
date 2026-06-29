@@ -71,6 +71,9 @@ copied into `_codex/Gen_Im/` before final reporting.
 ## Hard Project Rules
 
 - Work in small, safe, testable steps.
+- Work in quiet context-economy mode. Use
+  `_codex/agents/runbooks/context-economy-spark.md` for bounded task contracts,
+  source routing, Spark subagent delegation, and concise evidence reporting.
 - When Python tooling is needed on Windows, use `py -3` instead of `python`.
   Do not rely on the Microsoft Store `python.exe` alias.
 - Use TextMesh Pro only for project text UI and code references. When touching
@@ -107,6 +110,8 @@ Load only the runbooks relevant to the current task:
 - Unity/C# coding: `_codex/agents/runbooks/unity-coding.md`
 - testing or final response after code changes: `_codex/agents/runbooks/testing.md`
 - local task tracker, QA protocol, `/implement`, `/fix`, `/close`: `_codex/agents/runbooks/task-tracker.md`
+- context economy, quiet mode, Spark subagent reconnaissance:
+  `_codex/agents/runbooks/context-economy-spark.md`
 - Git-related request: `_codex/agents/runbooks/git-policy.md`
 - agent/documentation/RAG/source routing hygiene:
   `_codex/agents/runbooks/instruction-hygiene.md`

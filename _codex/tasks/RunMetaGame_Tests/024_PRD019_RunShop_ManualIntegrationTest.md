@@ -61,8 +61,7 @@ Tests:
 
 Editor rebuild tool:
 
-- `Assets/Scripts/RunMetagame/024_RunShop/Editor/PRD19_024_RunShopPrefabBuilder.cs`
-- Unity menu: `TArena > Mockups > Rebuild PRD 19 024 Run Shop Prefabs`
+- Historical PRD019 Run Shop prefab builders have been removed. Do not recreate or run rebuild tooling for `Assets/Resources/UI/PRD_19/024_RunShop/` without current path-specific user permission.
 
 ## Required Prefab Wiring
 
@@ -102,11 +101,9 @@ Each army row subprefab instance must have:
 - name, tier, amount, value, and skills TMP fields.
 
 If a prefab opens with empty GameObjects, missing scripts, missing text fields,
-or unpacked row/card objects, run:
-
-`TArena > Mockups > Rebuild PRD 19 024 Run Shop Prefabs`
-
-Then reopen `PRD_19_024_RunShop.prefab` and repeat this section.
+or unpacked row/card objects, stop and report the prefab regression. Do not
+rebuild PRD019 prefabs unless the current task explicitly grants path-specific
+permission.
 
 ## Required Test Scene Setup
 

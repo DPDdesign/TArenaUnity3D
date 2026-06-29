@@ -224,9 +224,9 @@ Done when:
   mode, locked-slot rejection, and overwrite confirmation. No Inspector fields
   changed.
 - `SummaryValueScreenController`, timeline/stack/slot/command button view
-  components, and `PRD19_025_SummaryValuePrefabBuilder`: added a
-  task-specific Unity UGUI prototype for Summary Value under
-  `Assets/Resources/UI/PRD_19/025_SummaryValue/` after Unity imports scripts.
+  components: added the Summary Value UI runtime/view code. Historical PRD019
+  prefab builders for this screen have been removed and must not be regenerated
+  without current path-specific permission.
   The controller renders `SummaryValueScreenViewData` through
   `OfflineSummaryValueAdapter` and sends Save/Overwrite through
   `SummaryValueService`.
@@ -250,10 +250,9 @@ Done when:
 #### Unity Setup
 
 - Let Unity import scripts under `Assets/Scripts/RunMetagame/025_SummaryValue/`.
-- Unity should run the 025 mockup builder automatically once after compile, or
-  use `TArena > Mockups > Rebuild PRD 19 025 Summary Value Prefabs`.
-- Open
-  `Assets/Resources/UI/PRD_19/025_SummaryValue/PRD_19_025_SummaryValue.prefab`.
+- Do not run or recreate historical PRD019 prefab builders. Existing
+  `Assets/Resources/UI/PRD_19/025_SummaryValue/` prefabs are read-only unless
+  the current task gives path-specific permission.
 
 #### Play Mode Test
 
@@ -294,17 +293,12 @@ Done when:
 - Overwrite is confirmation-like: first click on a taken slot returns the
   service `MissingConfirmation` result and changes the primary label to
   `Confirm Overwrite`; second click calls the same save path with confirmation.
-- `PRD19_025_SummaryValuePrefabBuilder` is now the task-specific Unity Editor
-  builder for the 025 prefab. It generates nested prefabs for timeline entries,
-  saved army stack rows, save slots, and command buttons under
-  `Assets/Resources/UI/PRD_19/025_SummaryValue/Prefabs/`.
-- The checked-in prefab YAML can remain stale until Unity imports the new 025
-  scripts and generates `.meta` GUIDs. Do not hand-author script GUIDs; let
-  Unity import, then run `TArena > Mockups > Rebuild PRD 19 025 Summary Value
-  Prefabs`.
+- Historical PRD019 prefab-builder output is deprecated. Do not recreate
+  builders or regenerate prefabs under
+  `Assets/Resources/UI/PRD_19/025_SummaryValue/`.
 
 ### Next Steps
 
 - Run `SummaryValueServiceTests` in Unity Test Runner EditMode.
-- Let Unity generate/open the Summary Value mockup prefab and inspect its
-  hierarchy.
+- Inspect the existing Summary Value prefab manually if needed; do not
+  regenerate PRD019 prefab assets.

@@ -44,17 +44,11 @@ still requires Unity import and Unity Test Runner execution inside the Editor.
 - 027 army cards focus attacker/defender details; Continue checks stored result
   flow; View Armies opens the saved-armies roster preview.
 
-## Builder Split
+## Builder Status
 
-The old shared-looking PRD19 mockup builder has been replaced with
-task-specific builders:
-
-- `PRD19_021_RunMapMockupBuilder`
-- `PRD19_023_RewardMapPrefabBuilder`
-- `PRD19_025_SummaryValuePrefabBuilder`
-- `PRD19_027_BattleResultPrefabBuilder`
-
-Each builder owns its own nested prefab templates and menu command.
+Historical PRD019 mockup builders have been removed. Do not recreate builder
+scripts, menu commands, or prefab-generation output without current
+path-specific user permission.
 
 ## Local Validation
 

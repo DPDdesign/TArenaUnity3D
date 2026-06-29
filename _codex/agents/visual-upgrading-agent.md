@@ -11,6 +11,7 @@ in visual upgrade work. Do not introduce or recommend legacy
 ## Sources
 
 - `AGENTS.md`
+- `_codex/agents/runbooks/context-economy-spark.md`
 - `_codex/Context/CONTEXT-MAP.md`
 - `_codex/Context/maps/ui-map.md` for UI visual work
 - `_codex/Context/maps/combat-presentation-map.md` for combat presentation

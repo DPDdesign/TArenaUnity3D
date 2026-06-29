@@ -371,9 +371,10 @@ Status: implemented, Unity manual verification pending.
 - Added the Saved Armies screen controller and UGUI view scripts for slots,
   selected-army detail, stack preview, Arena import options, attack history,
   `Import from Arena`, `Set Defence`, and `Back`.
-- Added an Editor prefab builder menu command:
-  `TArena/Mockups/Rebuild PRD 19 026 Saved Armies Prefabs`.
-- The generated prefab layout is intentionally specific to Saved Armies:
+- Historical PRD019 prefab builder output for Saved Armies is deprecated. Do
+  not recreate the builder or regenerate prefabs under
+  `Assets/Resources/UI/PRD_19/026_SavedArmies/`.
+- The existing prefab layout is intentionally specific to Saved Armies:
   8-slot roster grid, parchment-style selected-army snapshot, defence state,
   import panel, and attack-history panel.
 - The screen intentionally excludes rank/progression, opponent selection, and a
@@ -398,7 +399,7 @@ Local static validation performed:
 - no duplicate C# type declarations found in the 026 implementation scope.
 - brace-balance scan passed for the 026 implementation and tests.
 - no orphan `.meta` files found in the 026 implementation folder.
-- prefab builder serialized-field references were checked against the current
+- existing prefab serialized-field references were checked against the current
   026 view/controller classes.
 
 ### Unity Test
@@ -409,12 +410,11 @@ EditMode test execution are left for manual verification in the Unity Editor.
 Manual setup:
 
 1. Open Unity and let scripts import.
-2. Run `TArena/Mockups/Rebuild PRD 19 026 Saved Armies Prefabs`.
-3. Open or instantiate
-   `Assets/Resources/UI/PRD_19/026_SavedArmies/PRD_19_026_SavedArmies.prefab`.
-4. Verify slot selection, Arena import, overwrite confirmation, `Set Defence`,
+2. Inspect the existing Saved Armies prefab manually if needed. Do not run or
+   recreate historical PRD019 prefab builders.
+3. Verify slot selection, Arena import, overwrite confirmation, `Set Defence`,
    attack-history refresh, and `Back` status behavior.
-5. Run `SavedArmiesServiceTests` in EditMode.
+4. Run `SavedArmiesServiceTests` in EditMode.
 
 ### QA Verdict
 

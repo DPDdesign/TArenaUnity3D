@@ -16,7 +16,7 @@
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/027_BattleResult/BattleResultRankDeltaPanelView.cs`
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/027_BattleResult/BattleResultXpProgressPanelView.cs`
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/027_BattleResult/BattleResultCommandButtonView.cs`
-- `TArenaUnity3D/Assets/Scripts/RunMetagame/027_BattleResult/Editor/PRD19_027_BattleResultPrefabBuilder.cs`
+- Historical PRD019 Battle Result prefab builder removed; do not recreate without current path-specific user permission.
 - `TArenaUnity3D/Assets/Scripts/Tests/EditMode/BattleResultServiceTests.cs`
 
 ## Notes

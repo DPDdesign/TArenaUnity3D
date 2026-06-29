@@ -189,9 +189,9 @@ Done when:
 - `RunShopOfferCardView` and `RunShopStackRowView`: added serialized references
   for offer cards, stack rows, state overlays, text, icon, and button binding.
   These should point to local child UI objects; missing references skip visuals.
-- UI mockup assets now live under
-  `Assets/Resources/UI/PRD_19/024_RunShop/`: main prefab
-  `PRD_19_024_RunShop.prefab` and template prefabs under `Prefabs/`.
+- Historical UI mockup assets exist under
+  `Assets/Resources/UI/PRD_19/024_RunShop/`, but that folder is now read-only
+  unless the current task gives path-specific permission.
 - Historical HTML mockup references are no longer the accepted PRD019 task
   structure.
 - Removed fields: none. Existing public/serialized Unity fields were not
@@ -214,15 +214,8 @@ Done when:
 
 - Let Unity import the new scripts in
   `Assets/Scripts/RunMetagame/024_RunShop/`.
-- Open
-  `Assets/Resources/UI/PRD_19/024_RunShop/PRD_19_024_RunShop.prefab`.
-- Add `RunShopScreenController` to `Script_RunShopScreenController`.
-- Add `RunShopOfferCardView` to offer card objects based on
-  `Resources/UI/PRD_19/024_RunShop/Prefabs/PRD19_024_OfferCard.prefab`.
-- Add `RunShopStackRowView` to stack row objects based on
-  `Resources/UI/PRD_19/024_RunShop/Prefabs/PRD19_024_ArmyPreview_StackRow.prefab`.
-- Wire `Text`, `Image`, `Button`, state GameObjects, offer card array, current
-  army row array, preview row array, Buy button, and Leave button in Inspector.
+- Inspect the existing Run Shop prefab manually if needed. Do not regenerate or
+  rewrite PRD019 prefab assets without current path-specific permission.
 
 #### Play Mode Test
 

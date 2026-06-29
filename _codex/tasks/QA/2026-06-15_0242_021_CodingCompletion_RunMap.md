@@ -13,13 +13,13 @@
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/021_RunMap/RunMapService.cs`
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/021_RunMap/OfflineRunMapAdapter.cs`
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/021_RunMap/PRD19_021_RunMapMockupController.cs`
-- `TArenaUnity3D/Assets/Scripts/RunMetagame/021_RunMap/Editor/PRD19_021_RunMapMockupBuilder.cs`
+- Historical PRD019 Run Map prefab builder removed; do not recreate without current path-specific user permission.
 - `TArenaUnity3D/Assets/Scripts/Tests/EditMode/RunMapServiceTests.cs`
 
 ## Notes
 
 - Offline Mode owns local route state.
 - Route data is authored/local V1 data, not PlayerPrefs authority.
-- UI prototype generation is Unity Editor-side through the 021-specific builder.
+- Historical Unity Editor-side PRD019 prototype generation is deprecated and removed.
 - Route node, Travel, Back, and View Army actions are wired to the controller
   and adapter/service path.

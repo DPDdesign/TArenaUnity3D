@@ -11,6 +11,7 @@ work. Do not introduce or recommend legacy `UnityEngine.UI.Text`.
 ## Sources
 
 - `AGENTS.md`
+- `_codex/agents/runbooks/context-economy-spark.md`
 - `_codex/Context/CONTEXT-MAP.md`
 - `_codex/Context/maps/design-gameplay-map.md`
 - `_codex/Context/maps/skill-api-map.md` when skills or targeting are involved

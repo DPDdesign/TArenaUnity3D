@@ -10,6 +10,14 @@ mockup/prototype prefab for a task. The output should be a Unity-shaped mockup:
 coherent enough for review, structured enough to become production UI, and
 wired enough that the owning scripts can be inspected in the prefab.
 
+## PRD019 Output Lock
+
+Do not create, edit, move, delete, or regenerate existing PRD019 UI prefabs
+under `TArenaUnity3D/Assets/Resources/UI/PRD_19/`. Those assets are legacy
+authored outputs and are read-only unless the current user request gives
+path-specific permission. Do not add Editor builders or auto-generation hooks
+for that folder.
+
 This skill produces Unity UGUI prefabs only. Do not create or update HTML,
 JavaScript, browser pages, or legacy `_codex/Gen_Im/RETSOT ONLINE/` output as a
 substitute for the mockup. If Unity prefab authoring is blocked, report the
@@ -67,10 +75,11 @@ If editing or checking prefab YAML outside Unity, also use
 7. Create C# scripts under
    `TArenaUnity3D/Assets/Scripts/RunMetagame/<TaskNumber_FeatureName>/`, for
    example `TArenaUnity3D/Assets/Scripts/RunMetagame/024_RunShop/`.
-8. Store final task/PRD UI prefabs under
-   `TArenaUnity3D/Assets/Resources/UI/PRD_19/<TaskNumber_FeatureName>/`.
-9. Store reusable generated section/repeated-item prefabs under
-   `TArenaUnity3D/Assets/Resources/UI/PRD_19/<TaskNumber_FeatureName>/Prefabs/`.
+8. Do not use `TArenaUnity3D/Assets/Resources/UI/PRD_19/` as an output folder
+   for new or regenerated mockups unless the current user request gives
+   path-specific permission.
+9. If a task appears to require PRD019 prefab edits, stop and report the manual
+   Unity setup needed instead of generating or rewriting those prefabs.
 10. Build repeated UI as prefabs, nested prefabs, prefab variants, or clearly
    named prefab templates.
 11. In the final screen prefab, instantiate existing row/card/button/section
@@ -210,10 +219,12 @@ the user or report the missing PRD number before creating final prefabs.
 - If a row, card, button, route node, or section prefab already exists and works,
   the parent screen prefab must contain nested prefab instances of it. Copying
   or hand-rebuilding its children into the parent is a defect.
-- Store final task/PRD prefabs under
-  `Assets/Resources/UI/PRD_19/<TaskNumber_FeatureName>/`.
-- Store generated reusable/section prefabs under the same task folder, usually
-  in `Assets/Resources/UI/PRD_19/<TaskNumber_FeatureName>/Prefabs/`.
+- Do not store final task/PRD prefabs under
+  `Assets/Resources/UI/PRD_19/<TaskNumber_FeatureName>/` unless the current
+  user request explicitly grants that exact output path.
+- Do not store generated reusable/section prefabs under
+  `Assets/Resources/UI/PRD_19/<TaskNumber_FeatureName>/Prefabs/` unless the
+  current user request explicitly grants that exact output path.
 - Use nested prefabs when the same child prefab should remain linked across
   screens.
 - Use prefab variants when a repeated element has the same base structure with

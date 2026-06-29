@@ -26,6 +26,7 @@ Start with only the sources needed for the current question:
 
 - `AGENTS.md`
 - `_codex/agents/project-director-agent.md`
+- `_codex/agents/runbooks/context-economy-spark.md`
 - `_codex/Context/CONTEXT-MAP.md`
 - the single domain map under `_codex/Context/maps/` that matches the current
   question

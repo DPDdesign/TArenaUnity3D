@@ -27,6 +27,7 @@ there is any chance of CS0104 ambiguity between `UnityEngine.Object` and
 
 - `AGENTS.md`
 - `_codex/agents/coding-agent.md`
+- `_codex/agents/runbooks/context-economy-spark.md`
 - `_codex/agents/runbooks/unity-coding.md`
 - `_codex/agents/runbooks/testing.md`
 - `_codex/agents/docs/codebase-map.md`

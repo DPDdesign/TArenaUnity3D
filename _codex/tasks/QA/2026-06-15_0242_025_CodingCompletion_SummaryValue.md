@@ -16,7 +16,7 @@
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/025_SummaryValue/SummaryValueStackRowView.cs`
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/025_SummaryValue/SummaryValueSaveSlotView.cs`
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/025_SummaryValue/SummaryValueCommandButtonView.cs`
-- `TArenaUnity3D/Assets/Scripts/RunMetagame/025_SummaryValue/Editor/PRD19_025_SummaryValuePrefabBuilder.cs`
+- Historical PRD019 Summary Value prefab builder removed; do not recreate without current path-specific user permission.
 - `TArenaUnity3D/Assets/Scripts/Tests/EditMode/SummaryValueServiceTests.cs`
 
 ## Notes

@@ -14,7 +14,7 @@ No follow-up code changes required before test-writing.
 
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/021_RunMap/RunMapNodeRepresentation.cs`
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/021_RunMap/RunMapController.cs`
-- `TArenaUnity3D/Assets/Scripts/RunMetagame/021_RunMap/Editor/PRD19_021_RunMapBuilder.cs`
+- Historical PRD019 Run Map prefab builder removed; do not recreate without current path-specific user permission.
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/023_RewardMap/RewardMapRewardCardView.cs`
 - `TArenaUnity3D/Assets/Scripts/RunMetagame/021_RunMap/RunMapService.cs`
 
@@ -25,8 +25,7 @@ None.
 ## Non-Blocking Observations
 
 - `RunMapController` and `RunMapNodeRepresentation` both format node type/state labels. This duplication is small and local to UI display text, so it is acceptable for this PRD038 cleanup. Centralizing it can wait until more route-node presentation surfaces exist.
-- `PRD19_021_RunMapBuilder` still has some now-unused private helper methods from the previous serialized nested-field wiring. They do not affect runtime behavior or prefab output.
-- Existing prefab assets are not modified by this pass. Manual Unity setup or running the existing builder menu item is required before the scene/prefab uses the new `routeNodeRepresentations` array.
+- Historical PRD019 prefab builder helper methods and menu rebuild flow have been removed. Existing prefab assets remain read-only by default; manual setup requires current path-specific user permission.
 
 ## Architecture Checks
 

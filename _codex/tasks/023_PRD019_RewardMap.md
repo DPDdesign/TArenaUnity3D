@@ -217,9 +217,9 @@ Done when:
   after reward preview, and RUN GOLD result payloads. No Inspector fields
   changed.
 - `RewardMapScreenController`, reward-card/army-preview/result/command button
-  view components, and `PRD19_023_RewardMapPrefabBuilder`: added a
-  task-specific Unity UGUI prototype for Reward Map under
-  `Assets/Resources/UI/PRD_19/023_RewardMap/` after Unity imports scripts.
+  view components: added the Reward Map UI runtime/view code. Historical
+  PRD019 prefab builders for this screen have been removed and must not be
+  regenerated without current path-specific permission.
   The controller renders `RewardMapChoiceViewData` through
   `OfflineRewardMapAdapter` and applies rewards through `RewardMapService`.
 - Removed fields: none. Existing public/serialized Unity fields were not
@@ -241,9 +241,9 @@ Done when:
 #### Unity Setup
 
 - Let Unity import scripts under `Assets/Scripts/RunMetagame/023_RewardMap/`.
-- Unity should run the 023 mockup builder automatically once after compile, or
-  use `TArena > Mockups > Rebuild PRD 19 023 Reward Map Prefabs`.
-- Open `Assets/Resources/UI/PRD_19/023_RewardMap/PRD_19_023_RewardMap.prefab`.
+- Do not run or recreate historical PRD019 prefab builders. Existing
+  `Assets/Resources/UI/PRD_19/023_RewardMap/` prefabs are read-only unless the
+  current task gives path-specific permission.
 
 #### Play Mode Test
 
@@ -274,7 +274,8 @@ Done when:
 ### Next Steps
 
 - Run `RewardMapServiceTests` in Unity Test Runner EditMode.
-- Let Unity generate/open the Reward Map mockup prefab and inspect its hierarchy.
+- Inspect the existing Reward Map prefab manually if needed; do not regenerate
+  PRD019 prefab assets.
 
 ## Prototype Audit - 2026-06-15
 
@@ -285,11 +286,6 @@ Done when:
 - Reward card buttons focus real card view data, Select commits the focused
   reward and locks the choice, and Continue is blocked until a reward has been
   selected.
-- `PRD19_023_RewardMapPrefabBuilder` is now the task-specific Unity Editor
-  builder for the 023 prefab. It generates nested reward card, army preview
-  unit, result/gained panel, and command button prefabs under
-  `Assets/Resources/UI/PRD_19/023_RewardMap/Prefabs/`.
-- The checked-in prefab YAML can remain stale until Unity imports the new 023
-  scripts and generates `.meta` GUIDs. Do not hand-author script GUIDs; let
-  Unity import, then run `TArena > Mockups > Rebuild PRD 19 023 Reward Map
-  Prefabs`.
+- Historical PRD019 prefab-builder output is deprecated. Do not recreate
+  builders or regenerate prefabs under
+  `Assets/Resources/UI/PRD_19/023_RewardMap/`.

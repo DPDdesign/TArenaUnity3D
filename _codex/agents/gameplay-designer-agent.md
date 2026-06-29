@@ -12,6 +12,7 @@ TMP types such as `TMP_Text` and `TextMeshProUGUI`, never legacy
 ## Sources
 
 - `AGENTS.md`
+- `_codex/agents/runbooks/context-economy-spark.md`
 - `_codex/Context/CONTEXT-MAP.md`
 - `_codex/Context/maps/design-gameplay-map.md`
 - `_codex/Context/maps/run-metagame-map.md` only for explicit run-metagame

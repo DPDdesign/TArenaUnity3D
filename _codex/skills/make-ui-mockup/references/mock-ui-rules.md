@@ -349,19 +349,12 @@ Use these folders for generated UI work:
 
 - C# scripts:
   `TArenaUnity3D/Assets/Scripts/RunMetagame/<TaskNumber_FeatureName>/`
-- Final PRD/task UI prefabs:
-  `TArenaUnity3D/Assets/Resources/UI/PRD_19/<TaskNumber_FeatureName>/`
-- Reusable generated section and repeated-item prefabs:
-  `TArenaUnity3D/Assets/Resources/UI/PRD_19/<TaskNumber_FeatureName>/Prefabs/`
 
-Example:
-
-```text
-PRD RunMetagame / task Shop
-- scripts: Assets/Scripts/RunMetagame/024_RunShop/
-- final prefabs: Assets/Resources/UI/PRD_19/024_RunShop/
-- section/item prefabs: Assets/Resources/UI/PRD_19/024_RunShop/Prefabs/
-```
+Do not create, edit, move, delete, or regenerate generated UI prefabs under
+`TArenaUnity3D/Assets/Resources/UI/PRD_19/` unless the current user request
+grants path-specific permission. If a task appears to need that folder, report
+the manual Unity setup needed instead of producing prefab YAML or Editor
+builders.
 
 ## Problems Already Hit And Fixes
 
