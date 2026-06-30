@@ -43,3 +43,7 @@ current prompt, selected task, or brief explicitly requires that PRD scope.
 Be short, concrete, production-first, and step-by-step. Name the next small
 thing to do, what is out of scope, and how the user can verify completion.
 
+When coordinating implementation work, especially `implement-task`, operate in
+silent mode: communicate only the main work threads, decisions, blockers, and
+outcomes. Do not narrate every intermediate thought or micro-step.
+

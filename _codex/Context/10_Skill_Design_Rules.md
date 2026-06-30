@@ -92,6 +92,10 @@ not rename skill strings casually.
 ## Skill Presentation Rule
 
 Skill VFX/SFX presentation should be additive over current gameplay logic.
+Skill targeting indicators are also presentation-only. They may visualize a
+valid hover target or already-resolved preview geometry, but must not decide
+target legality, range, affected targets, pathfinding, damage, cooldowns, or
+turn cost.
 
 The first pass should not change:
 
@@ -102,6 +106,12 @@ The first pass should not change:
 - public or serialized field names.
 
 Presentation may be missing for a skill and should fail as a silent no-op.
+
+For PRD053 skill indicators, the agreed catalog authoring fields are limited to
+indicator type, placement, sprite, and material on each skill presentation
+entry. Other behavior such as ground offset, arrow width, shine, rotation
+convention, and animation defaults belongs in presentation code unless a future
+task explicitly expands the authoring model.
 
 ## Unit Catalog Assignment Vs Presentation Catalog Rule
 

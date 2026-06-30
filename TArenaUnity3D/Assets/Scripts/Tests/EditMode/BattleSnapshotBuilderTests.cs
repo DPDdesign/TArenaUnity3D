@@ -227,6 +227,7 @@ public class BattleSnapshotBuilderTests
         return new BattleUnitSnapshot
         {
             RuntimeUnitId = runtimeUnitId,
+            CatalogUnitId = "Rusher",
             TeamIndex = teamIndex,
             RosterIndexWithinTeam = rosterIndex,
             UnitName = "Rusher",

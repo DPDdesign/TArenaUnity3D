@@ -196,6 +196,7 @@ public class TacticalAIAsyncDecisionPipelineTests
         BattleUnitSnapshot actor = new BattleUnitSnapshot
         {
             RuntimeUnitId = "team-0-slot-0",
+            CatalogUnitId = "Actor",
             TeamIndex = 0,
             RosterIndexWithinTeam = 0,
             UnitName = "Actor",
@@ -222,6 +223,7 @@ public class TacticalAIAsyncDecisionPipelineTests
         BattleUnitSnapshot enemy = new BattleUnitSnapshot
         {
             RuntimeUnitId = "team-1-slot-0",
+            CatalogUnitId = "Enemy",
             TeamIndex = 1,
             RosterIndexWithinTeam = 0,
             UnitName = "Enemy",

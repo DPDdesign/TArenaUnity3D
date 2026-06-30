@@ -680,6 +680,7 @@ public class SkillRulesTests
         return new BattleUnitSnapshot
         {
             RuntimeUnitId = id,
+            CatalogUnitId = "TestUnit",
             TeamIndex = team,
             RosterIndexWithinTeam = slot,
             UnitName = "TestUnit",

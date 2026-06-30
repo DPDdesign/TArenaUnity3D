@@ -166,6 +166,7 @@ public class TacticalAIProfileTests
                 new BattleUnitSnapshot
                 {
                     RuntimeUnitId = "team-0-slot-0",
+                    CatalogUnitId = "Rusher",
                     TeamIndex = 0,
                     RosterIndexWithinTeam = 0,
                     UnitName = "Rusher",

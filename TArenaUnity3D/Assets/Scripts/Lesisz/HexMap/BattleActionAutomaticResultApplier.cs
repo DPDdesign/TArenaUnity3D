@@ -1,5 +1,5 @@
-using System;
 using TimeSpells;
+using UnityEngine;
 
 public static class BattleActionAutomaticResultApplier
 {
@@ -49,6 +49,12 @@ public static class BattleActionAutomaticResultApplier
         {
             if (target != owner)
             {
+                int damage;
+                if (TryResolveTrapDamage(owner, target, trapId, out damage) == false)
+                {
+                    return result;
+                }
+
                 result.Add(new BattleActionResultEvent
                 {
                     EventType = BattleActionResultEventType.StatusApplied,
@@ -57,12 +63,18 @@ public static class BattleActionAutomaticResultApplier
                     Hex = new HexCoord(hex.C, hex.R),
                     StatusId = "Fire_Trap",
                     Duration = 5,
-                    DamageOverTime = Convert.ToInt32(target.CalculateDamageBetweenTosters(owner, target, 1)) / 5
+                    DamageOverTime = damage / 5
                 });
             }
         }
         else if (trapId == "Spike_Trap")
         {
+            int damage;
+            if (TryResolveTrapDamage(owner, target, trapId, out damage) == false)
+            {
+                return result;
+            }
+
             result.Add(new BattleActionResultEvent
             {
                 EventType = BattleActionResultEventType.StatusApplied,
@@ -72,7 +84,7 @@ public static class BattleActionAutomaticResultApplier
                 StatusId = "Spike_Trap",
                 Duration = 2,
                 MovementModifier = -2,
-                DamageOverTime = Convert.ToInt32(target.CalculateDamageBetweenTosters(owner, target, 1)),
+                DamageOverTime = damage,
                 RemoveTrap = true,
                 TrimPathSteps = 2
             });
@@ -403,5 +415,23 @@ public static class BattleActionAutomaticResultApplier
     static string UnitLabel(TosterHexUnit unit)
     {
         return unit != null ? unit.Name ?? string.Empty : string.Empty;
+    }
+
+    static bool TryResolveTrapDamage(TosterHexUnit owner, TosterHexUnit target, string trapId, out int damage)
+    {
+        string error;
+        if (LiveCombatDamageResolver.TryCalculateCommittedDamage(
+            owner,
+            target,
+            "trap:" + (trapId ?? string.Empty),
+            1.0,
+            out damage,
+            out error))
+        {
+            return true;
+        }
+
+        Debug.LogError("[CombatDamage] trap damage failed for " + (trapId ?? "<null>") + ": " + error);
+        return false;
     }
 }

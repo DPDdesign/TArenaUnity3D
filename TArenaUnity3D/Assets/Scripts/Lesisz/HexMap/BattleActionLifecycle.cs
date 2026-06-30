@@ -24,6 +24,8 @@ public class BattleActionLifecycle : MonoBehaviour
     TosterHexUnit activeActor;
     BattleActionLifecycleKind activeKind;
     string activeLabel;
+    int gameSeed;
+    int nextActionIndex;
 
     public bool IsBusy
     {
@@ -38,6 +40,20 @@ public class BattleActionLifecycle : MonoBehaviour
     public string ActiveKindName
     {
         get { return isBusy ? activeKind.ToString() : string.Empty; }
+    }
+
+    public int GameSeed
+    {
+        get
+        {
+            EnsureCombatSeed();
+            return gameSeed;
+        }
+    }
+
+    public int NextActionIndex
+    {
+        get { return Math.Max(0, nextActionIndex); }
     }
 
     public static bool IsActionBlocking
@@ -83,6 +99,7 @@ public class BattleActionLifecycle : MonoBehaviour
         }
 
         Instance = this;
+        EnsureCombatSeed();
     }
 
     void OnDestroy()
@@ -119,6 +136,20 @@ public class BattleActionLifecycle : MonoBehaviour
 
         StartCoroutine(RunAction(actor, kind, label, commit, actionBody, complete, actionBodyTimeoutSeconds, presentationTimeoutSeconds));
         return true;
+    }
+
+    public void MarkActionCommitted(int actionIndex)
+    {
+        EnsureCombatSeed();
+        nextActionIndex = Math.Max(nextActionIndex, Math.Max(0, actionIndex) + 1);
+    }
+
+    void EnsureCombatSeed()
+    {
+        if (gameSeed == 0)
+        {
+            gameSeed = UnityEngine.Random.Range(1, int.MaxValue);
+        }
     }
 
     IEnumerator RunAction(

@@ -74,6 +74,10 @@ copied into `_codex/Gen_Im/` before final reporting.
 - Work in quiet context-economy mode. Use
   `_codex/agents/runbooks/context-economy-spark.md` for bounded task contracts,
   source routing, Spark subagent delegation, and concise evidence reporting.
+- During implementation workflows, especially `implement-task`, agents should
+  operate in silent mode: report only the main work threads, decisions,
+  blockers, and outcomes. Do not narrate every micro-step or detailed internal
+  reasoning.
 - When Python tooling is needed on Windows, use `py -3` instead of `python`.
   Do not rely on the Microsoft Store `python.exe` alias.
 - Use TextMesh Pro only for project text UI and code references. When touching

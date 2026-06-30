@@ -5,7 +5,6 @@ using HPath;
 using System.Xml.Serialization;
 using UnityEngine.UI;
 using System;
-using Random = UnityEngine.Random;
 using TimeSpells;
 
 public class TosterHexUnit : IQPathUnit
@@ -495,11 +494,6 @@ public class TosterHexUnit : IQPathUnit
         this.Team.HexesUnderTeam.Add(Hex);
     }
 
-    internal double CalculateDamageBetweenTostersWithQ(TosterHexUnit toster, TosterHexUnit ai, int v1, int v2)
-    {
-        throw new NotImplementedException();
-    }
-
     public void FindTosterPath()
     {
         List<int[]> m = new List<int[]>();
@@ -747,149 +741,6 @@ public class TosterHexUnit : IQPathUnit
         else { TempHP = GetHP(); }
     }
 
-    public double CalculateDamageBetweenTosters(TosterHexUnit attacker, TosterHexUnit defender, double modifier)
-    {
-
-        bool isReduced = false;
-
-        int ai = attacker.GetAtt();
-        int di = defender.GetDef();
-        double M = 0;
-   
-        double a = Convert.ToDouble(ai);
-        double d = Convert.ToDouble(di);
-        d = d * (1.0 - attacker.DefensePenetration);
-        double ADD = a - d;
-
-        if (ADD == 0) M = 1;
-        else if (ADD > 0) M = 0.04;
-        else if(ADD<0) M = 0.014;
-        
- 
-        double R5 = isReduced ? 0.5 : 0;
-
-        double DMGb = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount * (1+(ADD*M)) * (((100.0 - attacker.SpecialDMGModificator) / 100.0)); ;
-      
-
-
-        double DMGf = DMGb * (((100.0 - defender.SpecialResistance) / 100.0));
-        //  Debug.Log("Toster name: " + attacker.Name + " attacks for: " + Math.Ceiling(DMGf));
-        DMGf += attacker.SpecialPUREDMG;
-        attacker.SpecialPUREDMG = 0;
-        if (defender == attacker.HATED)
-        {
-            DMGf += DMGf / 2;
-        }
-
-        Debug.Log("Przed redukcją :  " + DMGf);
-        Debug.Log("defender.FlatDMGReduce:  " + defender.FlatDMGReduce);
-        Debug.Log("attacker.Amount  " + attacker.Amount);
-        double dmgft = DMGf;
-        dmgft -= defender.FlatDMGReduce * attacker.Amount;
-        if (dmgft < DMGf * 0.7f)
-        {
-            DMGf = DMGf * 0.7f;
-        }
-        else
-        {
-            DMGf = dmgft;
-        }
-
-        if (DMGf < 0)
-        {
-            DMGf = 0;
-        }
-        return Math.Ceiling(DMGf);
-
-    }
-    public double ReCalculateDamageBetweenTosters(TosterHexUnit attacker, TosterHexUnit defender, double modifier, int dmgtodo, bool isStackable)
-    {
-
-        bool isReduced = false;
-
-        int ai = attacker.GetAtt();
-        int di = defender.GetDef();
-        double M = 0;
-   
-        double a = Convert.ToDouble(ai);
-        double d = Convert.ToDouble(di);
-        Debug.Log(d);
-        d = d * (1.0-attacker.DefensePenetration);
-        Debug.Log(d);
-        double ADD = a - d;
-
-        if (ADD == 0) M = 1;
-        else if (ADD > 0) M = 0.04;
-        else if (ADD < 0) M = 0.014;
-
-
-        double R5 = isReduced ? 0.5 : 0;
-
-        double DMGb = dmgtodo * (isStackable ? attacker.Amount : 1)* (1 + (ADD * M)) * (((100.0 - attacker.SpecialDMGModificator) / 100.0)); ;
-
-
-
-        double DMGf = DMGb * (((100.0 - defender.SpecialResistance) / 100.0));
-        //  Debug.Log("Toster name: " + attacker.Name + " attacks for: " + Math.Ceiling(DMGf));
-        DMGf += attacker.SpecialPUREDMG;
-        attacker.SpecialPUREDMG = 0;
-        if (defender == attacker.HATED)
-        {
-            DMGf += DMGf / 2;
-        }
-
-        Debug.Log("Przed redukcją :  " + DMGf);
-        Debug.Log("defender.FlatDMGReduce:  " + defender.FlatDMGReduce);
-        Debug.Log("attacker.Amount  " + attacker.Amount);
-        double dmgft = DMGf;
-        dmgft -= defender.FlatDMGReduce * attacker.Amount;
-        if (dmgft < DMGf * 0.7f)
-        {
-            DMGf = DMGf * 0.7f;
-        }
-        else
-        {
-            DMGf = dmgft;
-        }
-        if (DMGf<0)
-        {
-            DMGf = 0;
-        }
-          Debug.Log(DMGf);
-        return Math.Ceiling(DMGf);
-
-    }
-    public double CalculateDamageBetweenTostersH3(TosterHexUnit attacker, TosterHexUnit defender, double modifier)
-    {
-
-        bool isReduced = false;
-
-        int ai = attacker.GetAtt();
-        int di = defender.GetDef();
-        double M = 0;
-
-        double a = Convert.ToDouble(ai);
-        double d = Convert.ToDouble(di);
-        double ADD = a - d;
-
-        if (ADD == 0) M = 1;
-        else if (ADD > 0) M = 0.05;
-        else if (ADD < 0) M = 0.025;
-
-
-        double R5 = isReduced ? 0.5 : 0;
-
-        double DMGb = Random.Range(attacker.GetMinDmg(), attacker.GetMaxDMG()) * attacker.Amount * (1 + (ADD * M)) * (((100.0 - attacker.SpecialDMGModificator) / 100.0)); ;
-
-
-
-        double DMGf = DMGb * (((100.0 - defender.SpecialResistance) / 100.0));
-        Debug.Log("Toster name: " + attacker.Name + " attacks for: " + Math.Ceiling(DMGf));
-
-
-        return Math.Ceiling(DMGf);
-
-    }
     private void PlayAnimatorState(string stateName)
     {
         if (this.tosterView == null)
@@ -991,11 +842,52 @@ public class TosterHexUnit : IQPathUnit
         this.tosterView.TryPlayWeaponTrails(CombatAnimationMaxWaitSeconds);
     }
 
+    bool TryResolveCommittedCombatDamage(
+        TosterHexUnit attacker,
+        string rollPurpose,
+        double damageScale,
+        bool hasBaseDamageOverride,
+        int baseDamageOverride,
+        bool isStackable,
+        out int damage)
+    {
+        damage = 0;
+
+        CombatDamageResult combatDamage;
+        string error;
+        if (LiveCombatDamageResolver.TryCalculateDamage(
+            attacker,
+            this,
+            rollPurpose,
+            damageScale,
+            hasBaseDamageOverride,
+            baseDamageOverride,
+            isStackable,
+            true,
+            out combatDamage,
+            out error) == false)
+        {
+            Debug.LogError("[CombatDamage] " + (rollPurpose ?? "<none>") + " failed: " + error);
+            return false;
+        }
+
+        if (combatDamage.ConsumesActorPureDamage && attacker != null)
+        {
+            attacker.SpecialPUREDMG = 0;
+        }
+
+        damage = Math.Max(0, combatDamage.CommittedDamage);
+        return true;
+    }
+
     public IEnumerator AttackMeSequence(TosterHexUnit t)
     {
-        //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
-        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        int damage = Convert.ToInt32(dmgdouble);
+        int damage;
+        if (TryResolveCommittedCombatDamage(t, CombatDamageRollPurpose.BasicAttack, 1.0, false, 0, true, out damage) == false)
+        {
+            yield break;
+        }
+
         SendDamageMsg(t, damage);
         yield return t.PlayCombatAnimationUntilHitMoment("attack", this);
         FrontendResultReveal reveal = this.DealMePUREForFrontendReveal(damage, t, FrontendResultRevealSource.BasicAttack);
@@ -1007,12 +899,12 @@ public class TosterHexUnit : IQPathUnit
 
         if (CounterAttackAvaible == true)
         {
+            if (t.TryResolveCommittedCombatDamage(this, CombatDamageRollPurpose.Retaliation, 1.0, false, 0, true, out damage) == false)
+            {
+                yield break;
+            }
+
             CounterAttackBools();
-
-            // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
-
-            dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
-            damage = Convert.ToInt32(dmgdouble);
             t.SendDamageMsg(this, damage);
             yield return this.PlayCombatAnimationUntilHitMoment("attack", t);
             reveal = t.DealMePUREForFrontendReveal(damage, this, FrontendResultRevealSource.Counterattack);
@@ -1042,23 +934,26 @@ public class TosterHexUnit : IQPathUnit
 
     public void AttackMe(TosterHexUnit t)
     {
-        //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
-        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
+        int damage;
+        if (TryResolveCommittedCombatDamage(t, CombatDamageRollPurpose.BasicAttack, 1.0, false, 0, true, out damage) == false)
+        {
+            return;
+        }
+
         t.PlayCombatAnimation("attack", this);
-        int damage = Convert.ToInt32(dmgdouble);
         SendDamageMsg(t, damage);
         FrontendResultReveal reveal = this.DealMePUREForFrontendReveal(damage, t, FrontendResultRevealSource.BasicAttack);
         FrontendResultRevealPlayer.Play(reveal);
 
         if (CounterAttackAvaible == true)
         {
+            if (t.TryResolveCommittedCombatDamage(this, CombatDamageRollPurpose.Retaliation, 1.0, false, 0, true, out damage) == false)
+            {
+                return;
+            }
+
             CounterAttackBools();
-
-            // dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
-
-            dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
             this.PlayCombatAnimation("attack", t);
-            damage = Convert.ToInt32(dmgdouble);
             t.SendDamageMsg(this, damage);
             reveal = t.DealMePUREForFrontendReveal(damage, this, FrontendResultRevealSource.Counterattack);
             FrontendResultRevealPlayer.Play(reveal);
@@ -1069,6 +964,11 @@ public class TosterHexUnit : IQPathUnit
     public void ShootME(TosterHexUnit t, bool sth)
     {
         int damage = CalculateShootDamageAndSendMessage(t);
+        if (damage < 0)
+        {
+            return;
+        }
+
         if (sth == true)
         {
             FrontendResultReveal reveal = DealMePUREForFrontendReveal(damage, t, FrontendResultRevealSource.BasicAttack);
@@ -1086,41 +986,49 @@ public class TosterHexUnit : IQPathUnit
     public FrontendResultReveal ShootMEForFrontendReveal(TosterHexUnit t, FrontendResultRevealSource sourceType)
     {
         int damage = CalculateShootDamageAndSendMessage(t);
+        if (damage < 0)
+        {
+            return null;
+        }
+
         return DealMePUREForFrontendReveal(damage, t, sourceType);
     }
 
     int CalculateShootDamageAndSendMessage(TosterHexUnit t)
     {
-        //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
-        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
         HexClass[] Distance = Pathing(t.Hex, true);
+        double damageScale = Distance.Length > 6 ? 0.5 : 1.0;
 
-        if (Distance.Length > 6)
+        int damage;
+        if (TryResolveCommittedCombatDamage(t, CombatDamageRollPurpose.BasicAttack, damageScale, false, 0, true, out damage) == false)
         {
-            dmgdouble -= dmgdouble / 2;
+            return -1;
         }
 
-        int damage = Convert.ToInt32(dmgdouble);
         SendDamageMsg(t, damage);
 
         return damage;
     }
     public void AttackMeS(TosterHexUnit t)
     {
-      //  double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
-                                                                        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        if (DealMePURESim(Convert.ToInt32(dmgdouble)))
+        int damage;
+        if (TryResolveCommittedCombatDamage(t, CombatDamageRollPurpose.BasicAttack, 1.0, false, 0, true, out damage) == false)
+        {
+            return;
+        }
+
+        if (DealMePURESim(damage))
 
             if (CounterAttackAvaible == true)
             {
              //   Debug.LogWarning("CounterAttack");
+                if (t.TryResolveCommittedCombatDamage(this, CombatDamageRollPurpose.Retaliation, 1.0, false, 0, true, out damage) == false)
+                {
+                    return;
+                }
+
                 CounterAttackBools();
-
-             //   dmgdouble = CalculateDamageBetweenTostersH3(this, t, 1);
-
-                    dmgdouble = CalculateDamageBetweenTosters(this, t, 1);
-
-                t.DealMePURESim(Convert.ToInt32(dmgdouble));
+                t.DealMePURESim(damage);
             }
 
 
@@ -1130,10 +1038,12 @@ public class TosterHexUnit : IQPathUnit
 
     public void DealMeDMG(TosterHexUnit t)
     {
-       // double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
-                                                                       double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        Quaternion q;
-        int damage = Convert.ToInt32(dmgdouble);
+        int damage;
+        if (TryResolveCommittedCombatDamage(t, CombatDamageRollPurpose.Skill, 1.0, false, 0, true, out damage) == false)
+        {
+            return;
+        }
+
         SendDamageMsg(t, damage);
         PlayStoneSkinDamageReductionFeedback(damage);
         DealMePURE(damage);
@@ -1142,26 +1052,28 @@ public class TosterHexUnit : IQPathUnit
 
     public FrontendResultReveal DealMeDMGForFrontendReveal(TosterHexUnit t, FrontendResultRevealSource sourceType)
     {
-       // double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
-                                                                       double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        int damage = Convert.ToInt32(dmgdouble);
+        int damage;
+        if (TryResolveCommittedCombatDamage(t, CombatDamageRollPurpose.Skill, 1.0, false, 0, true, out damage) == false)
+        {
+            return null;
+        }
+
         SendDamageMsg(t, damage);
         return DealMePUREForFrontendReveal(damage, t, sourceType);
     
     }
     public void DealMeDMGS(TosterHexUnit t)
     {
-        //double dmgdouble = CalculateDamageBetweenTostersH3(t, this, 1);//h3
-                                                                        double dmgdouble = CalculateDamageBetweenTosters(t, this, 1);
-        DealMePURESim(Convert.ToInt32(dmgdouble));
+        int damage;
+        if (TryResolveCommittedCombatDamage(t, CombatDamageRollPurpose.Skill, 1.0, false, 0, true, out damage) == false)
+        {
+            return;
+        }
+
+        DealMePURESim(damage);
 
     }
 
-
-    public void CalculateResult(double dmgdouble)
-    {
-
-    }
     public bool DealMePURE(int i)
     {
         return DealMePURE(i, true);
@@ -1299,11 +1211,14 @@ public class TosterHexUnit : IQPathUnit
     {
 
         Debug.LogError(i);
-        i =Convert.ToInt32(ReCalculateDamageBetweenTosters(t,this,1,i, isStackable));
+        if (TryResolveCommittedCombatDamage(t, CombatDamageRollPurpose.Skill, 1.0, true, i, isStackable, out i) == false)
+        {
+            return;
+        }
+
         PlayStoneSkinDamageReductionFeedback(i);
-        Quaternion q;
-        SendDamageMsg(t, Convert.ToInt32(i));
-        this.DealMePURE(Convert.ToInt32(i));
+        SendDamageMsg(t, i);
+        this.DealMePURE(i);
 
     }
 
@@ -1311,9 +1226,13 @@ public class TosterHexUnit : IQPathUnit
     {
 
         Debug.LogError(i);
-        i =Convert.ToInt32(ReCalculateDamageBetweenTosters(t,this,1,i, isStackable));
-        SendDamageMsg(t, Convert.ToInt32(i));
-        return this.DealMePUREForFrontendReveal(Convert.ToInt32(i), t, sourceType);
+        if (TryResolveCommittedCombatDamage(t, CombatDamageRollPurpose.Skill, 1.0, true, i, isStackable, out i) == false)
+        {
+            return null;
+        }
+
+        SendDamageMsg(t, i);
+        return this.DealMePUREForFrontendReveal(i, t, sourceType);
 
     }
 

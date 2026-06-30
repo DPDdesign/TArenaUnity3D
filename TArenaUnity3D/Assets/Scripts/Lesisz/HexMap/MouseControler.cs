@@ -683,6 +683,7 @@ public class MouseControler : LocalNetworkBehaviour
     {
         activeButtons = false;
         shiftmode = false;
+        SkillIndicatorService.HideAll();
         ClearTransientHexState();
         if (outlineM != null)
         {
@@ -1363,6 +1364,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
     public void CancelSpellCasting()
     {
         selectedSkillCancelRequested = true;
+        SkillIndicatorService.HideAll();
         canvas.UnUseSkill(SelectedSpellid);
         if (castManager != null)
         {
@@ -1635,6 +1637,127 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         ApplySkillRuleTargetHighlights(actor, skillSlot, skillId);
     }
 
+    void RefreshSkillIndicatorHoverPreview(HexClass hoverHex, bool hoveredValidTarget)
+    {
+        if (SelectedToster == null ||
+            SkillState == false ||
+            hexMap == null)
+        {
+            SkillIndicatorService.HideAll();
+            return;
+        }
+
+        string skillId = string.IsNullOrEmpty(selectedSkillId) == false
+            ? selectedSkillId
+            : GetSkillIdAtSlot(SelectedToster, SelectedSpellid);
+
+        SkillPresentationEntry entry;
+        if (SkillPresentationManager.TryGetEntry(skillId, out entry) == false ||
+            entry == null ||
+            entry.indicatorType == SkillIndicatorType.None ||
+            entry.indicatorPlacement == SkillIndicatorPlacement.None)
+        {
+            SkillIndicatorService.HideAll();
+            return;
+        }
+
+        bool includeHoverTarget = hoveredValidTarget && hoverHex != null;
+        List<HexCoord> previewTargets = BuildSkillIndicatorPreviewTargets(hoverHex, skillId, includeHoverTarget);
+        if (includeHoverTarget == false && previewTargets.Count == 0)
+        {
+            SkillIndicatorService.HideAll();
+            return;
+        }
+
+        SkillCast previewCast;
+        TryBuildSkillIndicatorPreviewCast(hoverHex, skillId, includeHoverTarget, out previewCast);
+        SkillIndicatorService.ShowPreview(entry, SelectedToster, hoverHex, previewCast, previewTargets, hexMap);
+    }
+
+    List<HexCoord> BuildSkillIndicatorPreviewTargets(HexClass hoverHex, string skillId, bool includeHoverTarget)
+    {
+        List<HexCoord> previewTargets = new List<HexCoord>(selectedSkillTargets);
+        if (includeHoverTarget == false || hoverHex == null || SelectedToster == null)
+        {
+            return previewTargets;
+        }
+
+        SkillContext context;
+        if (TryCreateSkillContext(SelectedToster, SelectedSpellid, skillId, out context) == false)
+        {
+            return previewTargets;
+        }
+
+        TargetingRuleData targeting = GetTargetingRule(context);
+        if (targeting == null || targeting.targetCount <= 0 || previewTargets.Count >= targeting.targetCount)
+        {
+            return previewTargets;
+        }
+
+        HexCoord previewTarget = IsNextAreaCenterTarget(targeting)
+            ? ResolveAreaCenterPreviewTarget(context, hoverHex)
+            : new HexCoord(hoverHex.C, hoverHex.R);
+
+        if (ContainsPreviewTarget(previewTargets, previewTarget) == false)
+        {
+            previewTargets.Add(previewTarget);
+        }
+
+        return previewTargets;
+    }
+
+    bool TryBuildSkillIndicatorPreviewCast(HexClass hoverHex, string skillId, bool includeHoverTarget, out SkillCast previewCast)
+    {
+        previewCast = null;
+
+        if (SelectedToster == null)
+        {
+            return false;
+        }
+
+        SkillContext context;
+        if (TryCreateSkillContext(SelectedToster, SelectedSpellid, skillId, out context) == false)
+        {
+            return false;
+        }
+
+        List<HexCoord> previewTargets = BuildSkillIndicatorPreviewTargets(hoverHex, skillId, includeHoverTarget);
+        if (previewTargets.Count == 0)
+        {
+            return false;
+        }
+
+        SkillValidationResult validation = SkillRules.Validate(
+            new SkillUse(context.ActorUnitId, skillId, previewTargets),
+            context);
+        if (validation.IsValid == false || validation.Cast == null)
+        {
+            return false;
+        }
+
+        previewCast = validation.Cast;
+        return true;
+    }
+
+    static bool ContainsPreviewTarget(List<HexCoord> previewTargets, HexCoord target)
+    {
+        if (previewTargets == null || target == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < previewTargets.Count; i++)
+        {
+            HexCoord existing = previewTargets[i];
+            if (existing != null && existing.C == target.C && existing.R == target.R)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     bool TryRefreshAreaCenterConfirmationPreview(TosterHexUnit actor, int skillSlot, string skillId)
     {
         if (selectedSkillTargets == null || selectedSkillTargets.Count == 0)
@@ -1780,6 +1903,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     void ClearAreaCenterHoverPreviewIfNeeded()
     {
+        SkillIndicatorService.HideAll();
         if (SelectedToster == null)
         {
             return;
@@ -2044,6 +2168,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
         if (hasValidMouseHex == false)
         {
             ClearAreaCenterHoverPreviewIfNeeded();
+            RefreshSkillIndicatorHoverPreview(null, false);
             if (Input.GetMouseButtonDown(1))
             {
                 CancelSpellCasting();
@@ -2052,8 +2177,10 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
             return;
         }
 
+        bool hoveredValidTarget = hexUnderMouse.Highlight;
         FilterSkillRuleHighlights();
         RefreshAreaCenterHoverPreview(hexUnderMouse);
+        RefreshSkillIndicatorHoverPreview(hexUnderMouse, hoveredValidTarget);
         if (SkillState == false)
         {
 
@@ -2161,6 +2288,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
 
     void CleanupSharedSkillSelection(TosterHexUnit actor)
     {
+        SkillIndicatorService.HideAll();
         if (canvas != null)
         {
             canvas.UnUseSkill(SelectedSpellid);
@@ -2388,6 +2516,7 @@ public    IEnumerator DoMovesST(HexClass hex, TosterHexUnit ST)
             return;
         }
 
+        SkillIndicatorService.HideAll();
         SelectedSpellid = SelectedSkill;
         selectedSkillCompletionRequested = false;
         selectedSkillTargets.Clear();

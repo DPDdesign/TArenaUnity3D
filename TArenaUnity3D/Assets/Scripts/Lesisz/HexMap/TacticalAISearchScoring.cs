@@ -202,7 +202,12 @@ public static class TacticalAISearchEngine
 
         return TacticalAIPlannedAction.FromBattleAction(
             action,
-            BattleActionRules.Apply(snapshot, action));
+            BattleActionRules.Apply(snapshot, action, CreateSnapshotCombatDamageService(snapshot)));
+    }
+
+    static CombatDamageService CreateSnapshotCombatDamageService(BattleSnapshot snapshot)
+    {
+        return new CombatDamageService(new SnapshotCombatUnitCatalog(snapshot));
     }
 
     static SearchBranchResult SearchBranch(
@@ -551,6 +556,9 @@ public static class BattleSnapshotTurnOrderEstimator
                 units,
                 string.Empty,
                 turnState,
+                gameSeed: snapshot.GameSeed,
+                battleId: snapshot.BattleId,
+                nextActionIndex: snapshot.NextActionIndex,
                 usesLegacyHexLayout: snapshot.UsesLegacyHexLayout);
             nextUnitId = EstimateFutureRoundActiveUnitId(resetSnapshot);
             return BattleSnapshotBuilder.Build(
@@ -560,6 +568,9 @@ public static class BattleSnapshotTurnOrderEstimator
                 resetSnapshot.Units,
                 nextUnitId,
                 resetSnapshot.TurnState,
+                gameSeed: resetSnapshot.GameSeed,
+                battleId: resetSnapshot.BattleId,
+                nextActionIndex: resetSnapshot.NextActionIndex,
                 usesLegacyHexLayout: resetSnapshot.UsesLegacyHexLayout);
         }
 
@@ -570,6 +581,9 @@ public static class BattleSnapshotTurnOrderEstimator
             snapshot.Units,
             nextUnitId,
             turnState,
+            gameSeed: snapshot.GameSeed,
+            battleId: snapshot.BattleId,
+            nextActionIndex: snapshot.NextActionIndex,
             usesLegacyHexLayout: snapshot.UsesLegacyHexLayout);
     }
 
@@ -820,15 +834,23 @@ public static class TacticalAISnapshotSimulator
         BattleUnitSnapshot actor = FindMutableUnit(units, action.ActorUnitId);
         if (actor == null || actor.IsAlive == false || actor.Amount <= 0)
         {
-            return Rebuild(snapshot, hexes, units, snapshot.ActiveUnitId);
+            return Rebuild(snapshot, hexes, units, snapshot.ActiveUnitId, false);
         }
 
-        BattleActionResult result = BattleActionRules.Apply(snapshot, action);
+        BattleActionResult result = BattleActionRules.Apply(
+            snapshot,
+            action,
+            new CombatDamageService(new SnapshotCombatUnitCatalog(snapshot)));
+        if (result != null && result.IsRejected)
+        {
+            return snapshot;
+        }
+
         ApplyActionResultEvents(result, action, actor, units, hexes);
         ApplyActionTurnState(action, actor);
 
         RefreshOccupants(hexes, units);
-        return Rebuild(snapshot, hexes, units, snapshot.ActiveUnitId);
+        return Rebuild(snapshot, hexes, units, snapshot.ActiveUnitId, true);
     }
 
     static void ApplyActionResultEvents(
@@ -866,6 +888,7 @@ public static class TacticalAISnapshotSimulator
                     break;
                 }
                 case BattleActionResultEventType.DamageApplied:
+                    ApplyPureDamageConsumption(units, resultEvent);
                     ApplyDamageToTarget(units, resultEvent.TargetUnitId, Math.Max(0, resultEvent.Amount));
                     ApplyCounterattackCost(action, resultEvent, units);
                     break;
@@ -1090,6 +1113,7 @@ public static class TacticalAISnapshotSimulator
         BattleUnitSnapshot spawned = new BattleUnitSnapshot
         {
             RuntimeUnitId = runtimeId,
+            CatalogUnitId = string.IsNullOrEmpty(effect.unitId) ? actor.CatalogUnitId : effect.unitId,
             TeamIndex = actor.TeamIndex,
             RosterIndexWithinTeam = units.Count,
             UnitName = string.IsNullOrEmpty(effect.unitId) ? actor.UnitName : effect.unitId,
@@ -1105,6 +1129,16 @@ public static class TacticalAISnapshotSimulator
             Initiative = actor.Initiative,
             MinDamage = actor.MinDamage,
             MaxDamage = actor.MaxDamage,
+            AttackModifier = actor.AttackModifier,
+            DefenseModifier = actor.DefenseModifier,
+            MinDamageModifier = actor.MinDamageModifier,
+            MaxDamageModifier = actor.MaxDamageModifier,
+            OutgoingDamageReductionPercent = actor.OutgoingDamageReductionPercent,
+            IncomingDamageReductionPercent = actor.IncomingDamageReductionPercent,
+            FlatDamageReduction = actor.FlatDamageReduction,
+            PureDamage = actor.PureDamage,
+            DefensePenetration = actor.DefensePenetration,
+            HatedTargetUnitId = actor.HatedTargetUnitId,
             IsAlive = spawnedAmount > 0,
             IsRange = actor.IsRange,
             Moved = true,
@@ -1233,6 +1267,20 @@ public static class TacticalAISnapshotSimulator
         counterattacker.CounterAttackAvailable = counterattacker.TempCounterAttacks > 0;
     }
 
+    static void ApplyPureDamageConsumption(List<BattleUnitSnapshot> units, BattleActionResultEvent resultEvent)
+    {
+        if (resultEvent == null || resultEvent.ConsumesActorPureDamage == false)
+        {
+            return;
+        }
+
+        BattleUnitSnapshot damageActor = FindMutableUnit(units, resultEvent.ActorUnitId);
+        if (damageActor != null)
+        {
+            damageActor.PureDamage = 0;
+        }
+    }
+
     static void RefreshOccupants(List<BattleHexSnapshot> hexes, List<BattleUnitSnapshot> units)
     {
         for (int i = 0; i < hexes.Count; i++)
@@ -1316,7 +1364,8 @@ public static class TacticalAISnapshotSimulator
         BattleSnapshot source,
         List<BattleHexSnapshot> hexes,
         List<BattleUnitSnapshot> units,
-        string activeUnitId)
+        string activeUnitId,
+        bool advanceActionIndex)
     {
         return BattleSnapshotBuilder.Build(
             source.MapWidth,
@@ -1325,63 +1374,122 @@ public static class TacticalAISnapshotSimulator
             units,
             activeUnitId,
             source.TurnState,
+            gameSeed: source.GameSeed,
+            battleId: source.BattleId,
+            nextActionIndex: Math.Max(0, source.NextActionIndex + (advanceActionIndex ? 1 : 0)),
             usesLegacyHexLayout: source.UsesLegacyHexLayout);
     }
 }
 
 public static class TacticalAIDamagePredictor
 {
-    public static int PredictAverageDamage(BattleUnitSnapshot attacker, BattleUnitSnapshot defender)
+    public static int PredictCommittedDamage(
+        BattleSnapshot snapshot,
+        string attackerUnitId,
+        string defenderUnitId,
+        int actionIndex,
+        int actionSeed = 0,
+        string rollPurpose = CombatDamageRollPurpose.BasicAttack,
+        ICombatUnitCatalog unitCatalog = null)
     {
-        if (attacker == null || defender == null || attacker.IsAlive == false || attacker.Amount <= 0)
+        int damage;
+        string error;
+        if (TryPredictCommittedDamage(
+            snapshot,
+            attackerUnitId,
+            defenderUnitId,
+            actionIndex,
+            actionSeed,
+            rollPurpose,
+            unitCatalog,
+            out damage,
+            out error))
         {
-            return 0;
+            return damage;
         }
 
-        float averageBaseDamage = (Math.Max(0, attacker.MinDamage) + Math.Max(0, attacker.MaxDamage)) * 0.5f;
-        float attack = GetModifiedAttack(attacker);
-        float defense = GetModifiedDefense(defender);
-        float attackDefenseDelta = attack - defense;
-        float multiplier = 1f;
-        if (attackDefenseDelta > 0f)
-        {
-            multiplier += attackDefenseDelta * 0.04f;
-        }
-        else if (attackDefenseDelta < 0f)
-        {
-            multiplier += attackDefenseDelta * 0.014f;
-        }
-
-        multiplier = Math.Max(0.1f, multiplier);
-        return (int)Math.Ceiling(averageBaseDamage * attacker.Amount * multiplier);
+        return 0;
     }
 
-    static float GetModifiedAttack(BattleUnitSnapshot unit)
+    public static bool TryPredictCommittedDamage(
+        BattleSnapshot snapshot,
+        string attackerUnitId,
+        string defenderUnitId,
+        int actionIndex,
+        int actionSeed,
+        string rollPurpose,
+        ICombatUnitCatalog unitCatalog,
+        out int damage,
+        out string error)
     {
-        int modifier = 0;
-        if (unit != null && unit.Statuses != null)
-        {
-            for (int i = 0; i < unit.Statuses.Count; i++)
+        damage = 0;
+        error = string.Empty;
+
+        ICombatUnitCatalog resolvedCatalog = unitCatalog ?? new SnapshotCombatUnitCatalog(snapshot);
+        CombatDamageServiceResult result = new CombatDamageService(resolvedCatalog).CalculateDamage(
+            snapshot,
+            new CombatDamageRequest
             {
-                modifier += unit.Statuses[i] != null ? unit.Statuses[i].AttackModifier : 0;
-            }
+                ActorUnitId = attackerUnitId ?? string.Empty,
+                TargetUnitId = defenderUnitId ?? string.Empty,
+                RollPurpose = string.IsNullOrEmpty(rollPurpose) ? CombatDamageRollPurpose.BasicAttack : rollPurpose,
+                ActionIndex = actionIndex,
+                ActionSeed = actionSeed
+            });
+
+        if (result == null || result.IsValid == false || result.Damage == null)
+        {
+            error = result != null ? result.Error : "Combat damage prediction failed.";
+            return false;
         }
 
-        return Math.Max(0, (unit != null ? unit.Attack : 0) + modifier);
+        damage = result.Damage.CommittedDamage;
+        return true;
     }
 
-    static float GetModifiedDefense(BattleUnitSnapshot unit)
+}
+
+internal sealed class SnapshotCombatUnitCatalog : ICombatUnitCatalog
+{
+    readonly Dictionary<string, CombatUnitCatalogEntry> units =
+        new Dictionary<string, CombatUnitCatalogEntry>(StringComparer.Ordinal);
+
+    public SnapshotCombatUnitCatalog(BattleSnapshot snapshot)
     {
-        int modifier = 0;
-        if (unit != null && unit.Statuses != null)
+        if (snapshot == null || snapshot.Units == null)
         {
-            for (int i = 0; i < unit.Statuses.Count; i++)
-            {
-                modifier += unit.Statuses[i] != null ? unit.Statuses[i].DefenseModifier : 0;
-            }
+            return;
         }
 
-        return Math.Max(0, (unit != null ? unit.Defense : 0) + modifier);
+        for (int i = 0; i < snapshot.Units.Count; i++)
+        {
+            BattleUnitSnapshot unit = snapshot.Units[i];
+            if (unit == null || string.IsNullOrEmpty(unit.CatalogUnitId) || units.ContainsKey(unit.CatalogUnitId))
+            {
+                continue;
+            }
+
+            units.Add(
+                unit.CatalogUnitId,
+                new CombatUnitCatalogEntry(
+                    unit.CatalogUnitId,
+                    unit.BaseHP,
+                    unit.Attack,
+                    unit.Defense,
+                    unit.MinDamage,
+                    unit.MaxDamage));
+        }
+    }
+
+    public bool TryGetUnit(string catalogUnitId, out CombatUnitCatalogEntry unit)
+    {
+        if (string.IsNullOrEmpty(catalogUnitId))
+        {
+            unit = null;
+            return false;
+        }
+
+        return units.TryGetValue(catalogUnitId, out unit);
     }
 }
 
@@ -1962,6 +2070,7 @@ public static class TacticalAISnapshotQuery
         return new BattleUnitSnapshot
         {
             RuntimeUnitId = unit.RuntimeUnitId ?? string.Empty,
+            CatalogUnitId = unit.CatalogUnitId ?? string.Empty,
             TeamIndex = unit.TeamIndex,
             RosterIndexWithinTeam = unit.RosterIndexWithinTeam,
             UnitName = unit.UnitName ?? string.Empty,
@@ -1977,6 +2086,16 @@ public static class TacticalAISnapshotQuery
             Initiative = unit.Initiative,
             MinDamage = unit.MinDamage,
             MaxDamage = unit.MaxDamage,
+            AttackModifier = unit.AttackModifier,
+            DefenseModifier = unit.DefenseModifier,
+            MinDamageModifier = unit.MinDamageModifier,
+            MaxDamageModifier = unit.MaxDamageModifier,
+            OutgoingDamageReductionPercent = unit.OutgoingDamageReductionPercent,
+            IncomingDamageReductionPercent = unit.IncomingDamageReductionPercent,
+            FlatDamageReduction = unit.FlatDamageReduction,
+            PureDamage = unit.PureDamage,
+            DefensePenetration = unit.DefensePenetration,
+            HatedTargetUnitId = unit.HatedTargetUnitId ?? string.Empty,
             IsAlive = unit.IsAlive,
             IsRange = unit.IsRange,
             Waited = unit.Waited,

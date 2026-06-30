@@ -44,3 +44,7 @@ YYYY-MM-DD_HHMM_<TASK-ID>_QA_ArchitectureReview.md
 ```
 
 Do not implement fixes during QA review.
+
+During `implement-task` workflows, operate in silent mode: report only the main
+review threads, findings, blockers, and verdict. Do not narrate every
+inspection step or detailed internal reasoning.

@@ -56,6 +56,8 @@ public static class BattleSnapshotLiveAdapter
             units,
             activeUnitId,
             turnState,
+            gameSeed: actionLifecycle != null ? actionLifecycle.GameSeed : 0,
+            nextActionIndex: actionLifecycle != null ? actionLifecycle.NextActionIndex : 0,
             usesLegacyHexLayout: hexMap.useLegacyMap);
     }
 
@@ -105,6 +107,7 @@ public static class BattleSnapshotLiveAdapter
             units.Add(new BattleUnitSnapshot
             {
                 RuntimeUnitId = runtimeUnitReference.RuntimeUnitId,
+                CatalogUnitId = unit.Name,
                 TeamIndex = runtimeUnitReference.TeamIndex,
                 RosterIndexWithinTeam = runtimeUnitReference.RosterIndexWithinTeam,
                 UnitName = unit.Name,
@@ -120,6 +123,16 @@ public static class BattleSnapshotLiveAdapter
                 Initiative = unit.Initiative,
                 MinDamage = unit.mindmg,
                 MaxDamage = unit.maxdmg,
+                AttackModifier = unit.GetAtt() - unit.Att,
+                DefenseModifier = unit.GetDef() - unit.Def,
+                MinDamageModifier = unit.GetMinDmg() - unit.mindmg,
+                MaxDamageModifier = unit.GetMaxDMG() - unit.maxdmg,
+                OutgoingDamageReductionPercent = unit.SpecialDMGModificator,
+                IncomingDamageReductionPercent = unit.SpecialResistance,
+                FlatDamageReduction = unit.FlatDMGReduce,
+                PureDamage = unit.SpecialPUREDMG,
+                DefensePenetration = unit.DefensePenetration,
+                HatedTargetUnitId = ResolveUnitId(unit.HATED, runtimeUnitReferences),
                 IsAlive = unit.isDead == false && unit.Amount > 0,
                 IsRange = unit.isRange,
                 Waited = unit.Waited,

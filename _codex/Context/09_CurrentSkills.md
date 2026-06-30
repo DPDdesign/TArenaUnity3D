@@ -242,6 +242,12 @@ Agreed design direction for the first implementation:
 Do not move skill assignment into presentation data. Presentation data should
 remain additive and keyed by the same skill id used by the unit catalog.
 
+PRD053 adds planned hover skill indicators to the same presentation catalog.
+These indicators are authored per skill entry and remain presentation-only. The
+existing valid target highlight and `SkillRules` validation flow remain the
+source of truth for whether a hovered hex is legal. Indicator catalog data must
+not grant, remove, reorder, or validate skills.
+
 ## Active Skill Assignment Snapshot
 
 Current unit skill assignments from the PRD49ABC audit:

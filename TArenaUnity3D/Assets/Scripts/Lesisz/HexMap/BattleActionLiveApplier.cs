@@ -28,6 +28,12 @@ public sealed class BattleActionLiveApplier
             return false;
         }
 
+        if (revalidatedAction.Result != null && revalidatedAction.Result.IsRejected)
+        {
+            failureReason = "BattleActionResult was rejected: " + revalidatedAction.Result.RejectReason;
+            return false;
+        }
+
         switch (revalidatedAction.Action.ActionKind)
         {
             case BattleActionKind.Move:
@@ -38,9 +44,9 @@ public sealed class BattleActionLiveApplier
             case BattleActionKind.BasicRangedAttack:
                 return TryApplyBasicRangedAttack(actor, revalidatedAction, out failureReason);
             case BattleActionKind.Wait:
-                return TryApplyWait(actor, out failureReason);
+                return TryApplyWait(actor, revalidatedAction, out failureReason);
             case BattleActionKind.Defend:
-                return TryApplyDefend(actor, out failureReason);
+                return TryApplyDefend(actor, revalidatedAction, out failureReason);
             case BattleActionKind.Skill:
             case BattleActionKind.Stance:
                 return TryApplySkill(revalidatedAction, out failureReason);
@@ -74,6 +80,7 @@ public sealed class BattleActionLiveApplier
                 SendAIActionChat(actor, "rusza sie.");
             },
             () => ApplyResultSequence(actor, action),
+            action.Action,
             out failureReason);
     }
 
@@ -93,6 +100,7 @@ public sealed class BattleActionLiveApplier
             "MoveAndAttack",
             () => actor.Moved = true,
             () => ApplyResultSequence(actor, action),
+            action.Action,
             out failureReason);
     }
 
@@ -111,10 +119,11 @@ public sealed class BattleActionLiveApplier
             "BasicRangedAttack",
             () => actor.Moved = true,
             () => ApplyResultSequence(actor, action),
+            action.Action,
             out failureReason);
     }
 
-    bool TryApplyWait(TosterHexUnit actor, out string failureReason)
+    bool TryApplyWait(TosterHexUnit actor, TacticalAIRevalidatedIntent action, out string failureReason)
     {
         return TryRunBattleAction(
             actor,
@@ -126,10 +135,11 @@ public sealed class BattleActionLiveApplier
                 actor.Waited = true;
             },
             null,
+            action != null ? action.Action : null,
             out failureReason);
     }
 
-    bool TryApplyDefend(TosterHexUnit actor, out string failureReason)
+    bool TryApplyDefend(TosterHexUnit actor, TacticalAIRevalidatedIntent action, out string failureReason)
     {
         return TryRunBattleAction(
             actor,
@@ -143,6 +153,7 @@ public sealed class BattleActionLiveApplier
                 actor.SpecialDef += 5;
             },
             () => DefenseAction(actor),
+            action != null ? action.Action : null,
             out failureReason);
     }
 
@@ -169,6 +180,7 @@ public sealed class BattleActionLiveApplier
             cast.SkillId,
             null,
             () => skillRuntime.ApplySequence(cast, action.Result),
+            action.Action,
             out failureReason);
     }
 
@@ -178,6 +190,7 @@ public sealed class BattleActionLiveApplier
         string label,
         Action commit,
         Func<IEnumerator> actionBody,
+        BattleAction action,
         out string failureReason)
     {
         runtimeContext.BattleActionLifecycle = runtimeContext.BattleActionLifecycle ?? BattleActionLifecycle.EnsureInstance();
@@ -200,6 +213,8 @@ public sealed class BattleActionLiveApplier
             return false;
         }
 
+        runtimeContext.BattleActionLifecycle.MarkActionCommitted(
+            action != null ? action.ActionIndex : runtimeContext.BattleActionLifecycle.NextActionIndex);
         failureReason = string.Empty;
         return true;
     }
@@ -284,6 +299,11 @@ public sealed class BattleActionLiveApplier
         if (isCounterattack)
         {
             damageActor.CounterAttackBools();
+        }
+
+        if (resultEvent.ConsumesActorPureDamage)
+        {
+            damageActor.SpecialPUREDMG = 0;
         }
 
         Debug.Log("[DEBUG-HITFLOW] ApplyDamageSequence action=" +

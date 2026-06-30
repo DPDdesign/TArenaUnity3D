@@ -11,6 +11,16 @@ Use this skill to run one complete TArenaUnity3D implementation loop for a local
 
 This is a workflow skill, not a gameplay design skill.
 
+## Communication Mode
+
+This workflow runs in silent mode.
+
+All participating agents, especially Coding Agent, QA Review, and any Project
+Director coordination, should report only the main work threads, key decisions,
+blockers, and outcomes. They should not narrate every micro-step, inspection
+step, or detailed internal reasoning. Favor concise progress updates that save
+tokens while still preserving operational clarity.
+
 ## Project UI Text Rule
 
 TArenaUnity3D uses TextMesh Pro only. In coding, QA, and optional UI mockup

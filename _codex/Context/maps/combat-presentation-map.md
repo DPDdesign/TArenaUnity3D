@@ -6,8 +6,9 @@ Last updated: 2026-06-26
 ## Use When
 
 Use this map when a task touches combat animations, hit/death reactions, combat
-SFX, background music, projectile presentation, skill VFX/SFX, unit model
-presentation, or persistent board-state visuals such as trap surfaces.
+SFX, background music, projectile presentation, skill VFX/SFX, skill targeting
+indicator presentation, unit model presentation, or persistent board-state
+visuals such as trap surfaces.
 
 This active map should describe current code and presentation boundaries, not
 history. Use `_codex/Context/maps/combat-skill-ai-history-risks-map.md` only
@@ -37,6 +38,7 @@ Combat presentation owns what the player sees and hears during combat:
 - combat SFX playback,
 - background music playback,
 - projectile/VFX presentation,
+- skill targeting indicator presentation,
 - persistent visual markers for board-state effects.
 
 Combat presentation should not own skill legality, damage calculation, target
@@ -55,6 +57,9 @@ validation, turn lifecycle, AI scoring, persistence, or unit skill ownership.
 - Skill assignment is unit-catalog-driven; presentation data must not decide
   which skills a unit owns.
 - Skill presentation should use the skill string/id as the join key.
+- Skill targeting indicators are presentation-only hover visuals. Existing
+  skill validation and valid target highlights remain the source of truth for
+  legality.
 - Persistent board-state visuals such as trap surface models should route
   through presentation data, while gameplay state remains in gameplay classes
   such as `HexClass` and `Traps`.

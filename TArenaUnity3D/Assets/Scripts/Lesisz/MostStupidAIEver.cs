@@ -225,7 +225,7 @@ public class MostStupidAIEver : MonoBehaviour
             }
 
             // Jezeli zadaje wiecej - daj go na poczatek
-            else if (ai.CalculateDamageBetweenTosters(t, ai, 0) > ai.CalculateDamageBetweenTosters(target[0], ai, 0))
+            else if (PredictCommittedCombatDamage(t, ai, "legacy-ai-incoming") > PredictCommittedCombatDamage(target[0], ai, "legacy-ai-incoming"))
             {
                 target.Insert(0, t);
             }
@@ -237,7 +237,7 @@ public class MostStupidAIEver : MonoBehaviour
                 int i = target.Count - 1;
                 while (sorting)
                 {
-                    if (ai.CalculateDamageBetweenTosters(t, ai, 0) <= ai.CalculateDamageBetweenTosters(target[i], ai, 0))
+                    if (PredictCommittedCombatDamage(t, ai, "legacy-ai-incoming") <= PredictCommittedCombatDamage(target[i], ai, "legacy-ai-incoming"))
                     {
                         target.Insert(i + 1, t);
                         sorting = false;
@@ -251,7 +251,7 @@ public class MostStupidAIEver : MonoBehaviour
 
     double MaxDamageToGet(List<TosterHexUnit> tosters, TosterHexUnit ai)
     {
-        double i = ai.CalculateDamageBetweenTosters(ListOfDamageFromPlayer(tosters, ai)[0], ai, 0);
+        double i = PredictCommittedCombatDamage(ListOfDamageFromPlayer(tosters, ai)[0], ai, "legacy-ai-incoming");
         return i;
     }
 
@@ -269,7 +269,7 @@ public class MostStupidAIEver : MonoBehaviour
             }
 
             // Jezeli otrzyma wiecej - daj go na poczatek
-            else if (ai.CalculateDamageBetweenTosters(ai, t, 0) > ai.CalculateDamageBetweenTosters(ai, target[0], 0))
+            else if (PredictCommittedCombatDamage(ai, t, "legacy-ai-outgoing") > PredictCommittedCombatDamage(ai, target[0], "legacy-ai-outgoing"))
             {
                 target.Insert(0, t);
             }
@@ -281,7 +281,7 @@ public class MostStupidAIEver : MonoBehaviour
                 int i = target.Count - 1;
                 while (sorting)
                 {
-                    if (ai.CalculateDamageBetweenTosters(ai, t, 0) <= ai.CalculateDamageBetweenTosters(ai, target[i], 0))
+                    if (PredictCommittedCombatDamage(ai, t, "legacy-ai-outgoing") <= PredictCommittedCombatDamage(ai, target[i], "legacy-ai-outgoing"))
                     {
                         target.Insert(i + 1, t);
                         sorting = false;
@@ -295,7 +295,7 @@ public class MostStupidAIEver : MonoBehaviour
 
     double MaxDamageToDeal(List<TosterHexUnit> tosters, TosterHexUnit ai)
     {
-        double i = ai.CalculateDamageBetweenTosters(ai, ListOfDamageToPlayer(tosters, ai)[0], 0);
+        double i = PredictCommittedCombatDamage(ai, ListOfDamageToPlayer(tosters, ai)[0], "legacy-ai-outgoing");
         return i;
     }
 
@@ -324,17 +324,17 @@ public class MostStupidAIEver : MonoBehaviour
         foreach (TosterHexUnit toster in PDamageList)
         {
 
-            double damage = ai.CalculateDamageBetweenTosters(toster, ai, 0);
+            double damage = PredictCommittedCombatDamage(toster, ai, "legacy-ai-incoming");
             Debug.Log(toster.Name + " zada mi " + damage);
 
 
             // ZJEBANE BO ZLE LICZY ILOSC
-            double cdamage = ai.CalculateDamageBetweenTosters(ai, toster, 0);
+            double cdamage = PredictCommittedCombatDamage(ai, toster, "legacy-ai-outgoing");
             Debug.Log("Zadam " + cdamage + " " + toster.Name);
             NewQuantieties.Add(toster.Amount - Mathf.FloorToInt((float)cdamage / toster.GetHP()));
 
 
-            double damage2 = ai.CalculateDamageBetweenTostersWithQ(toster, ai, 0, NewQuantieties[i]);
+            double damage2 = PredictCommittedCombatDamage(toster, ai, "legacy-ai-incoming-after-trade");
             i++;
             Debug.Log("Teraz " + toster.Name + " Zada mi " + damage2.ToString());
             damagediff = damage - damage2;
@@ -364,6 +364,25 @@ public class MostStupidAIEver : MonoBehaviour
         Debug.Log("**********************************************************");
         Debug.Log(ai.Name + "  WYCIAGA WNIOSEK: Powinienem focusowac" + target[0].Name);
         return target;
+    }
+
+    double PredictCommittedCombatDamage(TosterHexUnit attacker, TosterHexUnit defender, string rollPurpose)
+    {
+        int damage;
+        string error;
+        if (LiveCombatDamageResolver.TryCalculateCommittedDamage(
+            attacker,
+            defender,
+            rollPurpose,
+            1.0,
+            out damage,
+            out error))
+        {
+            return damage;
+        }
+
+        Debug.LogWarning("[TacticalAI] legacy heuristic damage prediction failed: " + error);
+        return 0;
     }
     #endregion
 

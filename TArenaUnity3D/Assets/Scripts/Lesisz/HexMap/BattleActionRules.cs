@@ -113,10 +113,16 @@ public static class BattleActionRules
             }
         }
 
+        AssignGeneratedActionSeeds(snapshot, actions);
         return actions;
     }
 
     public static BattleActionResult Apply(BattleSnapshot snapshot, BattleAction action)
+    {
+        return Apply(snapshot, action, CombatDamageService.Default);
+    }
+
+    public static BattleActionResult Apply(BattleSnapshot snapshot, BattleAction action, CombatDamageService damageService)
     {
         BattleActionResult result = new BattleActionResult();
         if (action == null)
@@ -147,22 +153,32 @@ public static class BattleActionRules
                 break;
             case BattleActionKind.MoveAndAttack:
             case BattleActionKind.BasicMeleeAttack:
+                if (AddBasicAttackDamageEvent(result, snapshot, action, damageService) == false)
+                {
+                    break;
+                }
+
+                if (AddCounterattackDamageEvent(result, snapshot, action, damageService) == false)
+                {
+                    break;
+                }
+
                 if (action.DestinationHex != null)
                 {
-                    result.Add(new BattleActionResultEvent
+                    result.Events.Insert(0, new BattleActionResultEvent
                     {
                         EventType = BattleActionResultEventType.UnitMoved,
                         ActorUnitId = action.ActorUnitId,
                         Hex = BattleActionModelUtility.CopyHex(action.DestinationHex)
                     });
                 }
-                AddBasicAttackDamageEvent(result, snapshot, action);
-                AddCounterattackDamageEvent(result, snapshot, action);
                 result.Add(new BattleActionResultEvent { EventType = BattleActionResultEventType.TurnCostApplied, ActorUnitId = action.ActorUnitId });
                 break;
             case BattleActionKind.BasicRangedAttack:
-                AddBasicAttackDamageEvent(result, snapshot, action);
-                result.Add(new BattleActionResultEvent { EventType = BattleActionResultEventType.TurnCostApplied, ActorUnitId = action.ActorUnitId });
+                if (AddBasicAttackDamageEvent(result, snapshot, action, damageService))
+                {
+                    result.Add(new BattleActionResultEvent { EventType = BattleActionResultEventType.TurnCostApplied, ActorUnitId = action.ActorUnitId });
+                }
                 break;
             case BattleActionKind.Wait:
                 result.Add(new BattleActionResultEvent { EventType = BattleActionResultEventType.WaitApplied, ActorUnitId = action.ActorUnitId });
@@ -174,7 +190,7 @@ public static class BattleActionRules
                 break;
             case BattleActionKind.Skill:
             case BattleActionKind.Stance:
-                AddSkillResultEvents(result, action);
+                AddSkillResultEvents(result, snapshot, action, damageService);
                 break;
         }
 
@@ -188,7 +204,7 @@ public static class BattleActionRules
             return BattleActionValidationResult.Invalid("Wait is not legal after movement, skill use, or previous wait.");
         }
 
-        return BattleActionValidationResult.Valid(CreateAction(use, actor, BattleActionKind.Wait, null, null, null));
+        return BattleActionValidationResult.Valid(CreateAction(use, snapshot, actor, BattleActionKind.Wait, null, null, null));
     }
 
     static bool IsTurnStateBlockingAction(BattleTurnStateSnapshot turnState)
@@ -203,7 +219,7 @@ public static class BattleActionRules
             return BattleActionValidationResult.Invalid("Defend is not legal after movement or skill use.");
         }
 
-        return BattleActionValidationResult.Valid(CreateAction(use, actor, BattleActionKind.Defend, null, null, null));
+        return BattleActionValidationResult.Valid(CreateAction(use, snapshot, actor, BattleActionKind.Defend, null, null, null));
     }
 
     static BattleActionValidationResult ValidateMove(
@@ -231,7 +247,7 @@ public static class BattleActionRules
             return BattleActionValidationResult.Invalid("Move destination is outside actor movement budget.");
         }
 
-        BattleAction action = CreateAction(use, actor, BattleActionKind.Move, destinationHex, null, null);
+        BattleAction action = CreateAction(use, snapshot, actor, BattleActionKind.Move, destinationHex, null, null);
         action.EndsTurn = actor.Waited || HasAvailableSkillAfterMove(actor, snapshot, skillMetadataProvider) == false;
         action.AllowsPostMoveFollowUp = action.EndsTurn == false;
         return BattleActionValidationResult.Valid(action);
@@ -274,7 +290,7 @@ public static class BattleActionRules
             return BattleActionValidationResult.Invalid("Move-and-attack destination is not adjacent to target.");
         }
 
-        BattleAction action = CreateAction(use, actor, BattleActionKind.MoveAndAttack, destinationHex, FindHex(snapshot, target.C, target.R), target);
+        BattleAction action = CreateAction(use, snapshot, actor, BattleActionKind.MoveAndAttack, destinationHex, FindHex(snapshot, target.C, target.R), target);
         return BattleActionValidationResult.Valid(action);
     }
 
@@ -296,7 +312,7 @@ public static class BattleActionRules
             return BattleActionValidationResult.Invalid("Basic ranged attack target is missing or invalid.");
         }
 
-        return BattleActionValidationResult.Valid(CreateAction(use, actor, BattleActionKind.BasicRangedAttack, null, FindHex(snapshot, target.C, target.R), target));
+        return BattleActionValidationResult.Valid(CreateAction(use, snapshot, actor, BattleActionKind.BasicRangedAttack, null, FindHex(snapshot, target.C, target.R), target));
     }
 
     static BattleActionValidationResult ValidateSkill(
@@ -305,13 +321,14 @@ public static class BattleActionRules
         BattleUnitSnapshot actor,
         ITacticalAISkillMetadataProvider skillMetadataProvider)
     {
-        SkillDefinitionSpec spec = ResolveSkillSpec(use.SkillId, skillMetadataProvider);
+        BattleActionUse resolvedUse = ResolveActionUseSeeds(snapshot, use, actor);
+        SkillDefinitionSpec spec = ResolveSkillSpec(resolvedUse.SkillId, skillMetadataProvider);
         if (spec == null)
         {
             return BattleActionValidationResult.Invalid("Skill action has no skill definition spec.");
         }
 
-        int skillSlot = ResolveSkillSlot(actor, use.SkillId, use.SkillSlot);
+        int skillSlot = ResolveSkillSlot(actor, resolvedUse.SkillId, resolvedUse.SkillSlot);
         if (skillSlot < 0)
         {
             return BattleActionValidationResult.Invalid("Skill action slot/id pair is invalid.");
@@ -327,9 +344,9 @@ public static class BattleActionRules
             return BattleActionValidationResult.Invalid("Passive skills are not legal tactical actions.");
         }
 
-        SkillContext context = SkillContext.Create(snapshot, actor.RuntimeUnitId, spec, skillSlot, use.ActionSeed);
+        SkillContext context = SkillContext.Create(snapshot, actor.RuntimeUnitId, spec, skillSlot, resolvedUse.ActionSeed);
         SkillValidationResult skillValidation = SkillRules.Validate(
-            new SkillUse(actor.RuntimeUnitId, use.SkillId, use.SelectedHexes),
+            new SkillUse(actor.RuntimeUnitId, resolvedUse.SkillId, resolvedUse.SelectedHexes),
             context);
         if (skillValidation.IsValid == false || skillValidation.Cast == null)
         {
@@ -340,7 +357,7 @@ public static class BattleActionRules
         BattleActionKind actionKind = spec.ActivationRule.activationKind == SkillActivationKind.Stance
             ? BattleActionKind.Stance
             : BattleActionKind.Skill;
-        BattleAction action = CreateAction(use, actor, actionKind, null, null, null);
+        BattleAction action = CreateAction(resolvedUse, snapshot, actor, actionKind, null, null, null);
         action.SkillSlot = skillSlot;
         action.SkillId = cast.SkillId ?? string.Empty;
         action.SkillCast = cast;
@@ -710,6 +727,7 @@ public static class BattleActionRules
 
     static BattleAction CreateAction(
         BattleActionUse use,
+        BattleSnapshot snapshot,
         BattleUnitSnapshot actor,
         BattleActionKind kind,
         BattleHexSnapshot destination,
@@ -724,10 +742,15 @@ public static class BattleActionRules
             DestinationHex = destination != null ? new HexCoord(destination.C, destination.R) : null,
             ImpactHex = impact != null ? new HexCoord(impact.C, impact.R) : null,
             PrimaryTargetUnitId = target != null ? target.RuntimeUnitId : string.Empty,
-            ActionIndex = use.ActionIndex,
+            ActionIndex = ResolveActionIndex(snapshot, use),
             ActionSeed = use.ActionSeed,
             StableOrderKey = BuildStableOrderKey(kind, actor.RuntimeUnitId, use.SkillSlot, use.SkillId, destination, impact, target)
         };
+
+        if (action.ActionSeed == 0)
+        {
+            action.ActionSeed = BuildGeneratedActionSeed(snapshot, action);
+        }
 
         if (target != null)
         {
@@ -743,69 +766,281 @@ public static class BattleActionRules
         return action;
     }
 
-    static void AddSkillResultEvents(BattleActionResult result, BattleAction action)
+    static void AddSkillResultEvents(
+        BattleActionResult result,
+        BattleSnapshot snapshot,
+        BattleAction action,
+        CombatDamageService damageService)
     {
         if (action.SkillCast == null)
         {
             return;
         }
 
-        SkillResult skillResult = SkillRules.Preview(action.SkillCast, null);
-        if (skillResult == null || skillResult.Events == null)
+        SkillEffect[] effects = action.SkillCast.Effects ?? new SkillEffect[0];
+        for (int i = 0; i < effects.Length; i++)
         {
-            return;
+            if (AddSkillEffectResultEvents(result, snapshot, action, effects[i], i, damageService) == false)
+            {
+                return;
+            }
         }
 
-        for (int i = 0; i < skillResult.Events.Count; i++)
+        if (action.SkillCast.CooldownTurns > 0)
         {
-            SkillResultEvent skillEvent = skillResult.Events[i];
-            if (skillEvent == null)
-            {
-                continue;
-            }
-
             result.Add(new BattleActionResultEvent
             {
-                EventType = ConvertSkillEventType(skillEvent.EventType),
-                ActorUnitId = skillEvent.ActorUnitId,
-                TargetUnitId = skillEvent.TargetUnitId,
-                Hex = BattleActionModelUtility.CopyHex(skillEvent.Hex),
-                StatusId = skillEvent.StatusId ?? string.Empty,
-                TrapId = skillEvent.TrapId ?? string.Empty,
-                Amount = skillEvent.Amount
+                EventType = BattleActionResultEventType.CooldownApplied,
+                ActorUnitId = action.SkillCast.ActorUnitId,
+                Amount = action.SkillCast.CooldownTurns
+            });
+        }
+
+        if (action.SkillCast.ConsumesTurn)
+        {
+            result.Add(new BattleActionResultEvent
+            {
+                EventType = BattleActionResultEventType.TurnCostApplied,
+                ActorUnitId = action.SkillCast.ActorUnitId
             });
         }
     }
 
-    static BattleActionResultEventType ConvertSkillEventType(SkillResultEventType eventType)
+    static bool AddSkillEffectResultEvents(
+        BattleActionResult result,
+        BattleSnapshot snapshot,
+        BattleAction action,
+        SkillEffect effect,
+        int effectIndex,
+        CombatDamageService damageService)
     {
-        switch (eventType)
+        if (effect == null || effect.effectType == SkillEffectType.None)
         {
-            case SkillResultEventType.UnitMoved:
-                return BattleActionResultEventType.UnitMoved;
-            case SkillResultEventType.DamageApplied:
-                return BattleActionResultEventType.DamageApplied;
-            case SkillResultEventType.StatusApplied:
-                return BattleActionResultEventType.StatusApplied;
-            case SkillResultEventType.TrapPlaced:
-                return BattleActionResultEventType.TrapPlaced;
-            case SkillResultEventType.TrapTriggered:
-                return BattleActionResultEventType.TrapTriggered;
-            case SkillResultEventType.UnitSpawned:
-                return BattleActionResultEventType.UnitSpawned;
-            case SkillResultEventType.StackAmountChanged:
-                return BattleActionResultEventType.StackAmountChanged;
-            case SkillResultEventType.HpCostApplied:
-                return BattleActionResultEventType.HpCostApplied;
-            case SkillResultEventType.CooldownApplied:
-                return BattleActionResultEventType.CooldownApplied;
-            case SkillResultEventType.TurnCostApplied:
-                return BattleActionResultEventType.TurnCostApplied;
-            case SkillResultEventType.StanceChanged:
-                return BattleActionResultEventType.StanceChanged;
-            default:
-                return BattleActionResultEventType.None;
+            return true;
         }
+
+        SkillCast cast = action.SkillCast;
+        switch (effect.effectType)
+        {
+            case SkillEffectType.PlaceTrap:
+                result.Add(new BattleActionResultEvent
+                {
+                    EventType = BattleActionResultEventType.TrapPlaced,
+                    ActorUnitId = cast.ActorUnitId,
+                    TrapId = string.IsNullOrEmpty(effect.trapId) ? cast.SkillId : effect.trapId,
+                    Hex = FirstHex(cast.SelectedHexes)
+                });
+                return true;
+            case SkillEffectType.Damage:
+                return AddSkillDamageEvents(result, snapshot, action, effect, effectIndex, damageService);
+            case SkillEffectType.ApplyStatus:
+                AddSkillTargetEvents(result, cast, effect, BattleActionResultEventType.StatusApplied);
+                return true;
+            case SkillEffectType.MoveUnit:
+                result.Add(new BattleActionResultEvent
+                {
+                    EventType = BattleActionResultEventType.UnitMoved,
+                    ActorUnitId = cast.ActorUnitId,
+                    TargetUnitId = ResolveFirstSkillTarget(cast, effect),
+                    Hex = BattleActionModelUtility.CopyHex(cast.DestinationHex)
+                });
+                return true;
+            case SkillEffectType.ApplyHpCostOrSelfDamage:
+                result.Add(new BattleActionResultEvent
+                {
+                    EventType = BattleActionResultEventType.HpCostApplied,
+                    ActorUnitId = cast.ActorUnitId,
+                    Amount = effect.hpCost
+                });
+                return true;
+            case SkillEffectType.ModifyStackAmount:
+                result.Add(new BattleActionResultEvent
+                {
+                    EventType = BattleActionResultEventType.StackAmountChanged,
+                    ActorUnitId = cast.ActorUnitId,
+                    Amount = effect.stackAmountDelta
+                });
+                return true;
+            case SkillEffectType.SpawnUnit:
+                result.Add(new BattleActionResultEvent
+                {
+                    EventType = BattleActionResultEventType.UnitSpawned,
+                    ActorUnitId = cast.ActorUnitId,
+                    Hex = BattleActionModelUtility.CopyHex(cast.DestinationHex)
+                });
+                return true;
+            case SkillEffectType.SetStanceMode:
+            case SkillEffectType.ToggleStance:
+                result.Add(new BattleActionResultEvent
+                {
+                    EventType = BattleActionResultEventType.StanceChanged,
+                    ActorUnitId = cast.ActorUnitId
+                });
+                return true;
+            default:
+                return true;
+        }
+    }
+
+    static bool AddSkillDamageEvents(
+        BattleActionResult result,
+        BattleSnapshot snapshot,
+        BattleAction action,
+        SkillEffect effect,
+        int effectIndex,
+        CombatDamageService damageService)
+    {
+        SkillCast cast = action.SkillCast;
+        List<string> targetIds = ResolveSkillTargetIds(cast, effect.targetSource);
+        if (targetIds.Count == 0 && effect.skipIfNoTarget)
+        {
+            return true;
+        }
+
+        if (targetIds.Count == 0)
+        {
+            return true;
+        }
+
+        for (int i = 0; i < targetIds.Count; i++)
+        {
+            BattleActionResultEvent damageEvent = new BattleActionResultEvent
+            {
+                EventType = BattleActionResultEventType.DamageApplied,
+                ActorUnitId = cast.ActorUnitId,
+                TargetUnitId = targetIds[i]
+            };
+
+            if (IsCombatStyleSkillDamage(effect.damageMode))
+            {
+                CombatDamageServiceResult damage = ResolveSkillCombatDamage(
+                    snapshot,
+                    action,
+                    effect,
+                    effectIndex,
+                    targetIds[i],
+                    i,
+                    damageService);
+                if (damage.IsValid == false)
+                {
+                    RejectDamageResult(result, damage.Error);
+                    return false;
+                }
+
+                damageEvent.Amount = damage.Damage.CommittedDamage;
+                damageEvent.ConsumesActorPureDamage = damage.Damage.ConsumesActorPureDamage;
+            }
+            else
+            {
+                damageEvent.Amount = Math.Max(0, effect.fixedDamageValue);
+            }
+
+            result.Add(damageEvent);
+        }
+
+        return true;
+    }
+
+    static CombatDamageServiceResult ResolveSkillCombatDamage(
+        BattleSnapshot snapshot,
+        BattleAction action,
+        SkillEffect effect,
+        int effectIndex,
+        string targetUnitId,
+        int targetIndex,
+        CombatDamageService damageService)
+    {
+        CombatDamageService service = damageService ?? CombatDamageService.Default;
+        return service.CalculateDamage(snapshot, new CombatDamageRequest
+        {
+            ActorUnitId = action.ActorUnitId ?? string.Empty,
+            TargetUnitId = targetUnitId ?? string.Empty,
+            ActionIndex = action.ActionIndex,
+            ActionSeed = action.ActionSeed,
+            RollPurpose = BuildSkillRollPurpose(action.SkillId, effectIndex, targetIndex),
+            DamageScale = Math.Max(0.0, effect.damageScale),
+            ConsumeActorPureDamage = true
+        });
+    }
+
+    static string BuildSkillRollPurpose(string skillId, int effectIndex, int targetIndex)
+    {
+        return CombatDamageRollPurpose.Skill + ":" +
+            (skillId ?? string.Empty) + ":" +
+            effectIndex + ":" +
+            targetIndex;
+    }
+
+    static bool IsCombatStyleSkillDamage(SkillDamageMode damageMode)
+    {
+        return damageMode == SkillDamageMode.BasicAttackDamage ||
+            damageMode == SkillDamageMode.RangedBasicAttackDamage;
+    }
+
+    static void AddSkillTargetEvents(
+        BattleActionResult result,
+        SkillCast cast,
+        SkillEffect effect,
+        BattleActionResultEventType eventType)
+    {
+        List<string> targetIds = ResolveSkillTargetIds(cast, effect.targetSource);
+        if (targetIds.Count == 0 && effect.skipIfNoTarget)
+        {
+            return;
+        }
+
+        if (targetIds.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < targetIds.Count; i++)
+        {
+            result.Add(new BattleActionResultEvent
+            {
+                EventType = eventType,
+                ActorUnitId = cast.ActorUnitId,
+                TargetUnitId = targetIds[i],
+                StatusId = effect.statusId ?? string.Empty,
+                Amount = effect.fixedDamageValue
+            });
+        }
+    }
+
+    static List<string> ResolveSkillTargetIds(SkillCast cast, SkillEffectTargetSource source)
+    {
+        List<string> result = new List<string>();
+        if (cast == null)
+        {
+            return result;
+        }
+
+        switch (source)
+        {
+            case SkillEffectTargetSource.Actor:
+                result.Add(cast.ActorUnitId);
+                break;
+            case SkillEffectTargetSource.PrimaryUnit:
+                if (string.IsNullOrEmpty(cast.PrimaryTargetUnitId) == false)
+                {
+                    result.Add(cast.PrimaryTargetUnitId);
+                }
+                break;
+            case SkillEffectTargetSource.SelectedUnits:
+                result.AddRange(cast.TargetUnitIds ?? new List<string>());
+                break;
+            case SkillEffectTargetSource.AffectedUnits:
+                result.AddRange(cast.AffectedUnitIds ?? new List<string>());
+                break;
+        }
+
+        return result;
+    }
+
+    static string ResolveFirstSkillTarget(SkillCast cast, SkillEffect effect)
+    {
+        List<string> targets = ResolveSkillTargetIds(cast, effect.targetSource);
+        return targets.Count > 0 ? targets[0] : cast.ActorUnitId;
     }
 
     static SkillDefinitionSpec ResolveSkillSpec(string skillId, ITacticalAISkillMetadataProvider skillMetadataProvider)
@@ -977,18 +1212,42 @@ public static class BattleActionRules
         return positions;
     }
 
-    static void AddBasicAttackDamageEvent(BattleActionResult result, BattleSnapshot snapshot, BattleAction action)
+    static bool AddBasicAttackDamageEvent(
+        BattleActionResult result,
+        BattleSnapshot snapshot,
+        BattleAction action,
+        CombatDamageService damageService)
     {
+        CombatDamageServiceResult damage = ResolveBasicAttackDamage(
+            snapshot,
+            action.ActorUnitId,
+            action.PrimaryTargetUnitId,
+            action.ActionIndex,
+            action.ActionSeed,
+            CombatDamageRollPurpose.BasicAttack,
+            damageService);
+        if (damage.IsValid == false)
+        {
+            RejectDamageResult(result, damage.Error);
+            return false;
+        }
+
         result.Add(new BattleActionResultEvent
         {
             EventType = BattleActionResultEventType.DamageApplied,
             ActorUnitId = action.ActorUnitId,
             TargetUnitId = action.PrimaryTargetUnitId,
-            Amount = ResolveBasicAttackDamage(snapshot, action.ActorUnitId, action.PrimaryTargetUnitId, action.ActionIndex)
+            Amount = damage.Damage.CommittedDamage,
+            ConsumesActorPureDamage = damage.Damage.ConsumesActorPureDamage
         });
+        return true;
     }
 
-    static void AddCounterattackDamageEvent(BattleActionResult result, BattleSnapshot snapshot, BattleAction action)
+    static bool AddCounterattackDamageEvent(
+        BattleActionResult result,
+        BattleSnapshot snapshot,
+        BattleAction action,
+        CombatDamageService damageService)
     {
         BattleUnitSnapshot defender = FindUnit(snapshot, action.PrimaryTargetUnitId);
         BattleUnitSnapshot attacker = FindUnit(snapshot, action.ActorUnitId);
@@ -997,7 +1256,21 @@ public static class BattleActionRules
             defender.CounterAttackAvailable == false ||
             defender.TempCounterAttacks < 1)
         {
-            return;
+            return true;
+        }
+
+        CombatDamageServiceResult damage = ResolveBasicAttackDamage(
+            snapshot,
+            defender.RuntimeUnitId,
+            attacker.RuntimeUnitId,
+            action.ActionIndex,
+            action.ActionSeed,
+            CombatDamageRollPurpose.Retaliation,
+            damageService);
+        if (damage.IsValid == false)
+        {
+            RejectDamageResult(result, damage.Error);
+            return false;
         }
 
         result.Add(new BattleActionResultEvent
@@ -1005,54 +1278,45 @@ public static class BattleActionRules
             EventType = BattleActionResultEventType.DamageApplied,
             ActorUnitId = defender.RuntimeUnitId,
             TargetUnitId = attacker.RuntimeUnitId,
-            Amount = ResolveBasicAttackDamage(snapshot, defender.RuntimeUnitId, attacker.RuntimeUnitId, action.ActionIndex)
+            Amount = damage.Damage.CommittedDamage,
+            ConsumesActorPureDamage = damage.Damage.ConsumesActorPureDamage
+        });
+        return true;
+    }
+
+    static CombatDamageServiceResult ResolveBasicAttackDamage(
+        BattleSnapshot snapshot,
+        string actorUnitId,
+        string targetUnitId,
+        int actionIndex,
+        int actionSeed,
+        string rollPurpose,
+        CombatDamageService damageService)
+    {
+        CombatDamageService service = damageService ?? CombatDamageService.Default;
+        return service.CalculateDamage(snapshot, new CombatDamageRequest
+        {
+            ActorUnitId = actorUnitId ?? string.Empty,
+            TargetUnitId = targetUnitId ?? string.Empty,
+            ActionIndex = actionIndex,
+            ActionSeed = actionSeed,
+            RollPurpose = rollPurpose ?? CombatDamageRollPurpose.BasicAttack,
+            ConsumeActorPureDamage = true
         });
     }
 
-    static int ResolveBasicAttackDamage(BattleSnapshot snapshot, string actorUnitId, string targetUnitId, int actionIndex)
+    static void RejectDamageResult(BattleActionResult result, string reason)
     {
-        BattleUnitSnapshot actor = FindUnit(snapshot, actorUnitId);
-        if (actor == null)
+        string resolvedReason = string.IsNullOrEmpty(reason) ? "Combat damage could not be calculated." : reason;
+        result.IsRejected = true;
+        result.RejectReason = resolvedReason;
+        result.Events.Clear();
+        result.Add(new BattleActionResultEvent
         {
-            return 0;
-        }
-
-        int min = Math.Min(actor.MinDamage, actor.MaxDamage);
-        int max = Math.Max(actor.MinDamage, actor.MaxDamage);
-        int spread = Math.Max(0, max - min);
-        if (spread == 0)
-        {
-            return Math.Max(0, min);
-        }
-
-        int seed = snapshot != null ? snapshot.GameSeed : 0;
-        unchecked
-        {
-            seed = seed * 397 ^ actionIndex;
-            seed = seed * 397 ^ StableStringHash(actorUnitId);
-            seed = seed * 397 ^ StableStringHash(targetUnitId);
-        }
-
-        return Math.Max(0, min + Math.Abs(seed) % (spread + 1));
-    }
-
-    static int StableStringHash(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            return 0;
-        }
-
-        unchecked
-        {
-            int hash = 23;
-            for (int i = 0; i < value.Length; i++)
-            {
-                hash = hash * 31 + value[i];
-            }
-
-            return hash;
-        }
+            EventType = BattleActionResultEventType.ActionRejected,
+            Message = resolvedReason
+        });
+        UnityEngine.Debug.LogWarning("[BattleActionRules] Rejected action result: " + resolvedReason);
     }
 
     static void Trim<T>(List<T> list, int maxCount)
@@ -1102,6 +1366,138 @@ public static class BattleActionRules
     static int CompareStableOrder(BattleAction left, BattleAction right)
     {
         return string.CompareOrdinal(left != null ? left.StableOrderKey : string.Empty, right != null ? right.StableOrderKey : string.Empty);
+    }
+
+    static void AssignGeneratedActionSeeds(BattleSnapshot snapshot, List<BattleAction> actions)
+    {
+        if (snapshot == null || actions == null)
+        {
+            return;
+        }
+
+        int actionIndex = Math.Max(0, snapshot.NextActionIndex);
+        for (int i = 0; i < actions.Count; i++)
+        {
+            BattleAction action = actions[i];
+            if (action == null)
+            {
+                continue;
+            }
+
+            action.ActionIndex = actionIndex;
+            if (action.ActionSeed == 0)
+            {
+                action.ActionSeed = BuildGeneratedActionSeed(snapshot, action);
+            }
+        }
+    }
+
+    static int ResolveActionIndex(BattleSnapshot snapshot, BattleActionUse use)
+    {
+        if (use != null && use.ActionIndex > 0)
+        {
+            return use.ActionIndex;
+        }
+
+        return Math.Max(0, snapshot != null ? snapshot.NextActionIndex : 0);
+    }
+
+    static BattleActionUse ResolveActionUseSeeds(BattleSnapshot snapshot, BattleActionUse use, BattleUnitSnapshot actor)
+    {
+        if (use == null)
+        {
+            return null;
+        }
+
+        int actionIndex = ResolveActionIndex(snapshot, use);
+        int actionSeed = use.ActionSeed != 0
+            ? use.ActionSeed
+            : BuildGeneratedActionSeed(
+                snapshot,
+                actor != null ? actor.RuntimeUnitId : use.ActorUnitId,
+                use.TargetUnitId,
+                BuildUseStableOrderKey(use, actor != null ? actor.RuntimeUnitId : use.ActorUnitId));
+
+        if (use.ActionIndex == actionIndex && use.ActionSeed == actionSeed)
+        {
+            return use;
+        }
+
+        BattleActionUse clone = use.Clone();
+        clone.ActionIndex = actionIndex;
+        clone.ActionSeed = actionSeed;
+        return clone;
+    }
+
+    static int BuildGeneratedActionSeed(BattleSnapshot snapshot, BattleAction action)
+    {
+        return BuildGeneratedActionSeed(
+            snapshot,
+            action != null ? action.ActorUnitId : string.Empty,
+            action != null ? action.PrimaryTargetUnitId : string.Empty,
+            action != null ? action.StableOrderKey : string.Empty);
+    }
+
+    static int BuildGeneratedActionSeed(
+        BattleSnapshot snapshot,
+        string actorUnitId,
+        string targetUnitId,
+        string stableOrderKey)
+    {
+        unchecked
+        {
+            int seed = 17;
+            seed = seed * 31 + (snapshot != null ? snapshot.GameSeed : 0);
+            seed = seed * 31 + (snapshot != null ? snapshot.NextActionIndex : 0);
+            seed = Hash(seed, actorUnitId);
+            seed = Hash(seed, targetUnitId);
+            seed = Hash(seed, stableOrderKey);
+            int normalized = seed & int.MaxValue;
+            return normalized == 0 ? 1 : normalized;
+        }
+    }
+
+    static string BuildUseStableOrderKey(BattleActionUse use, string actorUnitId)
+    {
+        if (use == null)
+        {
+            return string.Empty;
+        }
+
+        string key = use.ActionKind + "|" +
+            (actorUnitId ?? string.Empty) + "|" +
+            use.SkillSlot + "|" +
+            (use.SkillId ?? string.Empty) + "|" +
+            (use.TargetUnitId ?? string.Empty);
+
+        if (use.SelectedHexes != null)
+        {
+            for (int i = 0; i < use.SelectedHexes.Count; i++)
+            {
+                HexCoord hex = use.SelectedHexes[i];
+                key += "|" + (hex != null ? hex.C.ToString() : string.Empty) + "," + (hex != null ? hex.R.ToString() : string.Empty);
+            }
+        }
+
+        return key;
+    }
+
+    static int Hash(int seed, string value)
+    {
+        unchecked
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return seed * 31;
+            }
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                seed = seed * 31 + value[i];
+            }
+
+            return seed;
+        }
     }
 
     static int CompareHexes(HexCoord left, HexCoord right)

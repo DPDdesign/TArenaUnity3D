@@ -261,20 +261,83 @@ public class TacticalAISearchScoringTests
     }
 
     [Test]
-    public void AverageDamagePrediction_IsDeterministicAndDoesNotMutateUnits()
+    public void CommittedDamagePrediction_IsDeterministicAndDoesNotMutateUnits()
     {
         BattleUnitSnapshot attacker = ActorUnit("team-0-slot-0", 0, 0, 0, 0, amount: 5, skillIds: EmptySkills());
         BattleUnitSnapshot defender = Unit("team-1-slot-0", 1, 0, 2, 0, amount: 4);
+        BattleSnapshot snapshot = CreateSnapshot(attacker, defender);
+        snapshot.GameSeed = 12345;
         int attackerAmountBefore = attacker.Amount;
         int defenderTempHpBefore = defender.TempHP;
 
-        int first = TacticalAIDamagePredictor.PredictAverageDamage(attacker, defender);
-        int second = TacticalAIDamagePredictor.PredictAverageDamage(attacker, defender);
+        int first = TacticalAIDamagePredictor.PredictCommittedDamage(
+            snapshot,
+            attacker.RuntimeUnitId,
+            defender.RuntimeUnitId,
+            actionIndex: 7,
+            actionSeed: 11);
+        int second = TacticalAIDamagePredictor.PredictCommittedDamage(
+            snapshot,
+            attacker.RuntimeUnitId,
+            defender.RuntimeUnitId,
+            actionIndex: 7,
+            actionSeed: 11);
 
         Assert.That(first, Is.EqualTo(second));
         Assert.That(first, Is.GreaterThan(0));
         Assert.That(attacker.Amount, Is.EqualTo(attackerAmountBefore));
         Assert.That(defender.TempHP, Is.EqualTo(defenderTempHpBefore));
+    }
+
+    [Test]
+    public void GeneratedActions_CarrySnapshotActionIndexAndStableSeed()
+    {
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit("team-0-slot-0", 0, 0, 0, 0, isRange: true, skillIds: EmptySkills()),
+            Unit("team-1-slot-0", 1, 0, 2, 0));
+        snapshot.GameSeed = 98765;
+        snapshot.NextActionIndex = 9;
+
+        List<BattleAction> firstActions = BattleActionRules.GenerateLegalActions(
+            snapshot,
+            TestProfile(),
+            new TestSkillMetadataProvider());
+        List<BattleAction> secondActions = BattleActionRules.GenerateLegalActions(
+            snapshot,
+            TestProfile(),
+            new TestSkillMetadataProvider());
+        BattleAction firstAttack = FindAction(firstActions, BattleActionKind.BasicRangedAttack);
+        BattleAction secondAttack = FindAction(secondActions, BattleActionKind.BasicRangedAttack);
+
+        Assert.That(firstAttack, Is.Not.Null);
+        Assert.That(secondAttack, Is.Not.Null);
+        Assert.That(firstAttack.ActionIndex, Is.EqualTo(9));
+        Assert.That(firstAttack.ActionSeed, Is.Not.EqualTo(0));
+        Assert.That(firstAttack.ActionSeed, Is.EqualTo(secondAttack.ActionSeed));
+    }
+
+    [Test]
+    public void SnapshotSimulator_PreservesGameSeedAndAdvancesActionIndex()
+    {
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit("team-0-slot-0", 0, 0, 0, 0, isRange: true, skillIds: EmptySkills()),
+            Unit("team-1-slot-0", 1, 0, 2, 0));
+        snapshot.GameSeed = 24680;
+        snapshot.NextActionIndex = 4;
+
+        List<BattleAction> actions = BattleActionRules.GenerateLegalActions(
+            snapshot,
+            TestProfile(),
+            new TestSkillMetadataProvider());
+        BattleAction attack = FindAction(actions, BattleActionKind.BasicRangedAttack);
+
+        BattleSnapshot simulated = TacticalAISnapshotSimulator.ApplyAction(snapshot, attack);
+        BattleSnapshot advanced = BattleSnapshotTurnOrderEstimator.AdvanceToNextOpportunity(simulated);
+
+        Assert.That(simulated.GameSeed, Is.EqualTo(24680));
+        Assert.That(simulated.NextActionIndex, Is.EqualTo(5));
+        Assert.That(advanced.GameSeed, Is.EqualTo(24680));
+        Assert.That(advanced.NextActionIndex, Is.EqualTo(5));
     }
 
     [Test]
@@ -437,6 +500,7 @@ public class TacticalAISearchScoringTests
         return new BattleUnitSnapshot
         {
             RuntimeUnitId = runtimeUnitId,
+            CatalogUnitId = "Unit",
             TeamIndex = teamIndex,
             RosterIndexWithinTeam = rosterIndex,
             UnitName = "Unit",

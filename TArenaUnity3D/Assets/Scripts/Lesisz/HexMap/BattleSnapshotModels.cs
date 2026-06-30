@@ -47,6 +47,7 @@ public class BattleHexSnapshot
 public class BattleUnitSnapshot
 {
     public string RuntimeUnitId = string.Empty;
+    public string CatalogUnitId = string.Empty;
     public int TeamIndex;
     public int RosterIndexWithinTeam;
     public string UnitName = string.Empty;
@@ -62,6 +63,16 @@ public class BattleUnitSnapshot
     public int Initiative;
     public int MinDamage;
     public int MaxDamage;
+    public int AttackModifier;
+    public int DefenseModifier;
+    public int MinDamageModifier;
+    public int MaxDamageModifier;
+    public int OutgoingDamageReductionPercent;
+    public int IncomingDamageReductionPercent;
+    public int FlatDamageReduction;
+    public int PureDamage;
+    public double DefensePenetration;
+    public string HatedTargetUnitId = string.Empty;
     public bool IsAlive;
     public bool IsRange;
     public bool Waited;

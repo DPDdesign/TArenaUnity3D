@@ -50,6 +50,12 @@ current prompt, selected task, or brief explicitly requires that PRD scope.
 5. Inspect changed files.
 6. Explain Unity test steps.
 
+## Response Style
+
+During implementation work, especially `implement-task`, operate in silent
+mode. Report only the main work threads, key decisions, blockers, and results.
+Do not narrate every micro-step or detailed internal reasoning.
+
 ## Scope
 
 Prefer simple C#, explicit methods, Unity-friendly Inspector fields, focused

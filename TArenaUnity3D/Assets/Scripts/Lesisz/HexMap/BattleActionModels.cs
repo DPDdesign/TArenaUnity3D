@@ -157,6 +157,7 @@ public sealed class BattleActionResultEvent
     public int DamageModifier;
     public int SpecialResistanceModifier;
     public bool IsStackable;
+    public bool ConsumesActorPureDamage;
     public bool RemoveTrap;
     public bool ShowTrapImmediately = true;
     public string PresentationSkillId = string.Empty;

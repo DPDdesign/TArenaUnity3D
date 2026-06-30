@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -106,6 +107,7 @@ public static class BattleSnapshotBuilder
         BattleUnitSnapshot clone = new BattleUnitSnapshot
         {
             RuntimeUnitId = NormalizeString(unit.RuntimeUnitId),
+            CatalogUnitId = NormalizeString(unit.CatalogUnitId),
             TeamIndex = unit.TeamIndex,
             RosterIndexWithinTeam = unit.RosterIndexWithinTeam,
             UnitName = NormalizeString(unit.UnitName),
@@ -121,6 +123,16 @@ public static class BattleSnapshotBuilder
             Initiative = unit.Initiative,
             MinDamage = unit.MinDamage,
             MaxDamage = unit.MaxDamage,
+            AttackModifier = unit.AttackModifier,
+            DefenseModifier = unit.DefenseModifier,
+            MinDamageModifier = unit.MinDamageModifier,
+            MaxDamageModifier = unit.MaxDamageModifier,
+            OutgoingDamageReductionPercent = unit.OutgoingDamageReductionPercent,
+            IncomingDamageReductionPercent = unit.IncomingDamageReductionPercent,
+            FlatDamageReduction = unit.FlatDamageReduction,
+            PureDamage = unit.PureDamage,
+            DefensePenetration = unit.DefensePenetration,
+            HatedTargetUnitId = NormalizeString(unit.HatedTargetUnitId),
             IsAlive = unit.IsAlive,
             IsRange = unit.IsRange,
             Waited = unit.Waited,
@@ -402,6 +414,7 @@ public static class BattleSnapshotBuilder
             BattleUnitSnapshot unit = snapshot.Units[i];
             canonical.Append("unit|")
                 .Append(Escape(unit.RuntimeUnitId)).Append('|')
+                .Append(Escape(unit.CatalogUnitId)).Append('|')
                 .Append(unit.TeamIndex).Append('|')
                 .Append(unit.RosterIndexWithinTeam).Append('|')
                 .Append(Escape(unit.UnitName)).Append('|')
@@ -417,6 +430,16 @@ public static class BattleSnapshotBuilder
                 .Append(unit.Initiative).Append('|')
                 .Append(unit.MinDamage).Append('|')
                 .Append(unit.MaxDamage).Append('|')
+                .Append(unit.AttackModifier).Append('|')
+                .Append(unit.DefenseModifier).Append('|')
+                .Append(unit.MinDamageModifier).Append('|')
+                .Append(unit.MaxDamageModifier).Append('|')
+                .Append(unit.OutgoingDamageReductionPercent).Append('|')
+                .Append(unit.IncomingDamageReductionPercent).Append('|')
+                .Append(unit.FlatDamageReduction).Append('|')
+                .Append(unit.PureDamage).Append('|')
+                .Append(unit.DefensePenetration.ToString(CultureInfo.InvariantCulture)).Append('|')
+                .Append(Escape(unit.HatedTargetUnitId)).Append('|')
                 .Append(B(unit.IsAlive)).Append('|')
                 .Append(B(unit.IsRange)).Append('|')
                 .Append(B(unit.Waited)).Append('|')

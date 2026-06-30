@@ -393,6 +393,7 @@ public class TacticalAIExecutionBridgeTests
         return new BattleUnitSnapshot
         {
             RuntimeUnitId = runtimeUnitId,
+            CatalogUnitId = "Unit",
             TeamIndex = teamIndex,
             RosterIndexWithinTeam = rosterIndex,
             UnitName = "Unit",

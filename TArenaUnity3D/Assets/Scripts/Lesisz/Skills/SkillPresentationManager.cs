@@ -81,6 +81,20 @@ public class SkillPresentationManager : MonoBehaviour
         manager.PlayCast(entry, caster);
     }
 
+    public static bool TryGetEntry(string skillId, out SkillPresentationEntry entry)
+    {
+        entry = null;
+
+        SkillPresentationManager manager = GetManager();
+        if (manager == null)
+        {
+            return false;
+        }
+
+        entry = manager.GetEntry(skillId);
+        return entry != null;
+    }
+
     public static void PlayCastSfxOnly(string skillId)
     {
         SkillPresentationManager manager = GetManager();

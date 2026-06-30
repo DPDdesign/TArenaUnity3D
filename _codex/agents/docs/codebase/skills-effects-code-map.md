@@ -1,7 +1,7 @@
 # TArenaUnity3D Skills, Effects, And Pathfinding Codebase Map
 
 Status: active
-Last updated: 2026-06-26
+Last updated: 2026-06-30
 
 ## Skills And Effects
 
@@ -17,6 +17,11 @@ Key files:
 - `Assets/Scripts/Lesisz/Skills/SkillResult.cs`
 - `Assets/Scripts/Lesisz/Skills/SkillContext.cs`
 - `Assets/Scripts/Lesisz/Skills/SkillTarget.cs`
+- `Assets/Scripts/Lesisz/Skills/SkillDefinitionMigrationDefaults.cs`
+- `Assets/Scripts/Lesisz/HexMap/BattleActionRules.cs`
+- `Assets/Scripts/Lesisz/HexMap/CombatDamageService.cs`
+- `Assets/Scripts/Lesisz/HexMap/TacticalAISkillRulesExecutor.cs`
+- `Assets/Scripts/Lesisz/HexMap/TacticalAISearchScoring.cs`
 - `Assets/Scripts/Lesisz/Skills/CastManager.cs`
 - `Assets/Scripts/Lesisz/HexMap/SpellOverTime.cs`
 - `Assets/Scripts/Lesisz/HexMap/TosterHexUnit.cs`
@@ -39,6 +44,16 @@ Responsibilities:
 - display skill buttons and icons from `SelectedToster.skillstrings`,
 - expose skill metadata/right-click info through `DataMapper`,
 - validate skill start/target legality through `SkillRules`,
+- convert validated `SkillCast` effects into deterministic
+  `BattleActionResult` events through `BattleActionRules`,
+- route combat-style skill damage through `CombatDamageService` using distinct
+  skill roll purposes and no legacy damage fallback,
+- skip empty target-based damage/status events instead of emitting empty target
+  ids; actor-targeted effects still resolve to the caster,
+- execute committed skill result events in live play through
+  `TacticalAISkillRulesExecutor`,
+- simulate committed skill result events for AI search through
+  `TacticalAISearchScoring`,
 - expose future AI/server-facing skill queries through `SkillQuery`,
 - route selected skill slots through `MouseControler.SelectedSpellid`,
 - stage and validate selected skill targets,
@@ -56,6 +71,10 @@ Current structure:
 - PRD49ABC added `ActivationRuleData`, `TargetingRuleData`,
   `ResolutionRuleData`, ordered `SkillEffect[]`, and the shared `SkillRules`
   API/data model.
+- PRD055B migrated combat-style skill damage events
+  (`BasicAttackDamage`, `RangedBasicAttackDamage`) to `CombatDamageService`.
+  Snapshot AI planning/simulation must inject a snapshot-backed combat catalog
+  rather than relying on the default live `DataMapper` service.
 - run, reward, shop, and future player progression state may lock or unlock
   those legal skills for a specific stack.
 - `TosterHexUnit.InitateType(name)` loads those strings into

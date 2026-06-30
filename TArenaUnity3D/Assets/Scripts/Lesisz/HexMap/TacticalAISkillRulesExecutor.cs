@@ -109,18 +109,7 @@ internal sealed class BattleActionSkillResultRuntime
             return null;
         }
 
-        SkillEffect effect = FirstDamageEffect(cast);
-        int finalDamage;
-        if (resultEvent.Amount > 0 || effect == null || effect.damageMode == SkillDamageMode.FixedDamageThroughDefense || effect.damageMode == SkillDamageMode.PureDamage)
-        {
-            finalDamage = resultEvent.Amount > 0 ? resultEvent.Amount : Math.Max(0, effect.fixedDamageValue);
-            return ApplyPureDamageForReveal(actor, target, finalDamage);
-        }
-
-        double scale = Math.Max(0f, effect.damageScale);
-        int scaledDamage = Convert.ToInt32(actor.CalculateDamageBetweenTosters(actor, target, scale));
-        finalDamage = Math.Max(0, scaledDamage);
-        return ApplyPureDamageForReveal(actor, target, finalDamage);
+        return ApplyPureDamageForReveal(actor, target, Math.Max(0, resultEvent.Amount));
     }
 
     FrontendResultReveal ApplyPureDamageForReveal(TosterHexUnit actor, TosterHexUnit target, int damage)
@@ -670,25 +659,6 @@ internal sealed class BattleActionSkillResultRuntime
         }
 
         return runtimeContext.HexMap.GetHexAt(hex.C, hex.R);
-    }
-
-    static SkillEffect FirstDamageEffect(SkillCast cast)
-    {
-        SkillEffect[] effects = cast != null ? cast.Effects : null;
-        if (effects == null)
-        {
-            return null;
-        }
-
-        for (int i = 0; i < effects.Length; i++)
-        {
-            if (effects[i] != null && effects[i].effectType == SkillEffectType.Damage)
-            {
-                return effects[i];
-            }
-        }
-
-        return null;
     }
 
     static SkillEffect FirstStatusEffect(SkillCast cast, string statusId)

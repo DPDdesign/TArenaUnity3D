@@ -221,13 +221,14 @@ public class BattleActionRulesTests
         BattleActionValidationResult firstValidation = BattleActionRules.Validate(use, snapshot);
         BattleActionValidationResult secondValidation = BattleActionRules.Validate(use, snapshot);
 
-        BattleActionResult first = BattleActionRules.Apply(snapshot, firstValidation.Action);
-        BattleActionResult second = BattleActionRules.Apply(snapshot, secondValidation.Action);
+        CombatDamageService damageService = new CombatDamageService(TestCombatUnitCatalog.FromUnits(snapshot.Units));
+        BattleActionResult first = BattleActionRules.Apply(snapshot, firstValidation.Action, damageService);
+        BattleActionResult second = BattleActionRules.Apply(snapshot, secondValidation.Action, damageService);
 
         int firstDamage = FirstAmount(first, BattleActionResultEventType.DamageApplied);
         int secondDamage = FirstAmount(second, BattleActionResultEventType.DamageApplied);
 
-        Assert.That(firstDamage, Is.InRange(2, 6));
+        Assert.That(firstDamage, Is.InRange(11, 32));
         Assert.That(secondDamage, Is.EqualTo(firstDamage));
     }
 
@@ -250,17 +251,18 @@ public class BattleActionRulesTests
 
         Assert.That(validation.IsValid, Is.True, validation.RejectReason);
 
-        BattleActionResult result = BattleActionRules.Apply(snapshot, validation.Action);
+        CombatDamageService damageService = new CombatDamageService(TestCombatUnitCatalog.FromUnits(snapshot.Units));
+        BattleActionResult result = BattleActionRules.Apply(snapshot, validation.Action, damageService);
         List<BattleActionResultEvent> damageEvents =
             result.Events.FindAll(e => e.EventType == BattleActionResultEventType.DamageApplied);
 
         Assert.That(damageEvents.Count, Is.EqualTo(2));
         Assert.That(damageEvents[0].ActorUnitId, Is.EqualTo("team-0-slot-0"));
         Assert.That(damageEvents[0].TargetUnitId, Is.EqualTo("team-1-slot-0"));
-        Assert.That(damageEvents[0].Amount, Is.EqualTo(2));
+        Assert.That(damageEvents[0].Amount, Is.EqualTo(11));
         Assert.That(damageEvents[1].ActorUnitId, Is.EqualTo("team-1-slot-0"));
         Assert.That(damageEvents[1].TargetUnitId, Is.EqualTo("team-0-slot-0"));
-        Assert.That(damageEvents[1].Amount, Is.EqualTo(4));
+        Assert.That(damageEvents[1].Amount, Is.EqualTo(21));
     }
 
     [Test]
@@ -284,6 +286,118 @@ public class BattleActionRulesTests
         Assert.That(planned.Result, Is.Not.Null);
         Assert.That(planned.ActionKind, Is.EqualTo(BattleActionKind.Move));
         Assert.That(planned.Use.ActionKind, Is.EqualTo(BattleActionKind.Move));
+    }
+
+    [Test]
+    public void SkillCombatDamage_UsesCombatDamageServiceForDirectDamage()
+    {
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit(0, 0, minDamage: 2, maxDamage: 2),
+            EnemyUnit("team-1-slot-0", 1, 0));
+        CombatDamageService damageService = new CombatDamageService(TestCombatUnitCatalog.FromUnits(snapshot.Units));
+
+        BattleActionResult result = BattleActionRules.Apply(
+            snapshot,
+            SkillDamageAction("Piercing_Strike", "team-1-slot-0", 1f),
+            damageService);
+
+        Assert.That(result.IsRejected, Is.False, result.RejectReason);
+        Assert.That(FirstAmount(result, BattleActionResultEventType.DamageApplied), Is.EqualTo(11));
+    }
+
+    [Test]
+    public void SkillCombatDamage_AppliesDamageScaleThroughCombatDamageService()
+    {
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit(0, 0, minDamage: 2, maxDamage: 2),
+            EnemyUnit("team-1-slot-0", 1, 0));
+        CombatDamageService damageService = new CombatDamageService(TestCombatUnitCatalog.FromUnits(snapshot.Units));
+
+        BattleActionResult result = BattleActionRules.Apply(
+            snapshot,
+            SkillDamageAction("Slash", "team-1-slot-0", 0.4f),
+            damageService);
+
+        Assert.That(result.IsRejected, Is.False, result.RejectReason);
+        Assert.That(FirstAmount(result, BattleActionResultEventType.DamageApplied), Is.EqualTo(5));
+    }
+
+    [Test]
+    public void SkillCombatDamage_IsDeterministicForSameInputs()
+    {
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit(0, 0, minDamage: 1, maxDamage: 5),
+            EnemyUnit("team-1-slot-0", 1, 0));
+        CombatDamageService damageService = new CombatDamageService(TestCombatUnitCatalog.FromUnits(snapshot.Units));
+        BattleAction action = SkillDamageAction("Double_Throw", "team-1-slot-0", 1f);
+
+        BattleActionResult first = BattleActionRules.Apply(snapshot, action, damageService);
+        BattleActionResult second = BattleActionRules.Apply(snapshot, action, damageService);
+
+        Assert.That(first.IsRejected, Is.False, first.RejectReason);
+        Assert.That(second.IsRejected, Is.False, second.RejectReason);
+        Assert.That(
+            FirstAmount(second, BattleActionResultEventType.DamageApplied),
+            Is.EqualTo(FirstAmount(first, BattleActionResultEventType.DamageApplied)));
+    }
+
+    [Test]
+    public void SkillCombatDamage_MissingCatalogRejectsWithoutDamageFallback()
+    {
+        BattleSnapshot snapshot = CreateSnapshot(
+            ActorUnit(0, 0, minDamage: 2, maxDamage: 2),
+            EnemyUnit("team-1-slot-0", 1, 0));
+        TestCombatUnitCatalog catalog = new TestCombatUnitCatalog();
+        catalog.Add(snapshot.Units[0].CatalogUnitId, snapshot.Units[0].BaseHP, snapshot.Units[0].Attack, snapshot.Units[0].Defense, snapshot.Units[0].MinDamage, snapshot.Units[0].MaxDamage);
+        CombatDamageService damageService = new CombatDamageService(catalog);
+
+        BattleActionResult result = BattleActionRules.Apply(
+            snapshot,
+            SkillDamageAction("Piercing_Strike", "team-1-slot-0", 1f),
+            damageService);
+
+        Assert.That(result.IsRejected, Is.True);
+        Assert.That(result.RejectReason, Does.Contain("target catalog unit"));
+        Assert.That(result.Events.Exists(e => e.EventType == BattleActionResultEventType.DamageApplied), Is.False);
+        Assert.That(result.Events.Exists(e => e.EventType == BattleActionResultEventType.ActionRejected), Is.True);
+    }
+
+    [Test]
+    public void SkillCombatDamage_SlashEmptyImpactCommitsMovementWithoutDamage()
+    {
+        BattleSnapshot snapshot = CreateSnapshot(ActorUnit(0, 0, minDamage: 2, maxDamage: 2));
+        CombatDamageService damageService = new CombatDamageService(TestCombatUnitCatalog.FromUnits(snapshot.Units));
+
+        BattleActionResult result = BattleActionRules.Apply(
+            snapshot,
+            SlashEmptyImpactAction(),
+            damageService);
+
+        Assert.That(result.IsRejected, Is.False, result.RejectReason);
+        Assert.That(result.Events.Exists(e => e.EventType == BattleActionResultEventType.UnitMoved), Is.True);
+        Assert.That(result.Events.Exists(e => e.EventType == BattleActionResultEventType.DamageApplied), Is.False);
+        Assert.That(result.Events.Exists(e => e.EventType == BattleActionResultEventType.TurnCostApplied), Is.True);
+    }
+
+    [Test]
+    public void SkillTargetEvents_ToxicFumeEmptyAreaCommitsWithoutEmptyTauntTarget()
+    {
+        BattleSnapshot snapshot = CreateSnapshot(ActorUnit(0, 0, minDamage: 2, maxDamage: 2));
+        CombatDamageService damageService = new CombatDamageService(TestCombatUnitCatalog.FromUnits(snapshot.Units));
+
+        BattleActionResult result = BattleActionRules.Apply(
+            snapshot,
+            ToxicFumeEmptyAreaAction(),
+            damageService);
+        List<BattleActionResultEvent> statusEvents =
+            result.Events.FindAll(e => e.EventType == BattleActionResultEventType.StatusApplied);
+
+        Assert.That(result.IsRejected, Is.False, result.RejectReason);
+        Assert.That(result.Events.Exists(e => e.EventType == BattleActionResultEventType.UnitMoved), Is.True);
+        Assert.That(statusEvents.Count, Is.EqualTo(1));
+        Assert.That(statusEvents[0].TargetUnitId, Is.EqualTo("team-0-slot-0"));
+        Assert.That(statusEvents[0].StatusId, Is.EqualTo("Toxic_Fume"));
+        Assert.That(result.Events.Exists(e => e.EventType == BattleActionResultEventType.TurnCostApplied), Is.True);
     }
 
     static int FirstAmount(BattleActionResult result, BattleActionResultEventType eventType)
@@ -406,6 +520,7 @@ public class BattleActionRulesTests
         return new BattleUnitSnapshot
         {
             RuntimeUnitId = unitId,
+            CatalogUnitId = unitId,
             TeamIndex = teamIndex,
             RosterIndexWithinTeam = rosterIndex,
             UnitName = unitId,
@@ -431,6 +546,161 @@ public class BattleActionRulesTests
             CooldownsBySlot = new List<int>(),
             UsedSkillIdsThisTurn = new List<string>()
         };
+    }
+
+    static BattleAction SkillDamageAction(string skillId, string targetUnitId, float damageScale)
+    {
+        return new BattleAction
+        {
+            ActorUnitId = "team-0-slot-0",
+            ActionKind = BattleActionKind.Skill,
+            SkillId = skillId,
+            ActionIndex = 9,
+            ActionSeed = 77,
+            SkillCast = new SkillCast
+            {
+                ActorUnitId = "team-0-slot-0",
+                SkillId = skillId,
+                PrimaryTargetUnitId = targetUnitId,
+                TargetUnitIds = new List<string> { targetUnitId },
+                AffectedUnitIds = new List<string> { targetUnitId },
+                CooldownTurns = 1,
+                ConsumesTurn = true,
+                Effects = new[]
+                {
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.Damage,
+                        targetSource = SkillEffectTargetSource.PrimaryUnit,
+                        damageMode = SkillDamageMode.BasicAttackDamage,
+                        damageScale = damageScale
+                    }
+                }
+            }
+        };
+    }
+
+    static BattleAction SlashEmptyImpactAction()
+    {
+        return new BattleAction
+        {
+            ActorUnitId = "team-0-slot-0",
+            ActionKind = BattleActionKind.Skill,
+            SkillId = "Slash",
+            ActionIndex = 9,
+            ActionSeed = 77,
+            SkillCast = new SkillCast
+            {
+                ActorUnitId = "team-0-slot-0",
+                SkillId = "Slash",
+                DestinationHex = new HexCoord(1, 0),
+                ImpactHex = new HexCoord(2, 0),
+                AffectedUnitIds = new List<string>(),
+                CooldownTurns = 2,
+                ConsumesTurn = true,
+                Effects = new[]
+                {
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.MoveUnit,
+                        targetSource = SkillEffectTargetSource.Actor,
+                        movementMode = SkillMovementMode.NormalPathMove
+                    },
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.Damage,
+                        targetSource = SkillEffectTargetSource.AffectedUnits,
+                        damageMode = SkillDamageMode.BasicAttackDamage,
+                        damageScale = 0.4f
+                    }
+                }
+            }
+        };
+    }
+
+    static BattleAction ToxicFumeEmptyAreaAction()
+    {
+        return new BattleAction
+        {
+            ActorUnitId = "team-0-slot-0",
+            ActionKind = BattleActionKind.Skill,
+            SkillId = "Toxic_Fume",
+            ActionIndex = 9,
+            ActionSeed = 77,
+            SkillCast = new SkillCast
+            {
+                ActorUnitId = "team-0-slot-0",
+                SkillId = "Toxic_Fume",
+                DestinationHex = new HexCoord(1, 0),
+                ImpactHex = new HexCoord(1, 0),
+                AffectedUnitIds = new List<string>(),
+                CooldownTurns = 2,
+                ConsumesTurn = true,
+                Effects = new[]
+                {
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.MoveUnit,
+                        targetSource = SkillEffectTargetSource.Actor,
+                        movementMode = SkillMovementMode.NormalPathMove
+                    },
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.ApplyStatus,
+                        targetSource = SkillEffectTargetSource.Actor,
+                        statusId = "Toxic_Fume",
+                        durationTurns = 2,
+                        movementModifier = -1,
+                        counterAttacksModifier = 2
+                    },
+                    new SkillEffect
+                    {
+                        effectType = SkillEffectType.ApplyStatus,
+                        targetSource = SkillEffectTargetSource.AffectedUnits,
+                        statusId = "Taunt",
+                        durationTurns = 2
+                    }
+                }
+            }
+        };
+    }
+
+    sealed class TestCombatUnitCatalog : ICombatUnitCatalog
+    {
+        readonly Dictionary<string, CombatUnitCatalogEntry> units = new Dictionary<string, CombatUnitCatalogEntry>();
+
+        public static TestCombatUnitCatalog FromUnits(IEnumerable<BattleUnitSnapshot> snapshots)
+        {
+            TestCombatUnitCatalog catalog = new TestCombatUnitCatalog();
+            foreach (BattleUnitSnapshot unit in snapshots)
+            {
+                catalog.units[unit.CatalogUnitId] = new CombatUnitCatalogEntry(
+                    unit.CatalogUnitId,
+                    unit.BaseHP,
+                    unit.Attack,
+                    unit.Defense,
+                    unit.MinDamage,
+                    unit.MaxDamage);
+            }
+
+            return catalog;
+        }
+
+        public void Add(string catalogUnitId, int hp, int attack, int defense, int minDamage, int maxDamage)
+        {
+            units[catalogUnitId] = new CombatUnitCatalogEntry(
+                catalogUnitId,
+                hp,
+                attack,
+                defense,
+                minDamage,
+                maxDamage);
+        }
+
+        public bool TryGetUnit(string catalogUnitId, out CombatUnitCatalogEntry unit)
+        {
+            return units.TryGetValue(catalogUnitId, out unit);
+        }
     }
 
     sealed class TestSkillProvider : ITacticalAISkillMetadataProvider, ITacticalAISkillSpecProvider
